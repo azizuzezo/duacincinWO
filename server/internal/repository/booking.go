@@ -91,6 +91,16 @@ func (r *BookingRepo) list(ctx context.Context, column, id string) ([]Booking, e
 
 // UpdateStatus moves a booking from expectedStatus to newStatus, atomically
 // (the WHERE clause acts as an optimistic-lock guard against racing
+// CountActive powers the Admin dashboard's "transaksi berjalan" stat —
+// bookings that haven't reached a final state yet.
+func (r *BookingRepo) CountActive(ctx context.Context) (int, error) {
+	var count int
+	err := r.pool.QueryRow(ctx, `
+		select count(*) from bookings where status not in ('completed', 'cancelled')
+	`).Scan(&count)
+	return count, err
+}
+
 // requests — e.g. two payment webhooks arriving concurrently). Returns
 // false if the booking wasn't in expectedStatus.
 func (r *BookingRepo) UpdateStatus(ctx context.Context, id, expectedStatus, newStatus string) (bool, error) {

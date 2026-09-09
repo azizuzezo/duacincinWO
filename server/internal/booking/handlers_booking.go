@@ -224,7 +224,11 @@ func Complete(deps *Deps) http.HandlerFunc {
 			return
 		}
 
-		commission := int64(math.Round(float64(b.AgreedPrice) * CommissionRate))
+		commissionRate := CommissionRate
+		if vendorProfile, err := deps.Vendors.GetByUserID(r.Context(), b.VendorID); err == nil && vendorProfile.CommissionRate != nil {
+			commissionRate = *vendorProfile.CommissionRate
+		}
+		commission := int64(math.Round(float64(b.AgreedPrice) * commissionRate))
 		net := b.AgreedPrice - commission
 		if err := deps.Disbursements.Create(r.Context(), b.ID, b.AgreedPrice, commission, net); err != nil {
 			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")

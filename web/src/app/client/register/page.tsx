@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { AgreementCheckbox } from "@/components/AgreementCheckbox";
 import { AuthCard } from "@/components/AuthCard";
 import { Button } from "@/components/Button";
 import { PasswordField } from "@/components/PasswordField";
@@ -15,6 +16,7 @@ export default function ClientRegisterPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -27,6 +29,7 @@ export default function ClientRegisterPage() {
         email,
         password,
         full_name: fullName,
+        accept_terms: acceptTerms,
       });
       router.push("/client/dashboard");
     } catch (err) {
@@ -61,8 +64,9 @@ export default function ClientRegisterPage() {
           minLength={8}
         />
         <p className="-mt-2 text-xs text-dc-black/50">Minimal 8 karakter.</p>
+        <AgreementCheckbox checked={acceptTerms} onChange={setAcceptTerms} href="/legal/client-tos" label="Ketentuan Layanan Client" />
         {error && <p className="text-sm text-red-600">{error}</p>}
-        <Button type="submit" loading={loading}>
+        <Button type="submit" loading={loading} disabled={!acceptTerms}>
           Daftar
         </Button>
       </form>

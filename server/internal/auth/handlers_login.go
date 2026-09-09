@@ -41,6 +41,11 @@ func Login(deps *Deps, allowedRoles ...string) http.HandlerFunc {
 			return
 		}
 
+		if user.IsBlocked() {
+			httpx.Error(w, http.StatusForbidden, "akun ini ditangguhkan/dinonaktifkan karena pelanggaran Perjanjian Kemitraan — hubungi dukungan DuaCincin")
+			return
+		}
+
 		if !security.VerifyPassword(user.PasswordHash, req.Password) {
 			locked, lockErr := deps.Users.RegisterFailedLogin(r.Context(), user.ID)
 			if lockErr == nil && locked {

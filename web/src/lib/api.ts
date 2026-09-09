@@ -207,3 +207,26 @@ export const BOOKING_STATUS_LABEL: Record<BookingStatus, string> = {
   completed: "Selesai",
   cancelled: "Dibatalkan",
 };
+
+export type DashboardStats = {
+  active_vendors: number;
+  ongoing_transactions: number;
+  open_disputes: number;
+};
+
+export type Dispute = {
+  id: string;
+  vendor_id: string;
+  message_id?: string;
+  reason: string;
+  created_at: string;
+};
+
+export type VendorSummary = {
+  user_id: string;
+  business_name: string;
+  category: string;
+  city: string;
+  status: string;
+  commission_rate?: number;
+};

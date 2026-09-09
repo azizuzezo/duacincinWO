@@ -11,13 +11,14 @@ import (
 )
 
 type Deps struct {
-	Users   *repository.UserRepo
-	OTPs    *repository.OTPRepo
-	Limiter *ratelimit.Limiter
-	Mailer  *email.Client
-	Cfg     *config.Config
+	Users      *repository.UserRepo
+	OTPs       *repository.OTPRepo
+	Agreements *repository.AgreementRepo
+	Limiter    *ratelimit.Limiter
+	Mailer     *email.Client
+	Cfg        *config.Config
 }
 
-func NewDeps(users *repository.UserRepo, otps *repository.OTPRepo, limiter *ratelimit.Limiter, mailer *email.Client, cfg *config.Config) *Deps {
-	return &Deps{Users: users, OTPs: otps, Limiter: limiter, Mailer: mailer, Cfg: cfg}
+func NewDeps(users *repository.UserRepo, otps *repository.OTPRepo, agreements *repository.AgreementRepo, limiter *ratelimit.Limiter, mailer *email.Client, cfg *config.Config) *Deps {
+	return &Deps{Users: users, OTPs: otps, Agreements: agreements, Limiter: limiter, Mailer: mailer, Cfg: cfg}
 }

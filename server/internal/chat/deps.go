@@ -7,10 +7,11 @@ package chat
 import "duacincin/server/internal/repository"
 
 type Deps struct {
-	Chat    *repository.ChatRepo
-	Vendors *repository.VendorRepo
+	Chat     *repository.ChatRepo
+	Vendors  *repository.VendorRepo
+	Disputes *repository.DisputeRepo
 }
 
-func NewDeps(chatRepo *repository.ChatRepo, vendors *repository.VendorRepo) *Deps {
-	return &Deps{Chat: chatRepo, Vendors: vendors}
+func NewDeps(chatRepo *repository.ChatRepo, vendors *repository.VendorRepo, disputes *repository.DisputeRepo) *Deps {
+	return &Deps{Chat: chatRepo, Vendors: vendors, Disputes: disputes}
 }

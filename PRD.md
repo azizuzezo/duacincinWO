@@ -2,12 +2,13 @@
 
 | | |
 |---|---|
-| **Versi** | 0.3 |
+| **Versi** | 0.4 |
 | **Tanggal** | 2026-09-09 |
-| **Status** | Menunggu review pemilik produk |
+| **Status** | Seluruh Fase 0–7 (MVP) selesai diimplementasikan — menunggu review pemilik produk sebelum go-live nyata (lihat §12 untuk gap yang masih terbuka: review legal, kredensial Midtrans sungguhan, proteksi bot, dsb.) |
 | **Terkait** | [engineering.md](./engineering.md) — roadmap fase & log perubahan teknis |
 
 **Riwayat revisi:**
+- v0.4 (2026-09-09) — Fase 7 (final) selesai: persetujuan legal jadi wajib & tercatat saat daftar (§8.6), sanksi akun (suspend/terminate) tersambung ke login, dispute otomatis dari chat ter-flag, komisi bisa dikonfigurasi per vendor, dashboard Admin. Seluruh 8 fase MVP di roadmap §13 kini selesai dibangun & diverifikasi (curl + Playwright browser sungguhan).
 - v0.3 (2026-09-09) — Menambahkan checklist UX/konten/SEO (§10.6–§10.9), memperluas persyaratan keamanan (§10.2) dengan item konkret (pemisahan kunci Supabase, RLS vs otorisasi di kode, IDOR, mass assignment, proteksi bot, batas biaya), dan draft Kebijakan Privasi (§11.3).
 - v0.2 (2026-09-09) — Menambahkan peran **Wedding Consultant** (staf internal DuaCincin) dan alur pemesanan end-to-end (§8.11), menyelaraskan milestone escrow (§8.5) dengan alur tersebut.
 - v0.1 (2026-09-09) — Draft awal.
@@ -330,11 +331,11 @@ Prinsip yang sudah ditegakkan sejak Fase 1 (lihat engineering.md) dan **wajib te
 ## 12. Risiko & Asumsi Terbuka
 
 - **Payment gateway:** Midtrans dipilih sebagai default asumsi — perlu dikonfirmasi ulang saat akun merchant benar-benar dibuat (KYC, split settlement/disbursement API mana yang dipakai). **Integrasi Snap API & verifikasi signature webhook sudah dibangun dan diverifikasi logikanya secara manual (Fase 6), tapi belum pernah dicoba melawan sandbox Midtrans sungguhan** — wajib diuji ulang begitu ada kredensial sandbox nyata, sebelum go-live.
-- **DP & komisi masih konstanta MVP:** DP 30% dan komisi 10% (§8.5/§8.11) di-hardcode di kode Fase 6, belum bisa dikonfigurasi per vendor/kategori seperti yang disebut §8.10 — menyusul saat Admin/Backoffice (Fase 7) dibangun.
+- **DP masih konstanta MVP, komisi sudah bisa dikonfigurasi per vendor:** DP tetap 30% hardcode (§8.5/§8.11, tidak ada mekanisme override) — kalau bisnisnya perlu DP berbeda per kategori/vendor, perlu ditambahkan. Komisi sekarang **sudah** bisa di-override per vendor lewat Admin/Backoffice (Fase 7), fallback ke default 10% kalau tidak diisi.
 - **Pencairan dana ke vendor manual:** Admin menandai "sudah dicairkan" secara manual di dashboard (Fase 6), tidak ada transfer bank otomatis — kalau nanti mau otomatis, perlu integrasi terpisah (mis. Midtrans Iris/Payout) dengan approval tambahan dari Midtrans.
-- **Legalitas:** draft §11 wajib direview advokat sebelum go-live nyata (bukan hanya untuk keperluan demo produk).
+- **Legalitas:** draft §11 wajib direview advokat sebelum go-live nyata (bukan hanya untuk keperluan demo produk). **Persetujuan elektronik (accept_terms) sudah diwajibkan & dicatat dengan versi+timestamp sejak Fase 7** — tapi teksnya sendiri tetap draft, belum disahkan.
 - **Konten Inspirasi:** proses kurasi manual butuh proses editorial berkelanjutan (bukan sekali build), perlu ditentukan siapa yang bertanggung jawab mengisi kontennya pasca-launch.
-- **Komisi & sanksi finansial:** angka persentase masih placeholder, perlu keputusan bisnis final dari pemilik produk.
+- **Sanksi finansial (denda) belum diimplementasikan:** §11.1 Pasal 4 menyebut penalti finansial sebagai salah satu sanksi — yang sudah dibangun di Fase 7 baru 3 aksi (peringatan/suspend 30 hari/terminate akun), **bukan** pemotongan dana otomatis. Kalau mau ada denda finansial sungguhan, perlu fitur tambahan untuk menagih/memotongnya.
 - **Kapasitas tim Wedding Consultant:** alur §8.11 mengasumsikan ada tim manusia yang menjalankan peran ini sejak MVP — perlu dipastikan ketersediaannya (jumlah staf, jam operasional/SLA respons chat) sebelum go-live, karena ini bukan sesuatu yang bisa "dikerjakan lewat kode".
 - **Utang teknis Fase 1:** proteksi bot (Cloudflare Turnstile, §7/§8.2/§10.2) belum diimplementasikan di form daftar/lupa password yang sudah dibangun — perlu ditambahkan sebelum go-live, mengandalkan rate limiting saja untuk sementara.
 - **Tool analytics belum final:** §10.8 mensyaratkan analytics sejak hari pertama tapi tool-nya (Plausible/PostHog/GA4/lainnya) belum dipilih — pilihan ini juga menentukan isi §11.3 (data apa yang dibagi ke pihak ketiga).

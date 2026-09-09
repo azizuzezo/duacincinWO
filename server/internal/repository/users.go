@@ -15,6 +15,12 @@ var ErrDuplicateEmail = errors.New("email already registered")
 const maxFailedLoginAttempts = 5
 const loginLockMinutes = 15
 
+const (
+	AccountStatusActive     = "active"
+	AccountStatusSuspended  = "suspended"
+	AccountStatusTerminated = "terminated"
+)
+
 type User struct {
 	ID                  string
 	Email               string
@@ -23,11 +29,22 @@ type User struct {
 	FullName            string
 	FailedLoginAttempts int
 	LockedUntil         *time.Time
+	AccountStatus       string
+	SuspendedUntil      *time.Time
 	CreatedAt           time.Time
 }
 
 func (u *User) IsLocked() bool {
 	return u.LockedUntil != nil && u.LockedUntil.After(time.Now())
+}
+
+// IsBlocked reports whether a sanction (PRD §8.6) currently prevents login —
+// terminated permanently, or suspended within its active window.
+func (u *User) IsBlocked() bool {
+	if u.AccountStatus == AccountStatusTerminated {
+		return true
+	}
+	return u.AccountStatus == AccountStatusSuspended && (u.SuspendedUntil == nil || u.SuspendedUntil.After(time.Now()))
 }
 
 type UserRepo struct {
@@ -42,7 +59,7 @@ func (r *UserRepo) Create(ctx context.Context, email, passwordHash, role, fullNa
 	row := r.pool.QueryRow(ctx, `
 		insert into users (email, password_hash, role, full_name)
 		values (lower($1), $2, $3, $4)
-		returning id, email, password_hash, role, full_name, failed_login_attempts, locked_until, created_at
+		returning id, email, password_hash, role, full_name, failed_login_attempts, locked_until, account_status, suspended_until, created_at
 	`, email, passwordHash, role, fullName)
 
 	u, err := scanUser(row)
@@ -57,7 +74,7 @@ func (r *UserRepo) Create(ctx context.Context, email, passwordHash, role, fullNa
 
 func (r *UserRepo) GetByEmail(ctx context.Context, email string) (*User, error) {
 	row := r.pool.QueryRow(ctx, `
-		select id, email, password_hash, role, full_name, failed_login_attempts, locked_until, created_at
+		select id, email, password_hash, role, full_name, failed_login_attempts, locked_until, account_status, suspended_until, created_at
 		from users where email = lower($1)
 	`, email)
 
@@ -70,7 +87,7 @@ func (r *UserRepo) GetByEmail(ctx context.Context, email string) (*User, error) 
 
 func (r *UserRepo) GetByID(ctx context.Context, id string) (*User, error) {
 	row := r.pool.QueryRow(ctx, `
-		select id, email, password_hash, role, full_name, failed_login_attempts, locked_until, created_at
+		select id, email, password_hash, role, full_name, failed_login_attempts, locked_until, account_status, suspended_until, created_at
 		from users where id = $1
 	`, id)
 
@@ -125,11 +142,22 @@ func scanUser(row pgx.Row) (*User, error) {
 	var u User
 	if err := row.Scan(
 		&u.ID, &u.Email, &u.PasswordHash, &u.Role, &u.FullName,
-		&u.FailedLoginAttempts, &u.LockedUntil, &u.CreatedAt,
+		&u.FailedLoginAttempts, &u.LockedUntil, &u.AccountStatus, &u.SuspendedUntil, &u.CreatedAt,
 	); err != nil {
 		return nil, err
 	}
 	return &u, nil
+}
+
+// SetAccountStatus applies a sanction (PRD §8.6): "suspended" with
+// suspendedUntil set, or "terminated" (permanent, suspendedUntil ignored),
+// or "active" to lift a sanction.
+func (r *UserRepo) SetAccountStatus(ctx context.Context, id, status string, suspendedUntil *time.Time) error {
+	_, err := r.pool.Exec(ctx, `
+		update users set account_status = $2, suspended_until = $3, updated_at = now()
+		where id = $1
+	`, id, status, suspendedUntil)
+	return err
 }
 
 func isUniqueViolation(err error) bool {

@@ -86,8 +86,8 @@ function AdminInspirasiContent() {
     <main className="mx-auto max-w-3xl px-4 py-10">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="font-heading text-2xl font-extrabold text-dc-navy">Kelola Galeri Inspirasi</h1>
-        <Link href="/internal/admin/vendors" className="text-sm font-semibold text-dc-navy hover:text-dc-gold">
-          ← Vendor Menunggu Review
+        <Link href="/internal/admin/dashboard" className="text-sm font-semibold text-dc-navy hover:text-dc-gold">
+          ← Dashboard
         </Link>
       </div>
 

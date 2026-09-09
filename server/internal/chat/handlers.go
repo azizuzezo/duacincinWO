@@ -175,6 +175,13 @@ func SendMessage(deps *Deps) http.HandlerFunc {
 			return
 		}
 
+		// Auto-open a dispute for Admin review (PRD §8.4/§8.6) — only for
+		// vendor_chat, since the sanction ladder in §11.1 applies to Vendors;
+		// consultation threads have no vendor to flag.
+		if flagged && conv.VendorID != nil {
+			_ = deps.Disputes.Create(r.Context(), *conv.VendorID, &message.ID, "Pesan chat terdeteksi berisi kontak eksternal")
+		}
+
 		httpx.JSON(w, http.StatusCreated, toMessageDTO(message))
 	}
 }

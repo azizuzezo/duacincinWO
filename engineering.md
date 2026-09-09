@@ -30,13 +30,36 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 | 4 | Galeri Inspirasi: struktur data, panel upload/moderasi Admin, seed data awal | §8.7 | Done |
 | 5 | Wedding Planner: checklist & timeline, referensi duacincin.id dengan tampilan baru | §8.9 | Done |
 | 6 | Booking + Escrow Payment (Midtrans): booking flow, DP, holding, disbursement dikurangi komisi | §8.5 | Done |
-| 7 | Admin/backoffice: moderasi Inspirasi, dispute queue, config komisi, dashboard *(approve/reject vendor sudah ditarik maju ke Fase 2, lihat changelog)* | §8.10, §8.6 | Not started |
+| 7 | Admin/backoffice: moderasi Inspirasi, dispute queue, config komisi, dashboard *(approve/reject vendor sudah ditarik maju ke Fase 2, lihat changelog)* | §8.10, §8.6 | Done |
 
 *Landing page (bagian dari §8.1) dikerjakan bersamaan dengan Fase 1-2 karena butuh data direktori vendor untuk ditampilkan (walau anonim).*
 
 ---
 
 ## Changelog
+
+### 2026-09-09 — Fase 7 (final): Admin/Backoffice + Penegakan Anti-Circumvention
+- **Fase:** 7 — fase terakhir di roadmap §13, semua fase (0-7) kini **Done**.
+- **Apa yang berubah:**
+  - **Migrasi DB** (`000007_admin_backoffice.up.sql`): `agreement_acceptances` (bukti persetujuan legal — versi & timestamp), `vendor_profiles.commission_rate` (override komisi per vendor, nullable = pakai default platform), `users.account_status`/`suspended_until` (status sanksi), `disputes` (sengketa anti-circumvention).
+  - **Persetujuan legal jadi wajib saat daftar** (PRD §8.6, sebelumnya benar-benar belum ada sejak Fase 1!): Client/Vendor register sekarang wajib `accept_terms:true`, dicatat ke `agreement_acceptances` dengan versi dokumen (`v1-2026-09-09`, cocok dengan draft PRD §11). Frontend: checkbox wajib + link ke halaman `/legal/vendor-agreement` dan `/legal/client-tos` (rendering draft klausul PRD §11 apa adanya, dengan disclaimer sama).
+  - **Sanksi akun** (PRD §11.1 sanction ladder): `users.account_status` (active/suspended/terminated) dicek di alur login (`User.IsBlocked()`), terpisah dari lockout gagal-login yang sudah ada. Suspend otomatis 30 hari, terminate permanen.
+  - **Dispute queue otomatis**: `chat.SendMessage` sekarang membuka baris `disputes` otomatis setiap kali pesan di `vendor_chat` ter-flag mengandung kontak eksternal (PRD §8.4/§8.6) — bukan cuma dicatat sebagai flag pasif seperti sebelumnya. Admin melihat antrian, menerapkan salah satu dari 4 sanksi (peringatan/suspend/terminate/tidak ada pelanggaran) lewat `POST /admin/disputes/{id}/resolve`.
+  - **Konfigurasi komisi per vendor** (PRD §8.10): `PATCH /admin/vendors/{id}/commission`. `booking.Complete` (Fase 6) sekarang membaca override ini kalau ada, baru fallback ke konstanta platform 10%.
+  - **Dashboard Admin**: `GET /admin/dashboard` (vendor aktif, transaksi berjalan, sengketa terbuka) jadi halaman pendaratan baru setelah login Admin, dengan navigasi ke semua sub-halaman admin (vendor pending/approved, disputes, disbursements, inspirasi).
+  - **Moderasi Galeri Inspirasi**: tidak ada perubahan baru — sudah dianggap selesai sejak Fase 4 (Admin upload = publish langsung, tanpa antrian submission terpisah, sesuai keputusan yang didokumentasikan di sana).
+- **File/komponen utama:** `server/migrations/000007_*`, `server/internal/repository/{agreements,disputes}.go`, `server/internal/repository/users.go` (+account_status/IsBlocked), `server/internal/repository/vendors.go` (+commission_rate), `server/internal/auth/handlers_{register,login}.go`, `server/internal/chat/handlers.go` (auto-dispute), `server/internal/admin/handlers.go` (rewrite penuh), `server/internal/booking/handlers_booking.go` (Complete pakai komisi override), `web/src/app/legal/**`, `web/src/app/internal/admin/{dashboard,disputes,vendors/approved}/**`, `web/src/components/AgreementCheckbox.tsx`.
+- **Bug nyata ditemukan & diperbaiki lewat testing:**
+  - **`scanVendorProfile` kelewatan kolom `commission_rate`** — SELECT query menambah kolom `commission_rate` (12 kolom) tapi fungsi scan yang dipakai `GetByUserID`/`UpsertProfile` masih di 11 destination (fungsi `collectVendorProfiles` yang beda sempat ke-update duluan, `scanVendorProfile` terlewat). Efeknya: **setiap panggilan `GetByUserID` gagal total** dengan pesan pgx generik ("number of field descriptions must equal number of destinations") yang oleh handler diterjemahkan jadi "vendor tidak ditemukan" — ketemu saat testing booking dengan komisi custom (vendor yang jelas-jelas approved tiba-tiba "tidak ditemukan"). Ini akan lolos begitu saja kalau hanya mengandalkan `go build`/`go vet` (keduanya tidak menangkap mismatch runtime seperti ini) — ketemu murni karena benar-benar memanggil endpoint-nya dan menelusuri sampai ke database secara langsung.
+- **Verifikasi yang sudah dijalankan:**
+  - Backend: `go build`/`go vet`/`gofmt` bersih. curl end-to-end ke Supabase asli: register tanpa `accept_terms` ditolak, dengan `accept_terms` tercatat ke `agreement_acceptances` (diverifikasi baris asli di DB) → set komisi custom 20% → booking `Complete` memotong komisi 20% (bukan default 10%, dikonfirmasi lewat disbursement) → validasi rate di luar 0-1 ditolak → kirim pesan chat dengan nomor HP → dispute otomatis terbuka → admin resolve dengan sanksi `suspend` → **vendor yang tadinya bisa login jadi ditolak 403** (dan sebelum sanksi, login masih berhasil — jadi bukan kebetulan) → role-check semua endpoint admin baru (vendor ditolak 403).
+  - **Browser sungguhan (Playwright), 7/7 lolos:** tombol daftar disabled sebelum centang persetujuan & enabled sesudahnya, admin diarahkan ke dashboard baru, set komisi via UI tersimpan & persist setelah reload, kirim chat dengan kontak eksternal memicu dispute yang muncul di panel admin, resolve dengan sanksi menghilangkan dispute dari antrian.
+  - Semua data uji & tool sementara sudah dibersihkan/dihapus.
+- **Keputusan/asumsi:**
+  - Dispute hanya dibuka untuk pesan `vendor_chat` yang ter-flag, bukan `consultation` (Wedding Consultant bukan pihak yang disanksi lewat mekanisme §11.1).
+  - Sanksi "warning" dan "none" tidak mengubah `account_status` — hanya tercatat di riwayat dispute; hanya "suspend" (30 hari, hardcode) dan "terminate" yang benar-benar memblokir login.
+  - Halaman legal (`/legal/vendor-agreement`, `/legal/client-tos`) menampilkan draft §11 PRD apa adanya (dengan disclaimer) — **bukan pengganti review advokat sungguhan**, tetap tercatat sebagai risiko terbuka di PRD §12.
+  - "Moderasi Galeri Inspirasi" di PRD §8.10 dianggap sudah terpenuhi lewat model Fase 4 (Admin upload = publish langsung + bisa hapus) — tidak dibangun antrian submission-dari-vendor terpisah karena PRD §8.7 sendiri bilang MVP cukup begitu.
 
 ### 2026-09-09 — Fase 6: Booking + Escrow Payment (Midtrans) + Meeting
 - **Fase:** 6

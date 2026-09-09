@@ -56,24 +56,27 @@ func main() {
 	userRepo := repository.NewUserRepo(pool)
 	plannerRepo := repository.NewWeddingPlannerRepo(pool)
 	disbursementRepo := repository.NewDisbursementRepo(pool)
+	disputeRepo := repository.NewDisputeRepo(pool)
+	bookingRepo := repository.NewBookingRepo(pool)
 	midtransClient := payment.NewClient(cfg.MidtransServerKey, cfg.MidtransIsProduction)
 
 	deps := httpserver.Deps{
 		Auth: auth.NewDeps(
 			userRepo,
 			repository.NewOTPRepo(pool),
+			repository.NewAgreementRepo(pool),
 			ratelimit.New(pool),
 			email.NewClient(cfg.ResendAPIKey, cfg.ResendFromEmail),
 			cfg,
 		),
 		Vendors:        vendors.NewDeps(vendorRepo, storageClient),
-		Admin:          admin.NewDeps(vendorRepo, disbursementRepo),
-		Chat:           chat.NewDeps(chatRepo, vendorRepo),
+		Admin:          admin.NewDeps(vendorRepo, disbursementRepo, disputeRepo, userRepo, bookingRepo),
+		Chat:           chat.NewDeps(chatRepo, vendorRepo, disputeRepo),
 		Budget:         budget.NewDeps(repository.NewBudgetRepo(pool)),
 		Inspiration:    inspiration.NewDeps(repository.NewInspirationRepo(pool), storageClient),
 		WeddingPlanner: weddingplanner.NewDeps(plannerRepo),
 		Booking: booking.NewDeps(
-			repository.NewBookingRepo(pool),
+			bookingRepo,
 			repository.NewTransactionRepo(pool),
 			repository.NewMeetingRepo(pool),
 			disbursementRepo,

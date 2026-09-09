@@ -19,6 +19,7 @@ type VendorProfile struct {
 	Description     string
 	Status          string
 	RejectionReason *string
+	CommissionRate  *float64
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }
@@ -57,7 +58,7 @@ func (r *VendorRepo) UpsertProfile(ctx context.Context, userID, businessName, ca
 			status = 'pending',
 			rejection_reason = null,
 			updated_at = now()
-		returning user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, created_at, updated_at
+		returning user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at
 	`, userID, businessName, category, city, priceMin, priceMax, description)
 
 	return scanVendorProfile(row)
@@ -65,7 +66,7 @@ func (r *VendorRepo) UpsertProfile(ctx context.Context, userID, businessName, ca
 
 func (r *VendorRepo) GetByUserID(ctx context.Context, userID string) (*VendorProfile, error) {
 	row := r.pool.QueryRow(ctx, `
-		select user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, created_at, updated_at
+		select user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at
 		from vendor_profiles where user_id = $1
 	`, userID)
 	p, err := scanVendorProfile(row)
@@ -79,7 +80,7 @@ func (r *VendorRepo) GetByUserID(ctx context.Context, userID string) (*VendorPro
 // category/city/maxPrice (maxPrice=0 means no price filter).
 func (r *VendorRepo) ListApproved(ctx context.Context, category, city string, maxPrice int64) ([]VendorProfile, error) {
 	rows, err := r.pool.Query(ctx, `
-		select user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, created_at, updated_at
+		select user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at
 		from vendor_profiles
 		where status = 'approved'
 		  and ($1 = '' or category = $1::vendor_category)
@@ -94,9 +95,16 @@ func (r *VendorRepo) ListApproved(ctx context.Context, category, city string, ma
 	return collectVendorProfiles(rows)
 }
 
+// CountApproved powers the Admin dashboard's "jumlah vendor aktif" stat.
+func (r *VendorRepo) CountApproved(ctx context.Context) (int, error) {
+	var count int
+	err := r.pool.QueryRow(ctx, `select count(*) from vendor_profiles where status = 'approved'`).Scan(&count)
+	return count, err
+}
+
 func (r *VendorRepo) ListPending(ctx context.Context) ([]VendorProfile, error) {
 	rows, err := r.pool.Query(ctx, `
-		select user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, created_at, updated_at
+		select user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at
 		from vendor_profiles where status = 'pending' order by created_at asc
 	`)
 	if err != nil {
@@ -111,6 +119,17 @@ func (r *VendorRepo) SetStatus(ctx context.Context, userID, status string, rejec
 		update vendor_profiles set status = $2, rejection_reason = $3, updated_at = now()
 		where user_id = $1
 	`, userID, status, rejectionReason)
+	return err
+}
+
+// SetCommissionRate overrides the platform default commission for one
+// vendor (PRD §8.10 "Konfigurasi komisi per kategori/vendor"). Pass nil to
+// clear the override and fall back to the default again.
+func (r *VendorRepo) SetCommissionRate(ctx context.Context, userID string, rate *float64) error {
+	_, err := r.pool.Exec(ctx, `
+		update vendor_profiles set commission_rate = $2, updated_at = now()
+		where user_id = $1
+	`, userID, rate)
 	return err
 }
 
@@ -153,7 +172,7 @@ func scanVendorProfile(row pgx.Row) (*VendorProfile, error) {
 	var p VendorProfile
 	if err := row.Scan(
 		&p.UserID, &p.BusinessName, &p.Category, &p.City, &p.PriceMin, &p.PriceMax,
-		&p.Description, &p.Status, &p.RejectionReason, &p.CreatedAt, &p.UpdatedAt,
+		&p.Description, &p.Status, &p.RejectionReason, &p.CommissionRate, &p.CreatedAt, &p.UpdatedAt,
 	); err != nil {
 		return nil, err
 	}
@@ -166,7 +185,7 @@ func collectVendorProfiles(rows pgx.Rows) ([]VendorProfile, error) {
 		var p VendorProfile
 		if err := rows.Scan(
 			&p.UserID, &p.BusinessName, &p.Category, &p.City, &p.PriceMin, &p.PriceMax,
-			&p.Description, &p.Status, &p.RejectionReason, &p.CreatedAt, &p.UpdatedAt,
+			&p.Description, &p.Status, &p.RejectionReason, &p.CommissionRate, &p.CreatedAt, &p.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}

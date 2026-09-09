@@ -2,6 +2,8 @@ package auth
 
 import (
 	"github.com/go-chi/chi/v5"
+
+	"duacincin/server/internal/repository"
 )
 
 const (
@@ -14,10 +16,10 @@ const (
 // Mount registers every /auth/* route (PRD §8.2) onto r.
 func Mount(r chi.Router, deps *Deps) {
 	r.Route("/auth", func(r chi.Router) {
-		r.Post("/client/register", Register(deps, RoleClient))
+		r.Post("/client/register", Register(deps, RoleClient, repository.AgreementTypeClientTOS))
 		r.Post("/client/login", Login(deps, RoleClient))
 
-		r.Post("/vendor/register", Register(deps, RoleVendor))
+		r.Post("/vendor/register", Register(deps, RoleVendor, repository.AgreementTypeVendorPartnership))
 		r.Post("/vendor/login", Login(deps, RoleVendor))
 
 		// Admin & Wedding Consultant: no public registration, accounts are

@@ -22,7 +22,7 @@ export default function InternalLoginPage() {
     setLoading(true);
     try {
       const user = await apiPost<CurrentUser>("/api/v1/auth/internal/login", { email, password });
-      router.push(user.role === "admin" ? "/internal/admin/vendors" : "/internal/consultations");
+      router.push(user.role === "admin" ? "/internal/admin/dashboard" : "/internal/consultations");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Terjadi kesalahan, coba lagi.");
     } finally {
