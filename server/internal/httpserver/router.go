@@ -10,10 +10,12 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"duacincin/server/internal/auth"
 )
 
 // NewRouter builds the root chi router for the DuaCincin API.
-func NewRouter(pool *pgxpool.Pool) http.Handler {
+func NewRouter(pool *pgxpool.Pool, authDeps *auth.Deps) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -32,7 +34,8 @@ func NewRouter(pool *pgxpool.Pool) http.Handler {
 	r.Get("/healthz", healthHandler(pool))
 
 	r.Route("/api/v1", func(r chi.Router) {
-		// Feature routes (auth, vendors, budget, ...) are mounted here in later phases.
+		auth.Mount(r, authDeps)
+		// Feature routes (vendors, budget, ...) are mounted here in later phases.
 	})
 
 	return r

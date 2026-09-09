@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 export default function Page() {
   return (
@@ -14,10 +15,23 @@ export default function Page() {
         DuaCincin
       </h1>
       <p className="max-w-md text-dc-black/70">
-        Fase 0 (setup proyek) selesai — frontend Next.js, backend Go, dan
-        koneksi database sudah tersambung. Halaman ini akan digantikan oleh
-        landing page penuh di Fase 2.
+        Fase 1 (Autentikasi) selesai — daftar/masuk Client & Vendor, lupa
+        password via OTP, dan rate limiting sudah berfungsi. Landing page
+        penuh menyusul di Fase 2.
       </p>
+      <div className="flex flex-wrap items-center justify-center gap-3 text-sm font-semibold">
+        <Link href="/client/register" className="rounded-xl bg-dc-navy px-5 py-2.5 text-dc-white hover:bg-dc-gold hover:text-dc-navy">
+          Daftar sebagai Client
+        </Link>
+        <Link href="/vendor/register" className="rounded-xl border border-dc-navy/20 px-5 py-2.5 text-dc-navy hover:bg-dc-offwhite">
+          Daftar Jadi Mitra Vendor
+        </Link>
+      </div>
+      <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-dc-black/60">
+        <Link href="/client/login" className="hover:text-dc-navy">Masuk Client</Link>
+        <Link href="/vendor/login" className="hover:text-dc-navy">Masuk Vendor</Link>
+        <Link href="/internal/login" className="hover:text-dc-navy">Login Internal</Link>
+      </div>
     </main>
   );
 }

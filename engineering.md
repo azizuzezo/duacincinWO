@@ -24,7 +24,7 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 | Fase | Fokus | Referensi PRD | Status |
 |---|---|---|---|
 | 0 | Setup proyek: scaffold Next.js + Go, koneksi Supabase (pooler), struktur env, CI dasar | §7 | Done |
-| 1 | Autentikasi Client & Vendor: daftar, login, lupa password (OTP via Resend, 5 menit expiry), rate limiting, show/hide password | §8.2 | Not started |
+| 1 | Autentikasi Client & Vendor: daftar, login, lupa password (OTP via Resend, 5 menit expiry), rate limiting, show/hide password | §8.2 | Done |
 | 2 | Direktori vendor (kartu anonim → unlock setelah login), profil vendor, kategori, chat in-app + filter kontak eksternal | §8.3, §8.4 | Not started |
 | 3 | Budget Planner: input total budget & tamu, auto-split default, adjustable proportional rescale | §8.8 | Not started |
 | 4 | Galeri Inspirasi: struktur data, panel upload/moderasi Admin, seed data awal | §8.7 | Not started |
@@ -37,6 +37,33 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 ---
 
 ## Changelog
+
+### 2026-09-09 — Fase 1: Autentikasi (Client, Vendor, internal) + OTP + rate limiting
+- **Fase:** 1
+- **Apa yang berubah:**
+  - **Migrasi DB** (`server/migrations/000001_init_auth.up.sql`, dijalankan otomatis saat server start via `golang-migrate` + driver `pgx/v5`): tabel `users` (enum role `client`/`vendor`/`admin`/`wedding_consultant`, kolom `failed_login_attempts`/`locked_until` untuk lockout), `otp_codes`, `rate_limit_events`.
+  - **Backend Go** — paket baru: `internal/security` (hash password Argon2id, JWT sesi HS256, HMAC OTP), `internal/repository` (`UserRepo`, `OTPRepo`), `internal/ratelimit` (limiter fixed-window berbasis tabel `rate_limit_events`), `internal/email` (klien Resend + template HTML OTP dengan logo & warna brand), `internal/auth` (handler register/login/forgot-password/verify-otp/reset-password/logout/me + middleware sesi).
+  - **Endpoint baru** di bawah `/api/v1/auth`: `client/register`, `client/login`, `vendor/register`, `vendor/login`, `internal/login` (khusus role `admin`/`wedding_consultant`, tanpa pendaftaran publik), `forgot-password`, `verify-otp`, `reset-password`, `logout`, `me`.
+  - **Sesi**: JWT di cookie httpOnly `dc_session` (`SameSite=Lax`, `Secure` hanya saat `APP_ENV=production`), TTL 7 hari (asumsi, tidak dispesifikasi angka pastinya di PRD).
+  - **Frontend Next.js** — komponen baru: `PasswordField` (show/hide), `TextField`, `Button`, `AuthCard` (layout kartu auth bermerek), `DashboardStub` (halaman bukti-sesi sederhana). Halaman baru: `/client/login`, `/client/register`, `/vendor/login`, `/vendor/register`, `/forgot-password` (alur 3 langkah: minta OTP → verifikasi → set password baru), `/internal/login`, `/client/dashboard`, `/vendor/dashboard`. Homepage diberi tautan ke semua halaman ini untuk navigasi sementara.
+  - `.env`/`.env.example` ditambah `JWT_SECRET`, `OTP_HMAC_SECRET` (digenerate otomatis via `openssl rand -hex 32`), `PUBLIC_ASSET_BASE_URL`.
+- **File/komponen utama:** `server/migrations/000001_init_auth.{up,down}.sql`, `server/migrations/migrations.go`, `server/internal/{security,repository,ratelimit,email,auth,httpx}`, `server/cmd/api/main.go`, `web/src/components/{PasswordField,TextField,Button,AuthCard,DashboardStub}.tsx`, `web/src/app/{client,vendor,forgot-password,internal}/**`, `web/src/lib/api.ts`.
+- **Verifikasi yang sudah dijalankan:**
+  - Backend: `go build`/`go vet`/`gofmt` bersih. Migrasi jalan otomatis melawan Supabase asli (bukan mock).
+  - **End-to-end via curl** langsung ke Supabase sungguhan: register → `/me` → login (email/password salah ditolak dengan pesan generik) → duplikat email ditolak (409) → lupa password → OTP (dev-mode, log ke console karena saat itu `RESEND_API_KEY` belum diisi) → verify-otp (kode salah ditolak, kode benar mengeluarkan `reset_token`, replay kode yang sama ditolak) → reset-password → login gagal dgn password lama, sukses dgn password baru.
+  - **Lockout akun**: 5x salah password berturut-turut → akun terkunci 15 menit (HTTP 429), percobaan ke-6 dengan password benar tetap ditolak selama terkunci.
+  - **Rate limit registrasi**: percobaan ke-6 dalam 1 jam per IP ditolak (429), sesuai §8.2.
+  - **Login internal**: role `wedding_consultant` (dibuat manual, bukan lewat endpoint publik) berhasil login lewat `internal/login` tapi ditolak di `client/login` — konfirmasi pemisahan role.
+  - **Browser sungguhan (Playwright + Chromium)**: alur register → redirect ke dashboard → cookie `dc_session` terkonfirmasi `httpOnly` + `SameSite=Lax` (cross-origin `localhost:3000` ↔ `:8080` bekerja) → logout membersihkan cookie & redirect → login ulang berhasil → akses dashboard tanpa sesi redirect ke login → toggle show/hide password berfungsi. **11/11 pemeriksaan lolos.**
+  - Semua data uji (user, `rate_limit_events`) dibersihkan dari database setelah verifikasi; tool seed/cleanup sementara dihapus, tidak masuk commit.
+- **Keputusan/asumsi:**
+  - Email unik secara global (satu email = satu role), bukan unik per-role — pilihan simplifikasi MVP, dicatat karena PRD tidak eksplisit soal ini.
+  - `ForgotPassword` selalu membalas pesan generik terlepas email terdaftar atau tidak (cegah user enumeration) — tambahan keamanan di luar teks literal PRD tapi selaras dengan intent-nya.
+  - `VerifyOTP` diberi rate limit tambahan (10x/15 menit per email) yang tidak disebutkan eksplisit di PRD §8.2, ditambahkan karena endpoint ini rawan brute-force kode 6 digit.
+  - Jika `RESEND_API_KEY` kosong, kode OTP di-log ke console server (mode dev) alih-alih dikirim email — memudahkan testing tanpa akun Resend aktif.
+  - `PUBLIC_ASSET_BASE_URL` dipakai untuk menyusun URL logo di email OTP; kalau kosong, email tetap terkirim tanpa gambar logo (fallback teks).
+  - Halaman dashboard Client/Vendor saat ini hanya stub pembuktian sesi ("Halo, {nama}" + tombol keluar) — dashboard fitur penuh menyusul di Fase 2+.
+- **Status:** Done.
 
 ### 2026-09-09 — PRD v0.2: peran Wedding Consultant & alur pemesanan end-to-end
 - **Fase:** — (pre-fase, dokumentasi, sebelum mulai Fase 1)
