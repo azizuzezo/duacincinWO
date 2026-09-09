@@ -38,6 +38,25 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 
 ## Changelog
 
+### 2026-09-09 — Redesain Landing Page (premium, interaktif)
+- **Fase:** — (cross-cutting, di luar nomor fase — respons langsung ke feedback pemilik produk bahwa landing page lama terasa "jadul" dan tidak menunjukkan kualitas produk).
+- **Apa yang berubah:**
+  - Landing page (`/`) yang tadinya cuma placeholder teknis Fase 0 (logo + teks status + beberapa link) diganti total jadi halaman pemasaran penuh: `Navbar` (sticky, hamburger di mobile), `Hero` (headline + CTA + motif dua-cincin SVG animasi lambat), `TrustStrip` (mekanisme nyata: vendor diverifikasi, escrow, dst — bukan angka statistik fiktif), `HowItWorks` (4 langkah bernomor), `FeaturesGrid` (6 fitur dengan ikon), **`BudgetDemo`** (kalkulator Budget Planner yang sungguhan interaktif & jalan di landing page tanpa login — pakai ulang logika `rescale` dari `lib/budget.ts` yang sama persis dengan Fase 3), `AntiCircumvention` (jelaskan kenapa nama vendor disembunyikan, framing sebagai perlindungan bukan pembatasan), `CTABanner`, `Footer`.
+  - Ditambahkan komponen `Reveal` (scroll-reveal ringan berbasis satu `IntersectionObserver` per elemen + transisi CSS murni, sengaja tidak pakai library animasi supaya tidak menambah bobot bundle).
+  - `globals.css` ditambah utility `.reveal`/`.is-visible` dan `animate-spin-slow` (untuk motif cincin di Hero/CTA).
+- **File/komponen utama:** `web/src/app/page.tsx` (full rewrite), `web/src/components/landing/**` (baru: Navbar, Hero, TrustStrip, HowItWorks, FeaturesGrid, BudgetDemo, AntiCircumvention, CTABanner, Footer), `web/src/components/Reveal.tsx`, `web/src/app/globals.css`.
+- **Verifikasi yang sudah dijalankan:**
+  - `npm run lint` & `npm run build` bersih (halaman `/` tetap ter-prerender statis).
+  - **Playwright**: screenshot desktop (1440px) & mobile (375px) dicek visual langsung — hero, trust strip, how-it-works, features grid, budget demo interaktif, anti-circumvention, CTA, footer semua tampil rapi dan konsisten dengan palet brand (§6 PRD).
+  - Sempat curiga ada bug "section kosong" dari screenshot full-page pertama — ternyata itu artefak cara Playwright meng-capture full-page (tidak benar-benar men-scroll, jadi `IntersectionObserver` belum sempat trigger), **bukan bug aplikasi**. Dikonfirmasi dengan simulasi scroll asli bertahap: semua 17 elemen `.reveal` di halaman benar-benar berubah jadi `opacity:1`/`is-visible` — jadi sengaja diverifikasi ulang sebelum disimpulkan sebagai bug, bukan cuma diasumsikan.
+  - Slider Budget Planner di landing page dites benar-benar responsif (ubah satu kategori → kategori lain rescale, sama seperti versi asli di `/client/budget`).
+  - Menu mobile (hamburger) dan anchor link "Budget Planner" di navbar dites & berfungsi.
+  - Tidak ada console error saat page load.
+- **Keputusan/asumsi:**
+  - **Tidak ada testimoni/rating/angka statistik fiktif** ("10.000+ pasangan puas", dsb.) — sengaja dihindari karena melanggar prinsip §10.9 PRD (bukti nyata, bukan klaim kosong) dan karena produk belum punya data pengguna sungguhan. Trust strip memakai *mekanisme* produk yang benar-benar sudah ada (escrow, verifikasi Admin, dll.), bukan metrik yang tidak bisa dibuktikan.
+  - Motif visual "dua cincin" (SVG dua lingkaran beririsan) dipakai sebagai elemen dekoratif di Hero & CTA — sengaja terhubung ke nama brand, bukan gradient/blob generik ala AI slop.
+  - Galeri Inspirasi tidak ditampilkan sebagai section terpisah di landing page karena kontennya masih kosong (belum ada kurasi asli) — cukup di-link dari navbar/footer; bisa ditambah sebagai section showcase begitu ada konten sungguhan.
+
 ### 2026-09-09 — Fase 7 (final): Admin/Backoffice + Penegakan Anti-Circumvention
 - **Fase:** 7 — fase terakhir di roadmap §13, semua fase (0-7) kini **Done**.
 - **Apa yang berubah:**
