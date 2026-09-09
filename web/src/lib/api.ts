@@ -37,6 +37,10 @@ export function apiPut<T>(path: string, data: unknown): Promise<T> {
   return request<T>(path, { method: "PUT", body: JSON.stringify(data) });
 }
 
+export function apiPatch<T>(path: string, data: unknown): Promise<T> {
+  return request<T>(path, { method: "PATCH", body: JSON.stringify(data) });
+}
+
 export function apiDelete<T>(path: string): Promise<T> {
   return request<T>(path, { method: "DELETE" });
 }
@@ -147,4 +151,14 @@ export type InspirationItem = {
   alt_text: string;
   caption: string;
   source_credit?: string;
+};
+
+export type PlannerTaskStatus = "todo" | "in_progress" | "done";
+
+export type PlannerTask = {
+  id: string;
+  timeframe: string;
+  title: string;
+  related_category?: string;
+  status: PlannerTaskStatus;
 };

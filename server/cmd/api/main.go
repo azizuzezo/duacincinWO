@@ -18,6 +18,7 @@ import (
 	"duacincin/server/internal/repository"
 	"duacincin/server/internal/storage"
 	"duacincin/server/internal/vendors"
+	"duacincin/server/internal/weddingplanner"
 	"duacincin/server/migrations"
 )
 
@@ -59,11 +60,12 @@ func main() {
 			email.NewClient(cfg.ResendAPIKey, cfg.ResendFromEmail),
 			cfg,
 		),
-		Vendors:     vendors.NewDeps(vendorRepo, storageClient),
-		Admin:       admin.NewDeps(vendorRepo),
-		Chat:        chat.NewDeps(chatRepo, vendorRepo),
-		Budget:      budget.NewDeps(repository.NewBudgetRepo(pool)),
-		Inspiration: inspiration.NewDeps(repository.NewInspirationRepo(pool), storageClient),
+		Vendors:        vendors.NewDeps(vendorRepo, storageClient),
+		Admin:          admin.NewDeps(vendorRepo),
+		Chat:           chat.NewDeps(chatRepo, vendorRepo),
+		Budget:         budget.NewDeps(repository.NewBudgetRepo(pool)),
+		Inspiration:    inspiration.NewDeps(repository.NewInspirationRepo(pool), storageClient),
+		WeddingPlanner: weddingplanner.NewDeps(repository.NewWeddingPlannerRepo(pool)),
 	}
 
 	router := httpserver.NewRouter(pool, cfg, deps)

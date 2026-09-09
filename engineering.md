@@ -28,7 +28,7 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 | 2 | Direktori vendor (kartu anonim → unlock setelah login), profil vendor, kategori, chat in-app + filter kontak eksternal | §8.3, §8.4 | Done |
 | 3 | Budget Planner: input total budget & tamu, auto-split default, adjustable proportional rescale | §8.8 | Done |
 | 4 | Galeri Inspirasi: struktur data, panel upload/moderasi Admin, seed data awal | §8.7 | Done |
-| 5 | Wedding Planner: checklist & timeline, referensi duacincin.id dengan tampilan baru | §8.9 | Not started |
+| 5 | Wedding Planner: checklist & timeline, referensi duacincin.id dengan tampilan baru | §8.9 | Done |
 | 6 | Booking + Escrow Payment (Midtrans): booking flow, DP, holding, disbursement dikurangi komisi | §8.5 | Not started |
 | 7 | Admin/backoffice: moderasi Inspirasi, dispute queue, config komisi, dashboard *(approve/reject vendor sudah ditarik maju ke Fase 2, lihat changelog)* | §8.10, §8.6 | Not started |
 
@@ -37,6 +37,23 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 ---
 
 ## Changelog
+
+### 2026-09-09 — Fase 5: Wedding Planner
+- **Fase:** 5
+- **Apa yang berubah:**
+  - **Migrasi DB** (`000005_wedding_planner.up.sql`): `wedding_planner_tasks` (per-client, `timeframe`, `title`, `related_category` opsional, `status` todo/in_progress/done, `sort_order`).
+  - **Backend baru:** `internal/weddingplanner` — `GET /wedding-planner/tasks` (lazy-seed: kalau Client belum punya checklist, otomatis diisi dari `DefaultChecklist` 12 item H-12 Bulan s/d Hari-H saat pertama kali diakses), `PATCH /wedding-planner/tasks/{id}` (ubah status, scoped ke `client_id` — IDOR-safe).
+  - Ditambahkan `WeddingPlannerRepo.MarkDoneByCategory` — **belum dipanggil dari mana pun**, disiapkan untuk Fase 6: begitu booking vendor kategori tertentu terkonfirmasi, task terkait di checklist otomatis tercentang (PRD §8.9).
+  - **Frontend baru:** `/client/wedding-planner` — checklist dikelompokkan per timeframe, status di-toggle lewat tombol siklus (Belum→Proses→Selesai→Belum), progress counter (`x/12 selesai`), tautan "Cari Vendor" untuk task yang punya `related_category`.
+- **File/komponen utama:** `server/migrations/000005_*`, `server/internal/weddingplanner/**`, `server/internal/repository/wedding_planner.go`, `web/src/app/client/wedding-planner/page.tsx`.
+- **Verifikasi yang sudah dijalankan:**
+  - Backend: `go build`/`go vet`/`gofmt` bersih. curl end-to-end ke Supabase asli: seed default 12 task saat pertama akses, update status, validasi status tidak valid ditolak, **IDOR test**: client kedua tidak bisa mengubah task milik client pertama (404), task client pertama tetap tidak berubah.
+  - **Browser sungguhan (Playwright), 6/6 lolos:** checklist default tampil, progress counter update saat status berubah, tautan vendor per kategori ada, dan status tetap tersimpan setelah reload.
+  - Data uji sudah dibersihkan.
+- **Keputusan/asumsi:**
+  - Isi default checklist (12 milestone H-12 Bulan s/d Hari-H) disusun berdasarkan pengetahuan umum alur perencanaan pernikahan Indonesia, **bukan** hasil menyalin langsung dari duacincin.id (tidak diakses/di-fetch) — PRD hanya minta "referensi fitur ... dengan tampilan fresh", isinya didesain ulang.
+  - "Task otomatis tercentang saat booking vendor dikonfirmasi" (PRD §8.9) **belum diaktifkan** — fungsi `MarkDoneByCategory` sudah ada di repository tapi baru benar-benar dipanggil begitu Fase 6 (Booking) membuat event konfirmasi booking. Dicatat supaya tidak terlewat.
+  - Status hanya 3 tingkat (todo/in_progress/done) sesuai literal PRD "belum/proses/selesai" — siklus toggle lewat satu tombol demi kesederhanaan UI, bukan dropdown terpisah.
 
 ### 2026-09-09 — Fase 4: Galeri Inspirasi
 - **Fase:** 4
