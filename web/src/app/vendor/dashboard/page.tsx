@@ -117,6 +117,9 @@ function VendorDashboardContent() {
       <div className="mb-6 flex items-center justify-between">
         <h1 className="font-heading text-2xl font-extrabold text-dc-navy">Profil Vendor</h1>
         <div className="flex items-center gap-4 text-sm">
+          <Link href="/vendor/bookings" className="font-semibold text-dc-navy hover:text-dc-gold">
+            Booking
+          </Link>
           <Link href="/vendor/messages" className="font-semibold text-dc-navy hover:text-dc-gold">
             Pesan
           </Link>

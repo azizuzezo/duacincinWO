@@ -56,34 +56,44 @@ func NewWeddingPlannerRepo(pool *pgxpool.Pool) *WeddingPlannerRepo {
 	return &WeddingPlannerRepo{pool: pool}
 }
 
+// ensureSeeded creates the client's checklist from DefaultChecklist the
+// first time it's needed — lazily on their first ListForClient call, or as
+// a side effect of MarkDoneByCategory firing before that ever happened
+// (e.g. a Client books a vendor without visiting Wedding Planner first).
+// Without this, MarkDoneByCategory would silently update zero rows.
+func (r *WeddingPlannerRepo) ensureSeeded(ctx context.Context, clientID string) error {
+	var count int
+	if err := r.pool.QueryRow(ctx, `select count(*) from wedding_planner_tasks where client_id = $1`, clientID).Scan(&count); err != nil {
+		return err
+	}
+	if count > 0 {
+		return nil
+	}
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	for i, t := range DefaultChecklist {
+		if _, err := tx.Exec(ctx, `
+			insert into wedding_planner_tasks (client_id, timeframe, title, related_category, sort_order)
+			values ($1, $2, $3, $4, $5)
+		`, clientID, t.Timeframe, t.Title, t.RelatedCategory, i); err != nil {
+			return err
+		}
+	}
+	return tx.Commit(ctx)
+}
+
 // ListForClient returns the client's checklist, seeding it from
 // DefaultChecklist on first access (lazy seed, same pattern as Budget
 // Planner's default preview — except here we persist so individual task
 // statuses can be toggled by id).
 func (r *WeddingPlannerRepo) ListForClient(ctx context.Context, clientID string) ([]PlannerTask, error) {
-	var count int
-	if err := r.pool.QueryRow(ctx, `select count(*) from wedding_planner_tasks where client_id = $1`, clientID).Scan(&count); err != nil {
+	if err := r.ensureSeeded(ctx, clientID); err != nil {
 		return nil, err
-	}
-
-	if count == 0 {
-		tx, err := r.pool.Begin(ctx)
-		if err != nil {
-			return nil, err
-		}
-		defer tx.Rollback(ctx)
-
-		for i, t := range DefaultChecklist {
-			if _, err := tx.Exec(ctx, `
-				insert into wedding_planner_tasks (client_id, timeframe, title, related_category, sort_order)
-				values ($1, $2, $3, $4, $5)
-			`, clientID, t.Timeframe, t.Title, t.RelatedCategory, i); err != nil {
-				return nil, err
-			}
-		}
-		if err := tx.Commit(ctx); err != nil {
-			return nil, err
-		}
 	}
 
 	rows, err := r.pool.Query(ctx, `
@@ -121,9 +131,14 @@ func (r *WeddingPlannerRepo) SetStatus(ctx context.Context, clientID, taskID, st
 
 // MarkDoneByCategory auto-completes any not-yet-done task linked to
 // category for clientID — called when a booking with that vendor category
-// reaches "confirmed" (PRD §8.9's "task otomatis tercentang"). Wired up in
-// Fase 6 once bookings exist.
+// reaches "confirmed" (PRD §8.9's "task otomatis tercentang"). Ensures the
+// checklist is seeded first in case the Client never opened Wedding
+// Planner before booking a vendor.
 func (r *WeddingPlannerRepo) MarkDoneByCategory(ctx context.Context, clientID, category string) error {
+	if err := r.ensureSeeded(ctx, clientID); err != nil {
+		return err
+	}
+
 	_, err := r.pool.Exec(ctx, `
 		update wedding_planner_tasks
 		set status = 'done', updated_at = now()

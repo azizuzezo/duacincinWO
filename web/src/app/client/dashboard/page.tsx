@@ -43,6 +43,9 @@ function ClientDashboardContent({ name }: { name: string }) {
         <Link href="/client/wedding-planner" className="rounded-xl border border-dc-navy/20 px-5 py-2.5 text-sm font-semibold text-dc-navy hover:bg-dc-offwhite">
           Wedding Planner
         </Link>
+        <Link href="/client/bookings" className="rounded-xl border border-dc-navy/20 px-5 py-2.5 text-sm font-semibold text-dc-navy hover:bg-dc-offwhite">
+          Booking Saya
+        </Link>
         <Link href="/inspirasi" className="rounded-xl border border-dc-navy/20 px-5 py-2.5 text-sm font-semibold text-dc-navy hover:bg-dc-offwhite">
           Inspirasi
         </Link>

@@ -7,6 +7,7 @@ import (
 
 	"duacincin/server/internal/admin"
 	"duacincin/server/internal/auth"
+	"duacincin/server/internal/booking"
 	"duacincin/server/internal/budget"
 	"duacincin/server/internal/chat"
 	"duacincin/server/internal/config"
@@ -14,6 +15,7 @@ import (
 	"duacincin/server/internal/email"
 	"duacincin/server/internal/httpserver"
 	"duacincin/server/internal/inspiration"
+	"duacincin/server/internal/payment"
 	"duacincin/server/internal/ratelimit"
 	"duacincin/server/internal/repository"
 	"duacincin/server/internal/storage"
@@ -51,21 +53,35 @@ func main() {
 
 	vendorRepo := repository.NewVendorRepo(pool)
 	chatRepo := repository.NewChatRepo(pool)
+	userRepo := repository.NewUserRepo(pool)
+	plannerRepo := repository.NewWeddingPlannerRepo(pool)
+	disbursementRepo := repository.NewDisbursementRepo(pool)
+	midtransClient := payment.NewClient(cfg.MidtransServerKey, cfg.MidtransIsProduction)
 
 	deps := httpserver.Deps{
 		Auth: auth.NewDeps(
-			repository.NewUserRepo(pool),
+			userRepo,
 			repository.NewOTPRepo(pool),
 			ratelimit.New(pool),
 			email.NewClient(cfg.ResendAPIKey, cfg.ResendFromEmail),
 			cfg,
 		),
 		Vendors:        vendors.NewDeps(vendorRepo, storageClient),
-		Admin:          admin.NewDeps(vendorRepo),
+		Admin:          admin.NewDeps(vendorRepo, disbursementRepo),
 		Chat:           chat.NewDeps(chatRepo, vendorRepo),
 		Budget:         budget.NewDeps(repository.NewBudgetRepo(pool)),
 		Inspiration:    inspiration.NewDeps(repository.NewInspirationRepo(pool), storageClient),
-		WeddingPlanner: weddingplanner.NewDeps(repository.NewWeddingPlannerRepo(pool)),
+		WeddingPlanner: weddingplanner.NewDeps(plannerRepo),
+		Booking: booking.NewDeps(
+			repository.NewBookingRepo(pool),
+			repository.NewTransactionRepo(pool),
+			repository.NewMeetingRepo(pool),
+			disbursementRepo,
+			vendorRepo,
+			userRepo,
+			plannerRepo,
+			midtransClient,
+		),
 	}
 
 	router := httpserver.NewRouter(pool, cfg, deps)

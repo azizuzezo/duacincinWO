@@ -24,6 +24,10 @@ type Config struct {
 
 	SupabaseURL            string
 	SupabaseServiceRoleKey string
+
+	MidtransServerKey    string
+	MidtransClientKey    string
+	MidtransIsProduction bool
 }
 
 // Load reads environment variables, falling back to a local .env file
@@ -45,6 +49,10 @@ func Load() (*Config, error) {
 
 		SupabaseURL:            os.Getenv("SUPABASE_URL"),
 		SupabaseServiceRoleKey: os.Getenv("SUPABASE_SERVICE_ROLE_KEY"),
+
+		MidtransServerKey:    os.Getenv("MIDTRANS_SERVER_KEY"),
+		MidtransClientKey:    os.Getenv("MIDTRANS_CLIENT_KEY"),
+		MidtransIsProduction: os.Getenv("MIDTRANS_IS_PRODUCTION") == "true",
 	}
 
 	if cfg.DatabasePooler == "" {
@@ -63,6 +71,9 @@ func Load() (*Config, error) {
 	}
 	if cfg.SupabaseURL == "" || cfg.SupabaseServiceRoleKey == "" {
 		log.Println("warning: SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY not set — portfolio image upload will be unavailable")
+	}
+	if cfg.MidtransServerKey == "" {
+		log.Println("warning: MIDTRANS_SERVER_KEY is not set — payments run in dev-simulation mode instead of calling Midtrans")
 	}
 
 	return cfg, nil

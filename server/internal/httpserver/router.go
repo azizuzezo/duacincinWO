@@ -13,6 +13,7 @@ import (
 
 	"duacincin/server/internal/admin"
 	"duacincin/server/internal/auth"
+	"duacincin/server/internal/booking"
 	"duacincin/server/internal/budget"
 	"duacincin/server/internal/chat"
 	"duacincin/server/internal/config"
@@ -30,6 +31,7 @@ type Deps struct {
 	Budget         *budget.Deps
 	Inspiration    *inspiration.Deps
 	WeddingPlanner *weddingplanner.Deps
+	Booking        *booking.Deps
 }
 
 // NewRouter builds the root chi router for the DuaCincin API.
@@ -59,6 +61,7 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config, deps Deps) http.Handler {
 		budget.Mount(r, deps.Budget, cfg)
 		inspiration.Mount(r, deps.Inspiration, cfg)
 		weddingplanner.Mount(r, deps.WeddingPlanner, cfg)
+		booking.Mount(r, deps.Booking, cfg)
 	})
 
 	return r

@@ -162,3 +162,48 @@ export type PlannerTask = {
   related_category?: string;
   status: PlannerTaskStatus;
 };
+
+export type BookingStatus =
+  | "requested"
+  | "confirmed"
+  | "dp_paid"
+  | "full_paid"
+  | "completed"
+  | "cancelled";
+
+export type Booking = {
+  id: string;
+  client_id: string;
+  vendor_id: string;
+  event_date: string;
+  package_description: string;
+  agreed_price: number;
+  dp_amount: number;
+  status: BookingStatus;
+};
+
+export type Meeting = {
+  id: string;
+  booking_id?: string;
+  type: "consultant_meeting" | "technical_meeting";
+  scheduled_at: string;
+  meeting_link: string;
+  status: string;
+};
+
+export type Disbursement = {
+  booking_id: string;
+  gross_amount: number;
+  commission_amount: number;
+  net_amount: number;
+  status: string;
+};
+
+export const BOOKING_STATUS_LABEL: Record<BookingStatus, string> = {
+  requested: "Menunggu konfirmasi vendor",
+  confirmed: "Dikonfirmasi — menunggu DP",
+  dp_paid: "DP dibayar — menunggu pelunasan",
+  full_paid: "Lunas — menunggu technical meeting & hari-H",
+  completed: "Selesai",
+  cancelled: "Dibatalkan",
+};

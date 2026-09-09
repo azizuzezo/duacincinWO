@@ -29,7 +29,7 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 | 3 | Budget Planner: input total budget & tamu, auto-split default, adjustable proportional rescale | §8.8 | Done |
 | 4 | Galeri Inspirasi: struktur data, panel upload/moderasi Admin, seed data awal | §8.7 | Done |
 | 5 | Wedding Planner: checklist & timeline, referensi duacincin.id dengan tampilan baru | §8.9 | Done |
-| 6 | Booking + Escrow Payment (Midtrans): booking flow, DP, holding, disbursement dikurangi komisi | §8.5 | Not started |
+| 6 | Booking + Escrow Payment (Midtrans): booking flow, DP, holding, disbursement dikurangi komisi | §8.5 | Done |
 | 7 | Admin/backoffice: moderasi Inspirasi, dispute queue, config komisi, dashboard *(approve/reject vendor sudah ditarik maju ke Fase 2, lihat changelog)* | §8.10, §8.6 | Not started |
 
 *Landing page (bagian dari §8.1) dikerjakan bersamaan dengan Fase 1-2 karena butuh data direktori vendor untuk ditampilkan (walau anonim).*
@@ -37,6 +37,29 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 ---
 
 ## Changelog
+
+### 2026-09-09 — Fase 6: Booking + Escrow Payment (Midtrans) + Meeting
+- **Fase:** 6
+- **Apa yang berubah:**
+  - **Migrasi DB** (`000006_bookings.up.sql`): `bookings` (status `requested→confirmed→dp_paid→full_paid→completed`/`cancelled`), `transactions` (tipe dp/full, `provider_order_id` unik untuk Midtrans), `meetings` (consultant_meeting/technical_meeting, constraint memastikan technical wajib punya `booking_id` dan consultant tidak), `disbursements` (satu baris per booking: bruto, komisi, netto).
+  - **Backend baru:**
+    - `internal/payment` — klien Midtrans Snap API (`CreateTransaction` → redirect URL hosted checkout) + `VerifySignature` (SHA512 sesuai skema notifikasi Midtrans). **Mode dev-simulasi**: kalau `MIDTRANS_SERVER_KEY` kosong, endpoint pembayaran mengembalikan `{dev_mode:true}` alih-alih memanggil Midtrans, dan Client bisa memicu `POST /bookings/{id}/dev-simulate-payment` untuk menandai transaksi lunas secara manual — sama persis pola fallback OTP/Resend di Fase 1.
+    - `internal/booking` — alur penuh PRD §8.11: `Create`→`Confirm`(vendor)→`PayDP`→`PayFull`→technical meeting→`Complete` (hanya bisa selesai kalau status `full_paid` **dan** ada ≥1 technical meeting), plus `Cancel`. Webhook Midtrans publik (`POST /webhooks/midtrans`) memverifikasi signature sebelum memproses, dan idempoten terhadap notifikasi yang terkirim berulang.
+    - `Confirm` memanggil `WeddingPlannerRepo.MarkDoneByCategory` (fungsi yang disiapkan di Fase 5) — tercentang otomatis begitu Vendor kategori terkait dikonfirmasi (PRD §8.9).
+    - Perluasan `internal/admin`: `GET /admin/disbursements/pending` + `POST /admin/disbursements/{bookingID}/mark-disbursed` — slice tipis lain yang ditarik maju dari Fase 7 (sama alasan seperti approve-vendor di Fase 2: booking tidak bisa diuji tuntas tanpa cara mencairkan dana).
+  - **Frontend baru:** form "Ajukan Booking" di halaman detail vendor, `/client/bookings` (+ detail dengan tombol bayar DP/pelunasan, simulasi dev-mode, jadwalkan technical meeting, tandai selesai), `/vendor/bookings` (+ detail dengan konfirmasi/tolak), `/internal/admin/disbursements`.
+- **File/komponen utama:** `server/migrations/000006_*`, `server/internal/{payment,booking}/**`, `server/internal/repository/{booking,meetings}.go`, `server/internal/repository/wedding_planner.go` (fix seeding, lihat di bawah), `server/internal/admin/handlers.go` (+disbursements), `web/src/app/vendors/[id]/page.tsx` (+form booking), `web/src/app/{client,vendor}/bookings/**`, `web/src/app/internal/admin/disbursements/**`.
+- **Bug nyata ditemukan & diperbaiki lewat testing (bukan cuma test yang salah kali ini):**
+  - **Race condition seeding Wedding Planner ↔ auto-mark booking**: `MarkDoneByCategory` melakukan `UPDATE ... WHERE client_id = ...` terhadap tabel `wedding_planner_tasks` — tapi kalau Client belum pernah membuka halaman Wedding Planner (belum ter-seed), UPDATE itu menyasar nol baris dan diam-diam tidak berefek. Ketahuan lewat Playwright end-to-end (skenario paling realistis: booking duluan, baru buka Wedding Planner belakangan). **Perbaikan:** logika seed dipisah jadi `ensureSeeded`, dipanggil dari `ListForClient` **dan** dari `MarkDoneByCategory`, jadi checklist selalu ada sebelum di-update siapa pun pemicunya duluan.
+- **Verifikasi yang sudah dijalankan:**
+  - Backend: `go build`/`go vet`/`gofmt` bersih. curl end-to-end ke Supabase asli mencakup **seluruh siklus hidup booking**: create→role-check confirm (client ditolak, vendor bisa)→bayar DP dev-mode→tolak pay/full sebelum DP lunas→bayar lunas→tolak complete tanpa technical meeting→jadwalkan meeting→complete berhasil→disbursement muncul dengan komisi 10% terhitung benar→admin mark-disbursed→IDOR (client lain 404)→**webhook Midtrans jalur asli diuji dengan signature valid dihitung manual (SHA512), bukan cuma dev-simulate** — dan diuji juga idempotensi (webhook dikirim 2x tidak error/dobel proses).
+  - **Browser sungguhan (Playwright), 8/8 lolos** setelah perbaikan bug di atas: alur penuh vendor daftar→approve admin→client booking→vendor confirm→**Wedding Planner auto-centang**→bayar DP (dev-mode)→jadwalkan technical meeting→bayar lunas→tandai selesai→admin cairkan dana.
+  - Semua data uji & tool sementara sudah dibersihkan/dihapus.
+- **Keputusan/asumsi (perlu keputusan bisnis final nanti, lihat §12 PRD):**
+  - **DP 30% dan komisi 10%** adalah konstanta MVP (`booking.DPPercent`, `booking.CommissionRate`) — PRD tidak menspesifikasikan angka DP, dan komisi per kategori/vendor yang bisa dikonfigurasi Admin baru ada di Fase 7.
+  - **Belum pernah diuji dengan akun Midtrans sungguhan** — `MIDTRANS_SERVER_KEY` masih kosong di `.env`. Kode integrasi (Snap API + verifikasi signature) sudah diverifikasi benar secara manual (signature dihitung & dicocokkan persis), tapi belum pernah menyentuh sandbox Midtrans yang sebenarnya. Ini **wajib** dicoba ulang begitu ada kredensial sandbox asli, sebelum go-live.
+  - Pencairan dana ke vendor masih murni pencatatan manual oleh Admin (klik "Tandai Dicairkan") — **tidak ada transfer bank otomatis**. Kalau nanti mau otomatis, itu perlu integrasi terpisah (mis. Midtrans Iris/Payout) yang butuh approval terpisah dari Midtrans.
+  - Meeting konsultasi (non-technical) punya endpoint backend (`/meetings/consultation`) tapi **belum ada halaman frontend khusus** — dianggap cukup lewat chat Wedding Consultant yang sudah ada di Fase 2; bisa ditambahkan nanti kalau memang dibutuhkan.
 
 ### 2026-09-09 — Fase 5: Wedding Planner
 - **Fase:** 5
@@ -52,7 +75,7 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
   - Data uji sudah dibersihkan.
 - **Keputusan/asumsi:**
   - Isi default checklist (12 milestone H-12 Bulan s/d Hari-H) disusun berdasarkan pengetahuan umum alur perencanaan pernikahan Indonesia, **bukan** hasil menyalin langsung dari duacincin.id (tidak diakses/di-fetch) — PRD hanya minta "referensi fitur ... dengan tampilan fresh", isinya didesain ulang.
-  - "Task otomatis tercentang saat booking vendor dikonfirmasi" (PRD §8.9) **belum diaktifkan** — fungsi `MarkDoneByCategory` sudah ada di repository tapi baru benar-benar dipanggil begitu Fase 6 (Booking) membuat event konfirmasi booking. Dicatat supaya tidak terlewat.
+  - "Task otomatis tercentang saat booking vendor dikonfirmasi" (PRD §8.9) **belum diaktifkan di fase ini** — fungsi `MarkDoneByCategory` sudah ada di repository tapi baru benar-benar dipanggil begitu Fase 6 (Booking) membuat event konfirmasi booking. *(Update Fase 6: sudah aktif — lihat entri changelog Fase 6, termasuk satu bug seeding yang ketemu & diperbaiki saat mengaktifkannya.)*
   - Status hanya 3 tingkat (todo/in_progress/done) sesuai literal PRD "belum/proses/selesai" — siklus toggle lewat satu tombol demi kesederhanaan UI, bukan dropdown terpisah.
 
 ### 2026-09-09 — Fase 4: Galeri Inspirasi

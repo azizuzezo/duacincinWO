@@ -329,7 +329,9 @@ Prinsip yang sudah ditegakkan sejak Fase 1 (lihat engineering.md) dan **wajib te
 
 ## 12. Risiko & Asumsi Terbuka
 
-- **Payment gateway:** Midtrans dipilih sebagai default asumsi — perlu dikonfirmasi ulang saat akun merchant benar-benar dibuat (KYC, split settlement/disbursement API mana yang dipakai).
+- **Payment gateway:** Midtrans dipilih sebagai default asumsi — perlu dikonfirmasi ulang saat akun merchant benar-benar dibuat (KYC, split settlement/disbursement API mana yang dipakai). **Integrasi Snap API & verifikasi signature webhook sudah dibangun dan diverifikasi logikanya secara manual (Fase 6), tapi belum pernah dicoba melawan sandbox Midtrans sungguhan** — wajib diuji ulang begitu ada kredensial sandbox nyata, sebelum go-live.
+- **DP & komisi masih konstanta MVP:** DP 30% dan komisi 10% (§8.5/§8.11) di-hardcode di kode Fase 6, belum bisa dikonfigurasi per vendor/kategori seperti yang disebut §8.10 — menyusul saat Admin/Backoffice (Fase 7) dibangun.
+- **Pencairan dana ke vendor manual:** Admin menandai "sudah dicairkan" secara manual di dashboard (Fase 6), tidak ada transfer bank otomatis — kalau nanti mau otomatis, perlu integrasi terpisah (mis. Midtrans Iris/Payout) dengan approval tambahan dari Midtrans.
 - **Legalitas:** draft §11 wajib direview advokat sebelum go-live nyata (bukan hanya untuk keperluan demo produk).
 - **Konten Inspirasi:** proses kurasi manual butuh proses editorial berkelanjutan (bukan sekali build), perlu ditentukan siapa yang bertanggung jawab mengisi kontennya pasca-launch.
 - **Komisi & sanksi finansial:** angka persentase masih placeholder, perlu keputusan bisnis final dari pemilik produk.

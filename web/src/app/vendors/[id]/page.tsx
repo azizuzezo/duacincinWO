@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
 
 import { Button } from "@/components/Button";
+import { TextField } from "@/components/TextField";
 import { WithUser } from "@/components/WithUser";
-import { apiGet, apiPost, ApiError, categoryLabel, formatRupiah, type Conversation, type VendorProfile } from "@/lib/api";
+import { apiGet, apiPost, ApiError, categoryLabel, formatRupiah, type Booking, type Conversation, type VendorProfile } from "@/lib/api";
 
 export default function VendorDetailPage({ params }: PageProps<"/vendors/[id]">) {
   const { id } = use(params);
@@ -23,6 +24,11 @@ function VendorDetailContent({ id }: { id: string }) {
   const [profile, setProfile] = useState<VendorProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
+  const [showBookingForm, setShowBookingForm] = useState(false);
+  const [eventDate, setEventDate] = useState("");
+  const [packageDescription, setPackageDescription] = useState("");
+  const [agreedPrice, setAgreedPrice] = useState("");
+  const [bookingSaving, setBookingSaving] = useState(false);
 
   useEffect(() => {
     apiGet<VendorProfile>(`/api/v1/vendors/${id}`)
@@ -41,6 +47,24 @@ function VendorDetailContent({ id }: { id: string }) {
     }
   }
 
+  async function handleSubmitBooking(e: React.FormEvent) {
+    e.preventDefault();
+    setBookingSaving(true);
+    setError(null);
+    try {
+      const booking = await apiPost<Booking>("/api/v1/bookings", {
+        vendor_id: id,
+        event_date: eventDate,
+        package_description: packageDescription,
+        agreed_price: Number(agreedPrice) || 0,
+      });
+      router.push(`/client/bookings/${booking.id}`);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Gagal mengajukan booking.");
+      setBookingSaving(false);
+    }
+  }
+
   if (error) return <p className="mx-auto max-w-2xl px-4 py-10 text-red-600">{error}</p>;
   if (!profile) return <p className="mx-auto max-w-2xl px-4 py-10 text-dc-black/60">Memuat…</p>;
 
@@ -54,9 +78,41 @@ function VendorDetailContent({ id }: { id: string }) {
       </p>
       <p className="mt-4 whitespace-pre-line text-dc-black/80">{profile.description}</p>
 
-      <Button className="mt-6 w-auto" onClick={handleStartChat} loading={starting}>
-        Chat dengan Vendor Ini
-      </Button>
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Button className="w-auto" onClick={handleStartChat} loading={starting}>
+          Chat dengan Vendor Ini
+        </Button>
+        <Button variant="ghost" className="w-auto" onClick={() => setShowBookingForm((v) => !v)}>
+          Ajukan Booking
+        </Button>
+      </div>
+
+      {showBookingForm && (
+        <form onSubmit={handleSubmitBooking} className="mt-4 flex flex-col gap-4 rounded-2xl border border-dc-black/10 bg-dc-white p-5">
+          <p className="text-sm text-dc-black/60">
+            Ajukan booking setelah harga & paket disepakati lewat chat — Vendor akan mengonfirmasi sebelum kamu membayar DP.
+          </p>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="event-date" className="text-sm font-medium text-dc-navy">
+              Tanggal Acara
+            </label>
+            <input
+              id="event-date"
+              type="date"
+              value={eventDate}
+              onChange={(e) => setEventDate(e.target.value)}
+              required
+              className="w-full rounded-xl border border-dc-black/15 bg-dc-white px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+            />
+          </div>
+          <TextField label="Deskripsi Paket" value={packageDescription} onChange={setPackageDescription} />
+          <TextField label="Harga Disepakati (Rp)" type="number" value={agreedPrice} onChange={setAgreedPrice} />
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <Button type="submit" loading={bookingSaving}>
+            Kirim Pengajuan Booking
+          </Button>
+        </form>
+      )}
 
       {profile.portfolio && profile.portfolio.length > 0 && (
         <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3">

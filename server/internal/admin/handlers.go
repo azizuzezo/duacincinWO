@@ -1,8 +1,9 @@
 // Package admin implements the minimal Admin actions needed for other
-// features to function end-to-end — currently just vendor approval, which
-// Fase 2 (direktori vendor) depends on. The full Admin/Backoffice feature
-// set (dispute queue, Inspirasi moderation, commission config, dashboard)
-// is out of scope here and lands in Fase 7 (PRD §8.10).
+// features to function end-to-end — vendor approval (Fase 2) and marking
+// vendor disbursements paid (Fase 6, since a completed booking needs
+// someone to actually release the held funds). The full Admin/Backoffice
+// feature set (dispute queue, Inspirasi moderation, commission config,
+// dashboard) is out of scope here and lands in Fase 7 (PRD §8.10).
 package admin
 
 import (
@@ -17,11 +18,12 @@ import (
 )
 
 type Deps struct {
-	Vendors *repository.VendorRepo
+	Vendors       *repository.VendorRepo
+	Disbursements *repository.DisbursementRepo
 }
 
-func NewDeps(vendors *repository.VendorRepo) *Deps {
-	return &Deps{Vendors: vendors}
+func NewDeps(vendors *repository.VendorRepo, disbursements *repository.DisbursementRepo) *Deps {
+	return &Deps{Vendors: vendors, Disbursements: disbursements}
 }
 
 type vendorSummaryDTO struct {
@@ -76,6 +78,45 @@ func rejectVendor(deps *Deps) http.HandlerFunc {
 	}
 }
 
+type disbursementDTO struct {
+	BookingID        string `json:"booking_id"`
+	GrossAmount      int64  `json:"gross_amount"`
+	CommissionAmount int64  `json:"commission_amount"`
+	NetAmount        int64  `json:"net_amount"`
+	Status           string `json:"status"`
+}
+
+func listPendingDisbursements(deps *Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		items, err := deps.Disbursements.ListPending(r.Context())
+		if err != nil {
+			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
+			return
+		}
+		out := make([]disbursementDTO, 0, len(items))
+		for _, d := range items {
+			out = append(out, disbursementDTO{BookingID: d.BookingID, GrossAmount: d.GrossAmount, CommissionAmount: d.CommissionAmount, NetAmount: d.NetAmount, Status: d.Status})
+		}
+		httpx.JSON(w, http.StatusOK, out)
+	}
+}
+
+func markDisbursed(deps *Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		bookingID := chi.URLParam(r, "bookingID")
+		ok, err := deps.Disbursements.MarkDisbursed(r.Context(), bookingID)
+		if err != nil {
+			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
+			return
+		}
+		if !ok {
+			httpx.Error(w, http.StatusNotFound, "pencairan tidak ditemukan atau sudah dicairkan")
+			return
+		}
+		httpx.JSON(w, http.StatusOK, map[string]string{"message": "dana ditandai sudah dicairkan ke vendor"})
+	}
+}
+
 // Mount registers /admin/* routes onto r, restricted to the admin role.
 func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 	r.Route("/admin", func(r chi.Router) {
@@ -85,5 +126,8 @@ func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 		r.Get("/vendors/pending", listPending(deps))
 		r.Post("/vendors/{id}/approve", approveVendor(deps))
 		r.Post("/vendors/{id}/reject", rejectVendor(deps))
+
+		r.Get("/disbursements/pending", listPendingDisbursements(deps))
+		r.Post("/disbursements/{bookingID}/mark-disbursed", markDisbursed(deps))
 	})
 }
