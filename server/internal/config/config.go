@@ -21,6 +21,9 @@ type Config struct {
 	ResendFromEmail string
 
 	PublicAssetBaseURL string
+
+	SupabaseURL            string
+	SupabaseServiceRoleKey string
 }
 
 // Load reads environment variables, falling back to a local .env file
@@ -39,6 +42,9 @@ func Load() (*Config, error) {
 		ResendAPIKey:       os.Getenv("RESEND_API_KEY"),
 		ResendFromEmail:    getEnv("RESEND_FROM_EMAIL", "DuaCincin <onboarding@resend.dev>"),
 		PublicAssetBaseURL: os.Getenv("PUBLIC_ASSET_BASE_URL"),
+
+		SupabaseURL:            os.Getenv("SUPABASE_URL"),
+		SupabaseServiceRoleKey: os.Getenv("SUPABASE_SERVICE_ROLE_KEY"),
 	}
 
 	if cfg.DatabasePooler == "" {
@@ -54,6 +60,9 @@ func Load() (*Config, error) {
 	}
 	if cfg.ResendAPIKey == "" {
 		log.Println("warning: RESEND_API_KEY is not set — OTP codes will be logged to the server console instead of emailed")
+	}
+	if cfg.SupabaseURL == "" || cfg.SupabaseServiceRoleKey == "" {
+		log.Println("warning: SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY not set — portfolio image upload will be unavailable")
 	}
 
 	return cfg, nil

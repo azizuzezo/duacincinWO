@@ -25,18 +25,39 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 |---|---|---|---|
 | 0 | Setup proyek: scaffold Next.js + Go, koneksi Supabase (pooler), struktur env, CI dasar | §7 | Done |
 | 1 | Autentikasi Client & Vendor: daftar, login, lupa password (OTP via Resend, 5 menit expiry), rate limiting, show/hide password | §8.2 | Done |
-| 2 | Direktori vendor (kartu anonim → unlock setelah login), profil vendor, kategori, chat in-app + filter kontak eksternal | §8.3, §8.4 | Not started |
+| 2 | Direktori vendor (kartu anonim → unlock setelah login), profil vendor, kategori, chat in-app + filter kontak eksternal | §8.3, §8.4 | Done |
 | 3 | Budget Planner: input total budget & tamu, auto-split default, adjustable proportional rescale | §8.8 | Not started |
 | 4 | Galeri Inspirasi: struktur data, panel upload/moderasi Admin, seed data awal | §8.7 | Not started |
 | 5 | Wedding Planner: checklist & timeline, referensi duacincin.id dengan tampilan baru | §8.9 | Not started |
 | 6 | Booking + Escrow Payment (Midtrans): booking flow, DP, holding, disbursement dikurangi komisi | §8.5 | Not started |
-| 7 | Admin/backoffice: approve vendor, moderasi Inspirasi, dispute queue, config komisi | §8.10, §8.6 | Not started |
+| 7 | Admin/backoffice: moderasi Inspirasi, dispute queue, config komisi, dashboard *(approve/reject vendor sudah ditarik maju ke Fase 2, lihat changelog)* | §8.10, §8.6 | Not started |
 
 *Landing page (bagian dari §8.1) dikerjakan bersamaan dengan Fase 1-2 karena butuh data direktori vendor untuk ditampilkan (walau anonim).*
 
 ---
 
 ## Changelog
+
+### 2026-09-09 — Fase 2: Direktori Vendor + Profil + Chat In-App
+- **Fase:** 2
+- **Apa yang berubah:**
+  - **Migrasi DB** (`000002_vendor_directory_chat.up.sql`): `vendor_profiles` (status pending/approved/rejected), `vendor_portfolio_items`, `conversations` (type `vendor_chat`/`consultation`, dengan unique partial index supaya satu Client hanya punya 1 percakapan per Vendor & 1 percakapan konsultasi), `messages` (kolom `flagged`).
+  - **Supabase Storage** diintegrasikan pertama kali (`internal/storage`): bucket publik `portofolio-vendor` dibuat otomatis saat startup, upload lewat service-role key (server-only, sesuai §7/§10.2). Validasi file: sniff content-type asli (bukan cuma ekstensi), maks 5MB, hanya JPEG/PNG/WEBP.
+  - **Backend baru:** `internal/vendors` (upsert profil — edit mereset ke pending, upload portofolio, direktori publik anonim, detail unlock), `internal/chat` (get-or-create percakapan, kirim/baca pesan, filter regex kontak eksternal di `internal/chat/filter.go`, model shared-inbox untuk consultation), `internal/admin` (slice tipis: approve/reject vendor — **ditarik maju dari Fase 7** karena direktori tidak bisa diuji end-to-end tanpa ini; sisa Admin/Backoffice tetap di Fase 7).
+  - **Middleware baru** di `internal/auth`: `RequireRole` + `ClaimsFromContext` (diekspor) supaya paket lain bisa cek role/pemilik data.
+  - **Frontend baru:** form profil + upload portofolio di dashboard Vendor, halaman direktori publik `/vendors` (filter kategori, kartu ter-blur untuk anon), detail vendor `/vendors/[id]` (unlock setelah login Client), `ChatThread`/`ConversationList`/`WithUser` (komponen dipakai bersama Client/Vendor/internal), inbox pesan Client & Vendor, halaman approve vendor Admin, inbox konsultasi Wedding Consultant.
+- **File/komponen utama:** `server/migrations/000002_*`, `server/internal/{storage,vendors,chat,admin}`, `server/internal/auth/middleware.go` (RequireRole), `server/internal/httpserver/router.go` (struct `Deps`), `web/src/app/vendors/**`, `web/src/app/{client,vendor}/messages/**`, `web/src/app/internal/{admin/vendors,consultations}/**`, `web/src/components/{ChatThread,ConversationList,WithUser}.tsx`.
+- **Verifikasi yang sudah dijalankan:**
+  - Backend: `go build`/`go vet`/`gofmt` bersih.
+  - **curl end-to-end ke Supabase asli:** vendor daftar → isi profil (pending) → upload foto ke Storage (URL publik dikonfirmasi bisa diakses langsung) → direktori publik kosong (belum approved) → admin approve → direktori publik tampil **tanpa business_name** → client login → detail vendor tampil business_name lengkap → chat vendor (pesan biasa `flagged:false`, pesan berisi nomor HP `flagged:true`) → vendor baca & balas → **IDOR test:** client kedua ditolak (404) saat coba baca percakapan client pertama → consultation: client mulai chat, WC (shared inbox) melihat & membalas → vendor ditolak (403) saat akses endpoint admin, dan client ditolak (403) saat akses endpoint upload profil vendor.
+  - **Browser sungguhan (Playwright):** alur penuh vendor register→lengkapi profil→upload foto→admin approve→client browsing anonim→unlock→chat (termasuk flag kontak)→balasan vendor→konsultasi WC. **12/12 pemeriksaan lolos.** Ketemu & diperbaiki 2 bug nyata dalam prosesnya: (a) label form "Kategori"/"Deskripsi" tidak terhubung `htmlFor`↔`id` (bug aksesibilitas asli, bukan cuma isu tes), (b) Supabase Storage mengembalikan HTTP 400 (bukan 409) untuk bucket yang sudah ada — `EnsureBucket` diperbaiki untuk mengenali kode `BucketAlreadyExists`.
+  - Ditemukan juga pola lint baru Next.js 16 (`react-hooks/set-state-in-effect`) yang menolak effect yang langsung memanggil fungsi pemicu setState — diperbaiki di 3 tempat dengan `queueMicrotask(load)` alih-alih `load()` langsung.
+  - Semua data uji & tool sementara (seed-test, cleanup-test) sudah dibersihkan/dihapus.
+- **Keputusan/asumsi:**
+  - Approve/reject vendor (thin slice Admin) sengaja ditarik maju dari Fase 7 — didokumentasikan supaya tidak dikira scope creep tanpa alasan.
+  - Anonimisasi direktori publik: backend selalu mengembalikan URL foto asli (tidak benar-benar di-blur di server) — blur/watermark visual dilakukan di frontend lewat CSS (`blur-sm`) untuk kartu anonim. Ini cukup untuk MVP tapi bukan proteksi sisi-server (URL foto bisa diakses langsung kalau linknya bocor) — dicatat sebagai risiko ringan.
+  - Label percakapan di `ConversationList` masih generik ("Chat dengan Vendor" / "Konsultasi dengan Wedding Consultant") tanpa nama vendor spesifik per-item — penyempurnaan UX kecil yang bisa ditambahkan nanti, bukan blocker.
+  - Chat belum real-time (polling 4 detik di `ChatThread`), bukan WebSocket — cukup untuk MVP, dicatat sebagai potensi peningkatan nanti.
 
 ### 2026-09-09 — PRD v0.3: checklist UX/SEO & perluasan keamanan
 - **Fase:** — (pre-fase, dokumentasi, sebelum mulai Fase 2)

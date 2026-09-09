@@ -5,13 +5,17 @@ import (
 	"log"
 	"net/http"
 
+	"duacincin/server/internal/admin"
 	"duacincin/server/internal/auth"
+	"duacincin/server/internal/chat"
 	"duacincin/server/internal/config"
 	"duacincin/server/internal/db"
 	"duacincin/server/internal/email"
 	"duacincin/server/internal/httpserver"
 	"duacincin/server/internal/ratelimit"
 	"duacincin/server/internal/repository"
+	"duacincin/server/internal/storage"
+	"duacincin/server/internal/vendors"
 	"duacincin/server/migrations"
 )
 
@@ -33,15 +37,30 @@ func main() {
 	}
 	defer pool.Close()
 
-	authDeps := auth.NewDeps(
-		repository.NewUserRepo(pool),
-		repository.NewOTPRepo(pool),
-		ratelimit.New(pool),
-		email.NewClient(cfg.ResendAPIKey, cfg.ResendFromEmail),
-		cfg,
-	)
+	storageClient := storage.NewClient(cfg.SupabaseURL, cfg.SupabaseServiceRoleKey)
+	if storageClient.Configured() {
+		if err := storageClient.EnsureBucket(ctx, vendors.PortfolioBucket, true); err != nil {
+			log.Printf("warning: could not ensure storage bucket %q: %v", vendors.PortfolioBucket, err)
+		}
+	}
 
-	router := httpserver.NewRouter(pool, authDeps)
+	vendorRepo := repository.NewVendorRepo(pool)
+	chatRepo := repository.NewChatRepo(pool)
+
+	deps := httpserver.Deps{
+		Auth: auth.NewDeps(
+			repository.NewUserRepo(pool),
+			repository.NewOTPRepo(pool),
+			ratelimit.New(pool),
+			email.NewClient(cfg.ResendAPIKey, cfg.ResendFromEmail),
+			cfg,
+		),
+		Vendors: vendors.NewDeps(vendorRepo, storageClient),
+		Admin:   admin.NewDeps(vendorRepo),
+		Chat:    chat.NewDeps(chatRepo, vendorRepo),
+	}
+
+	router := httpserver.NewRouter(pool, cfg, deps)
 
 	addr := ":" + cfg.Port
 	log.Printf("duacincin-api listening on %s (env=%s)", addr, cfg.AppEnv)

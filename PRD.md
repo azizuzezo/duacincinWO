@@ -348,11 +348,11 @@ Detail tugas, status, dan log perubahan teknis ada di **[engineering.md](./engin
 |---|---|
 | 0 | Setup proyek (Next.js, Go, Supabase, env, CI dasar) |
 | 1 | Autentikasi Client & Vendor + OTP + rate limiting (termasuk login internal Admin/Wedding Consultant) |
-| 2 | Direktori vendor (anonim→unlock) + profil + chat in-app (vendor_chat & consultation) |
+| 2 | Direktori vendor (anonim→unlock) + profil + chat in-app (vendor_chat & consultation) — termasuk slice tipis approve/reject vendor yang ditarik maju dari Fase 7 |
 | 3 | Budget Planner |
 | 4 | Galeri Inspirasi |
 | 5 | Wedding Planner (termasuk task otomatis dari Technical Meeting, §8.11) |
 | 6 | Booking + Escrow Payment (Midtrans) + penjadwalan Meeting (consultant & technical) |
-| 7 | Admin/backoffice + penegakan anti-circumvention |
+| 7 | Admin/backoffice (moderasi Inspirasi, dispute queue, config komisi, dashboard) + penegakan anti-circumvention |
 
 *Alur end-to-end lengkap (chat konsultasi → booking → DP → meeting → pelunasan → technical meeting → hari-H) ada di §8.11 — dibangun bertahap lintas Fase 1, 2, 5, dan 6 di atas, bukan satu fase tersendiri.*

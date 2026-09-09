@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"net/http"
+	"slices"
 
 	"duacincin/server/internal/config"
 	"duacincin/server/internal/httpx"
@@ -39,4 +40,25 @@ func RequireAuth(cfg *config.Config) func(http.Handler) http.Handler {
 func claimsFromContext(ctx context.Context) (*security.SessionClaims, bool) {
 	claims, ok := ctx.Value(claimsContextKey).(*security.SessionClaims)
 	return claims, ok
+}
+
+// ClaimsFromContext exposes the authenticated session's claims to other
+// feature packages (vendors, chat, admin, ...). Must run behind RequireAuth.
+func ClaimsFromContext(ctx context.Context) (*security.SessionClaims, bool) {
+	return claimsFromContext(ctx)
+}
+
+// RequireRole rejects the request unless the authenticated user's role is
+// one of roles. Must be chained after RequireAuth.
+func RequireRole(roles ...string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			claims, ok := claimsFromContext(r.Context())
+			if !ok || !slices.Contains(roles, claims.Role) {
+				httpx.Error(w, http.StatusForbidden, "tidak punya akses")
+				return
+			}
+			next.ServeHTTP(w, r.WithContext(r.Context()))
+		})
+	}
 }

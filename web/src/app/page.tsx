@@ -15,11 +15,14 @@ export default function Page() {
         DuaCincin
       </h1>
       <p className="max-w-md text-dc-black/70">
-        Fase 1 (Autentikasi) selesai — daftar/masuk Client & Vendor, lupa
-        password via OTP, dan rate limiting sudah berfungsi. Landing page
-        penuh menyusul di Fase 2.
+        Fase 2 (Direktori Vendor & Chat) selesai — cari vendor, unlock profil
+        setelah masuk, dan chat aman lewat DuaCincin. Landing page penuh
+        menyusul.
       </p>
       <div className="flex flex-wrap items-center justify-center gap-3 text-sm font-semibold">
+        <Link href="/vendors" className="rounded-xl bg-dc-gold px-5 py-2.5 text-dc-navy hover:bg-dc-navy hover:text-dc-white">
+          Cari Vendor
+        </Link>
         <Link href="/client/register" className="rounded-xl bg-dc-navy px-5 py-2.5 text-dc-white hover:bg-dc-gold hover:text-dc-navy">
           Daftar sebagai Client
         </Link>
