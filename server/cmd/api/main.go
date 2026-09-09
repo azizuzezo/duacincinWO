@@ -13,6 +13,7 @@ import (
 	"duacincin/server/internal/db"
 	"duacincin/server/internal/email"
 	"duacincin/server/internal/httpserver"
+	"duacincin/server/internal/inspiration"
 	"duacincin/server/internal/ratelimit"
 	"duacincin/server/internal/repository"
 	"duacincin/server/internal/storage"
@@ -40,8 +41,10 @@ func main() {
 
 	storageClient := storage.NewClient(cfg.SupabaseURL, cfg.SupabaseServiceRoleKey)
 	if storageClient.Configured() {
-		if err := storageClient.EnsureBucket(ctx, vendors.PortfolioBucket, true); err != nil {
-			log.Printf("warning: could not ensure storage bucket %q: %v", vendors.PortfolioBucket, err)
+		for _, bucket := range []string{vendors.PortfolioBucket, inspiration.Bucket} {
+			if err := storageClient.EnsureBucket(ctx, bucket, true); err != nil {
+				log.Printf("warning: could not ensure storage bucket %q: %v", bucket, err)
+			}
 		}
 	}
 
@@ -56,10 +59,11 @@ func main() {
 			email.NewClient(cfg.ResendAPIKey, cfg.ResendFromEmail),
 			cfg,
 		),
-		Vendors: vendors.NewDeps(vendorRepo, storageClient),
-		Admin:   admin.NewDeps(vendorRepo),
-		Chat:    chat.NewDeps(chatRepo, vendorRepo),
-		Budget:  budget.NewDeps(repository.NewBudgetRepo(pool)),
+		Vendors:     vendors.NewDeps(vendorRepo, storageClient),
+		Admin:       admin.NewDeps(vendorRepo),
+		Chat:        chat.NewDeps(chatRepo, vendorRepo),
+		Budget:      budget.NewDeps(repository.NewBudgetRepo(pool)),
+		Inspiration: inspiration.NewDeps(repository.NewInspirationRepo(pool), storageClient),
 	}
 
 	router := httpserver.NewRouter(pool, cfg, deps)

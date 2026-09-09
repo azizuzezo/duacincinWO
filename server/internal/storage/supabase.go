@@ -97,6 +97,36 @@ func (c *Client) Upload(ctx context.Context, bucket, path, contentType string, d
 	return fmt.Sprintf("%s/storage/v1/object/public/%s/%s", c.baseURL, bucket, path), nil
 }
 
+// Delete removes a single object from bucket.
+func (c *Client) Delete(ctx context.Context, bucket, path string) error {
+	if !c.Configured() {
+		return fmt.Errorf("supabase storage is not configured")
+	}
+
+	body, err := json.Marshal(map[string][]string{"prefixes": {path}})
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("%s/storage/v1/object/%s", c.baseURL, bucket)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	c.setAuthHeaders(req, "application/json")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("delete from supabase storage: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 300 {
+		return fmt.Errorf("delete from supabase storage: unexpected status %d", resp.StatusCode)
+	}
+	return nil
+}
+
 func (c *Client) setAuthHeaders(req *http.Request, contentType string) {
 	req.Header.Set("Authorization", "Bearer "+c.serviceKey)
 	req.Header.Set("apikey", c.serviceKey)

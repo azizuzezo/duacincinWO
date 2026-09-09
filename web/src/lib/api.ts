@@ -37,6 +37,10 @@ export function apiPut<T>(path: string, data: unknown): Promise<T> {
   return request<T>(path, { method: "PUT", body: JSON.stringify(data) });
 }
 
+export function apiDelete<T>(path: string): Promise<T> {
+  return request<T>(path, { method: "DELETE" });
+}
+
 export function apiGet<T>(path: string): Promise<T> {
   return request<T>(path, { method: "GET" });
 }
@@ -134,4 +138,13 @@ export type BudgetPlan = {
   total_budget: number;
   guest_count: number;
   categories: BudgetCategoryDTO[];
+};
+
+export type InspirationItem = {
+  id: string;
+  category: string;
+  url: string;
+  alt_text: string;
+  caption: string;
+  source_credit?: string;
 };

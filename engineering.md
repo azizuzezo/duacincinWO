@@ -27,7 +27,7 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 | 1 | Autentikasi Client & Vendor: daftar, login, lupa password (OTP via Resend, 5 menit expiry), rate limiting, show/hide password | §8.2 | Done |
 | 2 | Direktori vendor (kartu anonim → unlock setelah login), profil vendor, kategori, chat in-app + filter kontak eksternal | §8.3, §8.4 | Done |
 | 3 | Budget Planner: input total budget & tamu, auto-split default, adjustable proportional rescale | §8.8 | Done |
-| 4 | Galeri Inspirasi: struktur data, panel upload/moderasi Admin, seed data awal | §8.7 | Not started |
+| 4 | Galeri Inspirasi: struktur data, panel upload/moderasi Admin, seed data awal | §8.7 | Done |
 | 5 | Wedding Planner: checklist & timeline, referensi duacincin.id dengan tampilan baru | §8.9 | Not started |
 | 6 | Booking + Escrow Payment (Midtrans): booking flow, DP, holding, disbursement dikurangi komisi | §8.5 | Not started |
 | 7 | Admin/backoffice: moderasi Inspirasi, dispute queue, config komisi, dashboard *(approve/reject vendor sudah ditarik maju ke Fase 2, lihat changelog)* | §8.10, §8.6 | Not started |
@@ -37,6 +37,23 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 ---
 
 ## Changelog
+
+### 2026-09-09 — Fase 4: Galeri Inspirasi
+- **Fase:** 4
+- **Apa yang berubah:**
+  - **Migrasi DB** (`000004_inspiration.up.sql`): `inspiration_items` (kategori teks bebas — bukan enum tetap, karena PRD §8.7 memberi contoh kategori "mis." bukan daftar baku — storage path/URL, alt text, caption, source credit).
+  - **Refactor kecil:** logika validasi upload gambar (sniff content-type asli, batas 5MB, ekstensi JPEG/PNG/WEBP) yang tadinya cuma ada di `vendors/handlers_portfolio.go` dipindah ke paket bersama `internal/imageupload`, dipakai juga oleh Inspirasi — menghindari duplikasi kode yang genuinely berulang.
+  - **Storage:** bucket publik baru `inspirasi` (dibuat otomatis saat startup, sama seperti `portofolio-vendor`). Ditambahkan `storage.Client.Delete` supaya hapus item juga membersihkan file di Supabase Storage, bukan cuma baris DB.
+  - **Backend baru:** `internal/inspiration` — `GET /inspiration` (publik, filter `category` + `q` pencarian sederhana di caption/kategori), `GET /inspiration/categories` (daftar kategori untuk filter chip), `POST/DELETE /admin/inspiration` (Admin-only, upload langsung ter-publish — tidak ada antrian moderasi terpisah di MVP, sesuai catatan PRD §8.7 bahwa upload Admin **adalah** langkah kurasinya).
+  - **Frontend baru:** `/inspirasi` (galeri publik, search + filter kategori, layout masonry responsif), `/internal/admin/inspirasi` (form upload + grid dengan tombol hapus), tautan navigasi silang antar dua halaman Admin dan dari homepage/dashboard Client.
+- **File/komponen utama:** `server/migrations/000004_*`, `server/internal/{inspiration,imageupload}`, `server/internal/storage/supabase.go` (+Delete), `server/internal/repository/inspiration.go`, `web/src/app/inspirasi/**`, `web/src/app/internal/admin/inspirasi/**`.
+- **Verifikasi yang sudah dijalankan:**
+  - Backend: `go build`/`go vet`/`gofmt` bersih. curl end-to-end ke Supabase asli: upload → publik langsung terlihat → filter kategori & search bekerja → role non-admin ditolak (403) di endpoint upload/hapus → hapus item juga menghapus file storage-nya (dikonfirmasi URL lama jadi tidak bisa diakses lagi).
+  - **Browser sungguhan (Playwright), 6/6 lolos:** galeri kosong tampil pesan yang jelas, 2 item ter-upload muncul di admin, publik melihat keduanya, filter kategori & search masing-masing menyaring dengan benar (sempat salah duga sebagai bug aplikasi — ternyata bug di assertion test-nya sendiri, chip filter memang selalu menampilkan semua nama kategori terlepas dari filter aktif), hapus item hilang dari grid admin.
+  - Data uji & tool sementara sudah dibersihkan/dihapus — galeri publik saat ini kosong lagi (siap diisi konten kurasi asli).
+- **Keputusan/asumsi:**
+  - Tidak ada alur "submission vendor → antrian moderasi Admin" terpisah di MVP — hanya Admin yang bisa mengunggah, dan mengunggah = mempublikasikan. Kalau nanti mau membuka jalur vendor mengirim kandidat foto untuk di-approve, itu perlu ditambahkan sebagai fitur baru (bukan bagian dari yang sudah dibangun ini).
+  - Kategori Inspirasi adalah teks bebas yang diisi Admin (bukan enum tetap seperti `vendor_category`) — sengaja fleksibel untuk kurasi konten yang beragam.
 
 ### 2026-09-09 — Fase 3: Budget Planner
 - **Fase:** 3
