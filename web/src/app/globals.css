@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+:root {
+  --dc-white: #ffffff;
+  --dc-offwhite: #f1f1f1;
+  --dc-gold: #f5a623;
+  --dc-navy: #152238;
+  --dc-black: #0a0a0a;
+
+  --background: var(--dc-white);
+  --foreground: var(--dc-black);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-dc-white: var(--dc-white);
+  --color-dc-offwhite: var(--dc-offwhite);
+  --color-dc-gold: var(--dc-gold);
+  --color-dc-navy: var(--dc-navy);
+  --color-dc-black: var(--dc-black);
+  --font-heading: var(--font-plus-jakarta-sans);
+  --font-sans: var(--font-inter);
+}
+
+/* DuaCincin keeps a white-based brand look regardless of OS theme (PRD §6). */
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}

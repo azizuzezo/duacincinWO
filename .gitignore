@@ -1,0 +1,22 @@
+# Env & secrets
+.env
+.env.local
+.env.*.local
+
+# Node / Next.js
+web/node_modules/
+web/.next/
+web/out/
+web/.turbo/
+web/next-env.d.ts
+npm-debug.log*
+
+# Go
+server/tmp/
+server/bin/
+server/*.exe
+server/duacincin-server
+
+# OS / editor
+.DS_Store
+*.log
