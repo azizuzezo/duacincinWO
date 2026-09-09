@@ -38,6 +38,17 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 
 ## Changelog
 
+### 2026-09-09 — PRD v0.3: checklist UX/SEO & perluasan keamanan
+- **Fase:** — (pre-fase, dokumentasi, sebelum mulai Fase 2)
+- **Apa yang berubah:** [PRD.md](./PRD.md) diperbarui (§5, §7, §8.2, §10.2–§10.9 baru, §11.3 baru, §12) menambahkan checklist UX/konten/SEO dan memperluas requirement keamanan berdasarkan daftar checklist yang diberikan pemilik produk — sebagian besar item sudah relevan dan diserap langsung, beberapa (mis. contoh CTA "Chat WhatsApp") disesuaikan karena bertentangan dengan model bisnis anti-circumvention DuaCincin.
+- **File/komponen utama:** `PRD.md` saja — belum ada kode yang berubah.
+- **Keputusan/asumsi:**
+  - §10.2 Keamanan sekarang eksplisit mendaftar prinsip yang **sudah** ditegakkan Fase 1 (secrets di server, hash Argon2id/HMAC OTP, cookie httpOnly+SameSite=Lax, rate limiting DB-backed, parameterized query, DisallowUnknownFields anti mass-assignment) vs yang **belum** (Turnstile bot-protection — dicatat sebagai utang teknis di §12).
+  - Klarifikasi arsitektur penting di §7: backend connect ke Postgres langsung lewat pooler, bukan lewat Supabase Data API — jadi **RLS Supabase tidak berlaku**, otorisasi harus di kode Go. Ini jadi acuan wajib untuk Fase 2+ (direktori vendor, chat, booking) supaya tidak salah asumsi soal keamanan data antar-user (IDOR).
+  - Kebijakan Privasi (§11.3) ditambahkan sebagai dokumen legal baru (selain Perjanjian Vendor & ToS Client yang sudah ada), dengan disclaimer sama (draft, wajib review advokat, kali ini juga soal UU PDP).
+  - Item SEO (title/meta/OG image/sitemap/robots.txt) dan analytics ditambahkan sebagai requirement MVP (§5, §10.7–§10.8) — tool analytics final belum dipilih, jadi tercatat sebagai risiko terbuka di §12.
+- **Status:** Done (dokumentasi).
+
 ### 2026-09-09 — Fase 1: Autentikasi (Client, Vendor, internal) + OTP + rate limiting
 - **Fase:** 1
 - **Apa yang berubah:**

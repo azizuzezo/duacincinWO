@@ -2,12 +2,13 @@
 
 | | |
 |---|---|
-| **Versi** | 0.2 |
+| **Versi** | 0.3 |
 | **Tanggal** | 2026-09-09 |
 | **Status** | Menunggu review pemilik produk |
 | **Terkait** | [engineering.md](./engineering.md) — roadmap fase & log perubahan teknis |
 
 **Riwayat revisi:**
+- v0.3 (2026-09-09) — Menambahkan checklist UX/konten/SEO (§10.6–§10.9), memperluas persyaratan keamanan (§10.2) dengan item konkret (pemisahan kunci Supabase, RLS vs otorisasi di kode, IDOR, mass assignment, proteksi bot, batas biaya), dan draft Kebijakan Privasi (§11.3).
 - v0.2 (2026-09-09) — Menambahkan peran **Wedding Consultant** (staf internal DuaCincin) dan alur pemesanan end-to-end (§8.11), menyelaraskan milestone escrow (§8.5) dengan alur tersebut.
 - v0.1 (2026-09-09) — Draft awal.
 
@@ -66,6 +67,8 @@ Client menemukan vendor lewat DuaCincin, berdiskusi lewat DuaCincin, booking lew
 6. Booking + escrow payment (Midtrans, lihat §8.5)
 7. Perjanjian Kemitraan Vendor & Ketentuan Layanan Client (anti-circumvention)
 8. Admin/backoffice minimal (approve vendor, moderasi, dispute queue)
+9. Kebijakan Privasi (§11.3) — wajib sejak MVP karena mengumpulkan data pribadi (email, budget, dokumen legalitas vendor)
+10. Dasar SEO & analytics: title/meta per halaman, sitemap, robots.txt, analytics terpasang sejak hari pertama (lihat §10.7–§10.8)
 
 ### Di luar MVP (fase berikutnya)
 - Review & rating publik vendor
@@ -104,6 +107,10 @@ Client menemukan vendor lewat DuaCincin, berdiskusi lewat DuaCincin, booking lew
 - **Email OTP:** Resend, template HTML dengan logo DuaCincin, OTP berlaku 5 menit.
 - **Payment/Escrow:** Midtrans (placeholder — dapat diganti Xendit, tinggal ganti adapter di layer payment Go backend) untuk pembayaran DP/pelunasan dari Client, dengan dana ditahan platform (virtual account/settlement internal) sebelum disbursement ke vendor dikurangi komisi.
 - **Hosting (usulan, konfirmasi nanti):** Frontend di Vercel, backend Go di container (Fly.io/Railway/VPS), tidak mengikat — bisa disesuaikan saat implementasi.
+- **Otorisasi vs RLS:** backend Go terhubung ke Postgres langsung lewat connection string pooler (bukan lewat Supabase Data API/PostgREST) — artinya **Row Level Security Supabase tidak otomatis berlaku** untuk koneksi ini. Semua pengecekan kepemilikan data & role (mis. Client A tidak boleh baca booking Client B) **wajib ditegakkan di kode backend Go**, bukan diasumsikan sudah aman karena Supabase. Lihat §10.2.
+- **Pemisahan kunci Supabase:** `SUPABASE_ANON_KEY` (publishable) hanya boleh dipakai kalau suatu saat ada pemanggilan Supabase Data API langsung dari client; `SUPABASE_SERVICE_ROLE_KEY` (akses penuh, melewati RLS) **tidak boleh pernah** dikirim ke frontend — hanya dipakai backend Go untuk operasi admin (mis. Supabase Storage). Saat ini (Fase 0-1) belum dipakai sama sekali karena akses DB murni lewat `DATABASE_POOLER`.
+- **Proteksi bot pada form publik:** Cloudflare Turnstile (atau setara) di form daftar Client/Vendor, lupa password, dan form kontak — token diverifikasi di backend Go sebelum diproses. **Belum diimplementasi di Fase 1**, jadi ini utang teknis yang perlu ditambahkan sebelum go-live (lihat §12).
+- **SEO & Analytics:** sitemap.xml & robots.txt digenerate dari Next.js (`app/sitemap.ts`, `app/robots.ts`), didaftarkan ke Google Search Console saat launch. Tool analytics privacy-friendly (mis. Plausible/PostHog — pilihan final menyusul, lihat §12) dipasang sejak hari pertama, didisclose di Kebijakan Privasi (§11.3).
 
 ---
 
@@ -124,6 +131,7 @@ Client menemukan vendor lewat DuaCincin, berdiskusi lewat DuaCincin, booking lew
   - Percobaan daftar akun baru: maksimal 5x per IP per jam (mencegah spam akun).
   - Percobaan login gagal: lockout sementara (mis. 15 menit) setelah 5x gagal berturut-turut per akun.
 - Template email OTP menyertakan logo DuaCincin (`dc.webp`), teks singkat, kode OTP besar & jelas, dan peringatan "berlaku 5 menit, jangan bagikan kode ini".
+- Form daftar & lupa password dilindungi Cloudflare Turnstile (§7), diverifikasi di backend — melengkapi rate limiting, bukan pengganti.
 
 ### 8.3 Direktori & Profil Vendor
 - Vendor mendaftar, memilih kategori (Venue, Catering, Dekorasi, MUA & Attire, Foto & Video, Entertainment, Undangan & Souvenir), upload portofolio & dokumen legalitas untuk verifikasi Admin.
@@ -215,11 +223,62 @@ Entitas inti (detail skema di implementasi, bukan final di sini):
 
 ## 10. Non-Functional Requirements
 
-- **Performa:** Core Web Vitals baik (LCP < 2.5s), Lighthouse Performance ≥ 90 di landing page — interaktivitas (hover/animasi) tidak boleh bikin lemot.
-- **Keamanan:** password hashing Argon2id, OTP hashed di DB (bukan plaintext), rate limiting semua endpoint sensitif, HTTPS only, input sanitization (cegah XSS/SQLi), secrets (connection string Supabase, Resend API key, Midtrans key) hanya via env var, tidak pernah di-commit.
-- **Aksesibilitas:** kontras warna cukup terutama teks di atas warna gold/navy (WCAG AA minimum).
-- **Skalabilitas:** backend Go stateless (session via JWT), DB pooling lewat Supabase pooler agar tahan banyak koneksi concurrent.
-- **Auditability:** semua persetujuan perjanjian & transaksi harus punya jejak (timestamp, versi dokumen) untuk kebutuhan pembuktian sengketa hukum.
+### 10.1 Performa
+- Core Web Vitals baik (LCP < 2.5s), Lighthouse Performance ≥ 90 di landing page — interaktivitas (hover/animasi) tidak boleh bikin lemot.
+
+### 10.2 Keamanan
+
+Prinsip yang sudah ditegakkan sejak Fase 1 (lihat engineering.md) dan **wajib tetap dipertahankan** di setiap fase berikutnya:
+
+- **Secrets tidak pernah ke frontend.** Semua kunci (connection string Supabase, `JWT_SECRET`, `OTP_HMAC_SECRET`, Resend API key, Midtrans key, `SUPABASE_SERVICE_ROLE_KEY`) hanya hidup di backend Go via env var — hanya `NEXT_PUBLIC_API_URL` yang boleh ke frontend. Setiap kali ada perubahan besar di frontend, cek hasil build (`next build` output) untuk memastikan tidak ada secret ikut ter-bundle.
+- **Riwayat git dijaga bersih dari secret.** `.env` selalu di `.gitignore` (sudah diverifikasi tiap commit Fase 0 & 1). Kalau suatu saat sebuah secret sempat ter-commit, langkahnya adalah **rotasi/cabut kunci itu dulu**, baru bersihkan riwayat — bukan cukup menghapus baris dari file terbaru.
+- **Pemisahan kunci Supabase** (detail di §7): `anon`/publishable key ≠ `service_role` key. Service role tidak boleh menyentuh frontend sama sekali.
+- **RLS bukan lapisan proteksi utama** (lihat §7) — karena backend connect langsung ke Postgres, otorisasi **ditegakkan di kode Go**: setiap query yang mengembalikan data milik user harus difilter berdasarkan kepemilikan (`user_id` dari JWT sesi, bukan dari body/query request), bukan berasumsi field `role`/`user_id` yang dikirim client itu benar.
+- **Cegah IDOR (Insecure Direct Object Reference).** Untuk setiap fitur baru yang mengembalikan data per-record (booking, percakapan, budget plan, dokumen vendor), wajib diuji dengan dua akun: akun A tidak boleh bisa mengakses record milik akun B walau ID-nya ditebak/diganti di request.
+- **Cegah mass assignment.** Setiap endpoint hanya menerima field yang eksplisit didefinisikan di request DTO (pola yang sudah dipakai di `internal/auth` dengan `DisallowUnknownFields`) — field sensitif (`role`, status pembayaran, saldo) tidak pernah diterima langsung dari body request pengguna, hanya diubah lewat proses server yang berwenang (mis. webhook Midtrans, approval Admin).
+- **Password & OTP:** hash Argon2id untuk password (bukan enkripsi reversibel), OTP di-HMAC sebelum disimpan (bukan plaintext) — sudah diimplementasikan di Fase 1.
+- **Sesi web:** cookie sesi `HttpOnly` + `Secure` (saat production) + `SameSite=Lax` — sudah diimplementasikan & diverifikasi di browser sungguhan (Fase 1). Karena `SameSite=Lax` memberi proteksi CSRF parsial saja, evaluasi ulang kebutuhan token CSRF eksplisit begitu ada aksi state-changing yang sensitif (mis. konfirmasi pembayaran) di Fase 6.
+- **Rate limiting** di server (bukan hanya di browser) untuk login, request OTP, registrasi — sudah diimplementasikan berbasis tabel `rate_limit_events` sehingga tetap berlaku walau backend di-restart atau dijalankan lebih dari satu instance. Terapkan pola yang sama untuk endpoint baru yang mengirim email atau memanggil layanan berbayar (Midtrans) di fase mendatang.
+- **Proteksi bot** (Turnstile) pada form publik — lihat §7 & §8.2, **belum diimplementasikan**, jadi masuk daftar utang teknis di §12.
+- **Validasi input di server**, bukan cuma di UI — berlaku untuk semua endpoint baru (jumlah tamu di Budget Planner, tanggal booking, dsb.), bukan cuma percaya validasi HTML/JS di frontend.
+- **Cegah XSS.** React/Next.js meng-escape output secara default — hindari `dangerouslySetInnerHTML` untuk konten dari user (pesan chat, deskripsi vendor, caption Inspirasi); kalau suatu saat butuh rich text, gunakan library sanitasi HTML yang terawat (mis. DOMPurify), jangan render HTML mentah dari input pengguna.
+- **Query database selalu parameterized** ($1, $2, ... via pgx) — sudah konsisten di Fase 1, tidak pernah menyusun query dengan concatenation string dari input user; untuk sorting/filter dinamis, whitelist nama kolom yang diizinkan, jangan pakai nama kolom langsung dari input.
+- **Upload file** (portofolio vendor, dokumen legalitas, Fase 2+): batasi ukuran & tipe, validasi isi file (bukan cuma ekstensi), simpan dengan nama file yang di-generate server (bukan nama asli), cek izin akses saat file diunduh (dokumen legalitas vendor bersifat privat, portofolio publik).
+- **Batas biaya & alert.** Sebelum go-live, pasang billing alert di Supabase, Resend, Midtrans, dan hosting; pastikan mana yang benar-benar menghentikan pemakaian saat limit tercapai vs cuma mengirim notifikasi, karena rate limiting di aplikasi tidak otomatis mencegah lonjakan biaya di layanan pihak ketiga.
+
+### 10.3 Aksesibilitas
+- Kontras warna cukup, terutama teks di atas warna gold/navy (WCAG AA minimum) — teks abu-abu muda di atas putih dihindari meski terlihat minimalis, karena melelahkan dibaca.
+
+### 10.4 Skalabilitas
+- Backend Go stateless (session via JWT), DB pooling lewat Supabase pooler agar tahan banyak koneksi concurrent.
+
+### 10.5 Auditability
+- Semua persetujuan perjanjian & transaksi harus punya jejak (timestamp, versi dokumen) untuk kebutuhan pembuktian sengketa hukum.
+
+### 10.6 UX & Kejelasan Halaman
+- **Mobile-first, bukan cuma "responsive di laptop".** Setiap halaman wajib dicek nyata di lebar layar HP (≈375px) — menu tidak boleh tertutup, tombol tidak boleh terlalu kecil untuk disentuh, teks tidak boleh meluber/terpotong.
+- **Satu halaman, satu tujuan utama.** Pengguna yang membuka sebuah halaman harus langsung tahu harus ngapain (daftar, cari vendor, isi budget, hubungi dukungan) — jangan biarkan mereka menebak langkah berikutnya.
+- **Tombol aksi spesifik, bukan generik.** Hindari label seperti "Mulai" atau "Pelajari Lebih Lanjut" tanpa konteks — pakai label yang bilang apa yang akan didapat setelah klik (mis. "Daftar sebagai Client", "Cari Vendor Dekorasi", "Chat dengan Wedding Consultant"). **Catatan khusus DuaCincin:** karena model bisnisnya sengaja menyembunyikan kontak langsung vendor (§1), CTA seperti "Chat WhatsApp" **tidak relevan/bertentangan** dengan produk ini — ganti dengan CTA yang mengarahkan ke chat in-app (§8.4) atau Wedding Consultant (§8.11).
+- **Kontak dukungan DuaCincin (bukan kontak vendor) mudah ditemukan.** Beda dengan kontak vendor yang memang disembunyikan, cara menghubungi *dukungan DuaCincin sendiri* (email/form bantuan resmi perusahaan) harus mudah ditemukan di header/footer — untuk pertanyaan akun, sengketa, atau kendala teknis.
+- **Menu & link diuji satu per satu** sebelum tiap rilis — tidak ada link menu yang salah arah atau menuju halaman kosong.
+- **Halaman 404 yang membantu:** bukan cuma teks "Halaman Tidak Ditemukan", tapi ada tombol kembali ke beranda dan/atau pencarian, tetap dengan branding DuaCincin.
+- **Form seminimal mungkin & jelas:** hanya minta data yang benar-benar perlu, label jelas mana yang wajib, pesan error spesifik (bukan cuma border merah) — pola ini sudah mulai diterapkan di form auth Fase 1, lanjutkan ke form Budget Planner & pendaftaran vendor.
+- **Konfirmasi jelas setelah form terkirim:** sebutkan status berikutnya dan estimasi waktu (mis. setelah daftar vendor: "dokumen sedang direview, biasanya 1-3 hari kerja" — bukan cuma "berhasil").
+
+### 10.7 SEO & Discoverability
+- **Title unik per halaman**, format "Nama Halaman | DuaCincin" (mis. "Cari Vendor Dekorasi Jakarta | DuaCincin"), bukan cuma nama brand berulang di semua tab.
+- **Meta description per halaman**, ringkas & manusiawi, bukan tumpukan keyword.
+- **Gambar share (Open Graph)** untuk halaman-halaman penting (landing, direktori kategori, artikel/inspirasi) supaya link yang dibagikan ke WhatsApp/media sosial punya preview yang layak diklik.
+- **Alt text deskriptif** untuk gambar penting (portofolio vendor, Galeri Inspirasi) — jelaskan isi/fungsi gambar, bukan nama file seperti `IMG_0012.jpg`.
+- **`robots.txt` & aturan `noindex` dicek sebelum tiap launch** — pastikan tidak sengaja memblokir halaman publik penting dari Google.
+- **Sitemap** (`app/sitemap.ts` di Next.js) didaftarkan ke Google Search Console saat launch.
+
+### 10.8 Analytics & Kebijakan Privasi
+- **Analytics terpasang sejak hari pertama** (bukan ditambah belakangan) supaya ada data nyata soal asal trafik, halaman drop-off, dan CTA yang benar-benar diklik — tool final belum dipilih (lihat §12).
+- **Kebijakan Privasi** wajib ada sejak MVP karena mengumpulkan data pribadi (email, nomor kontak, detail budget/acara, dokumen legalitas vendor) — draft ada di §11.3, mencakup juga penggunaan analytics ini.
+
+### 10.9 Konten: Bukti Nyata, Bukan Klaim Kosong
+- Hindari klaim generik yang tidak bisa diverifikasi ("terpercaya", "terbaik", "berpengalaman") di landing page/copy marketing. Sesuai §8.7, foto portofolio wajib nyata (bukan AI/stok luar negeri); status "vendor terverifikasi" berasal dari proses approval Admin yang sungguhan (§8.3), bukan sekadar label. Testimoni/rating publik menyusul di luar MVP (§5) — sebelum itu tersedia, jangan tampilkan klaim rating/ulasan yang tidak bisa dibuktikan.
 
 ---
 
@@ -254,6 +313,18 @@ Entitas inti (detail skema di implementasi, bukan final di sini):
 - Client setuju bahwa seluruh komunikasi dan transaksi dengan Vendor yang ditemukan melalui DuaCincin dilakukan lewat Platform, demi perlindungan Client sendiri (bukti transaksi, mediasi sengketa, jaminan dana via escrow).
 - Client tidak diperkenankan secara sengaja mengalihkan transaksi ke luar Platform untuk menghindari biaya layanan; pelanggaran berulang dapat berdampak pada pembatasan akses akun.
 
+### 11.3 Draft Kebijakan Privasi (Ringkasan)
+
+> ⚠️ Sama seperti §11.1/§11.2: ini **draft awal**, bukan nasihat hukum, wajib direview advokat (khususnya untuk kepatuhan **UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi/UU PDP**) sebelum go-live.
+
+1. **Data yang dikumpulkan** — akun (email, nama, password ter-hash), data acara (tanggal, budget, jumlah tamu), riwayat chat & booking, dokumen legalitas Vendor, data teknis (IP, log rate-limit, analytics).
+2. **Tujuan penggunaan** — menyediakan layanan inti (matching vendor, budget planner, booking/escrow), verifikasi & keamanan (rate limiting, deteksi pelanggaran §8.6), komunikasi terkait akun (email OTP), serta analitik produk (§10.8).
+3. **Pembagian data ke pihak ketiga** — hanya ke pemroses yang menjalankan layanan inti: Supabase (database & storage), Resend (email), Midtrans (pembayaran), penyedia analytics (§10.8) — tidak dijual/dibagikan untuk tujuan lain.
+4. **Hak pengguna** — akses, koreksi, dan penghapusan data pribadi sesuai UU PDP, lewat kontak dukungan DuaCincin (§10.6).
+5. **Keamanan data** — mengacu ke §10.2 (hashing password, secrets di server, kontrol akses per-user).
+6. **Retensi** — data akun & transaksi disimpan selama akun aktif dan selama diperlukan untuk kepatuhan hukum/pembuktian sengketa (§10.5); permintaan penghapusan akun mengikuti ketentuan retensi ini.
+7. **Kontak** — `[email dukungan/DPO DuaCincin]` untuk pertanyaan privasi.
+
 ---
 
 ## 12. Risiko & Asumsi Terbuka
@@ -263,6 +334,9 @@ Entitas inti (detail skema di implementasi, bukan final di sini):
 - **Konten Inspirasi:** proses kurasi manual butuh proses editorial berkelanjutan (bukan sekali build), perlu ditentukan siapa yang bertanggung jawab mengisi kontennya pasca-launch.
 - **Komisi & sanksi finansial:** angka persentase masih placeholder, perlu keputusan bisnis final dari pemilik produk.
 - **Kapasitas tim Wedding Consultant:** alur §8.11 mengasumsikan ada tim manusia yang menjalankan peran ini sejak MVP — perlu dipastikan ketersediaannya (jumlah staf, jam operasional/SLA respons chat) sebelum go-live, karena ini bukan sesuatu yang bisa "dikerjakan lewat kode".
+- **Utang teknis Fase 1:** proteksi bot (Cloudflare Turnstile, §7/§8.2/§10.2) belum diimplementasikan di form daftar/lupa password yang sudah dibangun — perlu ditambahkan sebelum go-live, mengandalkan rate limiting saja untuk sementara.
+- **Tool analytics belum final:** §10.8 mensyaratkan analytics sejak hari pertama tapi tool-nya (Plausible/PostHog/GA4/lainnya) belum dipilih — pilihan ini juga menentukan isi §11.3 (data apa yang dibagi ke pihak ketiga).
+- **Kebijakan Privasi & UU PDP:** draft §11.3 masih kerangka, belum diisi detail final (nama badan hukum, kontak DPO) dan belum direview hukum — sama urgensinya dengan §11.1/§11.2 sebelum go-live nyata.
 
 ---
 
