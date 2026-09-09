@@ -38,6 +38,18 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 
 ## Changelog
 
+### 2026-09-09 — PRD v0.2: peran Wedding Consultant & alur pemesanan end-to-end
+- **Fase:** — (pre-fase, dokumentasi, sebelum mulai Fase 1)
+- **Apa yang berubah:** [PRD.md](./PRD.md) diperbarui (§3, §8.2, §8.5, §8.11 baru, §9, §12, §13) menambahkan peran **Wedding Consultant** (staf internal DuaCincin, terpisah dari Vendor & Admin) dan alur: Chat Wedding Consultant/Cari Vendor → Booking → DP → Meeting Konsultan (opsional) → Pelunasan → Technical Meeting → Hari-H.
+- **File/komponen utama:** `PRD.md` saja — belum ada kode yang berubah.
+- **Keputusan/asumsi:**
+  - Role baru `wedding_consultant` ditambahkan ke `users.role`, login lewat halaman internal (bareng `admin`), tidak ada pendaftaran publik.
+  - Chat dipisah jadi 2 tipe: `vendor_chat` (sudah ada, §8.4) dan `consultation` (baru, Client↔Wedding Consultant).
+  - Booking punya status eksplisit `requested→confirmed→dp_paid→full_paid→completed`, menggantikan status escrow generik sebelumnya.
+  - Tabel baru `meetings` (consultant_meeting/technical_meeting) — MVP cukup pencatatan jadwal & status, tanpa integrasi video-call.
+  - **Ini menambah scope ke Fase 1 (3 role auth, bukan 2), Fase 2 (2 tipe chat), Fase 5 (task Wedding Planner terhubung ke Technical Meeting), dan Fase 6 (penjadwalan meeting)** — roadmap fase tetap sama urutannya, hanya cakupannya diperluas.
+- **Status:** Done (dokumentasi).
+
 ### 2026-09-09 — Fase 0: Setup proyek (Next.js + Go + Supabase)
 - **Fase:** 0
 - **Apa yang berubah:**

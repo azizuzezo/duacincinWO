@@ -2,10 +2,14 @@
 
 | | |
 |---|---|
-| **Versi** | 0.1 (Draft awal) |
+| **Versi** | 0.2 |
 | **Tanggal** | 2026-09-09 |
 | **Status** | Menunggu review pemilik produk |
 | **Terkait** | [engineering.md](./engineering.md) — roadmap fase & log perubahan teknis |
+
+**Riwayat revisi:**
+- v0.2 (2026-09-09) — Menambahkan peran **Wedding Consultant** (staf internal DuaCincin) dan alur pemesanan end-to-end (§8.11), menyelaraskan milestone escrow (§8.5) dengan alur tersebut.
+- v0.1 (2026-09-09) — Draft awal.
 
 ---
 
@@ -35,6 +39,7 @@ Client menemukan vendor lewat DuaCincin, berdiskusi lewat DuaCincin, booking lew
 | **Client** | Calon pengantin/keluarga, mendaftar untuk mencari vendor, menyusun budget, browsing inspirasi, dan menyusun rencana pernikahan (wedding planner/checklist). |
 | **Vendor** | Bisnis penyedia jasa pernikahan (decor, MUA, fotografer, dst) yang mendaftar untuk menerima booking lewat platform, terikat Perjanjian Kemitraan Vendor. |
 | **Admin (internal DuaCincin)** | Memverifikasi pendaftaran vendor, moderasi konten Inspirasi, menangani sengketa & pelanggaran anti-akal-akalan, mengelola komisi/payout. |
+| **Wedding Consultant (internal DuaCincin)** | Staf DuaCincin (bukan Vendor, bukan Admin backoffice) yang menjadi titik kontak utama Client selama proses perencanaan — membantu memilih vendor lewat chat konsultasi, mendampingi lewat sesi meeting bila dibutuhkan, hingga hari-H. Lihat alur lengkap di §8.11. |
 
 ---
 
@@ -110,7 +115,8 @@ Client menemukan vendor lewat DuaCincin, berdiskusi lewat DuaCincin, booking lew
 - Menjelaskan secara singkat proposisi nilai: budget planner otomatis, direktori vendor terverifikasi, semua transaksi aman lewat platform.
 
 ### 8.2 Autentikasi
-- Dua alur terpisah: **Login/Daftar Client** dan **Login/Daftar Vendor** (halaman & endpoint berbeda, role tersimpan di tabel `users.role`).
+- Dua alur terpisah untuk publik: **Login/Daftar Client** dan **Login/Daftar Vendor** (halaman & endpoint berbeda, role tersimpan di tabel `users.role`).
+- Role internal (`admin`, `wedding_consultant`) tidak punya halaman daftar publik — akun dibuat manual oleh Admin lewat backoffice (§8.10), login lewat halaman internal terpisah dari Client/Vendor.
 - Password: hash Argon2id, input password wajib ada tombol **show/hide** (mata) di semua form (login, daftar, reset password).
 - **Lupa password:** request → kirim OTP 6 digit ke email via Resend → OTP berlaku **5 menit** → verifikasi OTP → set password baru.
 - **Rate limiting:**
@@ -130,8 +136,8 @@ Client menemukan vendor lewat DuaCincin, berdiskusi lewat DuaCincin, booking lew
 
 ### 8.5 Booking & Escrow Payment
 - Client memilih vendor → mengajukan booking (tanggal, paket/layanan, harga disepakati lewat chat) → Vendor konfirmasi → Client membayar DP lewat Midtrans ke akun penampung DuaCincin.
-- Dana ditahan sampai milestone tercapai (mis. H-1 acara / acara selesai dikonfirmasi Client), baru di-disburse ke rekening vendor dikurangi **komisi platform (default 10%, dikonfigurasi per kategori/vendor oleh Admin, bukan hardcode)**.
-- Semua transaksi tercatat di tabel `transactions` dengan status (`pending`, `paid_dp`, `paid_full`, `disbursed`, `disputed`, `refunded`).
+- Dana ditahan bertahap mengikuti alur pemesanan di §8.11 (DP → pelunasan/full payment), baru di-disburse ke rekening vendor setelah acara selesai dikonfirmasi Client, dikurangi **komisi platform (default 10%, dikonfigurasi per kategori/vendor oleh Admin, bukan hardcode)**.
+- Semua transaksi tercatat di tabel `transactions` dengan status yang mengikuti tahapan booking: `pending` → `paid_dp` → `full_paid` → `completed` (setelah acara & disbursement) — dengan cabang `disputed`/`refunded` bila terjadi sengketa.
 
 ### 8.6 Perjanjian Kemitraan Vendor & Anti-Circumvention (Legal)
 - Saat mendaftar, Vendor wajib menyetujui **Perjanjian Kemitraan Vendor DuaCincin** (lihat draft lengkap di §11) sebelum akun aktif — dicatat versi & timestamp persetujuan (`vendor_agreements` table, untuk pembuktian hukum).
@@ -171,6 +177,31 @@ Client menemukan vendor lewat DuaCincin, berdiskusi lewat DuaCincin, booking lew
 - Dispute queue untuk pelanggaran anti-circumvention & sengketa transaksi.
 - Konfigurasi komisi per kategori/vendor.
 - Dashboard ringkas: jumlah vendor aktif, transaksi berjalan, laporan pelanggaran terbuka.
+- Mengelola akun internal (`admin`, `wedding_consultant`) — buat/nonaktifkan akun staf, tidak ada pendaftaran publik untuk role ini.
+
+### 8.11 Alur Pemesanan End-to-End (Customer Journey)
+
+Alur utama yang dilalui Client dari awal sampai hari-H, menggabungkan fitur §8.2–§8.6 ke dalam satu rangkaian:
+
+```
+Chat dengan Wedding Consultant  ─┐
+      atau                       ├─▶ Booking ─▶ DP ─▶ [Meeting dgn Wedding Consultant]* ─▶ Pelunasan (Full Payment) ─▶ Technical Meeting ─▶ Hari-H (Wedding)
+Cari Vendor sendiri (§8.3)      ─┘
+```
+*langkah opsional, hanya bila Client meminta pendampingan.*
+
+1. **Titik masuk (dua opsi, tidak eksklusif):**
+   - **Chat dengan Wedding Consultant** — kanal chat terpisah dari chat Client↔Vendor (§8.4): `conversations.type = 'consultation'`, lawan bicara adalah staf `wedding_consultant`, bukan Vendor. Client bisa cerita kebutuhan/budget, lalu Wedding Consultant merekomendasikan vendor dari direktori (bisa mengirim tautan profil vendor langsung ke chat).
+   - **Cari Vendor sendiri** — Client browsing direktori (§8.3) tanpa melalui Wedding Consultant.
+   - Kedua jalur berakhir di langkah yang sama: Client menghubungi Vendor terpilih lewat chat in-app (§8.4) untuk membahas paket & harga.
+2. **Booking** — Client mengajukan booking ke Vendor (tanggal, paket, harga hasil diskusi), Vendor konfirmasi. Status booking: `requested` → `confirmed`.
+3. **DP (Down Payment)** — Client bayar DP lewat escrow (§8.5). Status booking → `dp_paid`. Ini adalah milestone pertama yang membuka slot tanggal vendor untuk Client tsb.
+4. **Meeting dengan Wedding Consultant (opsional)** — Client bisa menjadwalkan sesi konsultasi lanjutan (video call/telepon) dengan Wedding Consultant di antara DP dan pelunasan, mis. untuk membahas ulang budget atau kebutuhan tambahan. Dijadwalkan lewat kanal `consultation` yang sama di langkah 1 — dicatat sebagai record `meetings` (`type='consultant_meeting'`, `scheduled_at`, `status`), bukan fitur baru yang terpisah.
+5. **Pelunasan (Full Payment)** — Client melunasi sisa pembayaran lewat escrow. Status booking → `full_paid`.
+6. **Technical Meeting** — Pertemuan (bisa online/offline) antara Client, Vendor, dan opsional Wedding Consultant untuk menyelaraskan detail teknis di lapangan (rundown acara, denah, jadwal kru). Dicatat sebagai `meetings` (`type='technical_meeting'`) dan **wajib ada sebelum status booking bisa berpindah ke tahap acara** — tercermin juga sebagai task otomatis di Wedding Planner (§8.9).
+7. **Wedding (Hari-H)** — Acara berlangsung. Setelah Client mengonfirmasi acara selesai (atau lewat batas waktu otomatis, mis. H+2 tanpa keberatan), booking → `completed`, escrow men-disburse dana ke Vendor dikurangi komisi (§8.5).
+
+**Catatan implementasi:** langkah 4 & 6 butuh kapasitas manusia riil dari tim Wedding Consultant DuaCincin (bukan fitur yang bisa "selesai" hanya lewat kode) — MVP cukup menyediakan penjadwalan meeting & pencatatan status, bukan integrasi video-call penuh (link Zoom/Meet cukup ditempel manual oleh Wedding Consultant untuk MVP).
 
 ---
 
@@ -178,7 +209,7 @@ Client menemukan vendor lewat DuaCincin, berdiskusi lewat DuaCincin, booking lew
 
 Entitas inti (detail skema di implementasi, bukan final di sini):
 
-`users` (role: client/vendor/admin) · `vendor_profiles` · `vendor_categories` · `vendor_agreements` (versi & timestamp persetujuan) · `client_agreements` · `otp_codes` · `password_resets` · `conversations` / `messages` · `bookings` · `transactions` · `disputes` · `inspiration_items` · `budget_plans` / `budget_categories` · `wedding_planner_tasks` · `rate_limit_events`.
+`users` (role: `client`/`vendor`/`admin`/`wedding_consultant`) · `vendor_profiles` · `vendor_categories` · `vendor_agreements` (versi & timestamp persetujuan) · `client_agreements` · `otp_codes` · `password_resets` · `conversations` (type: `vendor_chat`/`consultation`) / `messages` · `bookings` (status: `requested`→`confirmed`→`dp_paid`→`full_paid`→`completed`) · `meetings` (type: `consultant_meeting`/`technical_meeting`, `scheduled_at`, `status`) · `transactions` · `disputes` · `inspiration_items` · `budget_plans` / `budget_categories` · `wedding_planner_tasks` · `rate_limit_events`.
 
 ---
 
@@ -231,6 +262,7 @@ Entitas inti (detail skema di implementasi, bukan final di sini):
 - **Legalitas:** draft §11 wajib direview advokat sebelum go-live nyata (bukan hanya untuk keperluan demo produk).
 - **Konten Inspirasi:** proses kurasi manual butuh proses editorial berkelanjutan (bukan sekali build), perlu ditentukan siapa yang bertanggung jawab mengisi kontennya pasca-launch.
 - **Komisi & sanksi finansial:** angka persentase masih placeholder, perlu keputusan bisnis final dari pemilik produk.
+- **Kapasitas tim Wedding Consultant:** alur §8.11 mengasumsikan ada tim manusia yang menjalankan peran ini sejak MVP — perlu dipastikan ketersediaannya (jumlah staf, jam operasional/SLA respons chat) sebelum go-live, karena ini bukan sesuatu yang bisa "dikerjakan lewat kode".
 
 ---
 
@@ -241,10 +273,12 @@ Detail tugas, status, dan log perubahan teknis ada di **[engineering.md](./engin
 | Fase | Fokus |
 |---|---|
 | 0 | Setup proyek (Next.js, Go, Supabase, env, CI dasar) |
-| 1 | Autentikasi Client & Vendor + OTP + rate limiting |
-| 2 | Direktori vendor (anonim→unlock) + profil + chat in-app |
+| 1 | Autentikasi Client & Vendor + OTP + rate limiting (termasuk login internal Admin/Wedding Consultant) |
+| 2 | Direktori vendor (anonim→unlock) + profil + chat in-app (vendor_chat & consultation) |
 | 3 | Budget Planner |
 | 4 | Galeri Inspirasi |
-| 5 | Wedding Planner |
-| 6 | Booking + Escrow Payment (Midtrans) |
+| 5 | Wedding Planner (termasuk task otomatis dari Technical Meeting, §8.11) |
+| 6 | Booking + Escrow Payment (Midtrans) + penjadwalan Meeting (consultant & technical) |
 | 7 | Admin/backoffice + penegakan anti-circumvention |
+
+*Alur end-to-end lengkap (chat konsultasi → booking → DP → meeting → pelunasan → technical meeting → hari-H) ada di §8.11 — dibangun bertahap lintas Fase 1, 2, 5, dan 6 di atas, bukan satu fase tersendiri.*
