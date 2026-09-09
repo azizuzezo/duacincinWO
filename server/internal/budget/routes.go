@@ -1,0 +1,19 @@
+package budget
+
+import (
+	"github.com/go-chi/chi/v5"
+
+	"duacincin/server/internal/auth"
+	"duacincin/server/internal/config"
+)
+
+// Mount registers /budget-plan routes onto r, restricted to Clients.
+func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
+	r.Route("/budget-plan", func(r chi.Router) {
+		r.Use(auth.RequireAuth(cfg))
+		r.Use(auth.RequireRole(auth.RoleClient))
+
+		r.Get("/me", MyPlan(deps))
+		r.Put("/", UpsertPlan(deps))
+	})
+}

@@ -26,7 +26,7 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 | 0 | Setup proyek: scaffold Next.js + Go, koneksi Supabase (pooler), struktur env, CI dasar | §7 | Done |
 | 1 | Autentikasi Client & Vendor: daftar, login, lupa password (OTP via Resend, 5 menit expiry), rate limiting, show/hide password | §8.2 | Done |
 | 2 | Direktori vendor (kartu anonim → unlock setelah login), profil vendor, kategori, chat in-app + filter kontak eksternal | §8.3, §8.4 | Done |
-| 3 | Budget Planner: input total budget & tamu, auto-split default, adjustable proportional rescale | §8.8 | Not started |
+| 3 | Budget Planner: input total budget & tamu, auto-split default, adjustable proportional rescale | §8.8 | Done |
 | 4 | Galeri Inspirasi: struktur data, panel upload/moderasi Admin, seed data awal | §8.7 | Not started |
 | 5 | Wedding Planner: checklist & timeline, referensi duacincin.id dengan tampilan baru | §8.9 | Not started |
 | 6 | Booking + Escrow Payment (Midtrans): booking flow, DP, holding, disbursement dikurangi komisi | §8.5 | Not started |
@@ -37,6 +37,23 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 ---
 
 ## Changelog
+
+### 2026-09-09 — Fase 3: Budget Planner
+- **Fase:** 3
+- **Apa yang berubah:**
+  - **Migrasi DB** (`000003_budget_plans.up.sql`): `budget_plans` (1 baris per client, `total_budget`, `guest_count`), `budget_plan_categories` (7 kategori tetap per plan, kolom `percentage` sebagai `double precision` — dipilih ketimbang `numeric` supaya scan langsung ke `float64` di pgx tanpa friksi tipe).
+  - **Backend baru:** `internal/budget` (`UpsertPlan` — validasi 7 kategori lengkap & total persentase ≈100% dengan toleransi 0.5 untuk rounding frontend, `MyPlan` — mengembalikan default PRD §8.8 kalau Client belum pernah menyimpan).
+  - **Perluasan direktori vendor** (`internal/vendors`, `ListApproved`): tambah parameter `max_price` supaya breakdown budget bisa link langsung ke direktori vendor yang harganya masuk akal (PRD §8.8 "filter rentang harga sesuai budget kategori itu").
+  - **Frontend baru:** `lib/budget.ts` (metadata 7 kategori + algoritma `rescale` — proporsional terhadap sisa kategori lain, dengan koreksi pembulatan supaya total selalu tepat 100%), halaman `/client/budget` (slider per kategori, live-recalculate, tautan "Cari Vendor" per kategori yang relevan dengan `max_price` sesuai nominal budget kategori itu).
+- **File/komponen utama:** `server/migrations/000003_*`, `server/internal/budget/**`, `server/internal/repository/budget.go`, `server/internal/repository/vendors.go` (ListApproved + maxPrice), `server/internal/vendors/handlers_directory.go`, `web/src/lib/budget.ts`, `web/src/app/client/budget/page.tsx`.
+- **Verifikasi yang sudah dijalankan:**
+  - Backend: `go build`/`go vet`/`gofmt` bersih. curl end-to-end ke Supabase asli: default plan sebelum ada data tersimpan, save & GET ulang menghasilkan `amount` yang tepat (`total_budget × persentase/100`), validasi menolak total persentase ≠100% dan kategori tidak lengkap, role non-client (vendor) ditolak 403.
+  - **Browser sungguhan (Playwright), 8/8 lolos:** default 7 kategori tampil sesuai PRD, drag slider "Dekorasi" ke 30% → kategori lain otomatis menyusut proporsional dan total tetap persis 100%, tautan "Cari Vendor" kategori Dekorasi membawa `max_price` yang benar, simpan → reload browser → data tetap tersimpan.
+  - Data uji & tool sementara sudah dibersihkan/dihapus.
+- **Keputusan/asumsi:**
+  - "Kategori lain rescale proporsional" diimplementasikan murni di frontend (live, saat slider digeser) — backend hanya memvalidasi hasil akhir menjumlah ~100%, sesuai sifatnya sebagai interaksi UI instan, bukan business rule server-side.
+  - `venue_catering` (budget) dipetakan ke **dua** kategori vendor (`venue` dan `catering`) sekaligus di tautan "Cari Vendor" karena direktori vendor memisah keduanya; `reserve` tidak punya tautan vendor sama sekali (memang bukan kategori jasa).
+  - Jumlah tamu (`guest_count`) saat ini murni informasi tersimpan, belum dipakai di formula manapun — sesuai literal PRD §8.8 yang hanya mensyaratkan `Budget Kategori = Total × Persentase`.
 
 ### 2026-09-09 — Fase 2: Direktori Vendor + Profil + Chat In-App
 - **Fase:** 2

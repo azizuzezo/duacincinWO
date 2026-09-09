@@ -37,6 +37,9 @@ function ClientDashboardContent({ name }: { name: string }) {
         <Link href="/vendors" className="rounded-xl bg-dc-navy px-5 py-2.5 text-sm font-semibold text-dc-white hover:bg-dc-gold hover:text-dc-navy">
           Cari Vendor
         </Link>
+        <Link href="/client/budget" className="rounded-xl bg-dc-gold px-5 py-2.5 text-sm font-semibold text-dc-navy hover:bg-dc-navy hover:text-dc-white">
+          Budget Planner
+        </Link>
         <Link href="/client/messages" className="rounded-xl border border-dc-navy/20 px-5 py-2.5 text-sm font-semibold text-dc-navy hover:bg-dc-offwhite">
           Pesan
         </Link>

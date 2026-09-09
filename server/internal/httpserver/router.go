@@ -13,6 +13,7 @@ import (
 
 	"duacincin/server/internal/admin"
 	"duacincin/server/internal/auth"
+	"duacincin/server/internal/budget"
 	"duacincin/server/internal/chat"
 	"duacincin/server/internal/config"
 	"duacincin/server/internal/vendors"
@@ -24,6 +25,7 @@ type Deps struct {
 	Vendors *vendors.Deps
 	Admin   *admin.Deps
 	Chat    *chat.Deps
+	Budget  *budget.Deps
 }
 
 // NewRouter builds the root chi router for the DuaCincin API.
@@ -50,7 +52,8 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config, deps Deps) http.Handler {
 		vendors.Mount(r, deps.Vendors, cfg)
 		admin.Mount(r, deps.Admin, cfg)
 		chat.Mount(r, deps.Chat, cfg)
-		// Feature routes (budget, inspirasi, ...) are mounted here in later phases.
+		budget.Mount(r, deps.Budget, cfg)
+		// Feature routes (inspirasi, ...) are mounted here in later phases.
 	})
 
 	return r

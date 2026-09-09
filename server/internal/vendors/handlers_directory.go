@@ -2,6 +2,7 @@ package vendors
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 
@@ -31,7 +32,19 @@ func Directory(deps *Deps) http.HandlerFunc {
 			return
 		}
 
-		profiles, err := deps.Vendors.ListApproved(r.Context(), category, city)
+		// max_price: only vendors whose starting price fits the budget the
+		// Client is browsing with (PRD §8.8 budget-to-directory link-through).
+		var maxPrice int64
+		if raw := r.URL.Query().Get("max_price"); raw != "" {
+			parsed, err := strconv.ParseInt(raw, 10, 64)
+			if err != nil || parsed < 0 {
+				httpx.Error(w, http.StatusBadRequest, "max_price tidak valid")
+				return
+			}
+			maxPrice = parsed
+		}
+
+		profiles, err := deps.Vendors.ListApproved(r.Context(), category, city, maxPrice)
 		if err != nil {
 			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
 			return

@@ -123,3 +123,15 @@ export type ChatMessage = {
   flagged: boolean;
   created_at: string;
 };
+
+export type BudgetCategoryDTO = {
+  category: string;
+  percentage: number;
+  amount: number;
+};
+
+export type BudgetPlan = {
+  total_budget: number;
+  guest_count: number;
+  categories: BudgetCategoryDTO[];
+};

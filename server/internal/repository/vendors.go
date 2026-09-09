@@ -75,16 +75,18 @@ func (r *VendorRepo) GetByUserID(ctx context.Context, userID string) (*VendorPro
 	return p, err
 }
 
-// ListApproved returns approved vendors, optionally filtered by category/city.
-func (r *VendorRepo) ListApproved(ctx context.Context, category, city string) ([]VendorProfile, error) {
+// ListApproved returns approved vendors, optionally filtered by
+// category/city/maxPrice (maxPrice=0 means no price filter).
+func (r *VendorRepo) ListApproved(ctx context.Context, category, city string, maxPrice int64) ([]VendorProfile, error) {
 	rows, err := r.pool.Query(ctx, `
 		select user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, created_at, updated_at
 		from vendor_profiles
 		where status = 'approved'
 		  and ($1 = '' or category = $1::vendor_category)
 		  and ($2 = '' or city ilike $2)
+		  and ($3 = 0 or price_min <= $3)
 		order by created_at desc
-	`, category, city)
+	`, category, city, maxPrice)
 	if err != nil {
 		return nil, err
 	}

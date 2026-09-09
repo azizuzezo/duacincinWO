@@ -7,6 +7,7 @@ import (
 
 	"duacincin/server/internal/admin"
 	"duacincin/server/internal/auth"
+	"duacincin/server/internal/budget"
 	"duacincin/server/internal/chat"
 	"duacincin/server/internal/config"
 	"duacincin/server/internal/db"
@@ -58,6 +59,7 @@ func main() {
 		Vendors: vendors.NewDeps(vendorRepo, storageClient),
 		Admin:   admin.NewDeps(vendorRepo),
 		Chat:    chat.NewDeps(chatRepo, vendorRepo),
+		Budget:  budget.NewDeps(repository.NewBudgetRepo(pool)),
 	}
 
 	router := httpserver.NewRouter(pool, cfg, deps)
