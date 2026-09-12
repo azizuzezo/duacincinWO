@@ -20,3 +20,6 @@ server/duacincin-server
 # OS / editor
 .DS_Store
 *.log
+
+# Brainstorming visual companion (mockup scratch space)
+.superpowers/
