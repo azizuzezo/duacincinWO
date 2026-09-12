@@ -42,7 +42,7 @@ func Login(deps *Deps, allowedRoles ...string) http.HandlerFunc {
 		}
 
 		if user.IsBlocked() {
-			httpx.Error(w, http.StatusForbidden, "akun ini ditangguhkan/dinonaktifkan karena pelanggaran Perjanjian Kemitraan — hubungi dukungan DuaCincin")
+			httpx.Error(w, http.StatusForbidden, "akun ini ditangguhkan/dinonaktifkan karena pelanggaran Perjanjian Kemitraan, hubungi dukungan DuaCincin")
 			return
 		}
 

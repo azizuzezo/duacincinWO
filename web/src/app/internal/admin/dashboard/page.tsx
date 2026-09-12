@@ -3,26 +3,22 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { ADMIN_NAV } from "@/components/shell/navConfig";
+import { Shell } from "@/components/shell/Shell";
+import { Card } from "@/components/ui/Card";
+import { DashboardBanner } from "@/components/ui/DashboardBanner";
 import { WithUser } from "@/components/WithUser";
-import { apiGet, type DashboardStats } from "@/lib/api";
+import { apiGet, type CurrentUser, type DashboardStats } from "@/lib/api";
 
 export default function AdminDashboardPage() {
   return (
-    <WithUser allowedRoles={["admin"]} loginPath="/internal/login">
-      {() => <AdminDashboardContent />}
+    <WithUser allowedRoles={["admin"]} loginPath="/login">
+      {(user) => <AdminDashboardContent user={user} />}
     </WithUser>
   );
 }
 
-const NAV_LINKS = [
-  { href: "/internal/admin/vendors", label: "Vendor Menunggu Review" },
-  { href: "/internal/admin/vendors/approved", label: "Vendor Aktif & Komisi" },
-  { href: "/internal/admin/disputes", label: "Sengketa Terbuka" },
-  { href: "/internal/admin/disbursements", label: "Pencairan Dana" },
-  { href: "/internal/admin/inspirasi", label: "Galeri Inspirasi" },
-];
-
-function AdminDashboardContent() {
+function AdminDashboardContent({ user }: { user: CurrentUser }) {
   const [stats, setStats] = useState<DashboardStats | null>(null);
 
   useEffect(() => {
@@ -30,35 +26,64 @@ function AdminDashboardContent() {
   }, []);
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="font-heading mb-6 text-2xl font-extrabold text-dc-navy">Dashboard Admin</h1>
+    <Shell user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
+      <DashboardBanner title="Dashboard Admin" subtitle="Pantau vendor, transaksi, dan sengketa dalam satu tempat." />
 
-      <div className="grid grid-cols-3 gap-4">
-        <StatCard label="Vendor Aktif" value={stats?.active_vendors} />
-        <StatCard label="Transaksi Berjalan" value={stats?.ongoing_transactions} />
-        <StatCard label="Sengketa Terbuka" value={stats?.open_disputes} highlight={!!stats && stats.open_disputes > 0} />
+      <div className="mx-auto max-w-3xl px-4 py-10">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <StatCard
+            label="Vendor Aktif"
+            value={stats?.active_vendors}
+            href="/internal/admin/vendors/approved"
+            action="Kelola komisi →"
+            delay={0}
+          />
+          <StatCard
+            label="Transaksi Berjalan"
+            value={stats?.ongoing_transactions}
+            href="/internal/admin/disbursements"
+            action="Lihat pencairan →"
+            delay={60}
+          />
+          <StatCard
+            label="Sengketa Terbuka"
+            value={stats?.open_disputes}
+            href="/internal/admin/disputes"
+            action="Tinjau sengketa →"
+            highlight={!!stats && stats.open_disputes > 0}
+            delay={120}
+          />
+        </div>
       </div>
-
-      <div className="mt-8 grid grid-cols-2 gap-3">
-        {NAV_LINKS.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className="rounded-2xl border border-dc-black/10 bg-dc-white p-4 font-medium text-dc-navy hover:bg-dc-offwhite"
-          >
-            {link.label} →
-          </Link>
-        ))}
-      </div>
-    </main>
+    </Shell>
   );
 }
 
-function StatCard({ label, value, highlight }: { label: string; value?: number; highlight?: boolean }) {
+function StatCard({
+  label,
+  value,
+  href,
+  action,
+  highlight,
+  delay = 0,
+}: {
+  label: string;
+  value?: number;
+  href: string;
+  action: string;
+  highlight?: boolean;
+  delay?: number;
+}) {
   return (
-    <div className={`rounded-2xl border p-4 text-center ${highlight ? "border-dc-gold bg-dc-gold/10" : "border-dc-black/10 bg-dc-white"}`}>
-      <p className="font-heading text-3xl font-extrabold text-dc-navy">{value ?? "—"}</p>
-      <p className="mt-1 text-sm text-dc-black/60">{label}</p>
-    </div>
+    <Link href={href} className="group block">
+      <Card
+        className={`animate-fade-up p-5 text-center shadow-lg shadow-dc-navy/10 transition duration-300 group-hover:-translate-y-1 group-hover:shadow-xl ${highlight ? "border-dc-gold bg-dc-gold/10" : ""}`}
+        style={{ animationDelay: `${delay}ms` }}
+      >
+        <p className="font-heading text-3xl font-extrabold text-dc-navy">{value ?? "-"}</p>
+        <p className="mt-1 text-sm text-dc-black/60">{label}</p>
+        <p className="mt-3 text-xs font-semibold text-dc-gold group-hover:text-dc-navy">{action}</p>
+      </Card>
+    </Link>
   );
 }

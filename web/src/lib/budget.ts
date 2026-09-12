@@ -24,6 +24,18 @@ export const BUDGET_CATEGORIES: {
   { key: "reserve", label: "Cadangan", defaultPercentage: 10 },
 ];
 
+// Shared with the real Budget Planner (app/client/budget) and the landing
+// page's live demo, so both visualize categories with the same colors.
+export const BUDGET_CATEGORY_COLORS: Record<BudgetCategoryKey, string> = {
+  venue_catering: "#831843",
+  decor: "#F5A623",
+  photo_video: "#A6295C",
+  mua_attire: "#D98E1F",
+  entertainment: "#C15980",
+  invitation_souvenir: "#F0B84D",
+  reserve: "#D9A6BE",
+};
+
 export function defaultCategoryState(): { category: BudgetCategoryKey; percentage: number }[] {
   return BUDGET_CATEGORIES.map((c) => ({ category: c.key, percentage: c.defaultPercentage }));
 }

@@ -8,9 +8,18 @@ import { AuthCard } from "@/components/AuthCard";
 import { Button } from "@/components/Button";
 import { PasswordField } from "@/components/PasswordField";
 import { TextField } from "@/components/TextField";
-import { apiPost, ApiError } from "@/lib/api";
+import { apiPost, ApiError, type CurrentUser } from "@/lib/api";
 
-export default function ClientLoginPage() {
+// One dashboard per role. The backend already tells us which one via
+// `role` on the login response, so there's nothing to ask the user upfront.
+const DASHBOARD_BY_ROLE: Record<CurrentUser["role"], string> = {
+  client: "/client/dashboard",
+  vendor: "/vendor/dashboard",
+  admin: "/internal/admin/dashboard",
+  wedding_consultant: "/internal/consultations",
+};
+
+export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,8 +31,8 @@ export default function ClientLoginPage() {
     setError(null);
     setLoading(true);
     try {
-      await apiPost("/api/v1/auth/client/login", { email, password });
-      router.push("/client/dashboard");
+      const user = await apiPost<CurrentUser>("/api/v1/auth/login", { email, password });
+      router.push(DASHBOARD_BY_ROLE[user.role]);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Terjadi kesalahan, coba lagi.");
     } finally {
@@ -33,19 +42,14 @@ export default function ClientLoginPage() {
 
   return (
     <AuthCard
-      eyebrow="Client"
+      variant="unified"
       title="Masuk ke akunmu"
-      subtitle="Lanjutkan rencana pernikahanmu di DuaCincin."
+      subtitle="Client, vendor, atau tim internal, masuk di sini, satu pintu untuk semua."
       footer={
         <>
           Belum punya akun?{" "}
-          <Link href="/client/register" className="font-semibold text-dc-navy hover:text-dc-gold">
-            Daftar sebagai Client
-          </Link>
-          <br />
-          Kamu vendor?{" "}
-          <Link href="/vendor/login" className="font-semibold text-dc-navy hover:text-dc-gold">
-            Masuk di sini
+          <Link href="/register" className="font-semibold text-dc-navy hover:text-dc-gold">
+            Daftar di sini
           </Link>
         </>
       }

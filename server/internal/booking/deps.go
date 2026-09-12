@@ -26,6 +26,7 @@ type Deps struct {
 	Vendors       *repository.VendorRepo
 	Users         *repository.UserRepo
 	Planner       *repository.WeddingPlannerRepo
+	Reviews       *repository.ReviewRepo
 	Midtrans      *payment.Client
 }
 
@@ -37,6 +38,7 @@ func NewDeps(
 	vendors *repository.VendorRepo,
 	users *repository.UserRepo,
 	planner *repository.WeddingPlannerRepo,
+	reviews *repository.ReviewRepo,
 	midtrans *payment.Client,
 ) *Deps {
 	return &Deps{
@@ -47,6 +49,7 @@ func NewDeps(
 		Vendors:       vendors,
 		Users:         users,
 		Planner:       planner,
+		Reviews:       reviews,
 		Midtrans:      midtrans,
 	}
 }

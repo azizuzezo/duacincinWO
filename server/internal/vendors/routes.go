@@ -9,8 +9,12 @@ import (
 
 // Mount registers vendor-profile and public-directory routes onto r.
 func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
-	// Public directory — no auth required (PRD §8.1/§8.3).
+	// Public directory and vendor profile detail — no auth required. Vendor
+	// portfolios are fully open to browse; only booking and chat require an
+	// account (product decision, see engineering.md).
 	r.Get("/vendors", Directory(deps))
+	r.Get("/vendors/{id}", VendorDetail(deps))
+	r.Get("/vendors/{id}/reviews", ListVendorReviews(deps))
 
 	r.Route("/vendor", func(r chi.Router) {
 		r.Use(auth.RequireAuth(cfg))
@@ -18,13 +22,9 @@ func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 
 		r.Put("/profile", UpsertProfile(deps))
 		r.Get("/profile/me", MyProfile(deps))
+		r.Post("/profile/name-change", RequestNameChange(deps))
 		r.Post("/portfolio", UploadPortfolio(deps))
-	})
-
-	// Unlocked vendor detail — any authenticated user (PRD §8.3: "setelah
-	// Client login"); Vendor/staff roles reading it causes no harm.
-	r.Group(func(r chi.Router) {
-		r.Use(auth.RequireAuth(cfg))
-		r.Get("/vendors/{id}", VendorDetail(deps))
+		r.Delete("/portfolio/{id}", DeletePortfolio(deps))
+		r.Get("/payouts", ListMyPayouts(deps))
 	})
 }

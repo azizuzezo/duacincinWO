@@ -10,8 +10,9 @@ type Deps struct {
 	Chat     *repository.ChatRepo
 	Vendors  *repository.VendorRepo
 	Disputes *repository.DisputeRepo
+	Hub      *Hub
 }
 
-func NewDeps(chatRepo *repository.ChatRepo, vendors *repository.VendorRepo, disputes *repository.DisputeRepo) *Deps {
-	return &Deps{Chat: chatRepo, Vendors: vendors, Disputes: disputes}
+func NewDeps(chatRepo *repository.ChatRepo, vendors *repository.VendorRepo, disputes *repository.DisputeRepo, hub *Hub) *Deps {
+	return &Deps{Chat: chatRepo, Vendors: vendors, Disputes: disputes, Hub: hub}
 }

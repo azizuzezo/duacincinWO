@@ -7,15 +7,15 @@ const COLUMNS = [
     links: [
       { href: "/vendors", label: "Cari Vendor" },
       { href: "/inspirasi", label: "Inspirasi" },
-      { href: "/client/register", label: "Daftar" },
-      { href: "/client/login", label: "Masuk" },
+      { href: "/register", label: "Daftar" },
+      { href: "/login", label: "Masuk" },
     ],
   },
   {
     title: "Vendor",
     links: [
-      { href: "/vendor/register", label: "Daftar Jadi Mitra" },
-      { href: "/vendor/login", label: "Masuk" },
+      { href: "/register", label: "Daftar Jadi Mitra" },
+      { href: "/login", label: "Masuk" },
       { href: "/legal/vendor-agreement", label: "Perjanjian Kemitraan" },
     ],
   },
@@ -39,7 +39,7 @@ export function Footer() {
               <span className="font-heading text-lg font-extrabold text-dc-navy">DuaCincin</span>
             </Link>
             <p className="mt-3 max-w-xs text-sm text-dc-black/60">
-              Wadah tepercaya untuk merencanakan pernikahan — vendor terverifikasi, budget planner otomatis, dan
+              Wadah tepercaya untuk merencanakan pernikahan: vendor terverifikasi, budget planner otomatis, dan
               transaksi aman lewat escrow.
             </p>
           </div>
@@ -61,9 +61,6 @@ export function Footer() {
 
         <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-dc-black/5 pt-6 text-xs text-dc-black/40 sm:flex-row">
           <span>© {new Date().getFullYear()} DuaCincin. Seluruh hak cipta dilindungi.</span>
-          <Link href="/internal/login" className="hover:text-dc-navy">
-            Login Internal
-          </Link>
         </div>
       </div>
     </footer>

@@ -24,6 +24,7 @@ func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 		r.With(auth.RequireRole(auth.RoleClient)).Post("/{id}/pay/full", PayFull(deps))
 		r.With(auth.RequireRole(auth.RoleClient)).Post("/{id}/dev-simulate-payment", DevSimulatePayment(deps))
 		r.With(auth.RequireRole(auth.RoleClient)).Post("/{id}/complete", Complete(deps))
+		r.With(auth.RequireRole(auth.RoleClient)).Post("/{id}/review", SubmitReview(deps))
 		r.Get("/{id}/meetings", ListMeetingsForBooking(deps))
 		r.Post("/{id}/meetings", CreateTechnicalMeeting(deps))
 	})

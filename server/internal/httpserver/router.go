@@ -42,7 +42,6 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config, deps Deps) http.Handler {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.Timeout(15 * time.Second))
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
@@ -54,14 +53,33 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config, deps Deps) http.Handler {
 	r.Get("/healthz", healthHandler(pool))
 
 	r.Route("/api/v1", func(r chi.Router) {
-		auth.Mount(r, deps.Auth)
-		vendors.Mount(r, deps.Vendors, cfg)
-		admin.Mount(r, deps.Admin, cfg)
-		chat.Mount(r, deps.Chat, cfg)
-		budget.Mount(r, deps.Budget, cfg)
-		inspiration.Mount(r, deps.Inspiration, cfg)
-		weddingplanner.Mount(r, deps.WeddingPlanner, cfg)
-		booking.Mount(r, deps.Booking, cfg)
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.Timeout(15 * time.Second))
+			auth.Mount(r, deps.Auth)
+			vendors.Mount(r, deps.Vendors, cfg)
+			admin.Mount(r, deps.Admin, cfg)
+			chat.Mount(r, deps.Chat, cfg)
+			budget.Mount(r, deps.Budget, cfg)
+			weddingplanner.Mount(r, deps.WeddingPlanner, cfg)
+			booking.Mount(r, deps.Booking, cfg)
+		})
+
+		// Inspiration gets a longer timeout on its own: the Admin
+		// "sync Pinterest board" action probes hundreds of candidate
+		// pin IDs against Pinterest's oEmbed API and then downloads
+		// and re-uploads each real match, which routinely runs well
+		// past the default 15s route timeout.
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.Timeout(5 * time.Minute))
+			inspiration.Mount(r, deps.Inspiration, cfg)
+		})
+
+		// The chat websocket upgrade route stays outside every request
+		// timeout: those middlewares would tear the connection down a
+		// few seconds/minutes in, which defeats a long-lived socket.
+		r.Group(func(r chi.Router) {
+			chat.MountWS(r, deps.Chat, cfg)
+		})
 	})
 
 	return r

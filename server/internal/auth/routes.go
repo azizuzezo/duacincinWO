@@ -17,14 +17,15 @@ const (
 func Mount(r chi.Router, deps *Deps) {
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/client/register", Register(deps, RoleClient, repository.AgreementTypeClientTOS))
-		r.Post("/client/login", Login(deps, RoleClient))
-
 		r.Post("/vendor/register", Register(deps, RoleVendor, repository.AgreementTypeVendorPartnership))
-		r.Post("/vendor/login", Login(deps, RoleVendor))
 
-		// Admin & Wedding Consultant: no public registration, accounts are
-		// created manually by an Admin (PRD §8.10).
-		r.Post("/internal/login", Login(deps, RoleAdmin, RoleWeddingConsultant))
+		// One login door for every role (client, vendor, admin, wedding
+		// consultant) — email is globally unique across roles (see
+		// engineering.md), so the handler can look the account up and issue
+		// the right session without the caller needing to know the role
+		// upfront. Admin & Wedding Consultant still have no public
+		// registration; only login is shared (PRD §8.10).
+		r.Post("/login", Login(deps, RoleClient, RoleVendor, RoleAdmin, RoleWeddingConsultant))
 
 		r.Post("/forgot-password", ForgotPassword(deps))
 		r.Post("/verify-otp", VerifyOTP(deps))
@@ -35,6 +36,7 @@ func Mount(r chi.Router, deps *Deps) {
 		r.Group(func(r chi.Router) {
 			r.Use(RequireAuth(deps.Cfg))
 			r.Get("/me", Me(deps))
+			r.Post("/change-password", ChangePassword(deps))
 		})
 	})
 }

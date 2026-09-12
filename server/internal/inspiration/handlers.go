@@ -20,10 +20,11 @@ type itemDTO struct {
 	AltText      string `json:"alt_text"`
 	Caption      string `json:"caption"`
 	SourceCredit string `json:"source_credit,omitempty"`
+	SourceURL    string `json:"source_url,omitempty"`
 }
 
 func toItemDTO(it *repository.InspirationItem) itemDTO {
-	return itemDTO{
+	dto := itemDTO{
 		ID:           it.ID,
 		Category:     it.Category,
 		URL:          it.PublicURL,
@@ -31,6 +32,12 @@ func toItemDTO(it *repository.InspirationItem) itemDTO {
 		Caption:      it.Caption,
 		SourceCredit: it.SourceCredit,
 	}
+	if it.ExternalRef != nil {
+		if pinID, ok := strings.CutPrefix(*it.ExternalRef, "pinterest:"); ok {
+			dto.SourceURL = fmt.Sprintf("https://www.pinterest.com/pin/%s/", pinID)
+		}
+	}
+	return dto
 }
 
 // List is the PUBLIC (no auth required) gallery listing, with simple

@@ -182,6 +182,46 @@ func SendMessage(deps *Deps) http.HandlerFunc {
 			_ = deps.Disputes.Create(r.Context(), *conv.VendorID, &message.ID, "Pesan chat terdeteksi berisi kontak eksternal")
 		}
 
-		httpx.JSON(w, http.StatusCreated, toMessageDTO(message))
+		dto := toMessageDTO(message)
+		deps.Hub.Broadcast(conv.ID, map[string]any{"type": "message.new", "message": dto})
+
+		httpx.JSON(w, http.StatusCreated, dto)
+	}
+}
+
+type markReadRequest struct {
+	LastReadMessageID string `json:"last_read_message_id"`
+}
+
+// MarkRead records how far the caller has read into a conversation and
+// notifies the other participant(s) over the websocket hub so their UI can
+// show a read receipt.
+func MarkRead(deps *Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		claims, _ := auth.ClaimsFromContext(r.Context())
+		conv, err := deps.Chat.GetByID(r.Context(), chi.URLParam(r, "id"))
+		if err != nil || !canAccess(claims, conv) {
+			httpx.Error(w, http.StatusNotFound, "percakapan tidak ditemukan")
+			return
+		}
+
+		var req markReadRequest
+		if err := httpx.DecodeJSON(w, r, &req); err != nil {
+			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			return
+		}
+
+		if err := deps.Chat.MarkRead(r.Context(), conv.ID, claims.UserID, req.LastReadMessageID); err != nil {
+			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
+			return
+		}
+
+		deps.Hub.Broadcast(conv.ID, map[string]any{
+			"type":                 "read.updated",
+			"user_id":              claims.UserID,
+			"last_read_message_id": req.LastReadMessageID,
+		})
+
+		httpx.JSON(w, http.StatusOK, map[string]string{"message": "ditandai sudah dibaca"})
 	}
 }

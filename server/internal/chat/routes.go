@@ -18,5 +18,6 @@ func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 		r.Get("/", ListConversations(deps))
 		r.Get("/{id}/messages", ListMessages(deps))
 		r.Post("/{id}/messages", SendMessage(deps))
+		r.Post("/{id}/read", MarkRead(deps))
 	})
 }

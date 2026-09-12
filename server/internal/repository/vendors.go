@@ -41,27 +41,35 @@ func NewVendorRepo(pool *pgxpool.Pool) *VendorRepo {
 	return &VendorRepo{pool: pool}
 }
 
-// UpsertProfile creates or updates a vendor's own profile. Editing an
-// already-approved profile resets it to pending — any change must be
-// re-reviewed by an Admin (PRD §8.3).
+// UpsertProfile creates a vendor's profile on first save (business_name is
+// only ever set here, on creation) or updates the editable fields on
+// subsequent saves. Unlike before, an edit no longer resets status to
+// pending — only the vendor's initial Admin approval and business_name
+// changes (see vendor_name_change_requests) go through review now.
 func (r *VendorRepo) UpsertProfile(ctx context.Context, userID, businessName, category, city string, priceMin, priceMax int64, description string) (*VendorProfile, error) {
 	row := r.pool.QueryRow(ctx, `
 		insert into vendor_profiles (user_id, business_name, category, city, price_min, price_max, description)
 		values ($1, $2, $3, $4, $5, $6, $7)
 		on conflict (user_id) do update set
-			business_name = excluded.business_name,
 			category = excluded.category,
 			city = excluded.city,
 			price_min = excluded.price_min,
 			price_max = excluded.price_max,
 			description = excluded.description,
-			status = 'pending',
-			rejection_reason = null,
 			updated_at = now()
 		returning user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at
 	`, userID, businessName, category, city, priceMin, priceMax, description)
 
 	return scanVendorProfile(row)
+}
+
+// UpdateBusinessName applies an approved name-change request. Deliberately
+// separate from UpsertProfile so it never touches status/rejection_reason.
+func (r *VendorRepo) UpdateBusinessName(ctx context.Context, userID, businessName string) error {
+	_, err := r.pool.Exec(ctx, `
+		update vendor_profiles set business_name = $2, updated_at = now() where user_id = $1
+	`, userID, businessName)
+	return err
 }
 
 func (r *VendorRepo) GetByUserID(ctx context.Context, userID string) (*VendorProfile, error) {
@@ -145,6 +153,28 @@ func (r *VendorRepo) AddPortfolioItem(ctx context.Context, vendorID, storagePath
 		return nil, err
 	}
 	return &item, nil
+}
+
+func (r *VendorRepo) CountPortfolio(ctx context.Context, vendorID string) (int, error) {
+	var count int
+	err := r.pool.QueryRow(ctx, `select count(*) from vendor_portfolio_items where vendor_id = $1`, vendorID).Scan(&count)
+	return count, err
+}
+
+// DeletePortfolioItem removes a portfolio item, scoped to its owning
+// vendor (IDOR-safe — a vendor can only delete their own items). Returns
+// the deleted row's storage_path so the caller can also remove the file
+// from Storage; ErrNotFound if no matching row belonged to this vendor.
+func (r *VendorRepo) DeletePortfolioItem(ctx context.Context, id, vendorID string) (string, error) {
+	var storagePath string
+	err := r.pool.QueryRow(ctx, `
+		delete from vendor_portfolio_items where id = $1 and vendor_id = $2
+		returning storage_path
+	`, id, vendorID).Scan(&storagePath)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", ErrNotFound
+	}
+	return storagePath, err
 }
 
 func (r *VendorRepo) ListPortfolio(ctx context.Context, vendorID string) ([]PortfolioItem, error) {

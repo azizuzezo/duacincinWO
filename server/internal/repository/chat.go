@@ -153,6 +153,48 @@ func (r *ChatRepo) ListMessages(ctx context.Context, conversationID string) ([]M
 	return messages, rows.Err()
 }
 
+type ConversationRead struct {
+	ConversationID    string
+	UserID            string
+	LastReadMessageID *string
+	UpdatedAt         time.Time
+}
+
+// MarkRead upserts how far userID has read into conversationID, called when
+// the user opens a thread or scrolls to its latest message.
+func (r *ChatRepo) MarkRead(ctx context.Context, conversationID, userID, lastReadMessageID string) error {
+	_, err := r.pool.Exec(ctx, `
+		insert into conversation_reads (conversation_id, user_id, last_read_message_id, updated_at)
+		values ($1, $2, $3, now())
+		on conflict (conversation_id, user_id)
+		do update set last_read_message_id = excluded.last_read_message_id, updated_at = excluded.updated_at
+	`, conversationID, userID, lastReadMessageID)
+	return err
+}
+
+// GetReadStatus returns the read position of every participant who has
+// opened conversationID at least once.
+func (r *ChatRepo) GetReadStatus(ctx context.Context, conversationID string) ([]ConversationRead, error) {
+	rows, err := r.pool.Query(ctx, `
+		select conversation_id, user_id, last_read_message_id, updated_at
+		from conversation_reads where conversation_id = $1
+	`, conversationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []ConversationRead
+	for rows.Next() {
+		var cr ConversationRead
+		if err := rows.Scan(&cr.ConversationID, &cr.UserID, &cr.LastReadMessageID, &cr.UpdatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, cr)
+	}
+	return out, rows.Err()
+}
+
 func scanConversation(row pgx.Row) (*Conversation, error) {
 	var c Conversation
 	if err := row.Scan(&c.ID, &c.Type, &c.ClientID, &c.VendorID, &c.CreatedAt); err != nil {

@@ -10,18 +10,20 @@ import (
 )
 
 type directoryCardDTO struct {
-	ID          string `json:"id"`
-	Category    string `json:"category"`
-	City        string `json:"city"`
-	PriceMin    int64  `json:"price_min"`
-	PriceMax    int64  `json:"price_max"`
-	SampleImage string `json:"sample_image,omitempty"`
+	ID            string  `json:"id"`
+	BusinessName  string  `json:"business_name"`
+	Category      string  `json:"category"`
+	City          string  `json:"city"`
+	PriceMin      int64   `json:"price_min"`
+	PriceMax      int64   `json:"price_max"`
+	SampleImage   string  `json:"sample_image,omitempty"`
+	AverageRating float64 `json:"average_rating"`
+	ReviewCount   int     `json:"review_count"`
 }
 
-// Directory is the PUBLIC (no auth required) anonymized vendor listing —
-// never includes business_name or contact info (PRD §8.1/§8.3). The
-// frontend is responsible for rendering sample_image with a blur/watermark
-// filter for anonymous visitors.
+// Directory is the PUBLIC (no auth required) vendor listing. Vendor
+// portfolios are fully open, browsing them requires no login (product
+// decision, see engineering.md) — only booking and chat require an account.
 func Directory(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		category := r.URL.Query().Get("category")
@@ -52,9 +54,12 @@ func Directory(deps *Deps) http.HandlerFunc {
 
 		cards := make([]directoryCardDTO, 0, len(profiles))
 		for _, p := range profiles {
-			card := directoryCardDTO{ID: p.UserID, Category: p.Category, City: p.City, PriceMin: p.PriceMin, PriceMax: p.PriceMax}
+			card := directoryCardDTO{ID: p.UserID, BusinessName: p.BusinessName, Category: p.Category, City: p.City, PriceMin: p.PriceMin, PriceMax: p.PriceMax}
 			if items, err := deps.Vendors.ListPortfolio(r.Context(), p.UserID); err == nil && len(items) > 0 {
 				card.SampleImage = items[0].PublicURL
+			}
+			if avg, count, err := deps.Reviews.GetAggregateForVendor(r.Context(), p.UserID); err == nil {
+				card.AverageRating, card.ReviewCount = avg, count
 			}
 			cards = append(cards, card)
 		}
@@ -63,8 +68,9 @@ func Directory(deps *Deps) http.HandlerFunc {
 	}
 }
 
-// VendorDetail is the UNLOCKED profile (auth required — PRD §8.3): full
-// business name and portfolio, still no direct vendor contact info.
+// VendorDetail is a full public profile: business name and portfolio, still
+// no direct vendor contact info (contact stays in-platform chat only, per
+// PRD §8.3 anti-circumvention).
 func VendorDetail(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
@@ -83,6 +89,9 @@ func VendorDetail(deps *Deps) http.HandlerFunc {
 
 		dto := toProfileDTO(profile)
 		dto.Portfolio = toPortfolioDTOs(items)
+		if avg, count, err := deps.Reviews.GetAggregateForVendor(r.Context(), id); err == nil {
+			dto.AverageRating, dto.ReviewCount = avg, count
+		}
 		httpx.JSON(w, http.StatusOK, dto)
 	}
 }

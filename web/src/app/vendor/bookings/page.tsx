@@ -3,18 +3,32 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { VENDOR_NAV } from "@/components/shell/navConfig";
+import { Shell } from "@/components/shell/Shell";
+import { Badge } from "@/components/ui/Badge";
+import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { WithUser } from "@/components/WithUser";
-import { apiGet, ApiError, BOOKING_STATUS_LABEL, formatRupiah, type Booking } from "@/lib/api";
+import {
+  apiGet,
+  ApiError,
+  BOOKING_STATUS_LABEL,
+  BOOKING_STATUS_TONE,
+  formatRupiah,
+  type Booking,
+  type CurrentUser,
+} from "@/lib/api";
 
 export default function VendorBookingsPage() {
   return (
-    <WithUser allowedRoles={["vendor"]} loginPath="/vendor/login">
-      {() => <VendorBookingsContent />}
+    <WithUser allowedRoles={["vendor"]} loginPath="/login">
+      {(user) => <VendorBookingsContent user={user} />}
     </WithUser>
   );
 }
 
-function VendorBookingsContent() {
+function VendorBookingsContent({ user }: { user: CurrentUser }) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,24 +46,34 @@ function VendorBookingsContent() {
   }, []);
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="font-heading mb-6 text-2xl font-extrabold text-dc-navy">Booking Masuk</h1>
-      {loading && <p className="text-dc-black/60">Memuat…</p>}
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      {!loading && !error && bookings.length === 0 && <p className="text-dc-black/60">Belum ada booking masuk.</p>}
-      <ul className="flex flex-col gap-3">
-        {bookings.map((b) => (
-          <li key={b.id}>
-            <Link href={`/vendor/bookings/${b.id}`} className="block rounded-2xl border border-dc-black/10 bg-dc-white p-4 hover:shadow-md">
-              <p className="font-medium text-dc-navy">{b.package_description || "Booking"}</p>
-              <p className="text-sm text-dc-black/60">
-                {b.event_date} · {formatRupiah(b.agreed_price)}
-              </p>
-              <p className="mt-1 text-xs font-semibold text-dc-gold">{BOOKING_STATUS_LABEL[b.status]}</p>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </main>
+    <Shell user={user} navItems={VENDOR_NAV} loginPath="/login" eyebrow="Vendor">
+      <div className="mx-auto max-w-2xl px-4 py-10">
+        <PageHeader title="Booking Masuk" />
+        {loading && <p className="text-dc-black/60">Memuat…</p>}
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        {!loading && !error && bookings.length === 0 && (
+          <EmptyState title="Belum ada booking masuk" body="Booking dari client akan muncul di sini setelah profil kamu disetujui Admin." />
+        )}
+        <ul className="flex flex-col gap-3">
+          {bookings.map((b) => (
+            <li key={b.id}>
+              <Link href={`/vendor/bookings/${b.id}`}>
+                <Card className="p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-dc-navy">{b.package_description || "Booking"}</p>
+                      <p className="text-sm text-dc-black/60">
+                        {b.event_date} · {formatRupiah(b.agreed_price)}
+                      </p>
+                    </div>
+                    <Badge tone={BOOKING_STATUS_TONE[b.status]}>{BOOKING_STATUS_LABEL[b.status]}</Badge>
+                  </div>
+                </Card>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </Shell>
   );
 }

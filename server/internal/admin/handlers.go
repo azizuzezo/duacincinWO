@@ -5,7 +5,9 @@
 package admin
 
 import (
+	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -18,14 +20,29 @@ import (
 
 type Deps struct {
 	Vendors       *repository.VendorRepo
+	NameChange    *repository.VendorNameChangeRepo
 	Disbursements *repository.DisbursementRepo
 	Disputes      *repository.DisputeRepo
 	Users         *repository.UserRepo
 	Bookings      *repository.BookingRepo
+	AuditLog      *repository.AuditLogRepo
 }
 
-func NewDeps(vendors *repository.VendorRepo, disbursements *repository.DisbursementRepo, disputes *repository.DisputeRepo, users *repository.UserRepo, bookings *repository.BookingRepo) *Deps {
-	return &Deps{Vendors: vendors, Disbursements: disbursements, Disputes: disputes, Users: users, Bookings: bookings}
+func NewDeps(vendors *repository.VendorRepo, nameChange *repository.VendorNameChangeRepo, disbursements *repository.DisbursementRepo, disputes *repository.DisputeRepo, users *repository.UserRepo, bookings *repository.BookingRepo, auditLog *repository.AuditLogRepo) *Deps {
+	return &Deps{Vendors: vendors, NameChange: nameChange, Disbursements: disbursements, Disputes: disputes, Users: users, Bookings: bookings, AuditLog: auditLog}
+}
+
+// logAction records one admin action to the audit trail. Failures are
+// logged-and-ignored (best-effort) rather than failing the request — the
+// action itself already succeeded by the time this is called.
+func logAction(deps *Deps, r *http.Request, action, targetType, targetID string, metadata map[string]any) {
+	claims, ok := auth.ClaimsFromContext(r.Context())
+	if !ok {
+		return
+	}
+	if err := deps.AuditLog.Create(r.Context(), claims.UserID, claims.Role, action, targetType, targetID, metadata); err != nil {
+		log.Printf("audit log: %v", err)
+	}
 }
 
 type vendorSummaryDTO struct {
@@ -75,6 +92,7 @@ func approveVendor(deps *Deps) http.HandlerFunc {
 			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
 			return
 		}
+		logAction(deps, r, "vendor.approve", "vendor", id, nil)
 		httpx.JSON(w, http.StatusOK, map[string]string{"message": "vendor disetujui"})
 	}
 }
@@ -93,6 +111,7 @@ func rejectVendor(deps *Deps) http.HandlerFunc {
 			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
 			return
 		}
+		logAction(deps, r, "vendor.reject", "vendor", id, map[string]any{"reason": req.Reason})
 		httpx.JSON(w, http.StatusOK, map[string]string{"message": "vendor ditolak"})
 	}
 }
@@ -119,6 +138,7 @@ func setCommission(deps *Deps) http.HandlerFunc {
 			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
 			return
 		}
+		logAction(deps, r, "vendor.set_commission", "vendor", id, map[string]any{"rate": req.Rate})
 		httpx.JSON(w, http.StatusOK, map[string]string{"message": "komisi diperbarui"})
 	}
 }
@@ -158,6 +178,7 @@ func markDisbursed(deps *Deps) http.HandlerFunc {
 			httpx.Error(w, http.StatusNotFound, "pencairan tidak ditemukan atau sudah dicairkan")
 			return
 		}
+		logAction(deps, r, "disbursement.mark_disbursed", "booking", bookingID, nil)
 		httpx.JSON(w, http.StatusOK, map[string]string{"message": "dana ditandai sudah dicairkan ke vendor"})
 	}
 }
@@ -241,7 +262,81 @@ func resolveDispute(deps *Deps) http.HandlerFunc {
 			return
 		}
 
+		logAction(deps, r, "dispute.resolve", "dispute", id, map[string]any{"sanction": req.Sanction})
 		httpx.JSON(w, http.StatusOK, map[string]string{"message": "sengketa diselesaikan"})
+	}
+}
+
+type nameChangeRequestDTO struct {
+	ID            string `json:"id"`
+	VendorID      string `json:"vendor_id"`
+	CurrentName   string `json:"current_name"`
+	RequestedName string `json:"requested_name"`
+	Reason        string `json:"reason"`
+	CreatedAt     string `json:"created_at"`
+}
+
+func listPendingNameChanges(deps *Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		requests, err := deps.NameChange.ListPending(r.Context())
+		if err != nil {
+			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
+			return
+		}
+		out := make([]nameChangeRequestDTO, 0, len(requests))
+		for _, req := range requests {
+			out = append(out, nameChangeRequestDTO{
+				ID: req.ID, VendorID: req.VendorID, CurrentName: req.CurrentName,
+				RequestedName: req.RequestedName, Reason: req.Reason, CreatedAt: req.CreatedAt.Format(time.RFC3339),
+			})
+		}
+		httpx.JSON(w, http.StatusOK, out)
+	}
+}
+
+type resolveNameChangeRequest struct {
+	Approve   bool   `json:"approve"`
+	AdminNote string `json:"admin_note"`
+}
+
+// resolveNameChange approves (applying the requested name to the vendor's
+// profile) or rejects a pending vendor_name_change_requests row.
+func resolveNameChange(deps *Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := chi.URLParam(r, "id")
+
+		var req resolveNameChangeRequest
+		if err := httpx.DecodeJSON(w, r, &req); err != nil {
+			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			return
+		}
+
+		nameChange, err := deps.NameChange.GetByID(r.Context(), id)
+		if err != nil {
+			httpx.Error(w, http.StatusNotFound, "permintaan tidak ditemukan")
+			return
+		}
+		if nameChange.Status != "pending" {
+			httpx.Error(w, http.StatusConflict, "permintaan ini sudah diselesaikan")
+			return
+		}
+
+		status := "rejected"
+		if req.Approve {
+			status = "approved"
+			if err := deps.Vendors.UpdateBusinessName(r.Context(), nameChange.VendorID, nameChange.RequestedName); err != nil {
+				httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
+				return
+			}
+		}
+
+		if _, err := deps.NameChange.Resolve(r.Context(), id, status, req.AdminNote); err != nil {
+			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
+			return
+		}
+
+		logAction(deps, r, "vendor_name_change.resolve", "vendor_name_change", id, map[string]any{"status": status})
+		httpx.JSON(w, http.StatusOK, map[string]string{"message": "permintaan ganti nama diselesaikan"})
 	}
 }
 
@@ -272,6 +367,52 @@ func dashboard(deps *Deps) http.HandlerFunc {
 	}
 }
 
+type auditLogEntryDTO struct {
+	ID         string         `json:"id"`
+	ActorID    string         `json:"actor_id"`
+	ActorRole  string         `json:"actor_role"`
+	Action     string         `json:"action"`
+	TargetType string         `json:"target_type"`
+	TargetID   string         `json:"target_id"`
+	Metadata   map[string]any `json:"metadata,omitempty"`
+	CreatedAt  string         `json:"created_at"`
+}
+
+const auditLogDefaultLimit = 50
+
+func listAuditLog(deps *Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		limit := auditLogDefaultLimit
+		if raw := r.URL.Query().Get("limit"); raw != "" {
+			if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 && parsed <= 200 {
+				limit = parsed
+			}
+		}
+		offset := 0
+		if raw := r.URL.Query().Get("offset"); raw != "" {
+			if parsed, err := strconv.Atoi(raw); err == nil && parsed >= 0 {
+				offset = parsed
+			}
+		}
+
+		entries, err := deps.AuditLog.List(r.Context(), limit, offset)
+		if err != nil {
+			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
+			return
+		}
+
+		out := make([]auditLogEntryDTO, 0, len(entries))
+		for _, e := range entries {
+			out = append(out, auditLogEntryDTO{
+				ID: e.ID, ActorID: e.ActorID, ActorRole: e.ActorRole, Action: e.Action,
+				TargetType: e.TargetType, TargetID: e.TargetID, Metadata: e.Metadata,
+				CreatedAt: e.CreatedAt.Format(time.RFC3339),
+			})
+		}
+		httpx.JSON(w, http.StatusOK, out)
+	}
+}
+
 // Mount registers /admin/* routes onto r, restricted to the admin role.
 func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 	r.Route("/admin", func(r chi.Router) {
@@ -291,5 +432,10 @@ func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 
 		r.Get("/disputes/open", listOpenDisputes(deps))
 		r.Post("/disputes/{id}/resolve", resolveDispute(deps))
+
+		r.Get("/vendor-name-changes/pending", listPendingNameChanges(deps))
+		r.Post("/vendor-name-changes/{id}/resolve", resolveNameChange(deps))
+
+		r.Get("/audit-log", listAuditLog(deps))
 	})
 }

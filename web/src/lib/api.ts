@@ -1,5 +1,11 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
+// Derives a ws(s):// URL for the same API host, for the chat real-time
+// connection (ChatThread.tsx) — the backend upgrades this same origin.
+export function apiWsUrl(path: string): string {
+  return API_BASE_URL.replace(/^http/, "ws") + path;
+}
+
 export class ApiError extends Error {
   status: number;
 
@@ -95,6 +101,14 @@ export function formatRupiah(value: number): string {
   );
 }
 
+export type VendorNameChangeRequest = {
+  id: string;
+  current_name: string;
+  requested_name: string;
+  reason: string;
+  status: "pending" | "approved" | "rejected";
+};
+
 export type VendorProfile = {
   user_id: string;
   business_name: string;
@@ -106,15 +120,28 @@ export type VendorProfile = {
   status: "pending" | "approved" | "rejected";
   rejection_reason?: string;
   portfolio?: { id: string; url: string; alt_text: string }[];
+  pending_name_change?: VendorNameChangeRequest;
+  average_rating: number;
+  review_count: number;
+};
+
+export type Review = {
+  id: string;
+  rating: number;
+  comment?: string;
+  created_at: string;
 };
 
 export type DirectoryCard = {
   id: string;
+  business_name: string;
   category: string;
   city: string;
   price_min: number;
   price_max: number;
   sample_image?: string;
+  average_rating: number;
+  review_count: number;
 };
 
 export type Conversation = {
@@ -151,6 +178,7 @@ export type InspirationItem = {
   alt_text: string;
   caption: string;
   source_credit?: string;
+  source_url?: string;
 };
 
 export type PlannerTaskStatus = "todo" | "in_progress" | "done";
@@ -201,11 +229,20 @@ export type Disbursement = {
 
 export const BOOKING_STATUS_LABEL: Record<BookingStatus, string> = {
   requested: "Menunggu konfirmasi vendor",
-  confirmed: "Dikonfirmasi — menunggu DP",
-  dp_paid: "DP dibayar — menunggu pelunasan",
-  full_paid: "Lunas — menunggu technical meeting & hari-H",
+  confirmed: "Dikonfirmasi, menunggu DP",
+  dp_paid: "DP dibayar, menunggu pelunasan",
+  full_paid: "Lunas, menunggu technical meeting & hari-H",
   completed: "Selesai",
   cancelled: "Dibatalkan",
+};
+
+export const BOOKING_STATUS_TONE: Record<BookingStatus, "neutral" | "gold" | "success" | "danger"> = {
+  requested: "neutral",
+  confirmed: "gold",
+  dp_paid: "gold",
+  full_paid: "gold",
+  completed: "success",
+  cancelled: "danger",
 };
 
 export type DashboardStats = {
@@ -229,4 +266,26 @@ export type VendorSummary = {
   city: string;
   status: string;
   commission_rate?: number;
+};
+
+export type AuditLogEntry = {
+  id: string;
+  actor_id: string;
+  actor_role: string;
+  action: string;
+  target_type: string;
+  target_id: string;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+};
+
+export type ConversationReadEvent = {
+  type: "read.updated";
+  user_id: string;
+  last_read_message_id: string;
+};
+
+export type NewMessageEvent = {
+  type: "message.new";
+  message: ChatMessage;
 };

@@ -13,6 +13,21 @@ const NAV_LINKS = [
 export function Navbar() {
   const [open, setOpen] = useState(false);
 
+  // Plain hash links only trigger the browser's native anchor-jump when the
+  // URL hash actually changes, so clicking "Budget Planner" a second time
+  // (hash already matches) silently did nothing. Scrolling manually here
+  // works every time, regardless of the current hash.
+  function handleAnchorClick(e: React.MouseEvent<HTMLAnchorElement>, href: string) {
+    if (!href.startsWith("/#")) return;
+    if (typeof window === "undefined" || window.location.pathname !== "/") return;
+    const id = href.slice(2);
+    const el = document.getElementById(id);
+    if (!el) return;
+    e.preventDefault();
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.history.replaceState(null, "", href);
+  }
+
   return (
     <header className="sticky top-0 z-50 border-b border-dc-black/5 bg-dc-white/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
@@ -23,18 +38,23 @@ export function Navbar() {
 
         <nav className="hidden items-center gap-8 text-sm font-medium text-dc-navy/80 md:flex">
           {NAV_LINKS.map((link) => (
-            <Link key={link.href} href={link.href} className="transition hover:text-dc-gold">
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={(e) => handleAnchorClick(e, link.href)}
+              className="transition hover:text-dc-gold"
+            >
               {link.label}
             </Link>
           ))}
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Link href="/client/login" className="text-sm font-semibold text-dc-navy hover:text-dc-gold">
+          <Link href="/login" className="text-sm font-semibold text-dc-navy hover:text-dc-gold">
             Masuk
           </Link>
           <Link
-            href="/client/register"
+            href="/register"
             className="rounded-full bg-dc-navy px-5 py-2 text-sm font-semibold text-dc-white transition hover:bg-dc-gold hover:text-dc-navy"
           >
             Daftar Gratis
@@ -55,15 +75,23 @@ export function Navbar() {
       {open && (
         <div className="flex flex-col gap-1 border-t border-dc-black/5 bg-dc-white px-4 py-3 md:hidden">
           {NAV_LINKS.map((link) => (
-            <Link key={link.href} href={link.href} className="rounded-lg px-3 py-2 text-sm font-medium text-dc-navy hover:bg-dc-offwhite" onClick={() => setOpen(false)}>
+            <Link
+              key={link.href}
+              href={link.href}
+              className="rounded-lg px-3 py-2 text-sm font-medium text-dc-navy hover:bg-dc-offwhite"
+              onClick={(e) => {
+                setOpen(false);
+                handleAnchorClick(e, link.href);
+              }}
+            >
               {link.label}
             </Link>
           ))}
           <div className="mt-2 flex gap-2 border-t border-dc-black/5 pt-3">
-            <Link href="/client/login" className="flex-1 rounded-full border border-dc-navy/20 px-4 py-2 text-center text-sm font-semibold text-dc-navy">
+            <Link href="/login" className="flex-1 rounded-full border border-dc-navy/20 px-4 py-2 text-center text-sm font-semibold text-dc-navy">
               Masuk
             </Link>
-            <Link href="/client/register" className="flex-1 rounded-full bg-dc-navy px-4 py-2 text-center text-sm font-semibold text-dc-white">
+            <Link href="/register" className="flex-1 rounded-full bg-dc-navy px-4 py-2 text-center text-sm font-semibold text-dc-white">
               Daftar
             </Link>
           </div>

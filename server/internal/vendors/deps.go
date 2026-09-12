@@ -1,5 +1,5 @@
 // Package vendors implements vendor profile management, portfolio upload,
-// and the public anonymized directory (PRD §8.3).
+// and the public vendor directory (PRD §8.3).
 package vendors
 
 import (
@@ -20,10 +20,13 @@ var ValidCategories = map[string]bool{
 }
 
 type Deps struct {
-	Vendors *repository.VendorRepo
-	Storage *storage.Client
+	Vendors       *repository.VendorRepo
+	NameChange    *repository.VendorNameChangeRepo
+	Storage       *storage.Client
+	Reviews       *repository.ReviewRepo
+	Disbursements *repository.DisbursementRepo
 }
 
-func NewDeps(vendors *repository.VendorRepo, storageClient *storage.Client) *Deps {
-	return &Deps{Vendors: vendors, Storage: storageClient}
+func NewDeps(vendors *repository.VendorRepo, nameChange *repository.VendorNameChangeRepo, storageClient *storage.Client, reviews *repository.ReviewRepo, disbursements *repository.DisbursementRepo) *Deps {
+	return &Deps{Vendors: vendors, NameChange: nameChange, Storage: storageClient, Reviews: reviews, Disbursements: disbursements}
 }

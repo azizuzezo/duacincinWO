@@ -68,7 +68,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthCard
-      eyebrow="Lupa Password"
+      variant="unified"
       title={
         step === "request"
           ? "Reset password"
@@ -89,7 +89,7 @@ export default function ForgotPasswordPage() {
       }
       footer={
         step === "done" && (
-          <Link href="/client/login" className="font-semibold text-dc-navy hover:text-dc-gold">
+          <Link href="/login" className="font-semibold text-dc-navy hover:text-dc-gold">
             Kembali ke halaman masuk
           </Link>
         )

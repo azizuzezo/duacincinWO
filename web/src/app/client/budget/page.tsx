@@ -3,22 +3,26 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { CLIENT_NAV } from "@/components/shell/navConfig";
+import { Shell } from "@/components/shell/Shell";
 import { Button } from "@/components/Button";
+import { Card } from "@/components/ui/Card";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { WithUser } from "@/components/WithUser";
-import { apiGet, apiPut, ApiError, formatRupiah, type BudgetPlan } from "@/lib/api";
-import { BUDGET_CATEGORIES, defaultCategoryState, rescale, type BudgetCategoryKey } from "@/lib/budget";
+import { apiGet, apiPut, ApiError, formatRupiah, type BudgetPlan, type CurrentUser } from "@/lib/api";
+import { BUDGET_CATEGORIES, BUDGET_CATEGORY_COLORS, defaultCategoryState, rescale, type BudgetCategoryKey } from "@/lib/budget";
 
 export default function BudgetPlannerPage() {
   return (
-    <WithUser allowedRoles={["client"]} loginPath="/client/login">
-      {() => <BudgetPlannerContent />}
+    <WithUser allowedRoles={["client"]} loginPath="/login">
+      {(user) => <BudgetPlannerContent user={user} />}
     </WithUser>
   );
 }
 
 type CategoryState = { category: BudgetCategoryKey; percentage: number };
 
-function BudgetPlannerContent() {
+function BudgetPlannerContent({ user }: { user: CurrentUser }) {
   const [totalBudget, setTotalBudget] = useState("");
   const [guestCount, setGuestCount] = useState("");
   const [categories, setCategories] = useState<CategoryState[]>(defaultCategoryState());
@@ -73,93 +77,115 @@ function BudgetPlannerContent() {
     }
   }
 
-  if (loading) return <p className="p-8 text-center text-dc-black/60">Memuat…</p>;
-
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="font-heading text-2xl font-extrabold text-dc-navy">Budget Planner</h1>
-      <p className="mt-1 text-dc-black/60">
-        Isi total budget, lalu geser tiap kategori — kategori lain otomatis menyesuaikan supaya total tetap 100%.
-      </p>
+    <Shell user={user} navItems={CLIENT_NAV} loginPath="/login" eyebrow="Client">
+      <div className="mx-auto max-w-2xl px-4 py-10">
+        <PageHeader
+          title="Budget Planner"
+          subtitle="Isi total budget, lalu geser tiap kategori. Kategori lain otomatis menyesuaikan supaya total tetap 100%."
+        />
 
-      <form onSubmit={handleSave} className="mt-6 flex flex-col gap-6">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="total-budget" className="text-sm font-medium text-dc-navy">
-              Total Budget (Rp)
-            </label>
-            <input
-              id="total-budget"
-              type="number"
-              min={0}
-              value={totalBudget}
-              onChange={(e) => setTotalBudget(e.target.value)}
-              className="w-full rounded-xl border border-dc-black/15 bg-dc-white px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="guest-count" className="text-sm font-medium text-dc-navy">
-              Jumlah Tamu
-            </label>
-            <input
-              id="guest-count"
-              type="number"
-              min={0}
-              value={guestCount}
-              onChange={(e) => setGuestCount(e.target.value)}
-              className="w-full rounded-xl border border-dc-black/15 bg-dc-white px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
-            />
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-5">
-          {BUDGET_CATEGORIES.map((meta) => {
-            const state = categories.find((c) => c.category === meta.key)!;
-            const amount = Math.round((total * state.percentage) / 100);
-            return (
-              <div key={meta.key}>
-                <div className="mb-1 flex items-baseline justify-between">
-                  <label htmlFor={`slider-${meta.key}`} className="font-medium text-dc-navy">
-                    {meta.label}
+        {loading ? (
+          <p className="text-dc-black/60">Memuat…</p>
+        ) : (
+          <Card className="p-6 sm:p-8">
+            <form onSubmit={handleSave} className="flex flex-col gap-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="total-budget" className="text-sm font-medium text-dc-navy">
+                    Total Budget (Rp)
                   </label>
-                  <span className="text-sm text-dc-black/60">
-                    {state.percentage.toFixed(1)}% · {formatRupiah(amount)}
-                  </span>
+                  <input
+                    id="total-budget"
+                    type="text"
+                    inputMode="numeric"
+                    value={totalBudget ? Number(totalBudget).toLocaleString("id-ID") : ""}
+                    onChange={(e) => setTotalBudget(e.target.value.replace(/\D/g, ""))}
+                    className="w-full rounded-xl border border-dc-black/15 bg-dc-white px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+                  />
+                  <p className="text-xs text-dc-black/50">{total > 0 ? formatRupiah(total) : " "}</p>
                 </div>
-                <input
-                  id={`slider-${meta.key}`}
-                  type="range"
-                  min={0}
-                  max={100}
-                  step={1}
-                  value={state.percentage}
-                  onChange={(e) => handleSliderChange(meta.key, Number(e.target.value))}
-                  className="w-full accent-dc-gold"
-                />
-                {meta.vendorCategories && total > 0 && (
-                  <div className="mt-1 flex gap-3 text-xs">
-                    {meta.vendorCategories.map((vc) => (
-                      <Link
-                        key={vc}
-                        href={`/vendors?category=${vc}&max_price=${amount}`}
-                        className="font-semibold text-dc-gold hover:text-dc-navy"
-                      >
-                        Cari Vendor →
-                      </Link>
-                    ))}
-                  </div>
-                )}
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="guest-count" className="text-sm font-medium text-dc-navy">
+                    Jumlah Tamu
+                  </label>
+                  <input
+                    id="guest-count"
+                    type="text"
+                    inputMode="numeric"
+                    value={guestCount ? Number(guestCount).toLocaleString("id-ID") : ""}
+                    onChange={(e) => setGuestCount(e.target.value.replace(/\D/g, ""))}
+                    className="w-full rounded-xl border border-dc-black/15 bg-dc-white px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+                  />
+                  <p className="text-xs text-dc-black/50">
+                    {total > 0 && Number(guestCount) > 0 ? `${formatRupiah(Math.round(total / Number(guestCount)))} / tamu` : " "}
+                  </p>
+                </div>
               </div>
-            );
-          })}
-        </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        {success && <p className="text-sm text-green-700">Budget plan tersimpan.</p>}
-        <Button type="submit" loading={saving}>
-          Simpan
-        </Button>
-      </form>
-    </main>
+              {/* Stacked visual summary of the split */}
+              <div className="flex h-3 w-full overflow-hidden rounded-full bg-dc-offwhite">
+                {categories.map((c) => (
+                  <div
+                    key={c.category}
+                    style={{ width: `${c.percentage}%`, backgroundColor: BUDGET_CATEGORY_COLORS[c.category] }}
+                    className="h-full transition-all duration-300"
+                  />
+                ))}
+              </div>
+
+              <div className="flex flex-col gap-5">
+                {BUDGET_CATEGORIES.map((meta) => {
+                  const state = categories.find((c) => c.category === meta.key)!;
+                  const amount = Math.round((total * state.percentage) / 100);
+                  return (
+                    <div key={meta.key}>
+                      <div className="mb-1 flex items-baseline justify-between">
+                        <label htmlFor={`slider-${meta.key}`} className="flex items-center gap-2 font-medium text-dc-navy">
+                          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: BUDGET_CATEGORY_COLORS[meta.key] }} />
+                          {meta.label}
+                        </label>
+                        <span className="text-sm text-dc-black/60">
+                          {state.percentage.toFixed(1)}% · {formatRupiah(amount)}
+                        </span>
+                      </div>
+                      <input
+                        id={`slider-${meta.key}`}
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={state.percentage}
+                        onChange={(e) => handleSliderChange(meta.key, Number(e.target.value))}
+                        className="w-full accent-dc-gold"
+                      />
+                      {meta.vendorCategories && total > 0 && (
+                        <div className="mt-1 flex gap-3 text-xs">
+                          {meta.vendorCategories.map((vc) => (
+                            <Link
+                              key={vc}
+                              href={`/vendors?category=${vc}&max_price=${amount}`}
+                              className="font-semibold text-dc-gold hover:text-dc-navy"
+                            >
+                              Cari Vendor →
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {error && <p className="text-sm text-red-600">{error}</p>}
+              {success && <p className="text-sm text-green-700">Budget plan tersimpan.</p>}
+              <Button type="submit" loading={saving}>
+                Simpan
+              </Button>
+            </form>
+          </Card>
+        )}
+      </div>
+    </Shell>
   );
 }

@@ -191,3 +191,55 @@ func ResetPassword(deps *Deps) http.HandlerFunc {
 		httpx.JSON(w, http.StatusOK, map[string]string{"message": "password berhasil diperbarui"})
 	}
 }
+
+type changePasswordRequest struct {
+	CurrentPassword string `json:"current_password"`
+	NewPassword     string `json:"new_password"`
+}
+
+// ChangePassword lets an already-logged-in user (any role) set a new
+// password from their account settings, given their current one — unlike
+// ResetPassword, this needs no OTP since the request is already
+// authenticated.
+func ChangePassword(deps *Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		claims, ok := ClaimsFromContext(r.Context())
+		if !ok {
+			httpx.Error(w, http.StatusUnauthorized, "belum login")
+			return
+		}
+
+		var req changePasswordRequest
+		if err := httpx.DecodeJSON(w, r, &req); err != nil {
+			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			return
+		}
+		if len(req.NewPassword) < minPasswordLength {
+			httpx.Error(w, http.StatusBadRequest, "password baru minimal 8 karakter")
+			return
+		}
+
+		user, err := deps.Users.GetByID(r.Context(), claims.UserID)
+		if err != nil {
+			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
+			return
+		}
+		if !security.VerifyPassword(user.PasswordHash, req.CurrentPassword) {
+			httpx.Error(w, http.StatusUnauthorized, "password saat ini salah")
+			return
+		}
+
+		hash, err := security.HashPassword(req.NewPassword)
+		if err != nil {
+			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
+			return
+		}
+
+		if err := deps.Users.UpdatePassword(r.Context(), claims.UserID, hash); err != nil {
+			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
+			return
+		}
+
+		httpx.JSON(w, http.StatusOK, map[string]string{"message": "password berhasil diperbarui"})
+	}
+}

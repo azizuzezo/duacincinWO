@@ -19,16 +19,19 @@ type upsertProfileRequest struct {
 }
 
 type profileDTO struct {
-	UserID          string         `json:"user_id"`
-	BusinessName    string         `json:"business_name"`
-	Category        string         `json:"category"`
-	City            string         `json:"city"`
-	PriceMin        int64          `json:"price_min"`
-	PriceMax        int64          `json:"price_max"`
-	Description     string         `json:"description"`
-	Status          string         `json:"status"`
-	RejectionReason *string        `json:"rejection_reason,omitempty"`
-	Portfolio       []portfolioDTO `json:"portfolio,omitempty"`
+	UserID            string         `json:"user_id"`
+	BusinessName      string         `json:"business_name"`
+	Category          string         `json:"category"`
+	City              string         `json:"city"`
+	PriceMin          int64          `json:"price_min"`
+	PriceMax          int64          `json:"price_max"`
+	Description       string         `json:"description"`
+	Status            string         `json:"status"`
+	RejectionReason   *string        `json:"rejection_reason,omitempty"`
+	Portfolio         []portfolioDTO `json:"portfolio,omitempty"`
+	PendingNameChange *nameChangeDTO `json:"pending_name_change,omitempty"`
+	AverageRating     float64        `json:"average_rating"`
+	ReviewCount       int            `json:"review_count"`
 }
 
 type portfolioDTO struct {
@@ -51,8 +54,11 @@ func toProfileDTO(p *repository.VendorProfile) profileDTO {
 	}
 }
 
-// UpsertProfile lets a Vendor create/update their own profile. Any edit
-// resets status to "pending" — must be re-approved by an Admin (PRD §8.3).
+// UpsertProfile lets a Vendor create their profile on first save, or
+// update the editable fields afterward. business_name is only used on
+// first creation — once a profile exists, it can only change through an
+// approved vendor_name_change_request, so any business_name in the
+// request body is ignored past that point (existing value is reused).
 func UpsertProfile(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		claims, ok := auth.ClaimsFromContext(r.Context())
@@ -70,10 +76,18 @@ func UpsertProfile(deps *Deps) http.HandlerFunc {
 		req.BusinessName = strings.TrimSpace(req.BusinessName)
 		req.City = strings.TrimSpace(req.City)
 
-		if req.BusinessName == "" {
+		businessName := req.BusinessName
+		existing, err := deps.Vendors.GetByUserID(r.Context(), claims.UserID)
+		if err == nil {
+			businessName = existing.BusinessName
+		} else if err != repository.ErrNotFound {
+			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
+			return
+		} else if businessName == "" {
 			httpx.Error(w, http.StatusBadRequest, "nama usaha wajib diisi")
 			return
 		}
+
 		if !ValidCategories[req.Category] {
 			httpx.Error(w, http.StatusBadRequest, "kategori tidak valid")
 			return
@@ -88,7 +102,7 @@ func UpsertProfile(deps *Deps) http.HandlerFunc {
 		}
 
 		profile, err := deps.Vendors.UpsertProfile(
-			r.Context(), claims.UserID, req.BusinessName, req.Category, req.City,
+			r.Context(), claims.UserID, businessName, req.Category, req.City,
 			req.PriceMin, req.PriceMax, req.Description,
 		)
 		if err != nil {
@@ -128,6 +142,15 @@ func MyProfile(deps *Deps) http.HandlerFunc {
 
 		dto := toProfileDTO(profile)
 		dto.Portfolio = toPortfolioDTOs(items)
+
+		if pending, err := deps.NameChange.GetPendingForVendor(r.Context(), claims.UserID); err == nil {
+			nameChange := toNameChangeDTO(pending)
+			dto.PendingNameChange = &nameChange
+		} else if err != repository.ErrNotFound {
+			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
+			return
+		}
+
 		httpx.JSON(w, http.StatusOK, dto)
 	}
 }

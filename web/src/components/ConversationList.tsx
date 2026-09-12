@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { apiGet, ApiError, type Conversation } from "@/lib/api";
 
 export function ConversationList({ basePath, emptyLabel }: { basePath: string; emptyLabel: string }) {
@@ -19,20 +21,18 @@ export function ConversationList({ basePath, emptyLabel }: { basePath: string; e
 
   if (loading) return <p className="p-6 text-center text-dc-black/60">Memuat…</p>;
   if (error) return <p className="p-6 text-center text-sm text-red-600">{error}</p>;
-  if (conversations.length === 0) return <p className="p-6 text-center text-dc-black/60">{emptyLabel}</p>;
+  if (conversations.length === 0) return <EmptyState title="Belum ada percakapan" body={emptyLabel} />;
 
   return (
-    <ul className="divide-y divide-dc-black/10 rounded-2xl border border-dc-black/10 bg-dc-white">
+    <Card className="divide-y divide-dc-black/5">
       {conversations.map((c) => (
-        <li key={c.id}>
-          <Link href={`${basePath}/${c.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-dc-offwhite">
-            <span className="font-medium text-dc-navy">
-              {c.type === "consultation" ? "Konsultasi dengan Wedding Consultant" : "Chat dengan Vendor"}
-            </span>
-            <span className="text-xs text-dc-black/40">#{c.id.slice(0, 8)}</span>
-          </Link>
-        </li>
+        <Link key={c.id} href={`${basePath}/${c.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-dc-offwhite">
+          <span className="font-medium text-dc-navy">
+            {c.type === "consultation" ? "Konsultasi dengan Wedding Consultant" : "Chat dengan Vendor"}
+          </span>
+          <span className="text-xs text-dc-black/40">#{c.id.slice(0, 8)}</span>
+        </Link>
       ))}
-    </ul>
+    </Card>
   );
 }

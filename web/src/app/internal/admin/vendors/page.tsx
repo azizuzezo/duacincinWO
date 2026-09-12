@@ -1,11 +1,17 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/Button";
+import { ADMIN_NAV } from "@/components/shell/navConfig";
+import { Shell } from "@/components/shell/Shell";
+import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Modal } from "@/components/ui/Modal";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { useToast } from "@/components/ui/Toast";
 import { WithUser } from "@/components/WithUser";
-import { apiGet, apiPost, ApiError, categoryLabel } from "@/lib/api";
+import { apiGet, apiPost, ApiError, categoryLabel, type CurrentUser } from "@/lib/api";
 
 type PendingVendor = {
   user_id: string;
@@ -17,16 +23,19 @@ type PendingVendor = {
 
 export default function AdminVendorsPage() {
   return (
-    <WithUser allowedRoles={["admin"]} loginPath="/internal/login">
-      {() => <AdminVendorsContent />}
+    <WithUser allowedRoles={["admin"]} loginPath="/login">
+      {(user) => <AdminVendorsContent user={user} />}
     </WithUser>
   );
 }
 
-function AdminVendorsContent() {
+function AdminVendorsContent({ user }: { user: CurrentUser }) {
   const [vendors, setVendors] = useState<PendingVendor[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<PendingVendor | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const { show } = useToast();
 
   async function load() {
     try {
@@ -46,6 +55,7 @@ function AdminVendorsContent() {
     setBusyId(id);
     try {
       await apiPost(`/api/v1/admin/vendors/${id}/approve`, {});
+      show("Vendor disetujui.", "success");
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Gagal menyetujui vendor.");
@@ -54,11 +64,15 @@ function AdminVendorsContent() {
     }
   }
 
-  async function handleReject(id: string) {
-    const reason = window.prompt("Alasan penolakan (opsional):") ?? "";
+  async function confirmReject() {
+    if (!rejectTarget) return;
+    const id = rejectTarget.user_id;
     setBusyId(id);
     try {
-      await apiPost(`/api/v1/admin/vendors/${id}/reject`, { reason });
+      await apiPost(`/api/v1/admin/vendors/${id}/reject`, { reason: rejectReason });
+      show("Vendor ditolak.", "success");
+      setRejectTarget(null);
+      setRejectReason("");
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Gagal menolak vendor.");
@@ -68,38 +82,57 @@ function AdminVendorsContent() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-heading text-2xl font-extrabold text-dc-navy">Vendor Menunggu Review</h1>
-        <Link href="/internal/admin/dashboard" className="text-sm font-semibold text-dc-navy hover:text-dc-gold">
-          ← Dashboard
-        </Link>
+    <Shell user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
+      <div className="mx-auto max-w-3xl px-4 py-10">
+        <PageHeader title="Vendor Menunggu Review" />
+        {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+        {vendors.length === 0 ? (
+          <EmptyState title="Tidak ada vendor yang menunggu review" />
+        ) : (
+          <ul className="space-y-3">
+            {vendors.map((v) => (
+              <li key={v.user_id}>
+                <Card className="flex items-center justify-between p-4">
+                  <div>
+                    <p className="font-semibold text-dc-navy">{v.business_name}</p>
+                    <p className="text-sm text-dc-black/60">
+                      {categoryLabel(v.category)} · {v.city}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" className="w-auto" onClick={() => setRejectTarget(v)} disabled={busyId === v.user_id}>
+                      Tolak
+                    </Button>
+                    <Button className="w-auto" onClick={() => handleApprove(v.user_id)} loading={busyId === v.user_id}>
+                      Setujui
+                    </Button>
+                  </div>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
-      {vendors.length === 0 ? (
-        <p className="text-dc-black/60">Tidak ada vendor yang menunggu review.</p>
-      ) : (
-        <ul className="space-y-3">
-          {vendors.map((v) => (
-            <li key={v.user_id} className="flex items-center justify-between rounded-2xl border border-dc-black/10 bg-dc-white p-4">
-              <div>
-                <p className="font-semibold text-dc-navy">{v.business_name}</p>
-                <p className="text-sm text-dc-black/60">
-                  {categoryLabel(v.category)} · {v.city}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="ghost" className="w-auto" onClick={() => handleReject(v.user_id)} disabled={busyId === v.user_id}>
-                  Tolak
-                </Button>
-                <Button className="w-auto" onClick={() => handleApprove(v.user_id)} loading={busyId === v.user_id}>
-                  Setujui
-                </Button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </main>
+
+      <Modal open={!!rejectTarget} onClose={() => setRejectTarget(null)} title={`Tolak ${rejectTarget?.business_name ?? ""}`}>
+        <label className="block text-sm font-medium text-dc-navy">
+          Alasan penolakan (opsional)
+          <textarea
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            rows={3}
+            className="mt-1.5 w-full rounded-xl border border-dc-black/15 px-3 py-2 text-sm outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+          />
+        </label>
+        <div className="mt-4 flex justify-end gap-2">
+          <Button variant="ghost" className="w-auto" onClick={() => setRejectTarget(null)}>
+            Batal
+          </Button>
+          <Button className="w-auto" onClick={confirmReject} loading={busyId === rejectTarget?.user_id}>
+            Tolak Vendor
+          </Button>
+        </div>
+      </Modal>
+    </Shell>
   );
 }

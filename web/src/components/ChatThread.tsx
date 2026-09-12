@@ -3,7 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/Button";
-import { apiGet, apiPost, ApiError, type ChatMessage } from "@/lib/api";
+import { apiGet, apiPost, apiWsUrl, ApiError, type ChatMessage } from "@/lib/api";
+
+type IncomingEvent =
+  | { type: "message.new"; message: ChatMessage }
+  | { type: "read.updated"; user_id: string; last_read_message_id: string };
 
 export function ChatThread({ conversationId, currentUserId }: { conversationId: string; currentUserId: string }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -11,31 +15,60 @@ export function ChatThread({ conversationId, currentUserId }: { conversationId: 
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [readUpToId, setReadUpToId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-
-  async function load() {
-    try {
-      const msgs = await apiGet<ChatMessage[]>(`/api/v1/conversations/${conversationId}/messages`);
-      setMessages(msgs ?? []);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Gagal memuat percakapan.");
-    } finally {
-      setLoading(false);
-    }
-  }
+  const lastMarkedRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // `load()` sets state, so it can't be called directly in an effect body —
-    // schedule it as a microtask instead of invoking it synchronously here.
-    queueMicrotask(load);
-    const interval = setInterval(load, 4000);
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationId]);
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const msgs = await apiGet<ChatMessage[]>(`/api/v1/conversations/${conversationId}/messages`);
+        if (!cancelled) setMessages(msgs ?? []);
+      } catch (err) {
+        if (!cancelled) setError(err instanceof ApiError ? err.message : "Gagal memuat percakapan.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+
+    const ws = new WebSocket(apiWsUrl(`/api/v1/conversations/${conversationId}/ws`));
+    ws.onmessage = (evt) => {
+      let data: IncomingEvent;
+      try {
+        data = JSON.parse(evt.data);
+      } catch {
+        return;
+      }
+      if (data.type === "message.new") {
+        setMessages((prev) => (prev.some((m) => m.id === data.message.id) ? prev : [...prev, data.message]));
+      } else if (data.type === "read.updated" && data.user_id !== currentUserId) {
+        setReadUpToId(data.last_read_message_id);
+      }
+    };
+    ws.onerror = () => {
+      // One-time reload as a fallback — no reconnect loop, this is a small
+      // real-time nicety, not a delivery guarantee.
+      load();
+    };
+
+    return () => {
+      cancelled = true;
+      ws.close();
+    };
+  }, [conversationId, currentUserId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length]);
+
+    const last = messages[messages.length - 1];
+    if (last && last.id !== lastMarkedRef.current) {
+      lastMarkedRef.current = last.id;
+      apiPost(`/api/v1/conversations/${conversationId}/read`, { last_read_message_id: last.id }).catch(() => {});
+    }
+  }, [messages, conversationId]);
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
@@ -44,7 +77,7 @@ export function ChatThread({ conversationId, currentUserId }: { conversationId: 
     setError(null);
     try {
       const msg = await apiPost<ChatMessage>(`/api/v1/conversations/${conversationId}/messages`, { body });
-      setMessages((prev) => [...prev, msg]);
+      setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
       setBody("");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Gagal mengirim pesan.");
@@ -72,9 +105,15 @@ export function ChatThread({ conversationId, currentUserId }: { conversationId: 
               >
                 {m.body}
               </div>
+              {mine && readUpToId === m.id && (
+                <p className="mt-1 text-xs text-dc-black/40">Dibaca</p>
+              )}
               {m.flagged && (
-                <p className="mt-1 max-w-[80%] text-xs text-dc-gold">
-                  ⚠️ Pesan ini terdeteksi berisi kontak eksternal — semua transaksi wajib lewat DuaCincin.
+                <p className="mt-1 flex max-w-[80%] items-start gap-1.5 text-xs text-dc-gold">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0">
+                    <path d="M11 2 1 19h20L11 2ZM11 9v4M11 15.5h.01" />
+                  </svg>
+                  Pesan ini terdeteksi berisi kontak eksternal. Semua transaksi wajib lewat DuaCincin.
                 </p>
               )}
             </div>

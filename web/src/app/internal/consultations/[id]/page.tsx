@@ -1,20 +1,34 @@
 "use client";
 
+import Link from "next/link";
 import { use } from "react";
 
 import { ChatThread } from "@/components/ChatThread";
+import { ADMIN_NAV, CONSULTANT_NAV } from "@/components/shell/navConfig";
+import { Shell } from "@/components/shell/Shell";
 import { WithUser } from "@/components/WithUser";
+import type { CurrentUser } from "@/lib/api";
 
 export default function ConsultationThreadPage({ params }: PageProps<"/internal/consultations/[id]">) {
   const { id } = use(params);
 
   return (
-    <WithUser allowedRoles={["wedding_consultant", "admin"]} loginPath="/internal/login">
-      {(user) => (
-        <main className="mx-auto max-w-2xl px-4 py-10">
-          <ChatThread conversationId={id} currentUserId={user.id} />
-        </main>
-      )}
+    <WithUser allowedRoles={["wedding_consultant", "admin"]} loginPath="/login">
+      {(user) => <ConsultationThreadContent id={id} user={user} />}
     </WithUser>
+  );
+}
+
+function ConsultationThreadContent({ id, user }: { id: string; user: CurrentUser }) {
+  const isAdmin = user.role === "admin";
+  return (
+    <Shell user={user} navItems={isAdmin ? ADMIN_NAV : CONSULTANT_NAV} loginPath="/login" eyebrow={isAdmin ? "Admin" : "Consultant"}>
+      <div className="mx-auto max-w-2xl px-4 py-10">
+        <Link href="/internal/consultations" className="mb-4 inline-block text-sm font-semibold text-dc-navy hover:text-dc-gold">
+          ← Inbox Konsultasi
+        </Link>
+        <ChatThread conversationId={id} currentUserId={user.id} />
+      </div>
+    </Shell>
   );
 }

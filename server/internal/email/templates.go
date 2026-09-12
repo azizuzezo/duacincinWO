@@ -54,5 +54,5 @@ func RenderPasswordResetOTPEmail(logoURL, code string) (subject, html string, er
 	if err := otpTemplate.Execute(&buf, data); err != nil {
 		return "", "", err
 	}
-	return "Kode OTP DuaCincin — berlaku 5 menit", buf.String(), nil
+	return "Kode OTP DuaCincin, berlaku 5 menit", buf.String(), nil
 }

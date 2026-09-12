@@ -226,6 +226,32 @@ func (r *DisbursementRepo) Create(ctx context.Context, bookingID string, grossAm
 	return err
 }
 
+// ListForVendor returns every disbursement (any status) for bookings owned
+// by vendorID, newest first — powers the vendor-facing payout/earnings page.
+func (r *DisbursementRepo) ListForVendor(ctx context.Context, vendorID string) ([]Disbursement, error) {
+	rows, err := r.pool.Query(ctx, `
+		select d.booking_id, d.gross_amount, d.commission_amount, d.net_amount, d.status, d.created_at
+		from disbursements d
+		join bookings b on b.id = d.booking_id
+		where b.vendor_id = $1
+		order by d.created_at desc
+	`, vendorID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []Disbursement
+	for rows.Next() {
+		var d Disbursement
+		if err := rows.Scan(&d.BookingID, &d.GrossAmount, &d.CommissionAmount, &d.NetAmount, &d.Status, &d.CreatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, d)
+	}
+	return out, rows.Err()
+}
+
 func (r *DisbursementRepo) ListPending(ctx context.Context) ([]Disbursement, error) {
 	rows, err := r.pool.Query(ctx, `
 		select booking_id, gross_amount, commission_amount, net_amount, status, created_at

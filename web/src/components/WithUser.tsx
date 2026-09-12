@@ -32,7 +32,13 @@ export function WithUser({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (checking) return <p className="p-8 text-center text-dc-black/60">Memuat…</p>;
+  if (checking) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-dc-offwhite">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-dc-navy/20 border-t-dc-gold" />
+      </div>
+    );
+  }
   if (!user) return null;
 
   return <>{children(user)}</>;
