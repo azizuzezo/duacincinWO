@@ -14,6 +14,9 @@ func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 		r.Use(auth.RequireRole(auth.RoleClient))
 
 		r.Get("/tasks", ListTasks(deps))
+		r.Post("/tasks", CreateTask(deps))
 		r.Patch("/tasks/{id}", UpdateTaskStatus(deps))
+		r.Patch("/tasks/{id}/due-date", SetTaskDueDate(deps))
+		r.Delete("/tasks/{id}", DeleteTask(deps))
 	})
 }

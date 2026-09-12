@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { NotificationBell } from "@/components/ui/NotificationBell";
 import { apiPost, type CurrentUser } from "@/lib/api";
 
 export type NavItem = { href: string; label: string; icon: readonly string[]; badgeCount?: number };
@@ -122,7 +123,10 @@ export function Shell({
     <div className="min-h-screen bg-dc-offwhite md:flex">
       {/* Desktop sidebar */}
       <aside className="hidden w-64 shrink-0 border-r border-dc-black/5 bg-dc-white md:sticky md:top-0 md:flex md:h-screen md:flex-col md:gap-6 md:p-4">
-        {brand}
+        <div className="flex items-center justify-between">
+          {brand}
+          <NotificationBell />
+        </div>
         <nav className="flex flex-1 flex-col gap-1">
           <NavLinks navItems={navItems} pathname={pathname} />
         </nav>
@@ -132,15 +136,18 @@ export function Shell({
       {/* Mobile top bar */}
       <header className="sticky top-0 z-40 flex items-center justify-between border-b border-dc-black/5 bg-dc-white/90 px-4 py-3 backdrop-blur-md md:hidden">
         {brand}
-        <button
-          onClick={() => setMobileOpen(true)}
-          aria-label="Buka menu"
-          className="flex h-11 w-11 items-center justify-center rounded-lg text-dc-navy transition hover:bg-dc-navy/5"
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-            <path d="M4 7h16M4 12h16M4 17h16" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-1">
+          <NotificationBell />
+          <button
+            onClick={() => setMobileOpen(true)}
+            aria-label="Buka menu"
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-dc-navy transition hover:bg-dc-navy/5"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <path d="M4 7h16M4 12h16M4 17h16" />
+            </svg>
+          </button>
+        </div>
       </header>
 
       {/* Mobile drawer */}

@@ -36,6 +36,8 @@ function AdminVendorsContent({ user }: { user: CurrentUser }) {
   const [rejectTarget, setRejectTarget] = useState<PendingVendor | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
   const { show } = useToast();
 
   async function load() {
@@ -62,6 +64,29 @@ function AdminVendorsContent({ user }: { user: CurrentUser }) {
       setError(err instanceof ApiError ? err.message : "Gagal menyetujui vendor.");
     } finally {
       setBusyId(null);
+    }
+  }
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function handleBulkApprove() {
+    setBulkBusy(true);
+    try {
+      const res = await apiPost<{ approved: number }>("/api/v1/admin/vendors/bulk-approve", { ids: Array.from(selected) });
+      show(`${res.approved} vendor disetujui.`, "success");
+      setSelected(new Set());
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Gagal menyetujui vendor terpilih.");
+    } finally {
+      setBulkBusy(false);
     }
   }
 
@@ -98,6 +123,16 @@ function AdminVendorsContent({ user }: { user: CurrentUser }) {
               placeholder="Cari nama usaha atau kota…"
               className="mb-5 w-full rounded-xl border border-dc-black/15 px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
             />
+
+            {selected.size > 0 && (
+              <div className="mb-4 flex items-center justify-between rounded-xl bg-dc-navy/5 px-4 py-3">
+                <p className="text-sm font-medium text-dc-navy">{selected.size} vendor dipilih</p>
+                <Button className="w-auto" onClick={handleBulkApprove} loading={bulkBusy}>
+                  Setujui yang Dipilih
+                </Button>
+              </div>
+            )}
+
             <ul className="space-y-3">
               {vendors
                 .filter((v) => {
@@ -107,11 +142,20 @@ function AdminVendorsContent({ user }: { user: CurrentUser }) {
                 .map((v) => (
               <li key={v.user_id}>
                 <Card className="flex items-center justify-between p-4">
-                  <div>
-                    <p className="font-semibold text-dc-navy">{v.business_name}</p>
-                    <p className="text-sm text-dc-black/60">
-                      {categoryLabel(v.category)} · {v.city}
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(v.user_id)}
+                      onChange={() => toggleSelect(v.user_id)}
+                      className="h-4 w-4 accent-dc-navy"
+                      aria-label={`Pilih ${v.business_name}`}
+                    />
+                    <div>
+                      <p className="font-semibold text-dc-navy">{v.business_name}</p>
+                      <p className="text-sm text-dc-black/60">
+                        {categoryLabel(v.category)} · {v.city}
+                      </p>
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     <Button variant="ghost" className="w-auto" onClick={() => setRejectTarget(v)} disabled={busyId === v.user_id}>

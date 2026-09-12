@@ -155,11 +155,20 @@ export type Conversation = {
   client_name?: string;
 };
 
+export type ReplyPreview = {
+  id: string;
+  sender_id: string;
+  body: string;
+};
+
 export type ChatMessage = {
   id: string;
   sender_id: string;
   body: string;
   flagged: boolean;
+  reply_to?: ReplyPreview;
+  attachment_url?: string;
+  attachment_type?: string;
   created_at: string;
 };
 
@@ -193,6 +202,8 @@ export type PlannerTask = {
   title: string;
   related_category?: string;
   status: PlannerTaskStatus;
+  due_date?: string;
+  is_custom: boolean;
 };
 
 export type BookingStatus =
@@ -279,6 +290,16 @@ export type VendorSummary = {
   city: string;
   status: string;
   commission_rate?: number;
+};
+
+export type AppNotification = {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  link?: string;
+  read: boolean;
+  created_at: string;
 };
 
 export type AuditLogEntry = {

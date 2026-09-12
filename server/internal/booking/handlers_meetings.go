@@ -62,6 +62,14 @@ func CreateTechnicalMeeting(deps *Deps) http.HandlerFunc {
 			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
 			return
 		}
+
+		claims, _ := auth.ClaimsFromContext(r.Context())
+		other, otherLink := b.VendorID, "/vendor/bookings/"+b.ID
+		if claims.UserID == b.VendorID {
+			other, otherLink = b.ClientID, "/client/bookings/"+b.ID
+		}
+		notify(deps, r.Context(), other, "meeting.scheduled", "Technical meeting dijadwalkan", scheduledAt.Format("2 January 2006, 15:04"), otherLink)
+
 		httpx.JSON(w, http.StatusCreated, toMeetingDTO(m))
 	}
 }

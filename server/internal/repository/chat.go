@@ -23,12 +23,15 @@ type Conversation struct {
 }
 
 type Message struct {
-	ID             string
-	ConversationID string
-	SenderID       string
-	Body           string
-	Flagged        bool
-	CreatedAt      time.Time
+	ID               string
+	ConversationID   string
+	SenderID         string
+	Body             string
+	Flagged          bool
+	ReplyToMessageID *string
+	AttachmentURL    *string
+	AttachmentType   *string
+	CreatedAt        time.Time
 }
 
 type ChatRepo struct {
@@ -118,23 +121,30 @@ func (r *ChatRepo) ListConsultations(ctx context.Context) ([]Conversation, error
 	return collectConversations(rows)
 }
 
-func (r *ChatRepo) CreateMessage(ctx context.Context, conversationID, senderID, body string, flagged bool) (*Message, error) {
+func (r *ChatRepo) CreateMessage(ctx context.Context, conversationID, senderID, body string, flagged bool, replyToMessageID, attachmentURL, attachmentType *string) (*Message, error) {
 	row := r.pool.QueryRow(ctx, `
-		insert into messages (conversation_id, sender_id, body, flagged)
-		values ($1, $2, $3, $4)
-		returning id, conversation_id, sender_id, body, flagged, created_at
-	`, conversationID, senderID, body, flagged)
+		insert into messages (conversation_id, sender_id, body, flagged, reply_to_message_id, attachment_url, attachment_type)
+		values ($1, $2, $3, $4, $5, $6, $7)
+		returning id, conversation_id, sender_id, body, flagged, reply_to_message_id, attachment_url, attachment_type, created_at
+	`, conversationID, senderID, body, flagged, replyToMessageID, attachmentURL, attachmentType)
+	return scanMessage(row)
+}
 
-	var m Message
-	if err := row.Scan(&m.ID, &m.ConversationID, &m.SenderID, &m.Body, &m.Flagged, &m.CreatedAt); err != nil {
-		return nil, err
+func (r *ChatRepo) GetMessageByID(ctx context.Context, id string) (*Message, error) {
+	row := r.pool.QueryRow(ctx, `
+		select id, conversation_id, sender_id, body, flagged, reply_to_message_id, attachment_url, attachment_type, created_at
+		from messages where id = $1
+	`, id)
+	m, err := scanMessage(row)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
 	}
-	return &m, nil
+	return m, err
 }
 
 func (r *ChatRepo) ListMessages(ctx context.Context, conversationID string) ([]Message, error) {
 	rows, err := r.pool.Query(ctx, `
-		select id, conversation_id, sender_id, body, flagged, created_at
+		select id, conversation_id, sender_id, body, flagged, reply_to_message_id, attachment_url, attachment_type, created_at
 		from messages where conversation_id = $1 order by created_at asc
 	`, conversationID)
 	if err != nil {
@@ -145,12 +155,20 @@ func (r *ChatRepo) ListMessages(ctx context.Context, conversationID string) ([]M
 	var messages []Message
 	for rows.Next() {
 		var m Message
-		if err := rows.Scan(&m.ID, &m.ConversationID, &m.SenderID, &m.Body, &m.Flagged, &m.CreatedAt); err != nil {
+		if err := rows.Scan(&m.ID, &m.ConversationID, &m.SenderID, &m.Body, &m.Flagged, &m.ReplyToMessageID, &m.AttachmentURL, &m.AttachmentType, &m.CreatedAt); err != nil {
 			return nil, err
 		}
 		messages = append(messages, m)
 	}
 	return messages, rows.Err()
+}
+
+func scanMessage(row pgx.Row) (*Message, error) {
+	var m Message
+	if err := row.Scan(&m.ID, &m.ConversationID, &m.SenderID, &m.Body, &m.Flagged, &m.ReplyToMessageID, &m.AttachmentURL, &m.AttachmentType, &m.CreatedAt); err != nil {
+		return nil, err
+	}
+	return &m, nil
 }
 
 type ConversationRead struct {

@@ -21,6 +21,8 @@ type PlannerTask struct {
 	RelatedCategory *string
 	Status          string
 	SortOrder       int
+	DueDate         *time.Time
+	IsCustom        bool
 	UpdatedAt       time.Time
 }
 
@@ -97,7 +99,7 @@ func (r *WeddingPlannerRepo) ListForClient(ctx context.Context, clientID string)
 	}
 
 	rows, err := r.pool.Query(ctx, `
-		select id, client_id, timeframe, title, related_category, status, sort_order, updated_at
+		select id, client_id, timeframe, title, related_category, status, sort_order, due_date, is_custom, updated_at
 		from wedding_planner_tasks where client_id = $1 order by sort_order
 	`, clientID)
 	if err != nil {
@@ -108,12 +110,62 @@ func (r *WeddingPlannerRepo) ListForClient(ctx context.Context, clientID string)
 	var tasks []PlannerTask
 	for rows.Next() {
 		var t PlannerTask
-		if err := rows.Scan(&t.ID, &t.ClientID, &t.Timeframe, &t.Title, &t.RelatedCategory, &t.Status, &t.SortOrder, &t.UpdatedAt); err != nil {
+		if err := rows.Scan(&t.ID, &t.ClientID, &t.Timeframe, &t.Title, &t.RelatedCategory, &t.Status, &t.SortOrder, &t.DueDate, &t.IsCustom, &t.UpdatedAt); err != nil {
 			return nil, err
 		}
 		tasks = append(tasks, t)
 	}
 	return tasks, rows.Err()
+}
+
+// SetDueDate sets or clears (dueDate: nil) a task's target date, scoped to
+// clientID (IDOR guard, same pattern as SetStatus).
+func (r *WeddingPlannerRepo) SetDueDate(ctx context.Context, clientID, taskID string, dueDate *time.Time) (bool, error) {
+	tag, err := r.pool.Exec(ctx, `
+		update wedding_planner_tasks set due_date = $3, updated_at = now()
+		where id = $2 and client_id = $1
+	`, clientID, taskID, dueDate)
+	if err != nil {
+		return false, err
+	}
+	return tag.RowsAffected() > 0, nil
+}
+
+// CreateCustomTask adds a Client-authored checklist item alongside the
+// seeded default ones, appended to the end of the list.
+func (r *WeddingPlannerRepo) CreateCustomTask(ctx context.Context, clientID, timeframe, title string, dueDate *time.Time, relatedCategory *string) (*PlannerTask, error) {
+	if err := r.ensureSeeded(ctx, clientID); err != nil {
+		return nil, err
+	}
+
+	var nextOrder int
+	if err := r.pool.QueryRow(ctx, `select coalesce(max(sort_order), -1) + 1 from wedding_planner_tasks where client_id = $1`, clientID).Scan(&nextOrder); err != nil {
+		return nil, err
+	}
+
+	row := r.pool.QueryRow(ctx, `
+		insert into wedding_planner_tasks (client_id, timeframe, title, related_category, sort_order, due_date, is_custom)
+		values ($1, $2, $3, $4, $5, $6, true)
+		returning id, client_id, timeframe, title, related_category, status, sort_order, due_date, is_custom, updated_at
+	`, clientID, timeframe, title, relatedCategory, nextOrder, dueDate)
+
+	var t PlannerTask
+	if err := row.Scan(&t.ID, &t.ClientID, &t.Timeframe, &t.Title, &t.RelatedCategory, &t.Status, &t.SortOrder, &t.DueDate, &t.IsCustom, &t.UpdatedAt); err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+// DeleteCustomTask removes a Client-authored task. Seeded default tasks
+// (is_custom = false) can't be deleted this way, only toggled.
+func (r *WeddingPlannerRepo) DeleteCustomTask(ctx context.Context, clientID, taskID string) (bool, error) {
+	tag, err := r.pool.Exec(ctx, `
+		delete from wedding_planner_tasks where id = $2 and client_id = $1 and is_custom = true
+	`, clientID, taskID)
+	if err != nil {
+		return false, err
+	}
+	return tag.RowsAffected() > 0, nil
 }
 
 // SetStatus updates a task's status, scoped to clientID so one Client can

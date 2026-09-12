@@ -160,6 +160,7 @@ func Confirm(deps *Deps) http.HandlerFunc {
 			_ = deps.Planner.MarkDoneByCategory(r.Context(), b.ClientID, vendorProfile.Category)
 		}
 
+		notify(deps, r.Context(), b.ClientID, "booking.confirmed", "Booking dikonfirmasi", "Vendor mengonfirmasi booking-mu, lanjut ke pembayaran DP.", "/client/bookings/"+b.ID)
 		httpx.JSON(w, http.StatusOK, map[string]string{"message": "booking dikonfirmasi"})
 	}
 }
@@ -182,6 +183,13 @@ func Cancel(deps *Deps) http.HandlerFunc {
 			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
 			return
 		}
+
+		claims, _ := auth.ClaimsFromContext(r.Context())
+		other, otherLink := b.VendorID, "/vendor/bookings/"+b.ID
+		if claims.UserID == b.VendorID {
+			other, otherLink = b.ClientID, "/client/bookings/"+b.ID
+		}
+		notify(deps, r.Context(), other, "booking.cancelled", "Booking dibatalkan", "Booking ini dibatalkan.", otherLink)
 
 		httpx.JSON(w, http.StatusOK, map[string]string{"message": "booking dibatalkan"})
 	}
@@ -235,6 +243,7 @@ func Complete(deps *Deps) http.HandlerFunc {
 			return
 		}
 
+		notify(deps, r.Context(), b.VendorID, "booking.completed", "Booking selesai", "Client menandai acara selesai, dana akan diproses Admin.", "/vendor/payouts")
 		httpx.JSON(w, http.StatusOK, map[string]string{"message": "booking selesai, menunggu pencairan dana ke vendor"})
 	}
 }

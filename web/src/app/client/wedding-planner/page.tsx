@@ -3,12 +3,24 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { Button } from "@/components/Button";
 import { CLIENT_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
 import { Card } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useToast } from "@/components/ui/Toast";
 import { WithUser } from "@/components/WithUser";
-import { apiGet, apiPatch, ApiError, categoryLabel, type CurrentUser, type PlannerTask, type PlannerTaskStatus } from "@/lib/api";
+import {
+  apiDelete,
+  apiGet,
+  apiPatch,
+  apiPost,
+  ApiError,
+  categoryLabel,
+  type CurrentUser,
+  type PlannerTask,
+  type PlannerTaskStatus,
+} from "@/lib/api";
 
 export default function WeddingPlannerPage() {
   return (
@@ -37,20 +49,25 @@ const NEXT_STATUS: Record<PlannerTaskStatus, PlannerTaskStatus> = {
 };
 
 function WeddingPlannerContent({ user }: { user: CurrentUser }) {
+  const { show } = useToast();
   const [tasks, setTasks] = useState<PlannerTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newTimeframe, setNewTimeframe] = useState("");
+  const [newDueDate, setNewDueDate] = useState("");
+  const [savingTask, setSavingTask] = useState(false);
+
+  function load() {
+    return apiGet<PlannerTask[]>("/api/v1/wedding-planner/tasks")
+      .then((data) => setTasks(data ?? []))
+      .catch((err) => setError(err instanceof ApiError ? err.message : "Gagal memuat checklist."))
+      .finally(() => setLoading(false));
+  }
 
   useEffect(() => {
-    apiGet<PlannerTask[]>("/api/v1/wedding-planner/tasks")
-      .then((data) => {
-        setTasks(data ?? []);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err instanceof ApiError ? err.message : "Gagal memuat checklist.");
-        setLoading(false);
-      });
+    queueMicrotask(load);
   }, []);
 
   async function cycleStatus(task: PlannerTask) {
@@ -64,6 +81,43 @@ function WeddingPlannerContent({ user }: { user: CurrentUser }) {
     }
   }
 
+  async function handleSetDueDate(taskID: string, dueDate: string) {
+    setTasks((prev) => prev.map((t) => (t.id === taskID ? { ...t, due_date: dueDate || undefined } : t)));
+    try {
+      await apiPatch(`/api/v1/wedding-planner/tasks/${taskID}/due-date`, { due_date: dueDate });
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Gagal mengubah target tanggal.");
+    }
+  }
+
+  async function handleAddTask(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newTitle.trim() || !newTimeframe.trim()) return;
+    setSavingTask(true);
+    try {
+      await apiPost("/api/v1/wedding-planner/tasks", { title: newTitle, timeframe: newTimeframe, due_date: newDueDate });
+      setNewTitle("");
+      setNewTimeframe("");
+      setNewDueDate("");
+      setShowAddForm(false);
+      show("Tugas ditambahkan.", "success");
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Gagal menambah tugas.");
+    } finally {
+      setSavingTask(false);
+    }
+  }
+
+  async function handleDeleteTask(taskID: string) {
+    try {
+      await apiDelete(`/api/v1/wedding-planner/tasks/${taskID}`);
+      setTasks((prev) => prev.filter((t) => t.id !== taskID));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Gagal menghapus tugas.");
+    }
+  }
+
   const doneCount = tasks.filter((t) => t.status === "done").length;
   const progressPct = tasks.length ? Math.round((doneCount / tasks.length) * 100) : 0;
   const groups = Array.from(new Set(tasks.map((t) => t.timeframe)));
@@ -71,7 +125,49 @@ function WeddingPlannerContent({ user }: { user: CurrentUser }) {
   return (
     <Shell user={user} navItems={CLIENT_NAV} loginPath="/login" eyebrow="Client">
       <div className="mx-auto max-w-2xl px-4 py-10">
-        <PageHeader title="Wedding Planner" subtitle="Klik status untuk mengubah (Belum → Proses → Selesai)." />
+        <PageHeader
+          title="Wedding Planner"
+          subtitle="Klik status untuk mengubah (Belum → Proses → Selesai)."
+          action={
+            <Button variant="ghost" className="w-auto" onClick={() => setShowAddForm((v) => !v)}>
+              {showAddForm ? "Batal" : "+ Tambah Tugas"}
+            </Button>
+          }
+        />
+
+        {showAddForm && (
+          <Card className="mb-6 p-5">
+            <form onSubmit={handleAddTask} className="flex flex-col gap-3">
+              <input
+                type="text"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="Judul tugas"
+                required
+                className="w-full rounded-xl border border-dc-black/15 px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  value={newTimeframe}
+                  onChange={(e) => setNewTimeframe(e.target.value)}
+                  placeholder="Periode (mis. H-3 Bulan)"
+                  required
+                  className="w-full rounded-xl border border-dc-black/15 px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+                />
+                <input
+                  type="date"
+                  value={newDueDate}
+                  onChange={(e) => setNewDueDate(e.target.value)}
+                  className="w-full rounded-xl border border-dc-black/15 px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+                />
+              </div>
+              <Button type="submit" className="w-auto" loading={savingTask}>
+                Simpan Tugas
+              </Button>
+            </form>
+          </Card>
+        )}
 
         {loading ? (
           <p className="text-dc-black/60">Memuat…</p>
@@ -99,7 +195,7 @@ function WeddingPlannerContent({ user }: { user: CurrentUser }) {
                     {tasks
                       .filter((t) => t.timeframe === timeframe)
                       .map((task) => (
-                        <div key={task.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                        <div key={task.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                           <div>
                             <p className="text-dc-navy">{task.title}</p>
                             {task.related_category && (
@@ -111,12 +207,31 @@ function WeddingPlannerContent({ user }: { user: CurrentUser }) {
                               </Link>
                             )}
                           </div>
-                          <button
-                            onClick={() => cycleStatus(task)}
-                            className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLE[task.status]}`}
-                          >
-                            {STATUS_LABEL[task.status]}
-                          </button>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <input
+                              type="date"
+                              value={task.due_date ?? ""}
+                              onChange={(e) => handleSetDueDate(task.id, e.target.value)}
+                              className="rounded-lg border border-dc-black/15 px-2 py-1 text-xs outline-none focus:border-dc-gold focus:ring-1 focus:ring-dc-gold/30"
+                            />
+                            <button
+                              onClick={() => cycleStatus(task)}
+                              className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLE[task.status]}`}
+                            >
+                              {STATUS_LABEL[task.status]}
+                            </button>
+                            {task.is_custom && (
+                              <button
+                                onClick={() => handleDeleteTask(task.id)}
+                                aria-label="Hapus tugas"
+                                className="text-dc-black/30 hover:text-red-600"
+                              >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                                  <path d="M6 6l12 12M18 6 6 18" />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
                         </div>
                       ))}
                   </Card>

@@ -6,6 +6,9 @@
 package booking
 
 import (
+	"context"
+	"log"
+
 	"duacincin/server/internal/payment"
 	"duacincin/server/internal/repository"
 )
@@ -27,6 +30,7 @@ type Deps struct {
 	Users         *repository.UserRepo
 	Planner       *repository.WeddingPlannerRepo
 	Reviews       *repository.ReviewRepo
+	Notifications *repository.NotificationRepo
 	Midtrans      *payment.Client
 }
 
@@ -39,6 +43,7 @@ func NewDeps(
 	users *repository.UserRepo,
 	planner *repository.WeddingPlannerRepo,
 	reviews *repository.ReviewRepo,
+	notifications *repository.NotificationRepo,
 	midtrans *payment.Client,
 ) *Deps {
 	return &Deps{
@@ -50,6 +55,16 @@ func NewDeps(
 		Users:         users,
 		Planner:       planner,
 		Reviews:       reviews,
+		Notifications: notifications,
 		Midtrans:      midtrans,
+	}
+}
+
+// notify creates a persisted notification for userID. Best-effort: logged
+// and swallowed on failure, since the triggering action already succeeded.
+func notify(deps *Deps, ctx context.Context, userID, notifType, title, body, link string) {
+	l := link
+	if err := deps.Notifications.Create(ctx, userID, notifType, title, body, &l); err != nil {
+		log.Printf("notification: %v", err)
 	}
 }

@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"strings"
 
@@ -44,16 +45,42 @@ func enrichConversationDTO(deps *Deps, ctx context.Context, c *repository.Conver
 	return dto
 }
 
+type replyPreviewDTO struct {
+	ID       string `json:"id"`
+	SenderID string `json:"sender_id"`
+	Body     string `json:"body"`
+}
+
 type messageDTO struct {
-	ID        string `json:"id"`
-	SenderID  string `json:"sender_id"`
-	Body      string `json:"body"`
-	Flagged   bool   `json:"flagged"`
-	CreatedAt string `json:"created_at"`
+	ID             string           `json:"id"`
+	SenderID       string           `json:"sender_id"`
+	Body           string           `json:"body"`
+	Flagged        bool             `json:"flagged"`
+	ReplyTo        *replyPreviewDTO `json:"reply_to,omitempty"`
+	AttachmentURL  *string          `json:"attachment_url,omitempty"`
+	AttachmentType *string          `json:"attachment_type,omitempty"`
+	CreatedAt      string           `json:"created_at"`
 }
 
 func toMessageDTO(m *repository.Message) messageDTO {
-	return messageDTO{ID: m.ID, SenderID: m.SenderID, Body: m.Body, Flagged: m.Flagged, CreatedAt: m.CreatedAt.Format("2006-01-02T15:04:05Z07:00")}
+	return messageDTO{
+		ID: m.ID, SenderID: m.SenderID, Body: m.Body, Flagged: m.Flagged,
+		AttachmentURL: m.AttachmentURL, AttachmentType: m.AttachmentType,
+		CreatedAt: m.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+	}
+}
+
+// toMessageDTOWithReply is toMessageDTO plus a best-effort reply preview —
+// a lookup failure (deleted message, etc.) just omits reply_to rather than
+// failing the whole response.
+func toMessageDTOWithReply(deps *Deps, ctx context.Context, m *repository.Message) messageDTO {
+	dto := toMessageDTO(m)
+	if m.ReplyToMessageID != nil {
+		if original, err := deps.Chat.GetMessageByID(ctx, *m.ReplyToMessageID); err == nil {
+			dto.ReplyTo = &replyPreviewDTO{ID: original.ID, SenderID: original.SenderID, Body: original.Body}
+		}
+	}
+	return dto
 }
 
 // StartVendorChat gets-or-creates the (client, vendor) conversation. Only
@@ -159,14 +186,17 @@ func ListMessages(deps *Deps) http.HandlerFunc {
 
 		out := make([]messageDTO, 0, len(messages))
 		for _, m := range messages {
-			out = append(out, toMessageDTO(&m))
+			out = append(out, toMessageDTOWithReply(deps, r.Context(), &m))
 		}
 		httpx.JSON(w, http.StatusOK, out)
 	}
 }
 
 type sendMessageRequest struct {
-	Body string `json:"body"`
+	Body             string  `json:"body"`
+	ReplyToMessageID *string `json:"reply_to_message_id,omitempty"`
+	AttachmentURL    *string `json:"attachment_url,omitempty"`
+	AttachmentType   *string `json:"attachment_type,omitempty"`
 }
 
 func SendMessage(deps *Deps) http.HandlerFunc {
@@ -184,13 +214,20 @@ func SendMessage(deps *Deps) http.HandlerFunc {
 			return
 		}
 		req.Body = strings.TrimSpace(req.Body)
-		if req.Body == "" {
+		if req.Body == "" && req.AttachmentURL == nil {
 			httpx.Error(w, http.StatusBadRequest, "pesan tidak boleh kosong")
 			return
 		}
+		if req.ReplyToMessageID != nil {
+			original, err := deps.Chat.GetMessageByID(r.Context(), *req.ReplyToMessageID)
+			if err != nil || original.ConversationID != conv.ID {
+				httpx.Error(w, http.StatusBadRequest, "pesan yang dibalas tidak ditemukan")
+				return
+			}
+		}
 
 		flagged := ContainsContactInfo(req.Body)
-		message, err := deps.Chat.CreateMessage(r.Context(), conv.ID, claims.UserID, req.Body, flagged)
+		message, err := deps.Chat.CreateMessage(r.Context(), conv.ID, claims.UserID, req.Body, flagged, req.ReplyToMessageID, req.AttachmentURL, req.AttachmentType)
 		if err != nil {
 			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
 			return
@@ -203,10 +240,36 @@ func SendMessage(deps *Deps) http.HandlerFunc {
 			_ = deps.Disputes.Create(r.Context(), *conv.VendorID, &message.ID, "Pesan chat terdeteksi berisi kontak eksternal")
 		}
 
-		dto := toMessageDTO(message)
+		dto := toMessageDTOWithReply(deps, r.Context(), message)
 		deps.Hub.Broadcast(conv.ID, map[string]any{"type": "message.new", "message": dto})
+		notifyOtherParticipant(deps, r.Context(), conv, claims.UserID, req.Body)
 
 		httpx.JSON(w, http.StatusCreated, dto)
+	}
+}
+
+// notifyOtherParticipant creates a persisted notification for the vendor_chat
+// counterpart of senderID. Consultation threads are a shared staff inbox
+// (no single recipient), so those aren't notified this way.
+func notifyOtherParticipant(deps *Deps, ctx context.Context, conv *repository.Conversation, senderID, body string) {
+	if conv.Type != repository.ConversationTypeVendorChat || conv.VendorID == nil {
+		return
+	}
+	recipientID := conv.ClientID
+	if senderID == conv.ClientID {
+		recipientID = *conv.VendorID
+	}
+
+	preview := body
+	if len(preview) > 80 {
+		preview = preview[:80] + "…"
+	}
+	link := "/vendor/messages/" + conv.ID
+	if recipientID == conv.ClientID {
+		link = "/client/messages/" + conv.ID
+	}
+	if err := deps.Notifications.Create(ctx, recipientID, "chat.message", "Pesan baru", preview, &link); err != nil {
+		log.Printf("notification: %v", err)
 	}
 }
 

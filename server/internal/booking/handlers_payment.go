@@ -99,11 +99,19 @@ func applyPaidTransaction(deps *Deps, r *http.Request, tx *repository.Transactio
 	}
 
 	from, to := repository.BookingStatusConfirmed, repository.BookingStatusDPPaid
+	title := "DP diterima"
 	if tx.Type == repository.TransactionTypeFull {
 		from, to = repository.BookingStatusDPPaid, repository.BookingStatusFullPaid
+		title = "Pelunasan diterima"
 	}
-	_, err := deps.Bookings.UpdateStatus(r.Context(), tx.BookingID, from, to)
-	return err
+	if _, err := deps.Bookings.UpdateStatus(r.Context(), tx.BookingID, from, to); err != nil {
+		return err
+	}
+
+	if b, err := deps.Bookings.GetByID(r.Context(), tx.BookingID); err == nil {
+		notify(deps, r.Context(), b.VendorID, "booking.payment_received", title, "Client sudah membayar, cek detail booking.", "/vendor/bookings/"+b.ID)
+	}
+	return nil
 }
 
 // DevSimulatePayment lets a Client mark their own pending transaction as

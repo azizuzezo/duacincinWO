@@ -27,11 +27,23 @@ type Deps struct {
 	Users         *repository.UserRepo
 	Bookings      *repository.BookingRepo
 	AuditLog      *repository.AuditLogRepo
+	Notifications *repository.NotificationRepo
 }
 
-func NewDeps(vendors *repository.VendorRepo, nameChange *repository.VendorNameChangeRepo, disbursements *repository.DisbursementRepo, disputes *repository.DisputeRepo, users *repository.UserRepo, bookings *repository.BookingRepo, auditLog *repository.AuditLogRepo) *Deps {
-	return &Deps{Vendors: vendors, NameChange: nameChange, Disbursements: disbursements, Disputes: disputes, Users: users, Bookings: bookings, AuditLog: auditLog}
+func NewDeps(vendors *repository.VendorRepo, nameChange *repository.VendorNameChangeRepo, disbursements *repository.DisbursementRepo, disputes *repository.DisputeRepo, users *repository.UserRepo, bookings *repository.BookingRepo, auditLog *repository.AuditLogRepo, notifications *repository.NotificationRepo) *Deps {
+	return &Deps{Vendors: vendors, NameChange: nameChange, Disbursements: disbursements, Disputes: disputes, Users: users, Bookings: bookings, AuditLog: auditLog, Notifications: notifications}
 }
+
+// notify creates a persisted notification for userID. Best-effort: a
+// failure here is logged and swallowed, matching logAction's approach,
+// since the underlying admin action already succeeded.
+func notify(deps *Deps, ctx context.Context, userID, notifType, title, body string, link *string) {
+	if err := deps.Notifications.Create(ctx, userID, notifType, title, body, link); err != nil {
+		log.Printf("notification: %v", err)
+	}
+}
+
+func ptrStr(s string) *string { return &s }
 
 // logAction records one admin action to the audit trail. Failures are
 // logged-and-ignored (best-effort) rather than failing the request, since
@@ -94,7 +106,35 @@ func approveVendor(deps *Deps) http.HandlerFunc {
 			return
 		}
 		logAction(deps, r, "vendor.approve", "vendor", id, nil)
+		notify(deps, r.Context(), id, "vendor.approved", "Profil disetujui", "Profilmu sudah disetujui dan tampil di direktori.", ptrStr("/vendor/profile"))
 		httpx.JSON(w, http.StatusOK, map[string]string{"message": "vendor disetujui"})
+	}
+}
+
+type bulkApproveRequest struct {
+	IDs []string `json:"ids"`
+}
+
+// bulkApproveVendors approves multiple pending vendors in one request.
+// Each approval is still logged individually to the audit trail.
+func bulkApproveVendors(deps *Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req bulkApproveRequest
+		if err := httpx.DecodeJSON(w, r, &req); err != nil {
+			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			return
+		}
+
+		approved := 0
+		for _, id := range req.IDs {
+			if err := deps.Vendors.SetStatus(r.Context(), id, "approved", nil); err != nil {
+				continue
+			}
+			logAction(deps, r, "vendor.approve", "vendor", id, map[string]any{"bulk": true})
+			approved++
+		}
+
+		httpx.JSON(w, http.StatusOK, map[string]int{"approved": approved})
 	}
 }
 
@@ -113,6 +153,7 @@ func rejectVendor(deps *Deps) http.HandlerFunc {
 			return
 		}
 		logAction(deps, r, "vendor.reject", "vendor", id, map[string]any{"reason": req.Reason})
+		notify(deps, r.Context(), id, "vendor.rejected", "Profil ditolak", req.Reason, ptrStr("/vendor/profile"))
 		httpx.JSON(w, http.StatusOK, map[string]string{"message": "vendor ditolak"})
 	}
 }
@@ -187,6 +228,9 @@ func markDisbursed(deps *Deps) http.HandlerFunc {
 			return
 		}
 		logAction(deps, r, "disbursement.mark_disbursed", "booking", bookingID, nil)
+		if b, err := deps.Bookings.GetByID(r.Context(), bookingID); err == nil {
+			notify(deps, r.Context(), b.VendorID, "disbursement.disbursed", "Dana sudah dicairkan", "Dana untuk booking ini sudah ditransfer.", ptrStr("/vendor/payouts"))
+		}
 		httpx.JSON(w, http.StatusOK, map[string]string{"message": "dana ditandai sudah dicairkan ke vendor"})
 	}
 }
@@ -305,6 +349,7 @@ func resolveDispute(deps *Deps) http.HandlerFunc {
 		}
 
 		logAction(deps, r, "dispute.resolve", "dispute", id, map[string]any{"sanction": req.Sanction})
+		notify(deps, r.Context(), dispute.VendorID, "dispute.resolved", "Sengketa diselesaikan", "Sanksi: "+req.Sanction, ptrStr("/vendor/profile"))
 		httpx.JSON(w, http.StatusOK, map[string]string{"message": "sengketa diselesaikan"})
 	}
 }
@@ -400,6 +445,11 @@ func resolveNameChange(deps *Deps) http.HandlerFunc {
 		}
 
 		logAction(deps, r, "vendor_name_change.resolve", "vendor_name_change", id, map[string]any{"status": status})
+		statusLabel := "ditolak"
+		if status == "approved" {
+			statusLabel = "disetujui"
+		}
+		notify(deps, r.Context(), nameChange.VendorID, "vendor_name_change.resolved", "Permintaan ganti nama "+statusLabel, nameChange.Reason, ptrStr("/vendor/profile"))
 		httpx.JSON(w, http.StatusOK, map[string]string{"message": "permintaan ganti nama diselesaikan"})
 	}
 }
@@ -488,6 +538,7 @@ func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 		r.Get("/vendors/pending", listPending(deps))
 		r.Get("/vendors/approved", listApproved(deps))
 		r.Post("/vendors/{id}/approve", approveVendor(deps))
+		r.Post("/vendors/bulk-approve", bulkApproveVendors(deps))
 		r.Post("/vendors/{id}/reject", rejectVendor(deps))
 		r.Patch("/vendors/{id}/commission", setCommission(deps))
 

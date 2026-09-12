@@ -15,6 +15,7 @@ import (
 	"duacincin/server/internal/email"
 	"duacincin/server/internal/httpserver"
 	"duacincin/server/internal/inspiration"
+	"duacincin/server/internal/notifications"
 	"duacincin/server/internal/payment"
 	"duacincin/server/internal/ratelimit"
 	"duacincin/server/internal/repository"
@@ -44,7 +45,7 @@ func main() {
 
 	storageClient := storage.NewClient(cfg.SupabaseURL, cfg.SupabaseServiceRoleKey)
 	if storageClient.Configured() {
-		for _, bucket := range []string{vendors.PortfolioBucket, inspiration.Bucket} {
+		for _, bucket := range []string{vendors.PortfolioBucket, inspiration.Bucket, chat.AttachmentBucket} {
 			if err := storageClient.EnsureBucket(ctx, bucket, true); err != nil {
 				log.Printf("warning: could not ensure storage bucket %q: %v", bucket, err)
 			}
@@ -61,6 +62,7 @@ func main() {
 	bookingRepo := repository.NewBookingRepo(pool)
 	reviewRepo := repository.NewReviewRepo(pool)
 	auditLogRepo := repository.NewAuditLogRepo(pool)
+	notificationRepo := repository.NewNotificationRepo(pool)
 	chatHub := chat.NewHub()
 	midtransClient := payment.NewClient(cfg.MidtransServerKey, cfg.MidtransIsProduction)
 
@@ -74,11 +76,12 @@ func main() {
 			cfg,
 		),
 		Vendors:        vendors.NewDeps(vendorRepo, vendorNameChangeRepo, storageClient, reviewRepo, disbursementRepo),
-		Admin:          admin.NewDeps(vendorRepo, vendorNameChangeRepo, disbursementRepo, disputeRepo, userRepo, bookingRepo, auditLogRepo),
-		Chat:           chat.NewDeps(chatRepo, vendorRepo, disputeRepo, userRepo, chatHub),
+		Admin:          admin.NewDeps(vendorRepo, vendorNameChangeRepo, disbursementRepo, disputeRepo, userRepo, bookingRepo, auditLogRepo, notificationRepo),
+		Chat:           chat.NewDeps(chatRepo, vendorRepo, disputeRepo, userRepo, chatHub, notificationRepo, storageClient),
 		Budget:         budget.NewDeps(repository.NewBudgetRepo(pool)),
 		Inspiration:    inspiration.NewDeps(repository.NewInspirationRepo(pool), storageClient),
 		WeddingPlanner: weddingplanner.NewDeps(plannerRepo),
+		Notifications:  notifications.NewDeps(notificationRepo),
 		Booking: booking.NewDeps(
 			bookingRepo,
 			repository.NewTransactionRepo(pool),
@@ -88,6 +91,7 @@ func main() {
 			userRepo,
 			plannerRepo,
 			reviewRepo,
+			notificationRepo,
 			midtransClient,
 		),
 	}
