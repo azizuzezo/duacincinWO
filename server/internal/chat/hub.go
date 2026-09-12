@@ -10,8 +10,8 @@ import (
 // Hub fans out chat events (new message, read receipt) to every connection
 // currently open on a conversation. In-memory and single-process: if the
 // API is ever scaled to multiple instances, broadcasting across them needs
-// Postgres LISTEN/NOTIFY or a Redis pub/sub layer in front of this — out of
-// scope for now.
+// Postgres LISTEN/NOTIFY or a Redis pub/sub layer in front of this, which is
+// out of scope for now.
 type Hub struct {
 	mu    sync.Mutex
 	conns map[string]map[*websocket.Conn]bool
@@ -40,7 +40,7 @@ func (h *Hub) Unregister(conversationID string, conn *websocket.Conn) {
 }
 
 // Broadcast sends event as JSON to every connection open on conversationID.
-// A connection that fails to write is dropped and closed — the client's own
+// A connection that fails to write is dropped and closed; the client's own
 // reconnect/fallback logic (see ChatThread.tsx) handles recovery.
 func (h *Hub) Broadcast(conversationID string, event any) {
 	payload, err := json.Marshal(event)

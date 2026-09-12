@@ -5,6 +5,7 @@
 package admin
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"strconv"
@@ -33,8 +34,8 @@ func NewDeps(vendors *repository.VendorRepo, nameChange *repository.VendorNameCh
 }
 
 // logAction records one admin action to the audit trail. Failures are
-// logged-and-ignored (best-effort) rather than failing the request — the
-// action itself already succeeded by the time this is called.
+// logged-and-ignored (best-effort) rather than failing the request, since
+// the action itself already succeeded by the time this is called.
 func logAction(deps *Deps, r *http.Request, action, targetType, targetID string, metadata map[string]any) {
 	claims, ok := auth.ClaimsFromContext(r.Context())
 	if !ok {
@@ -144,11 +145,12 @@ func setCommission(deps *Deps) http.HandlerFunc {
 }
 
 type disbursementDTO struct {
-	BookingID        string `json:"booking_id"`
-	GrossAmount      int64  `json:"gross_amount"`
-	CommissionAmount int64  `json:"commission_amount"`
-	NetAmount        int64  `json:"net_amount"`
-	Status           string `json:"status"`
+	BookingID          string  `json:"booking_id"`
+	VendorBusinessName *string `json:"vendor_business_name,omitempty"`
+	GrossAmount        int64   `json:"gross_amount"`
+	CommissionAmount   int64   `json:"commission_amount"`
+	NetAmount          int64   `json:"net_amount"`
+	Status             string  `json:"status"`
 }
 
 func listPendingDisbursements(deps *Deps) http.HandlerFunc {
@@ -160,7 +162,13 @@ func listPendingDisbursements(deps *Deps) http.HandlerFunc {
 		}
 		out := make([]disbursementDTO, 0, len(items))
 		for _, d := range items {
-			out = append(out, disbursementDTO{BookingID: d.BookingID, GrossAmount: d.GrossAmount, CommissionAmount: d.CommissionAmount, NetAmount: d.NetAmount, Status: d.Status})
+			dto := disbursementDTO{BookingID: d.BookingID, GrossAmount: d.GrossAmount, CommissionAmount: d.CommissionAmount, NetAmount: d.NetAmount, Status: d.Status}
+			if b, err := deps.Bookings.GetByID(r.Context(), d.BookingID); err == nil {
+				if profile, err := deps.Vendors.GetByUserID(r.Context(), b.VendorID); err == nil {
+					dto.VendorBusinessName = &profile.BusinessName
+				}
+			}
+			out = append(out, dto)
 		}
 		httpx.JSON(w, http.StatusOK, out)
 	}
@@ -184,11 +192,30 @@ func markDisbursed(deps *Deps) http.HandlerFunc {
 }
 
 type disputeDTO struct {
-	ID        string  `json:"id"`
-	VendorID  string  `json:"vendor_id"`
-	MessageID *string `json:"message_id,omitempty"`
-	Reason    string  `json:"reason"`
-	CreatedAt string  `json:"created_at"`
+	ID                 string  `json:"id"`
+	VendorID           string  `json:"vendor_id"`
+	VendorBusinessName *string `json:"vendor_business_name,omitempty"`
+	MessageID          *string `json:"message_id,omitempty"`
+	Reason             string  `json:"reason"`
+	Status             string  `json:"status"`
+	SanctionApplied    *string `json:"sanction_applied,omitempty"`
+	CreatedAt          string  `json:"created_at"`
+	ResolvedAt         *string `json:"resolved_at,omitempty"`
+}
+
+func toDisputeDTO(deps *Deps, ctx context.Context, d *repository.Dispute) disputeDTO {
+	dto := disputeDTO{
+		ID: d.ID, VendorID: d.VendorID, MessageID: d.MessageID, Reason: d.Reason,
+		Status: d.Status, SanctionApplied: d.SanctionApplied, CreatedAt: d.CreatedAt.Format(time.RFC3339),
+	}
+	if profile, err := deps.Vendors.GetByUserID(ctx, d.VendorID); err == nil {
+		dto.VendorBusinessName = &profile.BusinessName
+	}
+	if d.ResolvedAt != nil {
+		resolved := d.ResolvedAt.Format(time.RFC3339)
+		dto.ResolvedAt = &resolved
+	}
+	return dto
 }
 
 func listOpenDisputes(deps *Deps) http.HandlerFunc {
@@ -200,7 +227,22 @@ func listOpenDisputes(deps *Deps) http.HandlerFunc {
 		}
 		out := make([]disputeDTO, 0, len(disputes))
 		for _, d := range disputes {
-			out = append(out, disputeDTO{ID: d.ID, VendorID: d.VendorID, MessageID: d.MessageID, Reason: d.Reason, CreatedAt: d.CreatedAt.Format(time.RFC3339)})
+			out = append(out, toDisputeDTO(deps, r.Context(), &d))
+		}
+		httpx.JSON(w, http.StatusOK, out)
+	}
+}
+
+func listResolvedDisputes(deps *Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		disputes, err := deps.Disputes.ListResolved(r.Context())
+		if err != nil {
+			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
+			return
+		}
+		out := make([]disputeDTO, 0, len(disputes))
+		for _, d := range disputes {
+			out = append(out, toDisputeDTO(deps, r.Context(), &d))
 		}
 		httpx.JSON(w, http.StatusOK, out)
 	}
@@ -268,12 +310,22 @@ func resolveDispute(deps *Deps) http.HandlerFunc {
 }
 
 type nameChangeRequestDTO struct {
-	ID            string `json:"id"`
-	VendorID      string `json:"vendor_id"`
-	CurrentName   string `json:"current_name"`
-	RequestedName string `json:"requested_name"`
-	Reason        string `json:"reason"`
-	CreatedAt     string `json:"created_at"`
+	ID            string  `json:"id"`
+	VendorID      string  `json:"vendor_id"`
+	CurrentName   string  `json:"current_name"`
+	RequestedName string  `json:"requested_name"`
+	Reason        string  `json:"reason"`
+	Status        string  `json:"status"`
+	AdminNote     *string `json:"admin_note,omitempty"`
+	CreatedAt     string  `json:"created_at"`
+}
+
+func toNameChangeDTO(req *repository.VendorNameChangeRequest) nameChangeRequestDTO {
+	return nameChangeRequestDTO{
+		ID: req.ID, VendorID: req.VendorID, CurrentName: req.CurrentName,
+		RequestedName: req.RequestedName, Reason: req.Reason, Status: req.Status,
+		AdminNote: req.AdminNote, CreatedAt: req.CreatedAt.Format(time.RFC3339),
+	}
 }
 
 func listPendingNameChanges(deps *Deps) http.HandlerFunc {
@@ -285,10 +337,22 @@ func listPendingNameChanges(deps *Deps) http.HandlerFunc {
 		}
 		out := make([]nameChangeRequestDTO, 0, len(requests))
 		for _, req := range requests {
-			out = append(out, nameChangeRequestDTO{
-				ID: req.ID, VendorID: req.VendorID, CurrentName: req.CurrentName,
-				RequestedName: req.RequestedName, Reason: req.Reason, CreatedAt: req.CreatedAt.Format(time.RFC3339),
-			})
+			out = append(out, toNameChangeDTO(&req))
+		}
+		httpx.JSON(w, http.StatusOK, out)
+	}
+}
+
+func listResolvedNameChanges(deps *Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		requests, err := deps.NameChange.ListResolved(r.Context())
+		if err != nil {
+			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
+			return
+		}
+		out := make([]nameChangeRequestDTO, 0, len(requests))
+		for _, req := range requests {
+			out = append(out, toNameChangeDTO(&req))
 		}
 		httpx.JSON(w, http.StatusOK, out)
 	}
@@ -431,9 +495,11 @@ func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 		r.Post("/disbursements/{bookingID}/mark-disbursed", markDisbursed(deps))
 
 		r.Get("/disputes/open", listOpenDisputes(deps))
+		r.Get("/disputes/resolved", listResolvedDisputes(deps))
 		r.Post("/disputes/{id}/resolve", resolveDispute(deps))
 
 		r.Get("/vendor-name-changes/pending", listPendingNameChanges(deps))
+		r.Get("/vendor-name-changes/resolved", listResolvedNameChanges(deps))
 		r.Post("/vendor-name-changes/{id}/resolve", resolveNameChange(deps))
 
 		r.Get("/audit-log", listAuditLog(deps))

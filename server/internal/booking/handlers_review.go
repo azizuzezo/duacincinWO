@@ -27,7 +27,7 @@ type reviewDTO struct {
 }
 
 // SubmitReview lets the Client who owns a completed booking leave a
-// one-time rating/comment for the Vendor. One review per booking — a
+// one-time rating/comment for the Vendor. One review per booking: a
 // second attempt fails on the reviews.booking_id unique constraint.
 func SubmitReview(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

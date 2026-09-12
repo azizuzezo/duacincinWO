@@ -1,4 +1,4 @@
-// Shared framer-motion variants — one place for new components to pull
+// Shared framer-motion variants: one place for new components to pull
 // consistent motion from, instead of every file (Hero.tsx, etc.) defining
 // its own animation inline. Existing components aren't migrated to this by
 // this change; it's the pattern new UI (Modal, Toast, and beyond) builds on.
@@ -26,8 +26,8 @@ export const slideIn = {
   exit: { opacity: 0, x: 24, transition: { duration: 0.15 } },
 };
 
-// Motion-respecting variants collapse to an instant, no-motion state —
-// pass these instead of the variants above when useReducedMotion() is true.
+// Motion-respecting variants collapse to an instant, no-motion state.
+// Pass these instead of the variants above when useReducedMotion() is true.
 export const reducedMotionOverride = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: { duration: 0.01 } },

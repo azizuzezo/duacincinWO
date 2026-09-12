@@ -20,7 +20,7 @@ func toReviewDTO(rev *repository.Review) reviewDTO {
 	return reviewDTO{ID: rev.ID, Rating: rev.Rating, Comment: rev.Comment, CreatedAt: rev.CreatedAt.Format("2006-01-02T15:04:05Z07:00")}
 }
 
-// ListVendorReviews is a PUBLIC endpoint (no auth) — reviews are part of the
+// ListVendorReviews is a PUBLIC endpoint (no auth). Reviews are part of the
 // vendor's public reputation, same visibility as the directory/profile.
 func ListVendorReviews(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

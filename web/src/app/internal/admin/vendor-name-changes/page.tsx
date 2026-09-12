@@ -19,6 +19,8 @@ type PendingNameChange = {
   current_name: string;
   requested_name: string;
   reason: string;
+  status?: string;
+  admin_note?: string;
   created_at: string;
 };
 
@@ -31,6 +33,7 @@ export default function AdminVendorNameChangesPage() {
 }
 
 function AdminVendorNameChangesContent({ user }: { user: CurrentUser }) {
+  const [tab, setTab] = useState<"pending" | "resolved">("pending");
   const [requests, setRequests] = useState<PendingNameChange[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -40,7 +43,7 @@ function AdminVendorNameChangesContent({ user }: { user: CurrentUser }) {
 
   async function load() {
     try {
-      setRequests(await apiGet<PendingNameChange[]>("/api/v1/admin/vendor-name-changes/pending"));
+      setRequests(await apiGet<PendingNameChange[]>(`/api/v1/admin/vendor-name-changes/${tab}`));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Gagal memuat daftar permintaan.");
     }
@@ -48,7 +51,8 @@ function AdminVendorNameChangesContent({ user }: { user: CurrentUser }) {
 
   useEffect(() => {
     queueMicrotask(load);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
 
   async function handleApprove(id: string) {
     setBusyId(id);
@@ -84,9 +88,24 @@ function AdminVendorNameChangesContent({ user }: { user: CurrentUser }) {
     <Shell user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
       <div className="mx-auto max-w-3xl px-4 py-10">
         <PageHeader title="Permintaan Ganti Nama Vendor" />
+
+        <div className="mb-5 flex gap-2">
+          {(["pending", "resolved"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                tab === t ? "bg-dc-navy text-dc-white" : "bg-dc-white text-dc-navy/70 hover:bg-dc-offwhite"
+              }`}
+            >
+              {t === "pending" ? "Menunggu" : "Riwayat"}
+            </button>
+          ))}
+        </div>
+
         {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
         {requests.length === 0 ? (
-          <EmptyState title="Tidak ada permintaan ganti nama yang menunggu" />
+          <EmptyState title={tab === "pending" ? "Tidak ada permintaan ganti nama yang menunggu" : "Belum ada riwayat"} />
         ) : (
           <ul className="space-y-3">
             {requests.map((req) => (
@@ -99,15 +118,23 @@ function AdminVendorNameChangesContent({ user }: { user: CurrentUser }) {
                         <span className="font-semibold text-dc-navy">→ {req.requested_name}</span>
                       </p>
                       <p className="mt-2 text-sm text-dc-black/80">Alasan: {req.reason}</p>
+                      {tab === "resolved" && (
+                        <p className="mt-1 text-xs font-semibold text-dc-navy">
+                          {req.status === "approved" ? "Disetujui" : "Ditolak"}
+                          {req.admin_note ? ` · ${req.admin_note}` : ""}
+                        </p>
+                      )}
                     </div>
-                    <div className="flex shrink-0 gap-2">
-                      <Button variant="ghost" className="w-auto" onClick={() => setRejectTarget(req)} disabled={busyId === req.id}>
-                        Tolak
-                      </Button>
-                      <Button className="w-auto" onClick={() => handleApprove(req.id)} loading={busyId === req.id}>
-                        Setujui
-                      </Button>
-                    </div>
+                    {tab === "pending" && (
+                      <div className="flex shrink-0 gap-2">
+                        <Button variant="ghost" className="w-auto" onClick={() => setRejectTarget(req)} disabled={busyId === req.id}>
+                          Tolak
+                        </Button>
+                        <Button className="w-auto" onClick={() => handleApprove(req.id)} loading={busyId === req.id}>
+                          Setujui
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </Card>
               </li>

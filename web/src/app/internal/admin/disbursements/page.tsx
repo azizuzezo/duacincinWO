@@ -8,6 +8,7 @@ import { Shell } from "@/components/shell/Shell";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useToast } from "@/components/ui/Toast";
 import { WithUser } from "@/components/WithUser";
 import { apiGet, apiPost, ApiError, formatRupiah, type CurrentUser, type Disbursement } from "@/lib/api";
 
@@ -23,6 +24,7 @@ function AdminDisbursementsContent({ user }: { user: CurrentUser }) {
   const [items, setItems] = useState<Disbursement[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const { show } = useToast();
 
   function load() {
     apiGet<Disbursement[]>("/api/v1/admin/disbursements/pending")
@@ -38,6 +40,7 @@ function AdminDisbursementsContent({ user }: { user: CurrentUser }) {
     setBusyId(bookingID);
     try {
       await apiPost(`/api/v1/admin/disbursements/${bookingID}/mark-disbursed`, {});
+      show("Dana ditandai sudah dicairkan.", "success");
       load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Gagal menandai pencairan.");
@@ -59,7 +62,7 @@ function AdminDisbursementsContent({ user }: { user: CurrentUser }) {
               <li key={d.booking_id}>
                 <Card className="flex items-center justify-between p-4">
                   <div>
-                    <p className="text-sm text-dc-black/60">Booking #{d.booking_id.slice(0, 8)}</p>
+                    <p className="text-sm text-dc-black/60">{d.vendor_business_name ?? `Booking #${d.booking_id.slice(0, 8)}`}</p>
                     <p className="font-medium text-dc-navy">
                       Bruto {formatRupiah(d.gross_amount)} − Komisi {formatRupiah(d.commission_amount)} ={" "}
                       <span className="font-bold">{formatRupiah(d.net_amount)}</span>

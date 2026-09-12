@@ -1,5 +1,5 @@
 /** "Bold glass" accent: gradient navy→rose, glass surface, gold glow border.
- * Used sparingly — hero/celebratory moments and empty states, not as a
+ * Used sparingly, for hero/celebratory moments and empty states, not as a
  * default card surface. Sibling to DashboardBanner (the top-of-page hero),
  * for accents that live inline within page content instead. */
 export function GlowPanel({

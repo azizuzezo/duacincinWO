@@ -7,7 +7,7 @@ import { Button } from "@/components/Button";
 import { PasswordField } from "@/components/PasswordField";
 import { apiPost, ApiError } from "@/lib/api";
 
-/** Shared "ubah password" form — used by Client and Vendor account pages. */
+/** Shared "ubah password" form, used by Client and Vendor account pages. */
 export function PasswordSection() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");

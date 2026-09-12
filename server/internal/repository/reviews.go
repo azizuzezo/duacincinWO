@@ -27,7 +27,7 @@ func NewReviewRepo(pool *pgxpool.Pool) *ReviewRepo {
 
 // Create records a review for a booking. Callers are responsible for
 // checking the booking is completed and belongs to clientID before calling
-// this — the unique constraint on booking_id is the last line of defense
+// this. The unique constraint on booking_id is the last line of defense
 // against a duplicate submission (surfaced to callers as a pgconn unique
 // violation, mapped to a 409 by the handler).
 func (r *ReviewRepo) Create(ctx context.Context, bookingID, clientID, vendorID string, rating int, comment *string) (*Review, error) {

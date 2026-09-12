@@ -64,6 +64,29 @@ func (r *DisputeRepo) ListOpen(ctx context.Context) ([]Dispute, error) {
 	return out, rows.Err()
 }
 
+// ListResolved returns closed disputes, most recently resolved first.
+// Powers the Admin "riwayat sengketa" history view.
+func (r *DisputeRepo) ListResolved(ctx context.Context) ([]Dispute, error) {
+	rows, err := r.pool.Query(ctx, `
+		select id, vendor_id, message_id, reason, status, sanction_applied, created_at, resolved_at
+		from disputes where status = $1 order by resolved_at desc
+	`, DisputeStatusResolved)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []Dispute
+	for rows.Next() {
+		var d Dispute
+		if err := rows.Scan(&d.ID, &d.VendorID, &d.MessageID, &d.Reason, &d.Status, &d.SanctionApplied, &d.CreatedAt, &d.ResolvedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, d)
+	}
+	return out, rows.Err()
+}
+
 func (r *DisputeRepo) GetByID(ctx context.Context, id string) (*Dispute, error) {
 	row := r.pool.QueryRow(ctx, `
 		select id, vendor_id, message_id, reason, status, sanction_applied, created_at, resolved_at

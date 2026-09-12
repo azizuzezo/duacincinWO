@@ -15,7 +15,7 @@ export function matchesBookingFilter(status: BookingStatus, filterKey: string): 
 }
 
 /** Pill tabs for filtering a booking list by status client-side (no backend
- * query param support for this yet — the dataset per user is small). */
+ * query param support for this yet, since the dataset per user is small). */
 export function BookingStatusFilter({ value, onChange }: { value: string; onChange: (key: string) => void }) {
   return (
     <div className="mb-5 flex flex-wrap gap-2">

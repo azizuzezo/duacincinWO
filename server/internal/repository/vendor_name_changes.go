@@ -79,6 +79,34 @@ func (r *VendorNameChangeRepo) ListPending(ctx context.Context) ([]VendorNameCha
 	return out, rows.Err()
 }
 
+// ListResolved returns approved/rejected requests, most recently resolved
+// first. Powers the Admin "riwayat ganti nama" history view.
+func (r *VendorNameChangeRepo) ListResolved(ctx context.Context) ([]VendorNameChangeRequest, error) {
+	rows, err := r.pool.Query(ctx, `
+		select id, vendor_id, current_name, requested_name, reason, status, admin_note, created_at, resolved_at
+		from vendor_name_change_requests
+		where status != 'pending'
+		order by resolved_at desc
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []VendorNameChangeRequest
+	for rows.Next() {
+		var req VendorNameChangeRequest
+		if err := rows.Scan(
+			&req.ID, &req.VendorID, &req.CurrentName, &req.RequestedName, &req.Reason,
+			&req.Status, &req.AdminNote, &req.CreatedAt, &req.ResolvedAt,
+		); err != nil {
+			return nil, err
+		}
+		out = append(out, req)
+	}
+	return out, rows.Err()
+}
+
 func (r *VendorNameChangeRepo) GetByID(ctx context.Context, id string) (*VendorNameChangeRequest, error) {
 	row := r.pool.QueryRow(ctx, `
 		select id, vendor_id, current_name, requested_name, reason, status, admin_note, created_at, resolved_at

@@ -83,7 +83,7 @@ function VendorDashboardContent({ user }: { user: CurrentUser }) {
 
       <div className="mx-auto max-w-6xl px-4 py-10">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatTile label="Rating" value={profile.review_count > 0 ? profile.average_rating.toFixed(1) : "—"} trend={`${profile.review_count} ulasan`} density="structured" accent="gold" />
+          <StatTile label="Rating" value={profile.review_count > 0 ? profile.average_rating.toFixed(1) : "-"} trend={`${profile.review_count} ulasan`} density="structured" accent="gold" />
           <StatTile label="Booking Aktif" value={activeBookings.length} density="structured" accent="rose" />
           <StatTile label="Portofolio" value={profile.portfolio?.length ?? 0} density="structured" accent="navy" />
           <StatTile

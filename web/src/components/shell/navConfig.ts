@@ -45,6 +45,7 @@ export const ADMIN_NAV: NavItem[] = [
   { href: "/internal/admin/disbursements", label: "Pencairan", icon: ICON.cash },
   { href: "/internal/admin/inspirasi", label: "Inspirasi", icon: ICON.image },
   { href: "/internal/consultations", label: "Konsultasi", icon: ICON.chat },
+  { href: "/internal/admin/audit-log", label: "Audit Log", icon: ICON.checklist },
 ];
 
 export const CONSULTANT_NAV: NavItem[] = [{ href: "/internal/consultations", label: "Inbox Konsultasi", icon: ICON.chat }];

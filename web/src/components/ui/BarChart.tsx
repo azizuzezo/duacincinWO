@@ -2,8 +2,8 @@
 
 export type BarDatum = { label: string; value: number };
 
-/** Custom SVG bar chart — no chart library. Bars are proportional <rect>s
- * inside a viewBox, sized against the largest value in data. */
+/** Custom SVG bar chart, no chart library needed. Bars are proportional
+ * <rect>s inside a viewBox, sized against the largest value in data. */
 export function BarChart({ data, height = 160, color = "#831843" }: { data: BarDatum[]; height?: number; color?: string }) {
   const max = Math.max(1, ...data.map((d) => d.value));
   const barWidth = 100 / data.length;

@@ -10,21 +10,21 @@ import (
 	"duacincin/server/internal/config"
 )
 
-// MountWS registers the websocket upgrade route on its own — it must NOT
-// sit behind the request-timeout middleware the REST routes use (Mount, in
+// MountWS registers the websocket upgrade route on its own. It must NOT sit
+// behind the request-timeout middleware the REST routes use (Mount, in
 // routes.go), since that would tear down the connection a few seconds in.
 // Call this in a separate, timeout-free chi.Router group.
 //
 // This registers the route directly (not via r.Route("/conversations", ...))
 // because chi.Router.Route mounts a sub-router at that prefix, and Mount
-// panics if the prefix is already mounted elsewhere in the tree — which
+// panics if the prefix is already mounted elsewhere in the tree, which
 // routes.go's Mount (the REST routes) already does for "/conversations".
 func MountWS(r chi.Router, deps *Deps, cfg *config.Config) {
 	r.With(auth.RequireAuth(cfg)).Get("/conversations/{id}/ws", ServeWS(deps))
 }
 
 // upgrader restricts the handshake to the same front-end origin the REST
-// API's CORS policy already allows (see httpserver/router.go) — the default
+// API's CORS policy already allows (see httpserver/router.go). The default
 // zero-value Upgrader accepts any origin, which we don't want here.
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
@@ -35,7 +35,7 @@ var upgrader = websocket.Upgrader{
 
 // ServeWS upgrades an authenticated, authorized participant's connection so
 // they receive message.new / read.updated events for one conversation in
-// real time. Clients don't send anything over this socket in this scope —
+// real time. Clients don't send anything over this socket in this scope:
 // sending messages and marking read both stay REST endpoints (SendMessage,
 // MarkRead) so they get the same validation/response handling either way.
 func ServeWS(deps *Deps) http.HandlerFunc {
@@ -59,7 +59,7 @@ func ServeWS(deps *Deps) http.HandlerFunc {
 		}()
 
 		// Read pump: this connection only needs to detect the client going
-		// away (close/error) — it never sends data we act on.
+		// away (close/error); it never sends data we act on.
 		for {
 			if _, _, err := conn.ReadMessage(); err != nil {
 				return

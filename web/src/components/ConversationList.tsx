@@ -9,7 +9,7 @@ import { apiGet, ApiError, type Conversation } from "@/lib/api";
 
 function conversationLabel(c: Conversation, currentUserId: string): string {
   if (c.type === "consultation") {
-    return c.client_name ? `Konsultasi — ${c.client_name}` : "Konsultasi dengan Wedding Consultant";
+    return c.client_name ? `Konsultasi: ${c.client_name}` : "Konsultasi dengan Wedding Consultant";
   }
   // vendor_chat: show whichever side ISN'T the viewer.
   if (c.client_id === currentUserId) return c.vendor_business_name ?? "Chat dengan Vendor";

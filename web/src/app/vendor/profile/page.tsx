@@ -210,7 +210,7 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
             <p className="mt-1 text-sm text-dc-black/60">
               {profile.review_count > 0
                 ? `Rating rata-rata ★ ${profile.average_rating.toFixed(1)} dari ${profile.review_count} ulasan`
-                : "Belum ada ulasan — tampil setelah booking pertamamu selesai dan direview client."}
+                : "Belum ada ulasan, akan tampil setelah booking pertamamu selesai dan direview client."}
             </p>
           </Card>
         )}

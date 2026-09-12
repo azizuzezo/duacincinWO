@@ -7,6 +7,7 @@ import { ADMIN_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
 import { Card } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useToast } from "@/components/ui/Toast";
 import { WithUser } from "@/components/WithUser";
 import { apiGet, apiPatch, ApiError, categoryLabel, type CurrentUser, type VendorSummary } from "@/lib/api";
 
@@ -23,6 +24,8 @@ function ApprovedVendorsContent({ user }: { user: CurrentUser }) {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const { show } = useToast();
 
   function load() {
     apiGet<VendorSummary[]>("/api/v1/admin/vendors/approved")
@@ -40,6 +43,7 @@ function ApprovedVendorsContent({ user }: { user: CurrentUser }) {
       const raw = drafts[userId];
       const rate = raw === undefined || raw === "" ? null : Number(raw) / 100;
       await apiPatch(`/api/v1/admin/vendors/${userId}/commission`, { rate });
+      show("Komisi diperbarui.", "success");
       load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Gagal menyimpan komisi.");
@@ -53,8 +57,22 @@ function ApprovedVendorsContent({ user }: { user: CurrentUser }) {
       <div className="mx-auto max-w-3xl px-4 py-10">
         <PageHeader title="Vendor Aktif & Komisi" subtitle="Kosongkan lalu simpan untuk kembali ke komisi default platform (10%)." />
         {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Cari nama usaha atau kota…"
+          className="mb-5 w-full rounded-xl border border-dc-black/15 px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+        />
+
         <ul className="flex flex-col gap-3">
-          {vendors.map((v) => (
+          {vendors
+            .filter((v) => {
+              const q = search.trim().toLowerCase();
+              return !q || v.business_name.toLowerCase().includes(q) || v.city.toLowerCase().includes(q);
+            })
+            .map((v) => (
             <li key={v.user_id}>
               <Card className="flex items-center justify-between p-4">
                 <div>

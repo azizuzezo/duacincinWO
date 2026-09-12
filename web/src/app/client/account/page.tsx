@@ -24,7 +24,7 @@ function ClientAccountContent({ user }: { user: CurrentUser }) {
 
         <Card className="mb-6 p-5">
           <p className="text-xs font-semibold uppercase tracking-wide text-dc-black/50">Nama</p>
-          <p className="font-heading mt-1 text-lg font-bold text-dc-navy">{user.full_name || "—"}</p>
+          <p className="font-heading mt-1 text-lg font-bold text-dc-navy">{user.full_name || "-"}</p>
           <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-dc-black/50">Email</p>
           <p className="mt-1 text-dc-navy">{user.email}</p>
         </Card>

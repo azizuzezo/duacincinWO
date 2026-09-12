@@ -27,7 +27,7 @@ func toConversationDTO(c *repository.Conversation) conversationDTO {
 }
 
 // enrichConversationDTO adds display names so the UI never has to show a
-// bare "Chat dengan Vendor" placeholder — vendor_business_name identifies
+// bare "Chat dengan Vendor" placeholder. vendor_business_name identifies
 // the vendor side of a vendor_chat, client_name identifies who a Vendor or
 // Wedding Consultant/Admin is talking to. Best-effort: a lookup failure
 // just leaves the field empty rather than failing the whole response.

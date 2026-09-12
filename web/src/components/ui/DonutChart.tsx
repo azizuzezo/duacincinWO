@@ -4,8 +4,8 @@ const COLORS = ["#831843", "#f5a623", "#db2777", "#c2673f", "#7c8a6e", "#3a3532"
 
 export type DonutSegment = { label: string; value: number };
 
-/** Custom SVG donut — no chart library. Segments are drawn as stroked arcs
- * via stroke-dasharray, colored from the brand palette (COLORS), in order. */
+/** Custom SVG donut, no chart library needed. Segments are drawn as stroked
+ * arcs via stroke-dasharray, colored from the brand palette (COLORS), in order. */
 export function DonutChart({
   segments,
   size = 160,
@@ -13,7 +13,7 @@ export function DonutChart({
 }: {
   segments: DonutSegment[];
   size?: number;
-  /** Override the default palette cycle — e.g. to match colors already
+  /** Override the default palette cycle, e.g. to match colors already
    * used elsewhere on the page for the same categories (Budget Planner). */
   colors?: string[];
 }) {

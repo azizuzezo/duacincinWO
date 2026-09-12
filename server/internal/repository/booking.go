@@ -227,7 +227,7 @@ func (r *DisbursementRepo) Create(ctx context.Context, bookingID string, grossAm
 }
 
 // ListForVendor returns every disbursement (any status) for bookings owned
-// by vendorID, newest first — powers the vendor-facing payout/earnings page.
+// by vendorID, newest first. Powers the vendor-facing payout/earnings page.
 func (r *DisbursementRepo) ListForVendor(ctx context.Context, vendorID string) ([]Disbursement, error) {
 	rows, err := r.pool.Query(ctx, `
 		select d.booking_id, d.gross_amount, d.commission_amount, d.net_amount, d.status, d.created_at

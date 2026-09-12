@@ -35,6 +35,7 @@ function AdminVendorsContent({ user }: { user: CurrentUser }) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [rejectTarget, setRejectTarget] = useState<PendingVendor | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [search, setSearch] = useState("");
   const { show } = useToast();
 
   async function load() {
@@ -89,8 +90,21 @@ function AdminVendorsContent({ user }: { user: CurrentUser }) {
         {vendors.length === 0 ? (
           <EmptyState title="Tidak ada vendor yang menunggu review" />
         ) : (
-          <ul className="space-y-3">
-            {vendors.map((v) => (
+          <>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Cari nama usaha atau kota…"
+              className="mb-5 w-full rounded-xl border border-dc-black/15 px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+            />
+            <ul className="space-y-3">
+              {vendors
+                .filter((v) => {
+                  const q = search.trim().toLowerCase();
+                  return !q || v.business_name.toLowerCase().includes(q) || v.city.toLowerCase().includes(q);
+                })
+                .map((v) => (
               <li key={v.user_id}>
                 <Card className="flex items-center justify-between p-4">
                   <div>
@@ -110,7 +124,8 @@ function AdminVendorsContent({ user }: { user: CurrentUser }) {
                 </Card>
               </li>
             ))}
-          </ul>
+            </ul>
+          </>
         )}
       </div>
 

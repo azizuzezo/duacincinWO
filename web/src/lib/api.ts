@@ -1,7 +1,7 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 // Derives a ws(s):// URL for the same API host, for the chat real-time
-// connection (ChatThread.tsx) — the backend upgrades this same origin.
+// connection (ChatThread.tsx). The backend upgrades this same origin.
 export function apiWsUrl(path: string): string {
   return API_BASE_URL.replace(/^http/, "ws") + path;
 }
@@ -103,10 +103,12 @@ export function formatRupiah(value: number): string {
 
 export type VendorNameChangeRequest = {
   id: string;
+  vendor_id?: string;
   current_name: string;
   requested_name: string;
   reason: string;
   status: "pending" | "approved" | "rejected";
+  admin_note?: string;
 };
 
 export type VendorProfile = {
@@ -223,13 +225,14 @@ export type Meeting = {
 
 export type Disbursement = {
   booking_id: string;
+  vendor_business_name?: string;
   gross_amount: number;
   commission_amount: number;
   net_amount: number;
   status: string;
 };
 
-/** Same shape as Disbursement — separate type for the vendor-facing
+/** Same shape as Disbursement, kept as a separate type for the vendor-facing
  * GET /vendor/payouts endpoint so call sites read intent-first. */
 export type Payout = Disbursement;
 
@@ -260,9 +263,13 @@ export type DashboardStats = {
 export type Dispute = {
   id: string;
   vendor_id: string;
+  vendor_business_name?: string;
   message_id?: string;
   reason: string;
+  status: "open" | "resolved";
+  sanction_applied?: string;
   created_at: string;
+  resolved_at?: string;
 };
 
 export type VendorSummary = {

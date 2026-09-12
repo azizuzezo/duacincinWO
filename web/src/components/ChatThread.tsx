@@ -49,7 +49,7 @@ export function ChatThread({ conversationId, currentUserId }: { conversationId: 
       }
     };
     ws.onerror = () => {
-      // One-time reload as a fallback — no reconnect loop, this is a small
+      // One-time reload as a fallback, no reconnect loop: this is a small
       // real-time nicety, not a delivery guarantee.
       load();
     };
