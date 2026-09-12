@@ -6,7 +6,17 @@ export type DonutSegment = { label: string; value: number };
 
 /** Custom SVG donut — no chart library. Segments are drawn as stroked arcs
  * via stroke-dasharray, colored from the brand palette (COLORS), in order. */
-export function DonutChart({ segments, size = 160 }: { segments: DonutSegment[]; size?: number }) {
+export function DonutChart({
+  segments,
+  size = 160,
+  colors = COLORS,
+}: {
+  segments: DonutSegment[];
+  size?: number;
+  /** Override the default palette cycle — e.g. to match colors already
+   * used elsewhere on the page for the same categories (Budget Planner). */
+  colors?: string[];
+}) {
   const total = segments.reduce((sum, s) => sum + s.value, 0);
   const radius = size / 2 - 12;
   const circumference = 2 * Math.PI * radius;
@@ -23,7 +33,7 @@ export function DonutChart({ segments, size = 160 }: { segments: DonutSegment[];
       cy={size / 2}
       r={radius}
       fill="none"
-      stroke={COLORS[i % COLORS.length]}
+      stroke={colors[i % colors.length]}
       strokeWidth={16}
       strokeDasharray={`${dashes[i]} ${circumference - dashes[i]}`}
       strokeDashoffset={-offsets[i]}

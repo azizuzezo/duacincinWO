@@ -40,7 +40,7 @@ const ROLE_CONFIG: Record<
   },
   vendor: {
     endpoint: "/api/v1/auth/vendor/register",
-    redirect: "/vendor/dashboard",
+    redirect: "/vendor/profile",
     nameLabel: "Nama usaha",
     nameAutoComplete: "organization",
     agreementHref: "/legal/vendor-agreement",

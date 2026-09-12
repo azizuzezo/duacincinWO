@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { CLIENT_NAV } from "@/components/shell/navConfig";
@@ -13,13 +12,11 @@ import { FeatureIcon } from "@/components/ui/FeatureIcon";
 import { WithUser } from "@/components/WithUser";
 import {
   apiGet,
-  apiPost,
   BOOKING_STATUS_LABEL,
   BOOKING_STATUS_TONE,
   formatRupiah,
   type Booking,
   type BudgetPlan,
-  type Conversation,
   type CurrentUser,
   type PlannerTask,
 } from "@/lib/api";
@@ -34,7 +31,6 @@ export default function ClientDashboardPage() {
 }
 
 function ClientDashboardContent({ user }: { user: CurrentUser }) {
-  const router = useRouter();
   const [budget, setBudget] = useState<BudgetPlan | null>(null);
   const [tasks, setTasks] = useState<PlannerTask[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -50,11 +46,6 @@ function ClientDashboardContent({ user }: { user: CurrentUser }) {
       .then((d) => setBookings(d ?? []))
       .catch(() => {});
   }, []);
-
-  async function handleStartConsultation() {
-    const conv = await apiPost<Conversation>("/api/v1/conversations/consultation", {});
-    router.push(`/client/messages/${conv.id}`);
-  }
 
   const doneCount = tasks.filter((t) => t.status === "done").length;
   const plannerPct = tasks.length ? Math.round((doneCount / tasks.length) * 100) : 0;
@@ -161,7 +152,7 @@ function ClientDashboardContent({ user }: { user: CurrentUser }) {
             </Card>
           </Link>
 
-          <button onClick={handleStartConsultation} className="group text-left">
+          <Link href="/client/consultation" className="group">
             <Card className="flex h-full items-center gap-4 border-dc-gold/30 bg-dc-gold/5 p-5 transition duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-dc-gold/10">
               <div className="transition duration-300 group-hover:scale-110">
                 <FeatureIcon>
@@ -170,11 +161,11 @@ function ClientDashboardContent({ user }: { user: CurrentUser }) {
                 </FeatureIcon>
               </div>
               <div>
-                <h3 className="font-heading font-bold text-dc-navy">Chat Wedding Consultant</h3>
-                <p className="mt-0.5 text-sm text-dc-black/60">Butuh rekomendasi vendor? Konsultasi gratis.</p>
+                <h3 className="font-heading font-bold text-dc-navy">Konsultasi Wedding Consultant</h3>
+                <p className="mt-0.5 text-sm text-dc-black/60">Jadwalkan sesi atau chat langsung, gratis.</p>
               </div>
             </Card>
-          </button>
+          </Link>
         </div>
       </div>
     </Shell>

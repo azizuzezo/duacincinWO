@@ -22,13 +22,17 @@ export const CLIENT_NAV: NavItem[] = [
   { href: "/client/budget", label: "Budget Planner", icon: ICON.pie },
   { href: "/client/wedding-planner", label: "Wedding Planner", icon: ICON.checklist },
   { href: "/client/bookings", label: "Booking", icon: ICON.calendar },
+  { href: "/client/consultation", label: "Konsultasi", icon: ICON.users },
   { href: "/client/messages", label: "Pesan", icon: ICON.chat },
+  { href: "/client/account", label: "Akun", icon: ICON.badge },
 ];
 
 export const VENDOR_NAV: NavItem[] = [
-  { href: "/vendor/dashboard", label: "Profil", icon: ICON.badge },
+  { href: "/vendor/dashboard", label: "Dashboard", icon: ICON.home },
+  { href: "/vendor/profile", label: "Profil", icon: ICON.badge },
   { href: "/vendor/portfolio", label: "Portofolio", icon: ICON.image },
   { href: "/vendor/bookings", label: "Booking", icon: ICON.calendar },
+  { href: "/vendor/payouts", label: "Pencairan", icon: ICON.cash },
   { href: "/vendor/messages", label: "Pesan", icon: ICON.chat },
 ];
 

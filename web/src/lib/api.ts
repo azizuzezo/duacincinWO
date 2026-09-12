@@ -149,6 +149,8 @@ export type Conversation = {
   type: "vendor_chat" | "consultation";
   client_id: string;
   vendor_id?: string;
+  vendor_business_name?: string;
+  client_name?: string;
 };
 
 export type ChatMessage = {
@@ -226,6 +228,10 @@ export type Disbursement = {
   net_amount: number;
   status: string;
 };
+
+/** Same shape as Disbursement — separate type for the vendor-facing
+ * GET /vendor/payouts endpoint so call sites read intent-first. */
+export type Payout = Disbursement;
 
 export const BOOKING_STATUS_LABEL: Record<BookingStatus, string> = {
   requested: "Menunggu konfirmasi vendor",

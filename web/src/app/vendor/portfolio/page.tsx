@@ -103,7 +103,7 @@ function VendorPortfolioContent({ user }: { user: CurrentUser }) {
           <EmptyState
             title="Lengkapi profil dulu"
             body="Isi Nama Vendor, kategori, dan detail usaha di halaman Profil sebelum menambah portofolio."
-            actionHref="/vendor/dashboard"
+            actionHref="/vendor/profile"
             actionLabel="Ke Halaman Profil"
           />
         ) : (

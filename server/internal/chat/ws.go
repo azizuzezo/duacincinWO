@@ -14,11 +14,13 @@ import (
 // sit behind the request-timeout middleware the REST routes use (Mount, in
 // routes.go), since that would tear down the connection a few seconds in.
 // Call this in a separate, timeout-free chi.Router group.
+//
+// This registers the route directly (not via r.Route("/conversations", ...))
+// because chi.Router.Route mounts a sub-router at that prefix, and Mount
+// panics if the prefix is already mounted elsewhere in the tree — which
+// routes.go's Mount (the REST routes) already does for "/conversations".
 func MountWS(r chi.Router, deps *Deps, cfg *config.Config) {
-	r.Route("/conversations", func(r chi.Router) {
-		r.Use(auth.RequireAuth(cfg))
-		r.Get("/{id}/ws", ServeWS(deps))
-	})
+	r.With(auth.RequireAuth(cfg)).Get("/conversations/{id}/ws", ServeWS(deps))
 }
 
 // upgrader restricts the handshake to the same front-end origin the REST

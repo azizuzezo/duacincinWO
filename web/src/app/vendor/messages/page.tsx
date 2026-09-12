@@ -13,7 +13,7 @@ export default function VendorMessagesPage() {
         <Shell user={user} navItems={VENDOR_NAV} loginPath="/login" eyebrow="Vendor">
           <div className="mx-auto max-w-2xl px-4 py-10">
             <PageHeader title="Pesan dari Client" />
-            <ConversationList basePath="/vendor/messages" emptyLabel="Belum ada Client yang menghubungi." />
+            <ConversationList basePath="/vendor/messages" emptyLabel="Belum ada Client yang menghubungi." currentUserId={user.id} />
           </div>
         </Shell>
       )}

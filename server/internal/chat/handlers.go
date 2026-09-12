@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
@@ -13,14 +14,34 @@ import (
 )
 
 type conversationDTO struct {
-	ID       string  `json:"id"`
-	Type     string  `json:"type"`
-	ClientID string  `json:"client_id"`
-	VendorID *string `json:"vendor_id,omitempty"`
+	ID                 string  `json:"id"`
+	Type               string  `json:"type"`
+	ClientID           string  `json:"client_id"`
+	VendorID           *string `json:"vendor_id,omitempty"`
+	VendorBusinessName *string `json:"vendor_business_name,omitempty"`
+	ClientName         *string `json:"client_name,omitempty"`
 }
 
 func toConversationDTO(c *repository.Conversation) conversationDTO {
 	return conversationDTO{ID: c.ID, Type: c.Type, ClientID: c.ClientID, VendorID: c.VendorID}
+}
+
+// enrichConversationDTO adds display names so the UI never has to show a
+// bare "Chat dengan Vendor" placeholder — vendor_business_name identifies
+// the vendor side of a vendor_chat, client_name identifies who a Vendor or
+// Wedding Consultant/Admin is talking to. Best-effort: a lookup failure
+// just leaves the field empty rather than failing the whole response.
+func enrichConversationDTO(deps *Deps, ctx context.Context, c *repository.Conversation) conversationDTO {
+	dto := toConversationDTO(c)
+	if c.VendorID != nil {
+		if profile, err := deps.Vendors.GetByUserID(ctx, *c.VendorID); err == nil {
+			dto.VendorBusinessName = &profile.BusinessName
+		}
+	}
+	if user, err := deps.Users.GetByID(ctx, c.ClientID); err == nil {
+		dto.ClientName = &user.FullName
+	}
+	return dto
 }
 
 type messageDTO struct {
@@ -53,7 +74,7 @@ func StartVendorChat(deps *Deps) http.HandlerFunc {
 			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
 			return
 		}
-		httpx.JSON(w, http.StatusOK, toConversationDTO(conv))
+		httpx.JSON(w, http.StatusOK, enrichConversationDTO(deps, r.Context(), conv))
 	}
 }
 
@@ -68,7 +89,7 @@ func StartConsultation(deps *Deps) http.HandlerFunc {
 			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
 			return
 		}
-		httpx.JSON(w, http.StatusOK, toConversationDTO(conv))
+		httpx.JSON(w, http.StatusOK, enrichConversationDTO(deps, r.Context(), conv))
 	}
 }
 
@@ -98,7 +119,7 @@ func ListConversations(deps *Deps) http.HandlerFunc {
 
 		out := make([]conversationDTO, 0, len(convs))
 		for _, c := range convs {
-			out = append(out, toConversationDTO(&c))
+			out = append(out, enrichConversationDTO(deps, r.Context(), &c))
 		}
 		httpx.JSON(w, http.StatusOK, out)
 	}

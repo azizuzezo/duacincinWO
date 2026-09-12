@@ -84,6 +84,11 @@ export default function VendorDirectoryPage() {
                   <p className="text-xs font-semibold uppercase tracking-wide text-dc-gold">{categoryLabel(c.category)}</p>
                   <p className="mt-1 font-bold text-dc-navy">{c.business_name}</p>
                   <p className="mt-0.5 text-sm text-dc-black/60">{c.city}</p>
+                  {c.review_count > 0 && (
+                    <p className="mt-0.5 text-sm text-dc-gold">
+                      ★ {c.average_rating.toFixed(1)} <span className="text-dc-black/50">({c.review_count})</span>
+                    </p>
+                  )}
                   <p className="mt-1 text-sm text-dc-black/60">
                     {formatRupiah(c.price_min)} – {formatRupiah(c.price_max)}
                   </p>

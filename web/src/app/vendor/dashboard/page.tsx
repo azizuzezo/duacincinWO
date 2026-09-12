@@ -1,25 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
-import { Button } from "@/components/Button";
-import { PasswordField } from "@/components/PasswordField";
 import { VENDOR_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
-import { TextField } from "@/components/TextField";
 import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
+import { BarChart } from "@/components/ui/BarChart";
 import { DashboardBanner } from "@/components/ui/DashboardBanner";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { StatTile } from "@/components/ui/StatTile";
 import { WithUser } from "@/components/WithUser";
-import { apiGet, apiPost, apiPut, ApiError, VENDOR_CATEGORIES, type CurrentUser, type VendorProfile } from "@/lib/api";
-
-const STATUS_LABEL: Record<VendorProfile["status"], { text: string; tone: "gold" | "success" | "danger" }> = {
-  pending: { text: "Menunggu review Admin", tone: "gold" },
-  approved: { text: "Disetujui, tampil di direktori", tone: "success" },
-  rejected: { text: "Ditolak", tone: "danger" },
-};
+import {
+  apiGet,
+  BOOKING_STATUS_LABEL,
+  formatRupiah,
+  type Booking,
+  type CurrentUser,
+  type Payout,
+  type VendorProfile,
+} from "@/lib/api";
 
 export default function VendorDashboardPage() {
   return (
@@ -30,343 +30,89 @@ export default function VendorDashboardPage() {
 }
 
 function VendorDashboardContent({ user }: { user: CurrentUser }) {
-  const [profile, setProfile] = useState<VendorProfile | null>(null);
-  const [category, setCategory] = useState(VENDOR_CATEGORIES[0].value);
-  const [city, setCity] = useState("");
-  const [priceMin, setPriceMin] = useState("");
-  const [priceMax, setPriceMax] = useState("");
-  const [description, setDescription] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  function applyProfile(p: VendorProfile) {
-    setProfile(p);
-    setCategory(p.category);
-    setCity(p.city);
-    setPriceMin(String(p.price_min));
-    setPriceMax(String(p.price_max));
-    setDescription(p.description);
-  }
-
-  function loadProfile() {
-    return apiGet<VendorProfile>("/api/v1/vendor/profile/me")
-      .then(applyProfile)
-      .catch(() => {
-        /* belum punya profil — biarkan form kosong */
-      });
-  }
+  const [profile, setProfile] = useState<VendorProfile | null | undefined>(undefined);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [payouts, setPayouts] = useState<Payout[]>([]);
 
   useEffect(() => {
-    loadProfile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    apiGet<VendorProfile>("/api/v1/vendor/profile/me")
+      .then(setProfile)
+      .catch(() => setProfile(null));
+    apiGet<Booking[]>("/api/v1/bookings")
+      .then((d) => setBookings(d ?? []))
+      .catch(() => {});
+    apiGet<Payout[]>("/api/v1/vendor/payouts")
+      .then((d) => setPayouts(d ?? []))
+      .catch(() => {});
   }, []);
 
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setSuccess(null);
-    setSaving(true);
-    try {
-      const updated = await apiPut<VendorProfile>("/api/v1/vendor/profile", {
-        business_name: profile?.business_name ?? "",
-        category,
-        city,
-        price_min: Number(priceMin) || 0,
-        price_max: Number(priceMax) || 0,
-        description,
-      });
-      applyProfile(updated);
-      setSuccess("Profil tersimpan.");
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Gagal menyimpan profil.");
-    } finally {
-      setSaving(false);
-    }
+  if (profile === undefined) return <p className="p-10 text-center text-dc-black/60">Memuat…</p>;
+
+  if (profile === null) {
+    return (
+      <Shell user={user} navItems={VENDOR_NAV} loginPath="/login" eyebrow="Vendor">
+        <div className="mx-auto max-w-2xl px-4 py-10">
+          <EmptyState
+            title="Lengkapi profil dulu"
+            body="Isi profil usahamu supaya dashboard bisa menampilkan data booking, rating, dan pencairan."
+            actionHref="/vendor/profile"
+            actionLabel="Lengkapi Profil"
+          />
+        </div>
+      </Shell>
+    );
   }
+
+  const activeBookings = bookings.filter((b) => b.status !== "cancelled" && b.status !== "completed");
+  const pendingPayout = payouts.filter((p) => p.status === "pending").reduce((sum, p) => sum + p.net_amount, 0);
+
+  const statusCounts = Object.entries(
+    bookings.reduce<Record<string, number>>((acc, b) => {
+      acc[b.status] = (acc[b.status] ?? 0) + 1;
+      return acc;
+    }, {}),
+  ).map(([status, value]) => ({ label: BOOKING_STATUS_LABEL[status as Booking["status"]] ?? status, value }));
 
   return (
     <Shell user={user} navItems={VENDOR_NAV} loginPath="/login" eyebrow="Vendor">
       <DashboardBanner
-        title={profile?.business_name || "Lengkapi Profil Vendor"}
-        subtitle={
-          profile
-            ? "Perbarui detail usahamu supaya makin menarik di direktori."
-            : "Isi profil usahamu supaya bisa mulai menerima booking dari calon pengantin."
-        }
-        action={profile && <Badge tone={STATUS_LABEL[profile.status].tone}>{STATUS_LABEL[profile.status].text}</Badge>}
+        title={profile.business_name}
+        subtitle="Ringkasan performa bisnis usahamu di DuaCincin."
+        action={<Badge tone="gold">{profile.review_count > 0 ? `★ ${profile.average_rating.toFixed(1)} (${profile.review_count})` : "Belum ada rating"}</Badge>}
       />
 
-      <div className="mx-auto max-w-2xl px-4 py-10">
-        {profile?.status === "rejected" && profile.rejection_reason && (
-          <p className="mb-4 text-sm text-red-600">Alasan: {profile.rejection_reason}</p>
+      <div className="mx-auto max-w-6xl px-4 py-10">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <StatTile label="Rating" value={profile.review_count > 0 ? profile.average_rating.toFixed(1) : "—"} trend={`${profile.review_count} ulasan`} density="structured" accent="gold" />
+          <StatTile label="Booking Aktif" value={activeBookings.length} density="structured" accent="rose" />
+          <StatTile label="Portofolio" value={profile.portfolio?.length ?? 0} density="structured" accent="navy" />
+          <StatTile
+            label="Estimasi Pencairan"
+            value={formatRupiah(pendingPayout)}
+            trend="menunggu dicairkan Admin"
+            density="structured"
+            accent="gold"
+          />
+        </div>
+
+        {statusCounts.length > 0 && (
+          <div className="mt-8 rounded-2xl border-l-4 border-dc-navy bg-dc-white p-5 shadow-md shadow-dc-navy/[0.06]">
+            <h2 className="font-heading mb-4 font-bold text-dc-navy">Booking per Status</h2>
+            <BarChart data={statusCounts} />
+          </div>
         )}
 
-        {profile && (
-          <Card className="mb-6 p-5">
-            <NameChangeSection profile={profile} onRequested={loadProfile} />
-          </Card>
-        )}
-
-        <Card className="p-5">
-          <form onSubmit={handleSave} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="vendor-category" className="text-sm font-medium text-dc-navy">
-                Kategori
-              </label>
-              <select
-                id="vendor-category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full rounded-xl border border-dc-black/15 bg-dc-white px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
-              >
-                {VENDOR_CATEGORIES.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <TextField label="Kota" value={city} onChange={setCity} />
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="price-min" className="text-sm font-medium text-dc-navy">
-                  Harga minimum (Rp)
-                </label>
-                <input
-                  id="price-min"
-                  type="text"
-                  inputMode="numeric"
-                  value={priceMin ? Number(priceMin).toLocaleString("id-ID") : ""}
-                  onChange={(e) => setPriceMin(e.target.value.replace(/\D/g, ""))}
-                  className="w-full rounded-xl border border-dc-black/15 bg-dc-white px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="price-max" className="text-sm font-medium text-dc-navy">
-                  Harga maksimum (Rp)
-                </label>
-                <input
-                  id="price-max"
-                  type="text"
-                  inputMode="numeric"
-                  value={priceMax ? Number(priceMax).toLocaleString("id-ID") : ""}
-                  onChange={(e) => setPriceMax(e.target.value.replace(/\D/g, ""))}
-                  className="w-full rounded-xl border border-dc-black/15 bg-dc-white px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="vendor-description" className="text-sm font-medium text-dc-navy">
-                Deskripsi
-              </label>
-              <textarea
-                id="vendor-description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={4}
-                className="w-full rounded-xl border border-dc-black/15 bg-dc-white px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
-              />
-            </div>
-
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            <AnimatePresence>
-              {success && (
-                <motion.p
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="flex items-center gap-1.5 text-sm text-green-700"
-                >
-                  <CheckIcon /> {success}
-                </motion.p>
-              )}
-            </AnimatePresence>
-            <Button type="submit" loading={saving}>
-              Simpan Profil
-            </Button>
-          </form>
-        </Card>
-
-        {profile && (
-          <Link
-            href="/vendor/portfolio"
-            className="mt-6 flex items-center justify-between rounded-2xl bg-dc-white px-5 py-4 shadow-md shadow-dc-navy/6 transition hover:shadow-lg hover:shadow-dc-navy/10"
-          >
-            <div>
-              <p className="font-heading font-bold text-dc-navy">Portofolio</p>
-              <p className="text-sm text-dc-black/60">{profile.portfolio?.length ?? 0} foto tersimpan</p>
-            </div>
-            <ArrowIcon />
+        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Link href="/vendor/payouts" className="rounded-2xl bg-dc-white px-5 py-4 shadow-md shadow-dc-navy/[0.06] transition hover:shadow-lg">
+            <p className="font-heading font-bold text-dc-navy">Pencairan</p>
+            <p className="mt-1 text-sm text-dc-black/60">Lihat riwayat dan status pencairan dana →</p>
           </Link>
-        )}
-
-        <Card className="mt-6 p-5">
-          <PasswordSection />
-        </Card>
+          <Link href="/vendor/bookings" className="rounded-2xl bg-dc-white px-5 py-4 shadow-md shadow-dc-navy/[0.06] transition hover:shadow-lg">
+            <p className="font-heading font-bold text-dc-navy">Booking</p>
+            <p className="mt-1 text-sm text-dc-black/60">Kelola booking yang masuk →</p>
+          </Link>
+        </div>
       </div>
     </Shell>
-  );
-}
-
-function NameChangeSection({ profile, onRequested }: { profile: VendorProfile; onRequested: () => void }) {
-  const [open, setOpen] = useState(false);
-  const [requestedName, setRequestedName] = useState("");
-  const [reason, setReason] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  const pending = profile.pending_name_change;
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setSaving(true);
-    try {
-      await apiPost("/api/v1/vendor/profile/name-change", { requested_name: requestedName, reason });
-      setRequestedName("");
-      setReason("");
-      setOpen(false);
-      onRequested();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Gagal mengirim permintaan.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <div>
-      <p className="text-xs font-semibold uppercase tracking-wide text-dc-black/50">Nama Vendor</p>
-      <p className="font-heading mt-1 text-xl font-bold text-dc-navy">{profile.business_name}</p>
-
-      {pending && pending.status === "pending" ? (
-        <div className="mt-3 rounded-xl bg-dc-gold/10 p-3 text-sm text-dc-navy">
-          Permintaan ganti nama menjadi <span className="font-semibold">&ldquo;{pending.requested_name}&rdquo;</span> sedang
-          ditinjau Admin. Alasan: {pending.reason}
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="mt-3 text-sm font-semibold text-dc-gold hover:text-dc-navy"
-        >
-          {open ? "Batal" : "Ajukan Ganti Nama"}
-        </button>
-      )}
-
-      <AnimatePresence initial={false}>
-        {open && !pending && (
-          <motion.form
-            onSubmit={handleSubmit}
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="mt-3 flex flex-col gap-3 overflow-hidden"
-          >
-            <TextField label="Nama vendor baru" value={requestedName} onChange={setRequestedName} />
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="name-change-reason" className="text-sm font-medium text-dc-navy">
-                Alasan perubahan
-              </label>
-              <textarea
-                id="name-change-reason"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                rows={2}
-                required
-                className="w-full rounded-xl border border-dc-black/15 bg-dc-white px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
-              />
-            </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            <Button type="submit" loading={saving} className="w-auto">
-              Kirim untuk Ditinjau
-            </Button>
-          </motion.form>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-function PasswordSection() {
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setSuccess(false);
-    if (newPassword !== confirmPassword) {
-      setError("Konfirmasi password baru tidak cocok.");
-      return;
-    }
-    setSaving(true);
-    try {
-      await apiPost("/api/v1/auth/change-password", { current_password: currentPassword, new_password: newPassword });
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-      setSuccess(true);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Gagal mengubah password.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <h2 className="font-heading text-lg font-bold text-dc-navy">Ubah Password</h2>
-      <PasswordField label="Password saat ini" value={currentPassword} onChange={setCurrentPassword} autoComplete="current-password" />
-      <PasswordField label="Password baru" value={newPassword} onChange={setNewPassword} autoComplete="new-password" minLength={8} />
-      <PasswordField
-        label="Konfirmasi password baru"
-        value={confirmPassword}
-        onChange={setConfirmPassword}
-        autoComplete="new-password"
-        minLength={8}
-      />
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <AnimatePresence>
-        {success && (
-          <motion.p
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="flex items-center gap-1.5 text-sm text-green-700"
-          >
-            <CheckIcon /> Password berhasil diperbarui.
-          </motion.p>
-        )}
-      </AnimatePresence>
-      <Button type="submit" loading={saving} className="w-auto">
-        Simpan Password Baru
-      </Button>
-    </form>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="shrink-0">
-      <path d="M5 12l5 5L19 7" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function ArrowIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 text-dc-navy/40">
-      <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
   );
 }

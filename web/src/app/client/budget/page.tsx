@@ -7,6 +7,7 @@ import { CLIENT_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/ui/Card";
+import { DonutChart } from "@/components/ui/DonutChart";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { WithUser } from "@/components/WithUser";
 import { apiGet, apiPut, ApiError, formatRupiah, type BudgetPlan, type CurrentUser } from "@/lib/api";
@@ -123,7 +124,13 @@ function BudgetPlannerContent({ user }: { user: CurrentUser }) {
                 </div>
               </div>
 
-              {/* Stacked visual summary of the split */}
+              {/* Visual summary of the split */}
+              <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+                <DonutChart
+                  segments={categories.map((c) => ({ label: c.category, value: (total * c.percentage) / 100 }))}
+                  colors={categories.map((c) => BUDGET_CATEGORY_COLORS[c.category])}
+                />
+              </div>
               <div className="flex h-3 w-full overflow-hidden rounded-full bg-dc-offwhite">
                 {categories.map((c) => (
                   <div

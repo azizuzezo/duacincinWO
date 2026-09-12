@@ -8,6 +8,7 @@ import { CLIENT_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { useToast } from "@/components/ui/Toast";
 import { WithUser } from "@/components/WithUser";
 import {
   apiGet,
@@ -214,10 +215,85 @@ function ClientBookingDetailContent({ id, user }: { id: string; user: CurrentUse
                   Tandai Acara Selesai
                 </Button>
               )}
+
+              {booking.status === "completed" && <ReviewSection bookingId={id} />}
             </div>
           </>
         )}
       </div>
     </Shell>
+  );
+}
+
+function ReviewSection({ bookingId }: { bookingId: string }) {
+  const { show } = useToast();
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (rating < 1) {
+      setError("Pilih rating dulu, ya.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await apiPost(`/api/v1/bookings/${bookingId}/review`, { rating, comment });
+      setSubmitted(true);
+      show("Terima kasih atas review-nya!", "success");
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        setSubmitted(true);
+      } else {
+        setError(err instanceof ApiError ? err.message : "Gagal mengirim review.");
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (submitted) {
+    return (
+      <Card className="p-5">
+        <h2 className="font-heading mb-1 font-bold text-dc-navy">Review</h2>
+        <p className="text-sm text-dc-black/60">Terima kasih, review kamu untuk vendor ini sudah tercatat.</p>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="p-5">
+      <h2 className="font-heading mb-3 font-bold text-dc-navy">Bagaimana pengalamanmu dengan vendor ini?</h2>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <div className="flex gap-1">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              type="button"
+              onClick={() => setRating(star)}
+              aria-label={`${star} bintang`}
+              className="p-1 text-2xl leading-none"
+            >
+              <span className={star <= rating ? "text-dc-gold" : "text-dc-black/15"}>★</span>
+            </button>
+          ))}
+        </div>
+        <textarea
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          rows={3}
+          placeholder="Ceritakan pengalamanmu (opsional)"
+          className="w-full rounded-xl border border-dc-black/15 px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+        />
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <Button type="submit" className="w-auto" loading={saving}>
+          Kirim Review
+        </Button>
+      </form>
+    </Card>
   );
 }

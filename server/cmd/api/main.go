@@ -75,7 +75,7 @@ func main() {
 		),
 		Vendors:        vendors.NewDeps(vendorRepo, vendorNameChangeRepo, storageClient, reviewRepo, disbursementRepo),
 		Admin:          admin.NewDeps(vendorRepo, vendorNameChangeRepo, disbursementRepo, disputeRepo, userRepo, bookingRepo, auditLogRepo),
-		Chat:           chat.NewDeps(chatRepo, vendorRepo, disputeRepo, chatHub),
+		Chat:           chat.NewDeps(chatRepo, vendorRepo, disputeRepo, userRepo, chatHub),
 		Budget:         budget.NewDeps(repository.NewBudgetRepo(pool)),
 		Inspiration:    inspiration.NewDeps(repository.NewInspirationRepo(pool), storageClient),
 		WeddingPlanner: weddingplanner.NewDeps(plannerRepo),

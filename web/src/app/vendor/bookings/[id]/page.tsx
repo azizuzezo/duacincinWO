@@ -35,6 +35,8 @@ function VendorBookingDetailContent({ id, user }: { id: string; user: CurrentUse
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [meetingDate, setMeetingDate] = useState("");
+  const [meetingLink, setMeetingLink] = useState("");
 
   function load() {
     apiGet<Booking>(`/api/v1/bookings/${id}`).then(setBooking).catch(() => setError("Booking tidak ditemukan."));
@@ -74,6 +76,25 @@ function VendorBookingDetailContent({ id, user }: { id: string; user: CurrentUse
       setBusy(false);
     }
   }
+
+  async function handleScheduleMeeting(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const iso = new Date(meetingDate).toISOString();
+      await apiPost(`/api/v1/bookings/${id}/meetings`, { scheduled_at: iso, meeting_link: meetingLink });
+      setMeetingDate("");
+      setMeetingLink("");
+      load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Gagal menjadwalkan meeting.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const hasTechnicalMeeting = meetings.some((m) => m.type === "technical_meeting");
 
   return (
     <Shell user={user} navItems={VENDOR_NAV} loginPath="/login" eyebrow="Vendor">
@@ -129,6 +150,31 @@ function VendorBookingDetailContent({ id, user }: { id: string; user: CurrentUse
                     {new Date(m.scheduled_at).toLocaleString("id-ID")} · {m.meeting_link}
                   </p>
                 ))}
+              </Card>
+            )}
+
+            {(booking.status === "dp_paid" || booking.status === "full_paid") && !hasTechnicalMeeting && (
+              <Card className="mt-6 p-5">
+                <h2 className="font-heading mb-2 font-bold text-dc-navy">Jadwalkan Technical Meeting</h2>
+                <form onSubmit={handleScheduleMeeting} className="mt-2 flex flex-col gap-2">
+                  <input
+                    type="datetime-local"
+                    value={meetingDate}
+                    onChange={(e) => setMeetingDate(e.target.value)}
+                    required
+                    className="rounded-xl border border-dc-black/15 px-3 py-2 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Link meeting (Zoom/Google Meet)"
+                    value={meetingLink}
+                    onChange={(e) => setMeetingLink(e.target.value)}
+                    className="rounded-xl border border-dc-black/15 px-3 py-2 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+                  />
+                  <Button type="submit" className="w-auto" loading={busy}>
+                    Jadwalkan
+                  </Button>
+                </form>
               </Card>
             )}
           </>

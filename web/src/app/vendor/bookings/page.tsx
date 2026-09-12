@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { BookingStatusFilter, matchesBookingFilter } from "@/components/BookingStatusFilter";
 import { VENDOR_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
 import { Badge } from "@/components/ui/Badge";
@@ -32,6 +33,7 @@ function VendorBookingsContent({ user }: { user: CurrentUser }) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("all");
 
   useEffect(() => {
     apiGet<Booking[]>("/api/v1/bookings")
@@ -49,13 +51,16 @@ function VendorBookingsContent({ user }: { user: CurrentUser }) {
     <Shell user={user} navItems={VENDOR_NAV} loginPath="/login" eyebrow="Vendor">
       <div className="mx-auto max-w-2xl px-4 py-10">
         <PageHeader title="Booking Masuk" />
+        {bookings.length > 0 && <BookingStatusFilter value={filter} onChange={setFilter} />}
         {loading && <p className="text-dc-black/60">Memuat…</p>}
         {error && <p className="text-sm text-red-600">{error}</p>}
         {!loading && !error && bookings.length === 0 && (
           <EmptyState title="Belum ada booking masuk" body="Booking dari client akan muncul di sini setelah profil kamu disetujui Admin." />
         )}
         <ul className="flex flex-col gap-3">
-          {bookings.map((b) => (
+          {bookings
+            .filter((b) => matchesBookingFilter(b.status, filter))
+            .map((b) => (
             <li key={b.id}>
               <Link href={`/vendor/bookings/${b.id}`}>
                 <Card className="p-4 transition hover:-translate-y-0.5 hover:shadow-md">

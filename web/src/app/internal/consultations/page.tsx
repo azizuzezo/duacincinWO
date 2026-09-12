@@ -21,7 +21,11 @@ function ConsultationsInboxContent({ user }: { user: CurrentUser }) {
     <Shell user={user} navItems={isAdmin ? ADMIN_NAV : CONSULTANT_NAV} loginPath="/login" eyebrow={isAdmin ? "Admin" : "Consultant"}>
       <div className="mx-auto max-w-2xl px-4 py-10">
         <PageHeader title="Inbox Konsultasi" />
-        <ConversationList basePath="/internal/consultations" emptyLabel="Belum ada Client yang memulai konsultasi." />
+        <ConversationList
+          basePath="/internal/consultations"
+          emptyLabel="Belum ada Client yang memulai konsultasi."
+          currentUserId={user.id}
+        />
       </div>
     </Shell>
   );

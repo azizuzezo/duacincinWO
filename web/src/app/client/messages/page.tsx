@@ -13,7 +13,11 @@ export default function ClientMessagesPage() {
         <Shell user={user} navItems={CLIENT_NAV} loginPath="/login" eyebrow="Client">
           <div className="mx-auto max-w-2xl px-4 py-10">
             <PageHeader title="Pesan" />
-            <ConversationList basePath="/client/messages" emptyLabel="Mulai dari halaman vendor atau chat Wedding Consultant." />
+            <ConversationList
+              basePath="/client/messages"
+              emptyLabel="Mulai dari halaman vendor atau chat Wedding Consultant."
+              currentUserId={user.id}
+            />
           </div>
         </Shell>
       )}
