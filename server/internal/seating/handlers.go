@@ -63,7 +63,7 @@ func GetBoard(deps *Deps) http.HandlerFunc {
 			tableIDForGuest[a.GuestID] = a.TableID
 		}
 
-		out := boardDTO{Tables: make([]tableDTO, 0, len(tables))}
+		out := boardDTO{Tables: make([]tableDTO, 0, len(tables)), Unassigned: []seatedGuestDTO{}}
 		for _, t := range tables {
 			out.Tables = append(out.Tables, tableDTO{ID: t.ID, Name: t.Name, Capacity: t.Capacity, Guests: []seatedGuestDTO{}})
 		}
