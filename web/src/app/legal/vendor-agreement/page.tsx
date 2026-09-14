@@ -1,6 +1,11 @@
+import { Footer } from "@/components/landing/Footer";
+import { Navbar } from "@/components/landing/Navbar";
+
 export default function VendorAgreementPage() {
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10">
+    <div className="flex min-h-screen flex-col bg-dc-offwhite">
+      <Navbar />
+      <main className="mx-auto max-w-2xl flex-1 px-4 py-10">
       <h1 className="font-heading text-2xl font-extrabold text-dc-navy">Perjanjian Kemitraan Vendor DuaCincin</h1>
       <p className="mt-2 flex items-start gap-2 rounded-xl bg-dc-gold/20 p-3 text-sm text-dc-navy">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0">
@@ -43,6 +48,8 @@ export default function VendorAgreementPage() {
           sah sesuai UU ITE, dicatat dengan timestamp dan versi dokumen sebagai alat bukti.
         </li>
       </ol>
-    </main>
+      </main>
+      <Footer />
+    </div>
   );
 }
