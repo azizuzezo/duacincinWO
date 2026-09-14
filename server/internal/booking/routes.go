@@ -16,6 +16,7 @@ func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 		r.Use(auth.RequireAuth(cfg))
 
 		r.With(auth.RequireRole(auth.RoleClient)).Post("/", Create(deps))
+		r.With(auth.RequireRole(auth.RoleClient)).Get("/spent-by-category", SpentByCategory(deps))
 		r.Get("/", List(deps))
 		r.Get("/{id}", Get(deps))
 		r.With(auth.RequireRole(auth.RoleVendor)).Post("/{id}/confirm", Confirm(deps))

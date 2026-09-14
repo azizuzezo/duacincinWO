@@ -13,12 +13,15 @@ import (
 	"duacincin/server/internal/config"
 	"duacincin/server/internal/db"
 	"duacincin/server/internal/email"
+	"duacincin/server/internal/guestlist"
 	"duacincin/server/internal/httpserver"
 	"duacincin/server/internal/inspiration"
 	"duacincin/server/internal/notifications"
 	"duacincin/server/internal/payment"
 	"duacincin/server/internal/ratelimit"
 	"duacincin/server/internal/repository"
+	"duacincin/server/internal/rundown"
+	"duacincin/server/internal/seating"
 	"duacincin/server/internal/storage"
 	"duacincin/server/internal/vendors"
 	"duacincin/server/internal/weddingplanner"
@@ -63,7 +66,9 @@ func main() {
 	reviewRepo := repository.NewReviewRepo(pool)
 	auditLogRepo := repository.NewAuditLogRepo(pool)
 	notificationRepo := repository.NewNotificationRepo(pool)
+	guestRepo := repository.NewGuestRepo(pool)
 	chatHub := chat.NewHub()
+	limiter := ratelimit.New(pool)
 	midtransClient := payment.NewClient(cfg.MidtransServerKey, cfg.MidtransIsProduction)
 
 	deps := httpserver.Deps{
@@ -71,7 +76,7 @@ func main() {
 			userRepo,
 			repository.NewOTPRepo(pool),
 			repository.NewAgreementRepo(pool),
-			ratelimit.New(pool),
+			limiter,
 			email.NewClient(cfg.ResendAPIKey, cfg.ResendFromEmail),
 			cfg,
 		),
@@ -82,6 +87,9 @@ func main() {
 		Inspiration:    inspiration.NewDeps(repository.NewInspirationRepo(pool), storageClient),
 		WeddingPlanner: weddingplanner.NewDeps(plannerRepo),
 		Notifications:  notifications.NewDeps(notificationRepo),
+		GuestList:      guestlist.NewDeps(guestRepo, repository.NewRSVPLinkRepo(pool), limiter),
+		Rundown:        rundown.NewDeps(repository.NewRundownRepo(pool)),
+		Seating:        seating.NewDeps(repository.NewSeatingTableRepo(pool), repository.NewSeatingAssignmentRepo(pool), guestRepo),
 		Booking: booking.NewDeps(
 			bookingRepo,
 			repository.NewTransactionRepo(pool),

@@ -9,6 +9,7 @@ import { Shell } from "@/components/shell/Shell";
 import { Card } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/Toast";
+import { WeddingPlannerTabs } from "@/components/WeddingPlannerTabs";
 import { WithUser } from "@/components/WithUser";
 import {
   apiDelete,
@@ -17,9 +18,11 @@ import {
   apiPost,
   ApiError,
   categoryLabel,
+  formatRupiah,
   type CurrentUser,
   type PlannerTask,
   type PlannerTaskStatus,
+  type SpentByCategory,
 } from "@/lib/api";
 
 export default function WeddingPlannerPage() {
@@ -58,6 +61,7 @@ function WeddingPlannerContent({ user }: { user: CurrentUser }) {
   const [newTimeframe, setNewTimeframe] = useState("");
   const [newDueDate, setNewDueDate] = useState("");
   const [savingTask, setSavingTask] = useState(false);
+  const [spentByCategory, setSpentByCategory] = useState<SpentByCategory>({});
 
   function load() {
     return apiGet<PlannerTask[]>("/api/v1/wedding-planner/tasks")
@@ -68,6 +72,9 @@ function WeddingPlannerContent({ user }: { user: CurrentUser }) {
 
   useEffect(() => {
     queueMicrotask(load);
+    apiGet<SpentByCategory>("/api/v1/bookings/spent-by-category")
+      .then((d) => setSpentByCategory(d ?? {}))
+      .catch(() => {});
   }, []);
 
   async function cycleStatus(task: PlannerTask) {
@@ -125,8 +132,9 @@ function WeddingPlannerContent({ user }: { user: CurrentUser }) {
   return (
     <Shell user={user} navItems={CLIENT_NAV} loginPath="/login" eyebrow="Client">
       <div className="mx-auto max-w-2xl px-4 py-10">
+        <WeddingPlannerTabs />
         <PageHeader
-          title="Wedding Planner"
+          title="Checklist"
           subtitle="Klik status untuk mengubah (Belum → Proses → Selesai)."
           action={
             <Button variant="ghost" className="w-auto" onClick={() => setShowAddForm((v) => !v)}>
@@ -199,12 +207,19 @@ function WeddingPlannerContent({ user }: { user: CurrentUser }) {
                           <div>
                             <p className="text-dc-navy">{task.title}</p>
                             {task.related_category && (
-                              <Link
-                                href={`/vendors?category=${task.related_category}`}
-                                className="text-xs font-semibold text-dc-gold hover:text-dc-navy"
-                              >
-                                Cari Vendor {categoryLabel(task.related_category)} →
-                              </Link>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Link
+                                  href={`/vendors?category=${task.related_category}`}
+                                  className="text-xs font-semibold text-dc-gold hover:text-dc-navy"
+                                >
+                                  Cari Vendor {categoryLabel(task.related_category)} →
+                                </Link>
+                                {!!spentByCategory[task.related_category] && (
+                                  <span className="text-xs text-dc-black/50">
+                                    · sudah booking {formatRupiah(spentByCategory[task.related_category])}
+                                  </span>
+                                )}
+                              </div>
                             )}
                           </div>
                           <div className="flex shrink-0 items-center gap-2">

@@ -91,6 +91,37 @@ func (r *BookingRepo) list(ctx context.Context, column, id string) ([]Booking, e
 
 // UpdateStatus moves a booking from expectedStatus to newStatus, atomically
 // (the WHERE clause acts as an optimistic-lock guard against racing
+// SumAgreedPriceByCategory returns, for clientID, how much they've agreed
+// to pay per vendor category (cancelled bookings excluded). Powers the
+// Budget Planner "terpakai vs alokasi" comparison. Keys are vendor
+// categories (venue, catering, ...), not budget-plan categories: the
+// budget category "venue_catering" combines two of these on the caller's
+// side (see web/src/lib/budget.ts's vendorCategories mapping).
+func (r *BookingRepo) SumAgreedPriceByCategory(ctx context.Context, clientID string) (map[string]int64, error) {
+	rows, err := r.pool.Query(ctx, `
+		select vp.category, coalesce(sum(b.agreed_price), 0)
+		from bookings b
+		join vendor_profiles vp on vp.user_id = b.vendor_id
+		where b.client_id = $1 and b.status <> 'cancelled'
+		group by vp.category
+	`, clientID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make(map[string]int64)
+	for rows.Next() {
+		var category string
+		var sum int64
+		if err := rows.Scan(&category, &sum); err != nil {
+			return nil, err
+		}
+		out[category] = sum
+	}
+	return out, rows.Err()
+}
+
 // CountActive powers the Admin dashboard's "transaksi berjalan" stat —
 // bookings that haven't reached a final state yet.
 func (r *BookingRepo) CountActive(ctx context.Context) (int, error) {

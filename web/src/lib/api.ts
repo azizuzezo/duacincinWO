@@ -283,6 +283,59 @@ export type Dispute = {
   resolved_at?: string;
 };
 
+export type GuestRSVPStatus = "pending" | "attending" | "not_attending";
+
+export type Guest = {
+  id: string;
+  name: string;
+  phone: string;
+  party_size: number;
+  rsvp_status: GuestRSVPStatus;
+  message: string;
+  source: "manual" | "rsvp_form";
+  created_at: string;
+};
+
+export type RSVPLink = {
+  token: string;
+  event_name: string;
+  event_date?: string;
+  venue_note: string;
+};
+
+export type RSVPInfo = {
+  event_name: string;
+  event_date?: string;
+  venue_note: string;
+};
+
+export type RundownItem = {
+  id: string;
+  start_time: string;
+  title: string;
+  notes: string;
+};
+
+export type SeatedGuest = {
+  id: string;
+  name: string;
+  party_size: number;
+};
+
+export type SeatingTableWithGuests = {
+  id: string;
+  name: string;
+  capacity: number;
+  guests: SeatedGuest[];
+};
+
+export type SeatingBoard = {
+  tables: SeatingTableWithGuests[];
+  unassigned: SeatedGuest[];
+};
+
+export type SpentByCategory = Record<string, number>;
+
 export type VendorSummary = {
   user_id: string;
   business_name: string;

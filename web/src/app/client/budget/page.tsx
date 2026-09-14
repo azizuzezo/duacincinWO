@@ -10,8 +10,15 @@ import { Card } from "@/components/ui/Card";
 import { DonutChart } from "@/components/ui/DonutChart";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { WithUser } from "@/components/WithUser";
-import { apiGet, apiPut, ApiError, formatRupiah, type BudgetPlan, type CurrentUser } from "@/lib/api";
-import { BUDGET_CATEGORIES, BUDGET_CATEGORY_COLORS, defaultCategoryState, rescale, type BudgetCategoryKey } from "@/lib/budget";
+import { apiGet, apiPut, ApiError, formatRupiah, type BudgetPlan, type CurrentUser, type SpentByCategory } from "@/lib/api";
+import {
+  BUDGET_CATEGORIES,
+  BUDGET_CATEGORY_COLORS,
+  defaultCategoryState,
+  rescale,
+  spentForBudgetCategory,
+  type BudgetCategoryKey,
+} from "@/lib/budget";
 
 export default function BudgetPlannerPage() {
   return (
@@ -31,6 +38,7 @@ function BudgetPlannerContent({ user }: { user: CurrentUser }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [spentByCategory, setSpentByCategory] = useState<SpentByCategory>({});
 
   function applyPlan(plan: BudgetPlan) {
     setTotalBudget(plan.total_budget ? String(plan.total_budget) : "");
@@ -50,6 +58,9 @@ function BudgetPlannerContent({ user }: { user: CurrentUser }) {
         /* pakai default */
       })
       .finally(() => setLoading(false));
+    apiGet<SpentByCategory>("/api/v1/bookings/spent-by-category")
+      .then((d) => setSpentByCategory(d ?? {}))
+      .catch(() => {});
   }, []);
 
   const total = Number(totalBudget) || 0;
@@ -145,6 +156,8 @@ function BudgetPlannerContent({ user }: { user: CurrentUser }) {
                 {BUDGET_CATEGORIES.map((meta) => {
                   const state = categories.find((c) => c.category === meta.key)!;
                   const amount = Math.round((total * state.percentage) / 100);
+                  const spent = spentForBudgetCategory(spentByCategory, meta.key);
+                  const spentPct = amount > 0 ? Math.min(100, Math.round((spent / amount) * 100)) : 0;
                   return (
                     <div key={meta.key}>
                       <div className="mb-1 flex items-baseline justify-between">
@@ -166,6 +179,19 @@ function BudgetPlannerContent({ user }: { user: CurrentUser }) {
                         onChange={(e) => handleSliderChange(meta.key, Number(e.target.value))}
                         className="w-full accent-dc-gold"
                       />
+                      {spent > 0 && (
+                        <div className="mt-1">
+                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-dc-offwhite">
+                            <div
+                              className="h-full rounded-full bg-dc-navy transition-all duration-300"
+                              style={{ width: `${spentPct}%` }}
+                            />
+                          </div>
+                          <p className="mt-0.5 text-xs text-dc-black/50">
+                            Sudah booking {formatRupiah(spent)} dari alokasi {formatRupiah(amount)}
+                          </p>
+                        </div>
+                      )}
                       {meta.vendorCategories && total > 0 && (
                         <div className="mt-1 flex gap-3 text-xs">
                           {meta.vendorCategories.map((vc) => (

@@ -87,3 +87,13 @@ export function rescale(
 export function categoryLabelFor(key: string): string {
   return BUDGET_CATEGORIES.find((c) => c.key === key)?.label ?? key;
 }
+
+/** Sums a "spent by vendor category" map (from GET /bookings/spent-by-category)
+ * into one budget-plan category, e.g. venue_catering combines the vendor
+ * categories "venue" and "catering". Categories with no vendorCategories
+ * (like "reserve") have nothing to sum, so they're always 0. */
+export function spentForBudgetCategory(spentByVendorCategory: Record<string, number>, key: BudgetCategoryKey): number {
+  const meta = BUDGET_CATEGORIES.find((c) => c.key === key);
+  if (!meta?.vendorCategories) return 0;
+  return meta.vendorCategories.reduce((sum, vc) => sum + (spentByVendorCategory[vc] ?? 0), 0);
+}
