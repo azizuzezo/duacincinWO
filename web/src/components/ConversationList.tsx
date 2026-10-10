@@ -17,6 +17,14 @@ function conversationLabel(c: Conversation, currentUserId: string): string {
   return c.client_name ?? "Chat dengan Client";
 }
 
+/** Initials from the display name, skipping the "Konsultasi:" prefix. */
+function initialsOf(label: string): string {
+  const name = label.replace(/^Konsultasi:\s*/, "").trim();
+  const parts = name.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase() || "?";
+}
+
 export function ConversationList({
   basePath,
   emptyLabel,
@@ -51,7 +59,12 @@ export function ConversationList({
     <Card className="divide-y divide-dc-ink/10 overflow-hidden">
       {conversations.map((c) => (
         <Link key={c.id} href={`${basePath}/${c.id}`} className={`flex min-h-14 items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-dc-cream focus-visible:-outline-offset-2 ${FOCUS}`}>
-          <span className="min-w-0 truncate font-medium text-dc-ink">{conversationLabel(c, currentUserId)}</span>
+          <span className="flex min-w-0 items-center gap-3">
+            <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-dc-ink text-xs font-semibold text-dc-white">
+              {initialsOf(conversationLabel(c, currentUserId))}
+            </span>
+            <span className="min-w-0 truncate font-medium text-dc-ink">{conversationLabel(c, currentUserId)}</span>
+          </span>
           <span className="shrink-0 text-xs tabular-nums text-dc-black/60">#{c.id.slice(0, 8)}</span>
         </Link>
       ))}

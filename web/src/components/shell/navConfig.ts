@@ -42,15 +42,15 @@ export const VENDOR_NAV: NavItem[] = [
 ];
 
 export const ADMIN_NAV: NavItem[] = [
-  { tab: true, href: "/internal/admin/dashboard", label: "Dashboard", icon: ICON.home },
-  { tab: true, href: "/internal/admin/vendors", label: "Vendor Pending", short: "Pending", icon: ICON.badge },
-  { href: "/internal/admin/vendors/approved", label: "Vendor Aktif", short: "Aktif", icon: ICON.users },
-  { href: "/internal/admin/vendor-name-changes", label: "Ganti Nama Vendor", icon: ICON.badge },
-  { tab: true, href: "/internal/admin/disputes", label: "Sengketa", icon: ICON.warning },
-  { tab: true, href: "/internal/admin/disbursements", label: "Pencairan", icon: ICON.cash },
-  { href: "/internal/admin/inspirasi", label: "Inspirasi", icon: ICON.image },
-  { tab: true, href: "/internal/consultations", label: "Konsultasi", icon: ICON.chat },
-  { href: "/internal/admin/audit-log", label: "Audit Log", icon: ICON.checklist },
+  { tab: true, href: "/internal/admin/dashboard", label: "Antrian kerja", short: "Antrian", icon: ICON.home },
+  { tab: true, href: "/internal/admin/vendors", group: "Verifikasi", label: "Vendor Pending", short: "Pending", icon: ICON.badge },
+  { href: "/internal/admin/vendor-name-changes", group: "Verifikasi", label: "Ganti Nama Vendor", icon: ICON.badge },
+  { href: "/internal/admin/vendors/approved", group: "Verifikasi", label: "Vendor Aktif", icon: ICON.users },
+  { tab: true, href: "/internal/admin/disputes", group: "Uang dan sengketa", label: "Sengketa", icon: ICON.warning },
+  { tab: true, href: "/internal/admin/disbursements", group: "Uang dan sengketa", label: "Pencairan", icon: ICON.cash },
+  { href: "/internal/consultations", group: "Layanan", label: "Konsultasi", icon: ICON.chat },
+  { href: "/internal/admin/inspirasi", group: "Layanan", label: "Inspirasi", icon: ICON.image },
+  { href: "/internal/admin/audit-log", group: "Sistem", label: "Audit Log", icon: ICON.checklist },
 ];
 
 export const CONSULTANT_NAV: NavItem[] = [{ href: "/internal/consultations", label: "Inbox Konsultasi", icon: ICON.chat }];

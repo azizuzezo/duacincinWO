@@ -7,10 +7,11 @@ import { useEffect, useState } from "react";
 
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import { apiPost, type CurrentUser } from "@/lib/api";
+import { useAdminQueues, type AdminQueues } from "@/lib/useAdminQueues";
 
 /** `short` is the label used in the mobile bottom tab bar, where 5 tabs leave ~70px each;
  * `tab` marks the (up to 4) destinations promoted to that bar, the rest live under "Lainnya". */
-export type NavItem = { href: string; label: string; short?: string; tab?: boolean; match?: string[]; icon: readonly string[]; badgeCount?: number };
+export type NavItem = { href: string; label: string; short?: string; tab?: boolean; match?: string[]; group?: string; icon: readonly string[]; badgeCount?: number };
 
 function initials(user: CurrentUser): string {
   const source = user.full_name?.trim() || user.email;
@@ -26,6 +27,22 @@ function isActive(item: NavItem, pathname: string | null): boolean {
   return !!item.match?.some((m) => pathname.startsWith(m));
 }
 
+const QUEUE_BY_HREF: Record<string, keyof AdminQueues> = {
+  "/internal/admin/disputes": "disputes",
+  "/internal/admin/disbursements": "disbursements",
+  "/internal/admin/vendors": "vendors",
+  "/internal/admin/vendor-name-changes": "nameChanges",
+};
+
+/** Adds open-work counts to the admin nav entries (see useAdminQueues). */
+function withQueueBadges(navItems: NavItem[], queues: AdminQueues | null): NavItem[] {
+  if (!queues) return navItems;
+  return navItems.map((i) => {
+    const key = QUEUE_BY_HREF[i.href];
+    return key && queues[key] > 0 ? { ...i, badgeCount: queues[key] } : i;
+  });
+}
+
 function NavIcon({ paths }: { paths: readonly string[] }) {
   return (
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
@@ -39,11 +56,15 @@ function NavIcon({ paths }: { paths: readonly string[] }) {
 function NavLinks({ navItems, pathname, onNavigate, dark = false }: { navItems: NavItem[]; pathname: string | null; onNavigate?: () => void; dark?: boolean }) {
   return (
     <>
-      {navItems.map((item) => {
+      {navItems.map((item, i) => {
         const active = isActive(item, pathname);
+        const heading = item.group && item.group !== navItems[i - 1]?.group ? item.group : null;
         return (
+          <div key={item.href} className="contents">
+            {heading && (
+              <p className={`px-3 pb-1 pt-5 text-xs font-semibold ${dark ? "text-dc-white/60" : "text-dc-ink/60"}`}>{heading}</p>
+            )}
           <Link
-            key={item.href}
             href={item.href}
             onClick={onNavigate}
             className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors duration-150 ${
@@ -64,6 +85,7 @@ function NavLinks({ navItems, pathname, onNavigate, dark = false }: { navItems: 
               </span>
             )}
           </Link>
+          </div>
         );
       })}
     </>
@@ -88,8 +110,10 @@ export function Shell({
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const flagged = navItems.filter((i) => i.tab);
-  const tabItems = (flagged.length ? flagged : navItems).slice(0, 4);
+  const { queues } = useAdminQueues(user.role === "admin");
+  const items = withQueueBadges(navItems, queues);
+  const flagged = items.filter((i) => i.tab);
+  const tabItems = (flagged.length ? flagged : items).slice(0, 4);
 
   useEffect(() => {
     // Close the mobile drawer on route change — deferred to a microtask so
@@ -187,7 +211,7 @@ export function Shell({
           <NotificationBell light />
         </div>
         <nav className="flex flex-1 flex-col gap-1">
-          <NavLinks navItems={navItems} pathname={pathname} dark />
+          <NavLinks navItems={items} pathname={pathname} dark />
         </nav>
         {userCardDark}
       </aside>
@@ -231,7 +255,7 @@ export function Shell({
               </button>
             </div>
             <nav className="flex flex-1 flex-col gap-1">
-              <NavLinks navItems={navItems} pathname={pathname} onNavigate={() => setMobileOpen(false)} />
+              <NavLinks navItems={items} pathname={pathname} onNavigate={() => setMobileOpen(false)} />
             </nav>
             {userCard}
           </div>

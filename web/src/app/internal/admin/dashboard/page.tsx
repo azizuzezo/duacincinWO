@@ -10,6 +10,7 @@ import { DashboardBanner } from "@/components/ui/DashboardBanner";
 import { StatTile } from "@/components/ui/StatTile";
 import { WithUser } from "@/components/WithUser";
 import { apiGet, type AuditLogEntry, type CurrentUser, type DashboardStats } from "@/lib/api";
+import { useAdminQueues, type AdminQueues } from "@/lib/useAdminQueues";
 import { ErrorBanner, RowsSkeleton } from "../../_ui";
 
 const ACTION_LABEL: Record<string, string> = {
@@ -29,7 +30,17 @@ export default function AdminDashboardPage() {
   );
 }
 
+// Ordered by how costly waiting is: money in dispute first, then payouts
+// vendors are waiting for, then onboarding, then housekeeping.
+const QUEUES: { key: keyof AdminQueues; title: string; body: string; href: string; cta: string }[] = [
+  { key: "disputes", title: "Sengketa terbuka", body: "Pelanggaran dan sengketa transaksi menunggu keputusan sanksi.", href: "/internal/admin/disputes", cta: "Tinjau sengketa" },
+  { key: "disbursements", title: "Pencairan menunggu", body: "Acara sudah selesai. Dana vendor menunggu ditandai dicairkan.", href: "/internal/admin/disbursements", cta: "Proses pencairan" },
+  { key: "vendors", title: "Vendor menunggu verifikasi", body: "Dokumen legalitas perlu ditinjau sebelum vendor tampil di direktori.", href: "/internal/admin/vendors", cta: "Verifikasi vendor" },
+  { key: "nameChanges", title: "Pengajuan ganti nama", body: "Vendor meminta perubahan nama usaha dan butuh persetujuan.", href: "/internal/admin/vendor-name-changes", cta: "Proses pengajuan" },
+];
+
 function AdminDashboardContent({ user }: { user: CurrentUser }) {
+  const { queues, loading: queuesLoading, failed: queuesFailed, reload: reloadQueues } = useAdminQueues(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentActivity, setRecentActivity] = useState<AuditLogEntry[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -57,17 +68,58 @@ function AdminDashboardContent({ user }: { user: CurrentUser }) {
 
   return (
     <Shell user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
-      <DashboardBanner title="Dashboard Admin" subtitle="Pantau vendor, transaksi, dan sengketa dalam satu tempat." />
+      <DashboardBanner title="Antrian kerja" subtitle="Apa yang menunggu tindakanmu, diurutkan dari yang paling mendesak." />
 
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+      <div className="mx-auto max-w-6xl px-4 pb-10 sm:px-6">
+        <section aria-labelledby="antrian-title" className="relative -mt-10 mb-10 overflow-hidden rounded-lg border border-dc-ink/10 bg-dc-white sm:-mt-12">
+          <h2 id="antrian-title" className="sr-only">
+            Antrian kerja
+          </h2>
+          {queuesFailed && !queuesLoading && (
+            <div className="p-4">
+              <ErrorBanner message="Jumlah antrian gagal dimuat." onRetry={reloadQueues} />
+            </div>
+          )}
+          {queuesLoading && !queues ? (
+            <div className="p-4">
+              <RowsSkeleton rows={4} />
+            </div>
+          ) : queues && QUEUES.every((q) => queues[q.key] === 0) ? (
+            <p className="px-6 py-10 text-center text-dc-black/70">Semua antrian kosong. Tidak ada yang menunggu tindakanmu.</p>
+          ) : (
+            queues && (
+              <ul className="divide-y divide-dc-ink/10">
+                {QUEUES.map((q) => {
+                  const n = queues[q.key];
+                  return (
+                    <li key={q.key}>
+                      <Link
+                        href={q.href}
+                        className="flex min-h-16 flex-wrap items-center gap-x-5 gap-y-2 px-5 py-4 transition-colors hover:bg-dc-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-dc-clay/50 sm:px-6"
+                      >
+                        <span className={`w-12 shrink-0 font-sans text-3xl font-semibold tabular-nums ${n > 0 ? "text-dc-clay" : "text-dc-ink/30"}`}>{n}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block font-heading text-xl text-dc-ink">{q.title}</span>
+                          <span className="block text-sm text-dc-black/70">{q.body}</span>
+                        </span>
+                        <span className={`w-full shrink-0 pl-[68px] text-sm font-semibold sm:w-auto sm:pl-0 ${n > 0 ? "text-dc-clay underline underline-offset-4" : "text-dc-black/60"}`}>{n > 0 ? q.cta : "Kosong"}</span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )
+          )}
+        </section>
+
         {failed && <ErrorBanner message="Sebagian data dashboard gagal dimuat." onRetry={retry} />}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <StatLink href="/internal/admin/vendors/approved">
-            <StatTile density="structured" accent="ink" label="Vendor Aktif" value={stats?.active_vendors ?? "-"} trend="Kelola komisi →" />
+            <StatTile density="structured" accent="ink" label="Vendor Aktif" value={stats?.active_vendors ?? "-"} trend="Kelola komisi" />
           </StatLink>
           <StatLink href="/internal/admin/disbursements">
-            <StatTile density="structured" accent="gold" label="Transaksi Berjalan" value={stats?.ongoing_transactions ?? "-"} trend="Lihat pencairan →" />
+            <StatTile density="structured" accent="gold" label="Transaksi Berjalan" value={stats?.ongoing_transactions ?? "-"} trend="Lihat pencairan" />
           </StatLink>
           <StatLink href="/internal/admin/disputes">
             <StatTile
@@ -75,7 +127,7 @@ function AdminDashboardContent({ user }: { user: CurrentUser }) {
               accent={stats && stats.open_disputes > 0 ? "clay" : "ink"}
               label="Sengketa Terbuka"
               value={stats?.open_disputes ?? "-"}
-              trend="Tinjau sengketa →"
+              trend="Tinjau sengketa"
             />
           </StatLink>
         </div>
