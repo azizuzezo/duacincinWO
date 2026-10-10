@@ -99,7 +99,7 @@ export default function VendorDetailPage({ params }: PageProps<"/vendors/[id]">)
   return (
     <div className="flex min-h-screen flex-col bg-dc-ivory">
       <Navbar />
-      <main className="flex-1">
+      <main className="flex-1 pb-20 lg:pb-0">
         <div className="mx-auto w-full max-w-[1200px] px-4 pb-20 pt-8 sm:px-6 lg:px-10 lg:pt-10">
           <Link
             href="/vendors"
@@ -188,7 +188,7 @@ export default function VendorDetailPage({ params }: PageProps<"/vendors/[id]">)
                 </div>
 
                 {/* Booking panel: first on mobile (right after the gallery), sticky column on desktop. */}
-                <aside aria-label="Chat dan booking" className="order-first w-full lg:sticky lg:top-24 lg:order-2 lg:w-[360px] lg:shrink-0">
+                <aside id="panel-booking" aria-label="Chat dan booking" className="order-first scroll-mt-20 w-full lg:sticky lg:top-24 lg:order-2 lg:w-[360px] lg:shrink-0">
                   <div className="rounded-lg border border-dc-ink/10 bg-dc-white p-6">
                     <p className="text-sm text-dc-black/70">Harga mulai dari</p>
                     <p className="mt-1 font-sans text-4xl font-semibold tabular-nums tracking-tight text-dc-ink">
@@ -265,6 +265,25 @@ export default function VendorDetailPage({ params }: PageProps<"/vendors/[id]">)
           )}
         </div>
       </main>
+
+      {/* Mobile-only sticky action bar: price + jump to the booking panel, which
+          sits right after the gallery. Hidden on desktop where the panel is sticky. */}
+      {profile && (
+        <div className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-4 border-t border-dc-ink/10 bg-dc-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden">
+          <div>
+            <p className="text-xs text-dc-black/70">Mulai dari</p>
+            <p className="font-sans text-lg font-semibold tabular-nums text-dc-ink">
+              {profile.price_min > 0 ? formatRupiah(profile.price_min) : "Lewat diskusi"}
+            </p>
+          </div>
+          <a
+            href="#panel-booking"
+            className="inline-flex min-h-11 items-center rounded-md bg-dc-ink px-6 text-sm font-semibold text-dc-white transition-colors hover:bg-dc-clay focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold"
+          >
+            Chat atau booking
+          </a>
+        </div>
+      )}
       <Footer />
 
       {profile && lightbox !== null && portfolio[lightbox] && (

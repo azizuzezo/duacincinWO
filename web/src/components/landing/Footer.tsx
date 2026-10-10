@@ -5,8 +5,10 @@ import { Rings } from "@/components/landing/Rings";
 
 const LINKS = [
   { href: "/vendors", label: "Cari vendor" },
+  { href: "/cara-kerja", label: "Cara kerja" },
   { href: "/inspirasi", label: "Inspirasi" },
-  { href: "/register?role=vendor", label: "Daftar sebagai vendor" },
+  { href: "/untuk-vendor", label: "Untuk vendor" },
+  { href: "/bantuan", label: "Bantuan" },
   { href: "/login", label: "Masuk" },
 ];
 

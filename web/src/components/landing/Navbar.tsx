@@ -6,8 +6,9 @@ import { useEffect, useRef, useState } from "react";
 
 const NAV_LINKS = [
   { href: "/vendors", label: "Cari vendor" },
+  { href: "/cara-kerja", label: "Cara kerja" },
   { href: "/inspirasi", label: "Inspirasi" },
-  { href: "/#budget-demo", label: "Budget planner" },
+  { href: "/untuk-vendor", label: "Untuk vendor" },
 ];
 
 const FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-ink";

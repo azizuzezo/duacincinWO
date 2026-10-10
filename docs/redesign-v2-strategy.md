@@ -132,4 +132,5 @@ PRD tertinggal dari kode. Fakta dari `server/internal/vendors` dan `repository/r
 Jadi backend baru yang benar-benar dibutuhkan: parameter `sort` di `/vendors`, endpoint statistik publik, dan (Fase E) tabel paket vendor.
 
 ## 10. Log pelaksanaan
-- Fase A: komponen status dana, kartu vendor bersama, bottom tab bar, 404, sitemap, robots, metadata.
+- Fase A (selesai): komponen status dana, kartu vendor bersama, bottom tab bar, 404, sitemap, robots, metadata.
+- Fase B (selesai, 10 Okt 2026): beranda sinematik, direktori, detail vendor (bar aksi mobile), inspirasi, auth, /cara-kerja, /untuk-vendor, /bantuan, /kategori/[kategori] dan /kategori/[kategori]/[kota] (server-rendered, metadata unik). Tanpa perubahan backend. Belum: email dukungan resmi (menunggu pemilik produk), halaman kota di sitemap (butuh listing publik).
