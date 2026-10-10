@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
+import { FOCUS, ICON_BTN, INPUT, Skeleton } from "@/app/client/_ui";
 import { Button } from "@/components/Button";
 import { apiGet, apiPost, apiPostForm, apiWsUrl, ApiError, type ChatMessage } from "@/lib/api";
 
@@ -120,13 +121,20 @@ export function ChatThread({ conversationId, currentUserId }: { conversationId: 
     }
   }
 
-  if (loading) return <p className="p-6 text-center text-dc-black/60">Memuat percakapan…</p>;
+  if (loading)
+    return (
+      <div role="status" aria-label="Memuat percakapan" className="flex h-[70vh] flex-col gap-3 rounded-lg border border-dc-ink/10 bg-dc-white p-4">
+        <Skeleton className="h-10 w-2/3 self-start" />
+        <Skeleton className="h-10 w-1/2 self-end" />
+        <Skeleton className="h-10 w-3/5 self-start" />
+      </div>
+    );
 
   return (
-    <div className="flex h-[70vh] flex-col rounded-2xl border border-dc-black/10 bg-dc-white">
+    <div className="flex h-[calc(100dvh-14rem)] min-h-96 flex-col rounded-lg border border-dc-ink/10 bg-dc-white">
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
         {messages.length === 0 && (
-          <p className="text-center text-sm text-dc-black/50">Belum ada pesan. Mulai percakapan di bawah.</p>
+          <p className="text-center text-sm text-dc-black/70">Belum ada pesan. Mulai percakapan di bawah.</p>
         )}
         {messages.map((m) => {
           const mine = m.sender_id === currentUserId;
@@ -135,16 +143,17 @@ export function ChatThread({ conversationId, currentUserId }: { conversationId: 
               <div className="flex max-w-[80%] items-center gap-1.5">
                 {mine && (
                   <button
+                    type="button"
                     onClick={() => setReplyingTo(m)}
                     aria-label="Balas pesan"
-                    className="shrink-0 text-dc-black/30 opacity-0 transition hover:text-dc-navy group-hover:opacity-100"
+                    className={`${ICON_BTN} h-11 w-11 opacity-60 hover:opacity-100 focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100 ${FOCUS}`}
                   >
                     <ReplyIcon />
                   </button>
                 )}
-                <div className={`rounded-2xl px-4 py-2 text-sm ${mine ? "bg-dc-navy text-dc-white" : "bg-dc-offwhite text-dc-black"}`}>
+                <div className={`rounded-lg px-3.5 py-2 text-sm ${mine ? "bg-dc-ink text-dc-white" : "bg-dc-cream text-dc-black"}`}>
                   {m.reply_to && (
-                    <div className={`mb-1.5 rounded-lg border-l-2 px-2 py-1 text-xs ${mine ? "border-dc-gold/60 bg-dc-white/10 text-dc-white/70" : "border-dc-navy/30 bg-dc-white text-dc-black/60"}`}>
+                    <div className={`mb-1.5 rounded-md border-l-2 px-2 py-1 text-xs ${mine ? "border-dc-gold/60 bg-dc-white/10 text-dc-white/70" : "border-dc-ink/30 bg-dc-white text-dc-black/60"}`}>
                       {m.reply_to.body || "Lampiran"}
                     </div>
                   )}
@@ -156,7 +165,7 @@ export function ChatThread({ conversationId, currentUserId }: { conversationId: 
                         width={220}
                         height={220}
                         unoptimized
-                        className="max-h-52 w-auto rounded-lg object-cover"
+                        className="max-h-52 w-auto rounded-md object-cover"
                       />
                     </a>
                   )}
@@ -164,17 +173,18 @@ export function ChatThread({ conversationId, currentUserId }: { conversationId: 
                 </div>
                 {!mine && (
                   <button
+                    type="button"
                     onClick={() => setReplyingTo(m)}
                     aria-label="Balas pesan"
-                    className="shrink-0 text-dc-black/30 opacity-0 transition hover:text-dc-navy group-hover:opacity-100"
+                    className={`${ICON_BTN} h-11 w-11 opacity-60 hover:opacity-100 focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100 ${FOCUS}`}
                   >
                     <ReplyIcon />
                   </button>
                 )}
               </div>
-              {mine && readUpToId === m.id && <p className="mt-1 text-xs text-dc-black/40">Dibaca</p>}
+              {mine && readUpToId === m.id && <p className="mt-1 text-xs text-dc-black/60">Dibaca</p>}
               {m.flagged && (
-                <p className="mt-1 flex max-w-[80%] items-start gap-1.5 text-xs text-dc-gold">
+                <p className="mt-1 flex max-w-[80%] items-start gap-1.5 text-xs text-dc-clay">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0">
                     <path d="M11 2 1 19h20L11 2ZM11 9v4M11 15.5h.01" />
                   </svg>
@@ -188,24 +198,24 @@ export function ChatThread({ conversationId, currentUserId }: { conversationId: 
       </div>
 
       {replyingTo && (
-        <div className="flex items-center justify-between border-t border-dc-black/10 bg-dc-offwhite px-4 py-2 text-xs">
-          <p className="truncate text-dc-black/60">
-            Membalas: <span className="text-dc-navy">{replyingTo.body || "Lampiran"}</span>
+        <div className="flex items-center justify-between border-t border-dc-ink/10 bg-dc-cream px-4 py-1 text-xs">
+          <p className="truncate text-dc-black/70">
+            Membalas: <span className="text-dc-ink">{replyingTo.body || "Lampiran"}</span>
           </p>
-          <button onClick={() => setReplyingTo(null)} className="shrink-0 font-semibold text-dc-navy">
+          <button type="button" onClick={() => setReplyingTo(null)} className={`inline-flex min-h-11 shrink-0 items-center px-2 font-semibold text-dc-ink ${FOCUS}`}>
             Batal
           </button>
         </div>
       )}
 
-      <form onSubmit={handleSend} className="flex items-center gap-2 border-t border-dc-black/10 p-3">
+      <form onSubmit={handleSend} className="flex items-center gap-2 border-t border-dc-ink/10 p-3">
         <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleAttachmentSelected} className="hidden" />
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
           aria-label="Lampirkan gambar"
           disabled={sending}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-dc-navy/60 transition hover:bg-dc-offwhite hover:text-dc-navy"
+          className={`${ICON_BTN} disabled:opacity-50`}
         >
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 12.5V7a3 3 0 0 0-3-3H6a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h9.5" />
@@ -218,13 +228,23 @@ export function ChatThread({ conversationId, currentUserId }: { conversationId: 
           value={body}
           onChange={(e) => setBody(e.target.value)}
           placeholder="Tulis pesan…"
-          className="flex-1 rounded-xl border border-dc-black/15 px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+          aria-label="Tulis pesan"
+          className={`${INPUT} min-w-0 flex-1`}
         />
         <Button type="submit" loading={sending} className="w-auto">
           Kirim
         </Button>
       </form>
-      {error && <p className="px-4 pb-3 text-sm text-red-600">{error}</p>}
+      {error && (
+        <div className="flex flex-wrap items-center gap-3 px-4 pb-3">
+          <p role="alert" className="text-sm text-red-700">{error}</p>
+          {messages.length === 0 && (
+            <button type="button" onClick={() => window.location.reload()} className={`min-h-11 text-sm font-semibold text-dc-clay underline-offset-4 hover:underline ${FOCUS}`}>
+              Coba lagi
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

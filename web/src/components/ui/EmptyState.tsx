@@ -14,12 +14,15 @@ export function EmptyState({
   actionLabel?: string;
 }) {
   return (
-    <div className="flex flex-col items-center rounded-2xl border border-dashed border-dc-black/10 bg-dc-white/60 px-6 py-14 text-center">
-      {icon && <div className="mb-4 text-dc-navy/30">{icon}</div>}
-      <p className="font-heading font-bold text-dc-navy">{title}</p>
-      {body && <p className="mt-1 max-w-sm text-sm text-dc-black/50">{body}</p>}
+    <div className="flex flex-col items-center rounded-lg border border-dashed border-dc-ink/20 bg-dc-white/60 px-6 py-14 text-center">
+      {icon && <div className="mb-4 text-dc-ink/40">{icon}</div>}
+      <p className="font-heading text-2xl text-dc-ink">{title}</p>
+      {body && <p className="mt-2 max-w-sm text-sm text-dc-black/70">{body}</p>}
       {actionHref && actionLabel && (
-        <Link href={actionHref} className="mt-5 rounded-full bg-dc-navy px-5 py-2 text-sm font-semibold text-dc-white hover:bg-dc-gold hover:text-dc-navy">
+        <Link
+          href={actionHref}
+          className="mt-6 inline-flex min-h-11 items-center rounded-md bg-dc-ink px-5 text-sm font-semibold text-dc-white transition-colors hover:bg-dc-clay"
+        >
           {actionLabel}
         </Link>
       )}

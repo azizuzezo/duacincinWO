@@ -5,12 +5,13 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/Button";
 import { ADMIN_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
-import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/Toast";
 import { WithUser } from "@/components/WithUser";
+import { DangerButton, ErrorBanner, PAGE, RowsSkeleton, TableCard, Tabs, TD, TH, TEXTAREA, TR } from "../../_ui";
 import { apiGet, apiPost, ApiError, type CurrentUser } from "@/lib/api";
 
 type PendingNameChange = {
@@ -35,6 +36,7 @@ export default function AdminVendorNameChangesPage() {
 function AdminVendorNameChangesContent({ user }: { user: CurrentUser }) {
   const [tab, setTab] = useState<"pending" | "resolved">("pending");
   const [requests, setRequests] = useState<PendingNameChange[]>([]);
+  const [loadedTab, setLoadedTab] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [rejectTarget, setRejectTarget] = useState<PendingNameChange | null>(null);
@@ -43,9 +45,12 @@ function AdminVendorNameChangesContent({ user }: { user: CurrentUser }) {
 
   async function load() {
     try {
-      setRequests(await apiGet<PendingNameChange[]>(`/api/v1/admin/vendor-name-changes/${tab}`));
+      setRequests((await apiGet<PendingNameChange[]>(`/api/v1/admin/vendor-name-changes/${tab}`)) ?? []);
+      setError(null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Gagal memuat daftar permintaan.");
+    } finally {
+      setLoadedTab(tab);
     }
   }
 
@@ -84,82 +89,85 @@ function AdminVendorNameChangesContent({ user }: { user: CurrentUser }) {
     }
   }
 
+  const loading = loadedTab !== tab;
+
   return (
     <Shell user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
-      <div className="mx-auto max-w-3xl px-4 py-10">
-        <PageHeader title="Permintaan Ganti Nama Vendor" />
+      <div className={PAGE}>
+        <PageHeader title="Permintaan Ganti Nama Vendor" subtitle="Setujui atau tolak permintaan perubahan nama usaha dari vendor." />
 
-        <div className="mb-5 flex gap-2">
-          {(["pending", "resolved"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
-                tab === t ? "bg-dc-navy text-dc-white" : "bg-dc-white text-dc-navy/70 hover:bg-dc-offwhite"
-              }`}
-            >
-              {t === "pending" ? "Menunggu" : "Riwayat"}
-            </button>
-          ))}
-        </div>
+        <Tabs
+          label="Status permintaan"
+          value={tab}
+          onChange={setTab}
+          tabs={[
+            { value: "pending", label: "Menunggu" },
+            { value: "resolved", label: "Riwayat" },
+          ]}
+        />
 
-        {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
-        {requests.length === 0 ? (
-          <EmptyState title={tab === "pending" ? "Tidak ada permintaan ganti nama yang menunggu" : "Belum ada riwayat"} />
+        {error && <ErrorBanner message={error} onRetry={load} />}
+        {loading ? (
+          <RowsSkeleton />
+        ) : requests.length === 0 ? (
+          !error && <EmptyState title={tab === "pending" ? "Tidak ada permintaan ganti nama yang menunggu" : "Belum ada riwayat"} />
         ) : (
-          <ul className="space-y-3">
-            {requests.map((req) => (
-              <li key={req.id}>
-                <Card className="p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-sm text-dc-black/60">
-                        <span className="line-through">{req.current_name}</span>{" "}
-                        <span className="font-semibold text-dc-navy">→ {req.requested_name}</span>
-                      </p>
-                      <p className="mt-2 text-sm text-dc-black/80">Alasan: {req.reason}</p>
-                      {tab === "resolved" && (
-                        <p className="mt-1 text-xs font-semibold text-dc-navy">
-                          {req.status === "approved" ? "Disetujui" : "Ditolak"}
-                          {req.admin_note ? ` · ${req.admin_note}` : ""}
-                        </p>
-                      )}
-                    </div>
-                    {tab === "pending" && (
-                      <div className="flex shrink-0 gap-2">
-                        <Button variant="ghost" className="w-auto" onClick={() => setRejectTarget(req)} disabled={busyId === req.id}>
+          <TableCard minWidth="min-w-[760px]">
+            <thead className="bg-dc-cream/50">
+              <tr>
+                <th scope="col" className={TH}>Nama lama</th>
+                <th scope="col" className={TH}>Nama baru</th>
+                <th scope="col" className={TH}>Alasan</th>
+                <th scope="col" className={`${TH} text-right`}>{tab === "pending" ? "Aksi" : "Hasil"}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {requests.map((req) => (
+                <tr key={req.id} className={TR}>
+                  <td className={`${TD} text-dc-black/70`}>{req.current_name}</td>
+                  <td className={`${TD} font-semibold`}>{req.requested_name}</td>
+                  <td className={`${TD} max-w-xs text-dc-black/80`}>{req.reason}</td>
+                  <td className={`${TD} text-right`}>
+                    {tab === "pending" ? (
+                      <div className="flex justify-end gap-2">
+                        <DangerButton onClick={() => setRejectTarget(req)} disabled={busyId === req.id}>
                           Tolak
-                        </Button>
+                        </DangerButton>
                         <Button className="w-auto" onClick={() => handleApprove(req.id)} loading={busyId === req.id}>
                           Setujui
                         </Button>
                       </div>
+                    ) : (
+                      <div className="flex flex-col items-end gap-1">
+                        <Badge tone={req.status === "approved" ? "success" : "danger"}>{req.status === "approved" ? "Disetujui" : "Ditolak"}</Badge>
+                        {req.admin_note && <span className="text-xs text-dc-black/70">{req.admin_note}</span>}
+                      </div>
                     )}
-                  </div>
-                </Card>
-              </li>
-            ))}
-          </ul>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </TableCard>
         )}
       </div>
 
       <Modal open={!!rejectTarget} onClose={() => setRejectTarget(null)} title={`Tolak permintaan ganti nama`}>
-        <label className="block text-sm font-medium text-dc-navy">
+        <label className="block text-sm font-medium text-dc-ink">
           Catatan penolakan (opsional)
           <textarea
             value={rejectNote}
             onChange={(e) => setRejectNote(e.target.value)}
             rows={3}
-            className="mt-1.5 w-full rounded-xl border border-dc-black/15 px-3 py-2 text-sm outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+            className={TEXTAREA}
           />
         </label>
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="ghost" className="w-auto" onClick={() => setRejectTarget(null)}>
             Batal
           </Button>
-          <Button className="w-auto" onClick={confirmReject} loading={busyId === rejectTarget?.id}>
+          <DangerButton solid onClick={confirmReject} loading={busyId === rejectTarget?.id}>
             Tolak Permintaan
-          </Button>
+          </DangerButton>
         </div>
       </Modal>
     </Shell>

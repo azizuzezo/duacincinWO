@@ -5,10 +5,10 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/Button";
 import { ADMIN_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
-import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { WithUser } from "@/components/WithUser";
+import { ErrorBanner, PAGE, RowsSkeleton, TableCard, TD, TH, TR } from "../../_ui";
 import { apiGet, ApiError, type AuditLogEntry, type CurrentUser } from "@/lib/api";
 
 const ACTION_LABEL: Record<string, string> = {
@@ -39,6 +39,7 @@ function AdminAuditLogContent({ user }: { user: CurrentUser }) {
 
   async function loadMore() {
     setLoading(true);
+    setError(null);
     try {
       const page = await apiGet<AuditLogEntry[]>(`/api/v1/admin/audit-log?limit=${PAGE_SIZE}&offset=${offset}`);
       setEntries((prev) => [...prev, ...(page ?? [])]);
@@ -58,31 +59,39 @@ function AdminAuditLogContent({ user }: { user: CurrentUser }) {
 
   return (
     <Shell user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
-      <div className="mx-auto max-w-3xl px-4 py-10">
+      <div className={PAGE}>
         <PageHeader title="Audit Log" subtitle="Riwayat aksi admin: approve/reject vendor, sanksi, pencairan, dan perubahan komisi." />
 
-        {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
-        {!loading && entries.length === 0 && <EmptyState title="Belum ada aktivitas tercatat" />}
+        {error && <ErrorBanner message={error} onRetry={loadMore} />}
+        {loading && entries.length === 0 && !error && <RowsSkeleton rows={8} />}
+        {!loading && !error && entries.length === 0 && <EmptyState title="Belum ada aktivitas tercatat" body="Aksi admin akan tercatat di sini." />}
 
-        <ul className="flex flex-col gap-2">
-          {entries.map((e) => (
-            <li key={e.id}>
-              <Card className="p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-medium text-dc-navy">{ACTION_LABEL[e.action] ?? e.action}</p>
-                    <p className="text-xs text-dc-black/50">
-                      {e.target_type} #{e.target_id.slice(0, 8)} · oleh {e.actor_role}
-                    </p>
-                  </div>
-                  <p className="shrink-0 text-xs text-dc-black/40">{new Date(e.created_at).toLocaleString("id-ID")}</p>
-                </div>
-              </Card>
-            </li>
-          ))}
-        </ul>
+        {entries.length > 0 && (
+          <TableCard minWidth="min-w-[640px]">
+            <thead className="bg-dc-cream/50">
+              <tr>
+                <th scope="col" className={TH}>Waktu</th>
+                <th scope="col" className={TH}>Aksi</th>
+                <th scope="col" className={TH}>Target</th>
+                <th scope="col" className={TH}>Oleh</th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((e) => (
+                <tr key={e.id} className={TR}>
+                  <td className={`${TD} whitespace-nowrap tabular-nums text-dc-black/70`}>{new Date(e.created_at).toLocaleString("id-ID")}</td>
+                  <td className={`${TD} font-medium`}>{ACTION_LABEL[e.action] ?? e.action}</td>
+                  <td className={`${TD} text-dc-black/70`}>
+                    {e.target_type} <span className="tabular-nums">#{e.target_id.slice(0, 8)}</span>
+                  </td>
+                  <td className={`${TD} text-dc-black/70`}>{e.actor_role}</td>
+                </tr>
+              ))}
+            </tbody>
+          </TableCard>
+        )}
 
-        {hasMore && entries.length > 0 && (
+        {hasMore && entries.length > 0 && !error && (
           <div className="mt-6 flex justify-center">
             <Button variant="ghost" className="w-auto" onClick={loadMore} loading={loading}>
               Muat Lebih Banyak

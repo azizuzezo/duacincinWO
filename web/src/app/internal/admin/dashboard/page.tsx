@@ -7,8 +7,10 @@ import { ADMIN_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
 import { Card } from "@/components/ui/Card";
 import { DashboardBanner } from "@/components/ui/DashboardBanner";
+import { StatTile } from "@/components/ui/StatTile";
 import { WithUser } from "@/components/WithUser";
 import { apiGet, type AuditLogEntry, type CurrentUser, type DashboardStats } from "@/lib/api";
+import { ErrorBanner, RowsSkeleton } from "../../_ui";
 
 const ACTION_LABEL: Record<string, string> = {
   "vendor.approve": "Menyetujui vendor",
@@ -29,95 +31,99 @@ export default function AdminDashboardPage() {
 
 function AdminDashboardContent({ user }: { user: CurrentUser }) {
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [recentActivity, setRecentActivity] = useState<AuditLogEntry[]>([]);
+  const [recentActivity, setRecentActivity] = useState<AuditLogEntry[] | null>(null);
+  const [failed, setFailed] = useState(false);
 
-  useEffect(() => {
-    apiGet<DashboardStats>("/api/v1/admin/dashboard").then(setStats).catch(() => {});
+  function load() {
+    apiGet<DashboardStats>("/api/v1/admin/dashboard")
+      .then((s) => {
+        setStats(s);
+        setFailed(false);
+      })
+      .catch(() => setFailed(true));
     apiGet<AuditLogEntry[]>("/api/v1/admin/audit-log?limit=5")
       .then((d) => setRecentActivity(d ?? []))
-      .catch(() => {});
+      .catch(() => setFailed(true));
+  }
+
+  useEffect(() => {
+    load();
   }, []);
+
+  function retry() {
+    setFailed(false);
+    load();
+  }
 
   return (
     <Shell user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
       <DashboardBanner title="Dashboard Admin" subtitle="Pantau vendor, transaksi, dan sengketa dalam satu tempat." />
 
-      <div className="mx-auto max-w-3xl px-4 py-10">
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+        {failed && <ErrorBanner message="Sebagian data dashboard gagal dimuat." onRetry={retry} />}
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <StatCard
-            label="Vendor Aktif"
-            value={stats?.active_vendors}
-            href="/internal/admin/vendors/approved"
-            action="Kelola komisi →"
-            delay={0}
-          />
-          <StatCard
-            label="Transaksi Berjalan"
-            value={stats?.ongoing_transactions}
-            href="/internal/admin/disbursements"
-            action="Lihat pencairan →"
-            delay={60}
-          />
-          <StatCard
-            label="Sengketa Terbuka"
-            value={stats?.open_disputes}
-            href="/internal/admin/disputes"
-            action="Tinjau sengketa →"
-            highlight={!!stats && stats.open_disputes > 0}
-            delay={120}
-          />
+          <StatLink href="/internal/admin/vendors/approved">
+            <StatTile density="structured" accent="ink" label="Vendor Aktif" value={stats?.active_vendors ?? "-"} trend="Kelola komisi →" />
+          </StatLink>
+          <StatLink href="/internal/admin/disbursements">
+            <StatTile density="structured" accent="gold" label="Transaksi Berjalan" value={stats?.ongoing_transactions ?? "-"} trend="Lihat pencairan →" />
+          </StatLink>
+          <StatLink href="/internal/admin/disputes">
+            <StatTile
+              density="structured"
+              accent={stats && stats.open_disputes > 0 ? "clay" : "ink"}
+              label="Sengketa Terbuka"
+              value={stats?.open_disputes ?? "-"}
+              trend="Tinjau sengketa →"
+            />
+          </StatLink>
         </div>
 
-        <div className="mt-8 rounded-2xl border-l-4 border-dc-navy bg-dc-white p-5 shadow-md shadow-dc-navy/[0.06]">
-          <div className="flex items-center justify-between">
-            <h2 className="font-heading font-bold text-dc-navy">Aktivitas Terbaru</h2>
-            <Link href="/internal/admin/audit-log" className="text-sm font-semibold text-dc-gold hover:text-dc-navy">
+        <section className="mt-8" aria-labelledby="recent-title">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 id="recent-title" className="font-heading text-2xl text-dc-ink">
+              Aktivitas Terbaru
+            </h2>
+            <Link
+              href="/internal/admin/audit-log"
+              className="inline-flex min-h-11 items-center text-sm font-semibold text-dc-clay underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dc-clay/50"
+            >
               Lihat semua →
             </Link>
           </div>
-          {recentActivity.length === 0 ? (
-            <p className="mt-3 text-sm text-dc-black/50">Belum ada aktivitas tercatat.</p>
+          {recentActivity === null ? (
+            failed ? null : <RowsSkeleton rows={3} />
+          ) : recentActivity.length === 0 ? (
+            <Card className="px-4 py-6 text-sm text-dc-black/70">Belum ada aktivitas tercatat.</Card>
           ) : (
-            <ul className="mt-3 flex flex-col gap-2">
-              {recentActivity.map((e) => (
-                <li key={e.id} className="flex items-center justify-between text-sm">
-                  <span className="text-dc-navy">{ACTION_LABEL[e.action] ?? e.action}</span>
-                  <span className="text-xs text-dc-black/40">{new Date(e.created_at).toLocaleString("id-ID")}</span>
-                </li>
-              ))}
-            </ul>
+            <Card>
+              <ul>
+                {recentActivity.map((e, i) => (
+                  <li
+                    key={e.id}
+                    className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-3 text-sm ${i > 0 ? "border-t border-dc-ink/10" : ""}`}
+                  >
+                    <span className="font-medium text-dc-ink">{ACTION_LABEL[e.action] ?? e.action}</span>
+                    <span className="text-xs tabular-nums text-dc-black/60">{new Date(e.created_at).toLocaleString("id-ID")}</span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
           )}
-        </div>
+        </section>
       </div>
     </Shell>
   );
 }
 
-function StatCard({
-  label,
-  value,
-  href,
-  action,
-  highlight,
-  delay = 0,
-}: {
-  label: string;
-  value?: number;
-  href: string;
-  action: string;
-  highlight?: boolean;
-  delay?: number;
-}) {
+function StatLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <Link href={href} className="group block">
-      <Card
-        className={`animate-fade-up p-5 text-center shadow-lg shadow-dc-navy/10 transition duration-300 group-hover:-translate-y-1 group-hover:shadow-xl ${highlight ? "border-dc-gold bg-dc-gold/10" : ""}`}
-        style={{ animationDelay: `${delay}ms` }}
-      >
-        <p className="font-heading text-3xl font-extrabold text-dc-navy">{value ?? "-"}</p>
-        <p className="mt-1 text-sm text-dc-black/60">{label}</p>
-        <p className="mt-3 text-xs font-semibold text-dc-gold group-hover:text-dc-navy">{action}</p>
-      </Card>
+    <Link
+      href={href}
+      className="block rounded-lg transition-colors hover:[&>div]:border-dc-ink/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dc-clay/50"
+    >
+      {children}
     </Link>
   );
 }

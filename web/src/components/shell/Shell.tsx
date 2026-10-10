@@ -37,14 +37,14 @@ function NavLinks({ navItems, pathname, onNavigate }: { navItems: NavItem[]; pat
             key={item.href}
             href={item.href}
             onClick={onNavigate}
-            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
-              active ? "bg-dc-navy text-dc-white shadow-sm shadow-dc-navy/30" : "text-dc-navy/70 hover:bg-dc-navy/5 hover:text-dc-navy"
+            className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors duration-150 ${
+              active ? "bg-dc-ink text-dc-white" : "text-dc-ink/75 hover:bg-dc-cream hover:text-dc-ink"
             }`}
           >
             <NavIcon paths={item.icon} />
             <span className="flex-1">{item.label}</span>
             {!!item.badgeCount && (
-              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-dc-rose px-1.5 text-xs font-semibold text-dc-white">
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-dc-clay px-1.5 text-xs font-semibold text-dc-white">
                 {item.badgeCount > 99 ? "99+" : item.badgeCount}
               </span>
             )}
@@ -92,25 +92,25 @@ export function Shell({
         alt="DuaCincin"
         width={28}
         height={28}
-        className="transition-transform duration-300 group-hover:rotate-12"
+        className=""
       />
-      <span className="font-heading text-base font-extrabold text-dc-navy">DuaCincin</span>
+      <span className="font-heading text-2xl text-dc-ink">DuaCincin</span>
     </Link>
   );
 
   const userCard = (
-    <div className="flex items-center gap-3 rounded-xl border border-dc-black/5 bg-dc-offwhite p-2.5">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-dc-navy text-xs font-bold text-dc-gold">
+    <div className="flex items-center gap-3 rounded-md border border-dc-ink/10 bg-dc-ivory p-2.5">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-dc-ink text-xs font-semibold text-dc-white">
         {initials(user)}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-dc-navy">{user.full_name || user.email}</p>
+        <p className="truncate text-sm font-medium text-dc-ink">{user.full_name || user.email}</p>
         {eyebrow && <p className="text-xs text-dc-black/50">{eyebrow}</p>}
       </div>
       <button
         onClick={handleLogout}
         aria-label="Keluar"
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-dc-black/50 transition hover:bg-dc-black/5 hover:text-dc-navy"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-dc-black/50 transition hover:bg-dc-black/5 hover:text-dc-ink"
       >
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
@@ -120,9 +120,9 @@ export function Shell({
   );
 
   return (
-    <div className="min-h-screen bg-dc-offwhite md:flex">
+    <div className="min-h-screen bg-dc-ivory md:flex">
       {/* Desktop sidebar */}
-      <aside className="hidden w-64 shrink-0 border-r border-dc-black/5 bg-dc-white md:sticky md:top-0 md:flex md:h-screen md:flex-col md:gap-6 md:p-4">
+      <aside className="hidden w-64 shrink-0 border-r border-dc-ink/10 bg-dc-white md:sticky md:top-0 md:flex md:h-screen md:flex-col md:gap-6 md:p-4">
         <div className="flex items-center justify-between">
           {brand}
           <NotificationBell />
@@ -141,7 +141,7 @@ export function Shell({
           <button
             onClick={() => setMobileOpen(true)}
             aria-label="Buka menu"
-            className="flex h-11 w-11 items-center justify-center rounded-lg text-dc-navy transition hover:bg-dc-navy/5"
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-dc-ink transition hover:bg-dc-ink/5"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               <path d="M4 7h16M4 12h16M4 17h16" />
@@ -179,7 +179,46 @@ export function Shell({
         </div>
       )}
 
-      <main className="min-w-0 flex-1">{children}</main>
+      <main className="min-w-0 flex-1 pb-20 md:pb-0">{children}</main>
+
+      {/* Mobile bottom tab bar: the four most-used destinations plus a "Lainnya"
+          entry that opens the full drawer. Thumb-reachable, 44px+ targets. */}
+      <nav
+        aria-label="Navigasi utama"
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-dc-ink/10 bg-dc-white pb-[env(safe-area-inset-bottom)] md:hidden"
+      >
+        {navItems.slice(0, 4).map((item) => {
+          const active = pathname === item.href || (item.href !== "/" && pathname?.startsWith(item.href));
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={active ? "page" : undefined}
+              className={`relative flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors ${
+                active ? "text-dc-clay" : "text-dc-ink/70"
+              }`}
+            >
+              <NavIcon paths={item.icon} />
+              <span className="max-w-full truncate px-1">{item.label}</span>
+              {!!item.badgeCount && (
+                <span className="absolute right-[22%] top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-dc-clay px-1 text-[10px] font-semibold text-dc-white">
+                  {item.badgeCount > 99 ? "99+" : item.badgeCount}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+        <button
+          type="button"
+          onClick={() => setMobileOpen(true)}
+          className="flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium text-dc-ink/70"
+        >
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
+            <path d="M5 12h.01M12 12h.01M19 12h.01" strokeWidth="3" />
+          </svg>
+          Lainnya
+        </button>
+      </nav>
     </div>
   );
 }

@@ -34,8 +34,8 @@ export function WithUser({
 
   if (checking) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-dc-offwhite">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-dc-navy/20 border-t-dc-gold" />
+      <div role="status" aria-label="Memuat" className="flex min-h-screen items-center justify-center bg-dc-ivory">
+        <div className="h-6 w-6 motion-safe:animate-spin rounded-full border-2 border-dc-ink/15 border-t-dc-clay" />
       </div>
     );
   }

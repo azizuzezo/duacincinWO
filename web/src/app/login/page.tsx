@@ -44,11 +44,11 @@ export default function LoginPage() {
     <AuthCard
       variant="unified"
       title="Masuk ke akunmu"
-      subtitle="Client, vendor, atau tim internal, masuk di sini, satu pintu untuk semua."
+      subtitle="Calon pengantin, vendor, dan tim internal masuk lewat halaman yang sama."
       footer={
         <>
           Belum punya akun?{" "}
-          <Link href="/register" className="font-semibold text-dc-navy hover:text-dc-gold">
+          <Link href="/register" className="font-semibold text-dc-clay underline underline-offset-2 hover:text-dc-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold">
             Daftar di sini
           </Link>
         </>
@@ -58,11 +58,13 @@ export default function LoginPage() {
         <TextField label="Email" type="email" autoComplete="email" value={email} onChange={setEmail} />
         <PasswordField label="Password" value={password} onChange={setPassword} />
         <div className="-mt-2 text-right text-sm">
-          <Link href="/forgot-password" className="text-dc-navy hover:text-dc-gold">
+          <Link href="/forgot-password" className="inline-flex min-h-11 items-center text-dc-clay underline underline-offset-2 hover:text-dc-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold">
             Lupa password?
           </Link>
         </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p role="alert" className="text-sm text-red-700">
+            {error}
+          </p>}
         <Button type="submit" loading={loading}>
           Masuk
         </Button>

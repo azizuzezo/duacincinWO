@@ -14,22 +14,30 @@ export function matchesBookingFilter(status: BookingStatus, filterKey: string): 
   return !active?.statuses || active.statuses.includes(status);
 }
 
-/** Pill tabs for filtering a booking list by status client-side (no backend
- * query param support for this yet, since the dataset per user is small). */
+/** Segmented filter for a booking list by status, client-side (no backend
+ * query param support for this yet, since the dataset per user is small).
+ * Rectangular, not pills: pills are reserved for status Badges. */
 export function BookingStatusFilter({ value, onChange }: { value: string; onChange: (key: string) => void }) {
   return (
-    <div className="mb-5 flex flex-wrap gap-2">
-      {BOOKING_FILTERS.map((f) => (
-        <button
-          key={f.key}
-          onClick={() => onChange(f.key)}
-          className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
-            value === f.key ? "bg-dc-navy text-dc-white" : "bg-dc-white text-dc-navy/70 hover:bg-dc-offwhite"
-          }`}
-        >
-          {f.label}
-        </button>
-      ))}
+    <div role="group" aria-label="Filter status booking" className="mb-5 flex flex-wrap gap-2">
+      {BOOKING_FILTERS.map((f) => {
+        const active = value === f.key;
+        return (
+          <button
+            key={f.key}
+            type="button"
+            aria-pressed={active}
+            onClick={() => onChange(f.key)}
+            className={`min-h-11 rounded-md border px-4 text-sm font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold ${
+              active
+                ? "border-dc-ink bg-dc-ink text-dc-white"
+                : "border-dc-ink/15 bg-dc-white text-dc-ink hover:border-dc-ink/40"
+            }`}
+          >
+            {f.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

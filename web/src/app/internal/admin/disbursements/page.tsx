@@ -5,11 +5,11 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/Button";
 import { ADMIN_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
-import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/Toast";
 import { WithUser } from "@/components/WithUser";
+import { ErrorBanner, NUM, PAGE, RowsSkeleton, TableCard, TD, TH, TR } from "../../_ui";
 import { apiGet, apiPost, ApiError, formatRupiah, type CurrentUser, type Disbursement } from "@/lib/api";
 
 export default function AdminDisbursementsPage() {
@@ -22,14 +22,19 @@ export default function AdminDisbursementsPage() {
 
 function AdminDisbursementsContent({ user }: { user: CurrentUser }) {
   const [items, setItems] = useState<Disbursement[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const { show } = useToast();
 
   function load() {
     apiGet<Disbursement[]>("/api/v1/admin/disbursements/pending")
-      .then((data) => setItems(data ?? []))
-      .catch((err) => setError(err instanceof ApiError ? err.message : "Gagal memuat daftar pencairan."));
+      .then((data) => {
+        setItems(data ?? []);
+        setError(null);
+      })
+      .catch((err) => setError(err instanceof ApiError ? err.message : "Gagal memuat daftar pencairan."))
+      .finally(() => setLoading(false));
   }
 
   useEffect(() => {
@@ -51,30 +56,48 @@ function AdminDisbursementsContent({ user }: { user: CurrentUser }) {
 
   return (
     <Shell user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
-      <div className="mx-auto max-w-3xl px-4 py-10">
-        <PageHeader title="Pencairan Dana Vendor" />
-        {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
-        {items.length === 0 ? (
-          <EmptyState title="Tidak ada pencairan yang menunggu" />
+      <div className={PAGE}>
+        <PageHeader title="Pencairan Dana Vendor" subtitle="Dana booking yang sudah selesai dan menunggu dicairkan ke vendor." />
+        {error && (
+          <ErrorBanner
+            message={error}
+            onRetry={() => {
+              setLoading(true);
+              load();
+            }}
+          />
+        )}
+        {loading ? (
+          <RowsSkeleton />
+        ) : items.length === 0 ? (
+          !error && <EmptyState title="Tidak ada pencairan yang menunggu" body="Pencairan baru muncul di sini setelah booking selesai." />
         ) : (
-          <ul className="flex flex-col gap-3">
-            {items.map((d) => (
-              <li key={d.booking_id}>
-                <Card className="flex items-center justify-between p-4">
-                  <div>
-                    <p className="text-sm text-dc-black/60">{d.vendor_business_name ?? `Booking #${d.booking_id.slice(0, 8)}`}</p>
-                    <p className="font-medium text-dc-navy">
-                      Bruto {formatRupiah(d.gross_amount)} − Komisi {formatRupiah(d.commission_amount)} ={" "}
-                      <span className="font-bold">{formatRupiah(d.net_amount)}</span>
-                    </p>
-                  </div>
-                  <Button className="w-auto" onClick={() => handleMarkDisbursed(d.booking_id)} loading={busyId === d.booking_id}>
-                    Tandai Dicairkan
-                  </Button>
-                </Card>
-              </li>
-            ))}
-          </ul>
+          <TableCard minWidth="min-w-[720px]">
+            <thead className="bg-dc-cream/50">
+              <tr>
+                <th scope="col" className={TH}>Vendor</th>
+                <th scope="col" className={`${TH} ${NUM}`}>Bruto</th>
+                <th scope="col" className={`${TH} ${NUM}`}>Komisi</th>
+                <th scope="col" className={`${TH} ${NUM}`}>Bersih</th>
+                <th scope="col" className={`${TH} text-right`}>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((d) => (
+                <tr key={d.booking_id} className={TR}>
+                  <td className={`${TD} font-medium`}>{d.vendor_business_name ?? `Booking #${d.booking_id.slice(0, 8)}`}</td>
+                  <td className={`${TD} ${NUM}`}>{formatRupiah(d.gross_amount)}</td>
+                  <td className={`${TD} ${NUM} text-dc-black/70`}>{formatRupiah(d.commission_amount)}</td>
+                  <td className={`${TD} ${NUM} font-semibold`}>{formatRupiah(d.net_amount)}</td>
+                  <td className={`${TD} text-right`}>
+                    <Button className="w-auto" onClick={() => handleMarkDisbursed(d.booking_id)} loading={busyId === d.booking_id}>
+                      Tandai Dicairkan
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </TableCard>
         )}
       </div>
     </Shell>

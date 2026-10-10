@@ -4,24 +4,27 @@ import type { ReactNode } from "react";
 
 type Variant = "client" | "vendor" | "internal" | "unified";
 
-const SIDE_CONTENT: Record<Variant, { headline: string; bullets: string[] }> = {
+const SIDE_CONTENT: Record<Variant, { headline: string; accent: string; bullets: string[] }> = {
   client: {
-    headline: "Rencanakan pernikahan tanpa drama vendor.",
+    headline: "Rencanakan pernikahan",
+    accent: "tanpa drama vendor.",
     bullets: ["Direktori vendor terverifikasi", "Budget planner otomatis", "Pembayaran aman lewat escrow"],
   },
   vendor: {
-    headline: "Fokus kerjakan acara, biar DuaCincin urus bookingnya.",
+    headline: "Fokus kerjakan acara,",
+    accent: "biar DuaCincin urus bookingnya.",
     bullets: ["Booking & pembayaran terjamin", "Komisi jelas, dana cair otomatis", "Semua diskusi tercatat resmi"],
   },
   internal: {
-    headline: "Panel internal untuk tim DuaCincin.",
+    headline: "Panel internal",
+    accent: "tim DuaCincin.",
     bullets: ["Verifikasi & moderasi vendor", "Pantau sengketa & pencairan dana", "Dashboard operasional real-time"],
   },
-  // Role-agnostic copy for the single shared login page. We don't know
-  // whether it's a client, vendor, admin, or wedding consultant signing in
-  // until after they submit, so nothing here can assume one.
+  // Role-agnostic copy for the single shared login page: we only learn the
+  // role after submit, so nothing here can assume one.
   unified: {
-    headline: "Satu pintu masuk untuk seluruh DuaCincin.",
+    headline: "Satu pintu masuk",
+    accent: "untuk seluruh DuaCincin.",
     bullets: ["Calon pengantin & vendor", "Tim internal DuaCincin", "Diarahkan otomatis ke dashboard yang tepat"],
   },
 };
@@ -38,54 +41,46 @@ export function AuthCard({ title, subtitle, variant = "client", children, footer
   const side = SIDE_CONTENT[variant];
 
   return (
-    <main className="flex min-h-screen bg-dc-white">
-      {/* Brand panel — hidden on mobile, shown from md up */}
-      <div className="relative hidden w-[42%] flex-col justify-between overflow-hidden bg-gradient-to-br from-dc-navy via-dc-navy/95 to-dc-black p-10 md:flex">
-        <svg
-          className="pointer-events-none absolute -bottom-20 -left-20 h-96 w-96 animate-spin-slow opacity-[0.08]"
-          viewBox="0 0 200 200"
-          fill="none"
-        >
-          <circle cx="80" cy="100" r="55" stroke="#F5A623" strokeWidth="3" />
-          <circle cx="130" cy="100" r="55" stroke="#F5A623" strokeWidth="3" />
-        </svg>
+    <main className="flex min-h-screen bg-dc-ivory">
+      {/* Brand panel: full-bleed photo (placeholder stock, public/stock/README.md)
+          with a flat ink veil so the copy clears AA contrast anywhere on the image. */}
+      <div className="relative isolate hidden w-[46%] flex-col justify-between overflow-hidden bg-dc-ink p-12 md:flex">
+        <Image src="/stock/couple-walk.webp" alt="" fill sizes="46vw" priority className="-z-20 object-cover object-center" />
+        <div className="absolute inset-0 -z-10 bg-dc-ink/60" aria-hidden />
 
-        <Link href="/" className="relative flex items-center gap-2">
-          <Image src="/brand/duacincin-logo.webp" alt="DuaCincin" width={36} height={36} />
-          <span className="font-heading text-lg font-extrabold text-dc-white">DuaCincin</span>
+        <Link href="/" className="flex items-center gap-2.5">
+          <Image src="/brand/duacincin-logo.webp" alt="" width={32} height={32} />
+          <span className="font-heading text-xl text-dc-white">DuaCincin</span>
         </Link>
 
-        <div className="relative">
-          <p className="font-heading text-3xl font-extrabold leading-snug text-dc-white">{side.headline}</p>
-          <ul className="mt-8 flex flex-col gap-3">
+        <div>
+          <p className="font-heading text-4xl leading-[1.1] text-dc-white lg:text-5xl">
+            {side.headline} <span className="dc-em-light">{side.accent}</span>
+          </p>
+          <ul className="mt-6 flex flex-col gap-2">
             {side.bullets.map((b) => (
-              <li key={b} className="flex items-center gap-2.5 text-sm text-dc-white/70">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F5A623" strokeWidth="3" className="shrink-0">
-                  <path d="M5 12l5 5L19 7" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+              <li key={b} className="text-sm text-dc-white/90">
                 {b}
               </li>
             ))}
           </ul>
+          <p className="mt-10 text-xs text-dc-white/75">© {new Date().getFullYear()} DuaCincin</p>
         </div>
-
-        <p className="relative text-xs text-dc-white/30">© {new Date().getFullYear()} DuaCincin</p>
       </div>
 
-      {/* Form panel */}
-      <div className="flex flex-1 flex-col items-center justify-center px-4 py-12">
-        <Link href="/" className="mb-8 flex items-center gap-2 md:hidden">
-          <Image src="/brand/duacincin-logo.webp" alt="DuaCincin" width={36} height={36} />
-          <span className="font-heading text-lg font-extrabold text-dc-navy">DuaCincin</span>
+      <div className="flex flex-1 flex-col items-center justify-center px-4 py-12 sm:px-8">
+        <Link href="/" className="mb-10 flex items-center gap-2.5 md:hidden">
+          <Image src="/brand/duacincin-logo.webp" alt="" width={32} height={32} />
+          <span className="font-heading text-xl text-dc-ink">DuaCincin</span>
         </Link>
 
         <div className="w-full max-w-sm">
-          <h1 className="font-heading text-2xl font-extrabold text-dc-navy">{title}</h1>
-          {subtitle && <p className="mt-1 text-sm text-dc-black/60">{subtitle}</p>}
+          <h1 className="font-heading text-4xl leading-[1.05] text-dc-ink">{title}</h1>
+          {subtitle && <p className="mt-2 text-sm text-dc-black/70">{subtitle}</p>}
 
-          <div className="mt-6">{children}</div>
+          <div className="mt-8">{children}</div>
 
-          {footer && <div className="mt-6 text-center text-sm text-dc-black/60">{footer}</div>}
+          {footer && <div className="mt-8 text-center text-sm text-dc-black/70">{footer}</div>}
         </div>
       </div>
     </main>

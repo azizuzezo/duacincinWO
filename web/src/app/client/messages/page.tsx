@@ -11,8 +11,8 @@ export default function ClientMessagesPage() {
     <WithUser allowedRoles={["client"]} loginPath="/login">
       {(user) => (
         <Shell user={user} navItems={CLIENT_NAV} loginPath="/login" eyebrow="Client">
-          <div className="mx-auto max-w-2xl px-4 py-10">
-            <PageHeader title="Pesan" />
+          <div className="mx-auto max-w-2xl px-4 py-8 sm:py-10">
+            <PageHeader title="Pesan" subtitle="Percakapan dengan vendor dan Wedding Consultant." />
             <ConversationList
               basePath="/client/messages"
               emptyLabel="Mulai dari halaman vendor atau chat Wedding Consultant."

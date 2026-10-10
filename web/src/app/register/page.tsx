@@ -112,7 +112,7 @@ function RegisterContent() {
       footer={
         <>
           Sudah punya akun?{" "}
-          <Link href="/login" className="font-semibold text-dc-navy hover:text-dc-gold">
+          <Link href="/login" className="font-semibold text-dc-clay underline underline-offset-2 hover:text-dc-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold">
             Masuk di sini
           </Link>
         </>
@@ -125,10 +125,10 @@ function RegisterContent() {
               key={r}
               type="button"
               onClick={() => setRole(r)}
-              className="rounded-xl border border-dc-black/15 p-4 text-left transition hover:border-dc-gold hover:bg-dc-gold/5"
+              className="group min-h-11 rounded-lg border border-dc-ink/15 bg-dc-white p-5 text-left transition-colors hover:border-dc-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold"
             >
-              <p className="font-semibold text-dc-navy">{ROLE_CONFIG[r].cardTitle}</p>
-              <p className="mt-0.5 text-sm text-dc-black/60">{ROLE_CONFIG[r].cardDescription}</p>
+              <p className="font-heading text-2xl text-dc-ink">{ROLE_CONFIG[r].cardTitle}</p>
+              <p className="mt-1 text-sm text-dc-black/70">{ROLE_CONFIG[r].cardDescription}</p>
             </button>
           ))}
         </div>
@@ -137,9 +137,9 @@ function RegisterContent() {
           <button
             type="button"
             onClick={resetChoice}
-            className="-mt-1 self-start text-xs font-medium text-dc-black/50 hover:text-dc-gold"
+            className="-mt-1 inline-flex min-h-11 items-center self-start text-sm font-medium text-dc-clay underline underline-offset-2 hover:text-dc-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold"
           >
-            ← Ganti pilihan
+            Ganti peran
           </button>
           <TextField
             label={ROLE_CONFIG[role].nameLabel}
@@ -155,16 +155,18 @@ function RegisterContent() {
             onChange={setPassword}
             minLength={8}
           />
-          <p className="-mt-2 text-xs text-dc-black/50">Minimal 8 karakter.</p>
+          <p className="-mt-2 text-xs text-dc-black/70">Minimal 8 karakter.</p>
           <AgreementCheckbox
             checked={acceptTerms}
             onChange={setAcceptTerms}
             href={ROLE_CONFIG[role].agreementHref}
             label={ROLE_CONFIG[role].agreementLabel}
           />
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p role="alert" className="text-sm text-red-700">
+            {error}
+          </p>}
           <Button type="submit" loading={loading} disabled={!acceptTerms}>
-            Daftar
+            {role === "vendor" ? "Daftar sebagai vendor" : "Buat akun"}
           </Button>
         </form>
       )}

@@ -1,38 +1,53 @@
-import { ParallaxImage } from "@/components/landing/ParallaxImage";
+import Link from "next/link";
 
+import { Reveal } from "@/components/landing/Reveal";
+
+const POINTS = [
+  {
+    title: "Escrow untuk client",
+    body: "Pembayaran ditahan di akun penampung dan baru diteruskan ke vendor setelah kamu mengonfirmasi acara selesai.",
+  },
+  {
+    title: "Bukti tercatat",
+    body: "Riwayat chat dan booking tersimpan, jadi ada rujukan bila terjadi sengketa. Admin menengahinya lewat jalur dispute resmi.",
+  },
+  {
+    title: "Chat yang mengawasi kontak",
+    body: "Nomor telepon, email, dan tautan luar yang dibagikan di chat ditandai untuk ditinjau Admin. Pesan tetap terkirim, tidak diblokir.",
+  },
+  {
+    title: "Vendor terikat perjanjian",
+    body: "Setiap vendor menyetujui Perjanjian Kemitraan sebelum akunnya aktif. Pelanggaran dikenai sanksi bertingkat.",
+  },
+];
+
+/** The single dark ink block of the page. */
 export function AntiCircumvention() {
   return (
-    <section className="relative overflow-hidden bg-dc-navy py-20">
-      <ParallaxImage
-        src="/hero/adat/melayu.webp"
-        alt="Pasangan pengantin adat Melayu"
-        className="-left-10 bottom-0 hidden h-72 w-56 xl:block"
-        speed={30}
-        rotate={4}
-      />
-
-      <div className="relative mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-4 lg:grid-cols-2">
-        <div>
-          <h2 className="font-heading text-3xl font-extrabold text-dc-white">
-            Vendornya Terbuka, Transaksinya Tetap Terlindungi
+    <section className="bg-dc-ink text-dc-ivory">
+      <div className="mx-auto grid max-w-[1200px] gap-12 px-4 py-20 sm:px-6 lg:grid-cols-12 lg:gap-16 lg:px-10 lg:py-28">
+        <Reveal className="lg:col-span-5">
+          <h2 className="font-heading text-4xl leading-[1.05] sm:text-5xl">
+            Boleh lihat-lihat bebas. <span className="dc-em-light">Transaksinya</span> tetap di dalam.
           </h2>
-          <p className="mt-4 text-dc-white/70">
-            Kamu bebas jelajahi portofolio vendor tanpa login. Begitu mulai chat, booking, dan bayar, semua tetap
-            berjalan di dalam DuaCincin, supaya kamu dapat perlindungan escrow, bukti chat yang tercatat, dan jalur
-            sengketa resmi kalau ada masalah.
+          <p className="mt-5 max-w-md leading-relaxed text-dc-ivory/80">
+            Portofolio vendor terbuka tanpa login. Begitu masuk ke chat, booking, dan pembayaran, semuanya berjalan di
+            DuaCincin supaya dua pihak sama-sama terlindungi.
           </p>
-        </div>
-
-        <ul className="divide-y divide-dc-white/10 rounded-2xl border border-dc-white/10">
-          {[
-            { title: "Client Terlindungi", body: "Dana ditahan escrow, cair ke vendor cuma setelah acara selesai dikonfirmasi." },
-            { title: "Vendor Terlindungi", body: "Kesepakatan tercatat resmi, komisi jelas, pembayaran terjamin lewat platform." },
-            { title: "Bukti Kuat", body: "Semua chat & kesepakatan tersimpan, jadi alat bukti kalau terjadi sengketa." },
-            { title: "Mitra Terikat Aturan", body: "Setiap vendor menyetujui Perjanjian Kemitraan sebelum aktif menerima booking." },
-          ].map((item) => (
-            <li key={item.title} className="p-5">
-              <h3 className="font-heading font-bold text-dc-gold">{item.title}</h3>
-              <p className="mt-1.5 text-sm text-dc-white/70">{item.body}</p>
+          <div className="mt-8 flex flex-wrap gap-x-6">
+            <Link href="/legal/client-tos" className="inline-flex min-h-11 items-center text-sm font-semibold underline underline-offset-4 hover:text-dc-white">
+              Baca ketentuan client
+            </Link>
+            <Link href="/legal/vendor-agreement" className="inline-flex min-h-11 items-center text-sm font-semibold underline underline-offset-4 hover:text-dc-white">
+              Baca perjanjian vendor
+            </Link>
+          </div>
+        </Reveal>
+        <ul className="lg:col-span-7">
+          {POINTS.map((p) => (
+            <li key={p.title} className="border-t border-dc-ivory/20 py-6 last:border-b">
+              <h3 className="font-heading text-3xl">{p.title}</h3>
+              <p className="mt-2 max-w-xl leading-relaxed text-dc-ivory/80">{p.body}</p>
             </li>
           ))}
         </ul>

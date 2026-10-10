@@ -40,7 +40,7 @@ export function PasswordSection() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <h2 className="font-heading text-lg font-bold text-dc-navy">Ubah Password</h2>
+      <h2 className="font-heading text-2xl text-dc-ink">Ubah Password</h2>
       <PasswordField label="Password saat ini" value={currentPassword} onChange={setCurrentPassword} autoComplete="current-password" />
       <PasswordField label="Password baru" value={newPassword} onChange={setNewPassword} autoComplete="new-password" minLength={8} />
       <PasswordField
@@ -50,14 +50,19 @@ export function PasswordSection() {
         autoComplete="new-password"
         minLength={8}
       />
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-red-700">
+          {error}
+        </p>
+      )}
       <AnimatePresence>
         {success && (
           <motion.p
+            role="status"
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="flex items-center gap-1.5 text-sm text-green-700"
+            className="flex items-center gap-1.5 text-sm text-green-800"
           >
             <CheckIcon /> Password berhasil diperbarui.
           </motion.p>

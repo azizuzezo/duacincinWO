@@ -5,11 +5,13 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/Button";
 import { ADMIN_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
+import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/Toast";
 import { WithUser } from "@/components/WithUser";
+import { DangerButton, ErrorBanner, PAGE, RowsSkeleton, Tabs } from "../../_ui";
 import { apiGet, apiPost, ApiError, type CurrentUser, type Dispute } from "@/lib/api";
 
 export default function AdminDisputesPage() {
@@ -30,14 +32,19 @@ const SANCTIONS: { value: string; label: string }[] = [
 function AdminDisputesContent({ user }: { user: CurrentUser }) {
   const [tab, setTab] = useState<"open" | "resolved">("open");
   const [disputes, setDisputes] = useState<Dispute[]>([]);
+  const [loadedTab, setLoadedTab] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const { show } = useToast();
 
   function load() {
     apiGet<Dispute[]>(`/api/v1/admin/disputes/${tab === "open" ? "open" : "resolved"}`)
-      .then((data) => setDisputes(data ?? []))
-      .catch((err) => setError(err instanceof ApiError ? err.message : "Gagal memuat sengketa."));
+      .then((data) => {
+        setDisputes(data ?? []);
+        setError(null);
+      })
+      .catch((err) => setError(err instanceof ApiError ? err.message : "Gagal memuat sengketa."))
+      .finally(() => setLoadedTab(tab));
   }
 
   useEffect(() => {
@@ -58,59 +65,80 @@ function AdminDisputesContent({ user }: { user: CurrentUser }) {
     }
   }
 
+  const loading = loadedTab !== tab;
+
   return (
     <Shell user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
-      <div className="mx-auto max-w-3xl px-4 py-10">
-        <PageHeader title="Sengketa Anti-Circumvention" />
+      <div className={PAGE}>
+        <PageHeader title="Sengketa Anti-Circumvention" subtitle="Tinjau laporan dan tetapkan sanksi. Sanksi berat tidak bisa dibatalkan." />
 
-        <div className="mb-5 flex gap-2">
-          {(["open", "resolved"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
-                tab === t ? "bg-dc-navy text-dc-white" : "bg-dc-white text-dc-navy/70 hover:bg-dc-offwhite"
-              }`}
-            >
-              {t === "open" ? "Terbuka" : "Riwayat"}
-            </button>
-          ))}
-        </div>
+        <Tabs
+          label="Status sengketa"
+          value={tab}
+          onChange={setTab}
+          tabs={[
+            { value: "open", label: "Terbuka" },
+            { value: "resolved", label: "Riwayat" },
+          ]}
+        />
 
-        {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
-        {disputes.length === 0 ? (
-          <EmptyState title={tab === "open" ? "Tidak ada sengketa yang terbuka" : "Belum ada riwayat sengketa"} />
+        {error && <ErrorBanner message={error} onRetry={load} />}
+        {loading ? (
+          <RowsSkeleton />
+        ) : disputes.length === 0 ? (
+          !error && (
+            <EmptyState
+              title={tab === "open" ? "Tidak ada sengketa yang terbuka" : "Belum ada riwayat sengketa"}
+              body={tab === "open" ? "Laporan baru dari klien akan muncul di sini." : undefined}
+            />
+          )
         ) : (
-          <ul className="flex flex-col gap-3">
-            {disputes.map((d) => (
-              <li key={d.id}>
-                <Card className="p-4">
-                  <p className="text-sm text-dc-black/60">{d.vendor_business_name ?? `Vendor #${d.vendor_id.slice(0, 8)}`}</p>
-                  <p className="font-medium text-dc-navy">{d.reason}</p>
-                  <p className="text-xs text-dc-black/40">{new Date(d.created_at).toLocaleString("id-ID")}</p>
+          <Card>
+            <ul>
+              {disputes.map((d, i) => (
+                <li key={d.id} className={`px-4 py-4 ${i > 0 ? "border-t border-dc-ink/10" : ""}`}>
+                  <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
+                    <p className="font-semibold text-dc-ink">{d.vendor_business_name ?? `Vendor #${d.vendor_id.slice(0, 8)}`}</p>
+                    <p className="text-xs tabular-nums text-dc-black/60">{new Date(d.created_at).toLocaleString("id-ID")}</p>
+                  </div>
+                  <p className="mt-1 max-w-3xl text-sm text-dc-black/80">{d.reason}</p>
                   {tab === "open" ? (
                     <div className="mt-3 flex flex-wrap gap-2">
-                      {SANCTIONS.map((s) => (
-                        <Button
-                          key={s.value}
-                          variant={s.value === "none" ? "ghost" : "primary"}
-                          className="w-auto text-xs"
-                          onClick={() => handleResolve(d.id, s.value)}
-                          loading={busyId === d.id}
-                        >
-                          {s.label}
-                        </Button>
-                      ))}
+                      {SANCTIONS.map((s) =>
+                        s.value === "suspend" || s.value === "terminate" ? (
+                          <DangerButton
+                            key={s.value}
+                            solid={s.value === "terminate"}
+                            onClick={() => handleResolve(d.id, s.value)}
+                            loading={busyId === d.id}
+                          >
+                            {s.label}
+                          </DangerButton>
+                        ) : (
+                          <Button
+                            key={s.value}
+                            variant="ghost"
+                            className="w-auto"
+                            onClick={() => handleResolve(d.id, s.value)}
+                            loading={busyId === d.id}
+                          >
+                            {s.label}
+                          </Button>
+                        ),
+                      )}
                     </div>
                   ) : (
-                    <p className="mt-2 text-xs font-semibold text-dc-navy">
-                      Sanksi: {SANCTIONS.find((s) => s.value === d.sanction_applied)?.label ?? d.sanction_applied ?? "-"}
+                    <p className="mt-2 flex items-center gap-2 text-sm text-dc-black/70">
+                      Sanksi:
+                      <Badge tone={d.sanction_applied === "none" ? "success" : d.sanction_applied === "warning" ? "gold" : "danger"}>
+                        {SANCTIONS.find((s) => s.value === d.sanction_applied)?.label ?? d.sanction_applied ?? "-"}
+                      </Badge>
                     </p>
                   )}
-                </Card>
-              </li>
-            ))}
-          </ul>
+                </li>
+              ))}
+            </ul>
+          </Card>
         )}
       </div>
     </Shell>

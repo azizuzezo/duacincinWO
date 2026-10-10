@@ -1,49 +1,34 @@
+import Image from "next/image";
 import Link from "next/link";
 
-import { ParallaxImage } from "@/components/landing/ParallaxImage";
+import { Reveal } from "@/components/landing/Reveal";
 
+/** Closing band: full-bleed photo so the page ends on the same cinematic
+ * note it opened with. */
 export function CTABanner() {
   return (
-    <section className="mx-auto max-w-6xl px-4 py-20">
-      <div className="relative">
-        <div className="relative overflow-hidden rounded-3xl bg-dc-gold px-8 py-14 text-center sm:py-16">
-          <svg
-            className="pointer-events-none absolute -left-16 -bottom-16 h-64 w-64 opacity-10"
-            viewBox="0 0 200 200"
-            fill="none"
+    <section className="relative isolate overflow-hidden bg-dc-ink">
+      <Image src="/stock/couple-walk.webp" alt="" fill sizes="100vw" className="-z-20 object-cover object-center" />
+      <div className="absolute inset-0 -z-10 bg-dc-ink/70" aria-hidden />
+      <Reveal className="mx-auto max-w-[1200px] px-4 py-28 text-center sm:px-6 lg:px-10 lg:py-40">
+        <h2 className="mx-auto max-w-4xl font-heading text-[clamp(2.5rem,7vw,5.5rem)] font-medium leading-[1] text-dc-white">
+          Mulai dari anggaran, <span className="dc-em-light">bukan dari tebakan.</span>
+        </h2>
+        <div className="mt-10 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
+          <Link
+            href="/register?role=client"
+            className="inline-flex min-h-12 items-center justify-center rounded-md bg-dc-white px-8 text-sm font-semibold text-dc-ink transition-colors hover:bg-dc-gold-antique focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-white"
           >
-            <circle cx="80" cy="100" r="55" stroke="#831843" strokeWidth="4" />
-            <circle cx="130" cy="100" r="55" stroke="#831843" strokeWidth="4" />
-          </svg>
-          <h2 className="font-heading relative text-3xl font-extrabold text-dc-navy sm:text-4xl">
-            Siap Rencanakan Pernikahanmu?
-          </h2>
-          <p className="relative mx-auto mt-3 max-w-md text-dc-navy/80">
-            Daftar gratis, cari vendor, dan susun budget dalam hitungan menit.
-          </p>
-          <div className="relative mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link href="/register?role=client" className="rounded-xl bg-dc-navy px-7 py-3 text-sm font-bold text-dc-white transition hover:scale-105">
-              Daftar sebagai Client
-            </Link>
-            <Link href="/register?role=vendor" className="rounded-xl border border-dc-navy/30 px-7 py-3 text-sm font-semibold text-dc-navy transition hover:bg-dc-navy/10">
-              Daftar Jadi Mitra Vendor
-            </Link>
-          </div>
+            Buat akun client
+          </Link>
+          <Link
+            href="/vendors"
+            className="inline-flex min-h-12 items-center justify-center rounded-md border border-dc-white/50 px-8 text-sm font-semibold text-dc-white transition-colors hover:border-dc-white hover:bg-dc-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-white"
+          >
+            Lihat direktori vendor
+          </Link>
         </div>
-
-        {/* Deliberately breaks out of the box's edge instead of being
-            clipped inside it, and responds to the cursor (tilt + scale on
-            hover) — the one interactive photo on this section, not just a
-            decorative parallax drift like the others. */}
-        <ParallaxImage
-          src="/hero/adat/sunda.webp"
-          alt="Pasangan pengantin adat Sunda"
-          className="-bottom-16 -right-10 z-10 hidden h-80 w-64 sm:block"
-          speed={26}
-          rotate={5}
-          interactive
-        />
-      </div>
+      </Reveal>
     </section>
   );
 }

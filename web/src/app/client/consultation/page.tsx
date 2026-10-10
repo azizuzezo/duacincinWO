@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { ErrorState, ERROR_TEXT, H2, INPUT, LABEL, LINK, SkeletonList } from "@/app/client/_ui";
 import { Button } from "@/components/Button";
 import { CLIENT_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
@@ -27,14 +28,16 @@ function ClientConsultationContent({ user }: { user: CurrentUser }) {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [scheduledAt, setScheduledAt] = useState("");
   const [meetingLink, setMeetingLink] = useState("");
   const [saving, setSaving] = useState(false);
 
   function load() {
+    setLoadError(null);
     return apiGet<Meeting[]>("/api/v1/meetings/consultation")
       .then((d) => setMeetings(d ?? []))
-      .catch((err) => setError(err instanceof ApiError ? err.message : "Gagal memuat jadwal konsultasi."))
+      .catch((err) => setLoadError(err instanceof ApiError ? err.message : "Gagal memuat jadwal konsultasi."))
       .finally(() => setLoading(false));
   }
 
@@ -72,7 +75,7 @@ function ClientConsultationContent({ user }: { user: CurrentUser }) {
 
   return (
     <Shell user={user} navItems={CLIENT_NAV} loginPath="/login" eyebrow="Client">
-      <div className="mx-auto max-w-2xl px-4 py-10">
+      <div className="mx-auto max-w-2xl px-4 py-8 sm:py-10">
         <PageHeader
           title="Konsultasi"
           subtitle="Jadwalkan sesi dengan Wedding Consultant, atau chat langsung kapan saja."
@@ -84,10 +87,10 @@ function ClientConsultationContent({ user }: { user: CurrentUser }) {
         />
 
         <Card className="mb-6 p-5">
-          <h2 className="font-heading text-lg font-bold text-dc-navy">Jadwalkan Sesi Baru</h2>
+          <h2 className={H2}>Jadwalkan Sesi Baru</h2>
           <form onSubmit={handleSchedule} className="mt-4 flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="scheduled-at" className="text-sm font-medium text-dc-navy">
+              <label htmlFor="scheduled-at" className={LABEL}>
                 Tanggal &amp; waktu
               </label>
               <input
@@ -96,11 +99,11 @@ function ClientConsultationContent({ user }: { user: CurrentUser }) {
                 required
                 value={scheduledAt}
                 onChange={(e) => setScheduledAt(e.target.value)}
-                className="w-full rounded-xl border border-dc-black/15 px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+                className={INPUT}
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="meeting-link" className="text-sm font-medium text-dc-navy">
+              <label htmlFor="meeting-link" className={LABEL}>
                 Link meeting (opsional, Zoom/Meet)
               </label>
               <input
@@ -109,23 +112,25 @@ function ClientConsultationContent({ user }: { user: CurrentUser }) {
                 value={meetingLink}
                 onChange={(e) => setMeetingLink(e.target.value)}
                 placeholder="https://meet.google.com/…"
-                className="w-full rounded-xl border border-dc-black/15 px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+                className={INPUT}
               />
             </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p role="alert" className={ERROR_TEXT}>{error}</p>}
             <Button type="submit" loading={saving} className="w-auto">
               Jadwalkan
             </Button>
           </form>
         </Card>
 
-        <h2 className="font-heading mb-3 text-lg font-bold text-dc-navy">Jadwal Konsultasi</h2>
+        <h2 className={`${H2} mb-3`}>Jadwal Konsultasi</h2>
         {loading ? (
-          <p className="text-sm text-dc-black/60">Memuat…</p>
+          <SkeletonList rows={2} />
+        ) : loadError ? (
+          <ErrorState message={loadError} onRetry={load} />
         ) : sorted.length === 0 ? (
           <EmptyState title="Belum ada sesi terjadwal" body="Jadwalkan sesi baru di atas." />
         ) : (
-          <ul className="space-y-3">
+          <ul className="flex flex-col gap-3">
             {sorted.map((m) => (
               <li key={m.id}>
                 <MeetingCard meeting={m} />
@@ -141,21 +146,21 @@ function ClientConsultationContent({ user }: { user: CurrentUser }) {
 function MeetingCard({ meeting }: { meeting: Meeting }) {
   const date = new Date(meeting.scheduled_at);
   return (
-    <Card className="flex items-center justify-between p-4">
+    <Card className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 p-4">
       <div>
-        <p className="font-semibold text-dc-navy">
+        <p className="font-medium text-dc-ink">
           {date.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
         </p>
-        <p className="text-sm text-dc-black/60">{date.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} WIB</p>
+        <p className="text-sm tabular-nums text-dc-black/70">{date.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} WIB</p>
       </div>
       {meeting.meeting_link && (
         <a
           href={meeting.meeting_link}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sm font-semibold text-dc-gold hover:text-dc-navy"
+          className={LINK}
         >
-          Buka Link →
+          Buka link
         </a>
       )}
     </Card>

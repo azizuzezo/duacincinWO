@@ -1,3 +1,5 @@
+// Hairline border, no shadow: elevation is reserved for floating layers
+// (modal, dropdown, toast), see DESIGN.md.
 export function Card({
   children,
   className = "",
@@ -8,7 +10,7 @@ export function Card({
   style?: React.CSSProperties;
 }) {
   return (
-    <div style={style} className={`rounded-2xl bg-dc-white shadow-md shadow-dc-navy/[0.06] ${className}`}>
+    <div style={style} className={`rounded-lg border border-dc-ink/10 bg-dc-white ${className}`}>
       {children}
     </div>
   );

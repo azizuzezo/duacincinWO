@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { use, useEffect, useState } from "react";
 
+import { ErrorState, ERROR_TEXT, FOCUS, H2, INPUT, LABEL, LINK, Skeleton } from "@/app/client/_ui";
 import { BookingStepper } from "@/components/BookingStepper";
 import { Button } from "@/components/Button";
 import { CLIENT_NAV } from "@/components/shell/navConfig";
@@ -41,6 +43,7 @@ function ClientBookingDetailContent({ id, user }: { id: string; user: CurrentUse
   const [meetingLink, setMeetingLink] = useState("");
 
   function load() {
+    setError(null);
     apiGet<Booking>(`/api/v1/bookings/${id}`).then(setBooking).catch(() => setError("Booking tidak ditemukan."));
     apiGet<Meeting[]>(`/api/v1/bookings/${id}/meetings`)
       .then((data) => setMeetings(data ?? []))
@@ -48,7 +51,7 @@ function ClientBookingDetailContent({ id, user }: { id: string; user: CurrentUse
   }
 
   useEffect(() => {
-    load();
+    queueMicrotask(load);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -117,15 +120,26 @@ function ClientBookingDetailContent({ id, user }: { id: string; user: CurrentUse
 
   return (
     <Shell user={user} navItems={CLIENT_NAV} loginPath="/login" eyebrow="Client">
-      <div className="mx-auto max-w-2xl px-4 py-10">
+      <div className="mx-auto max-w-2xl px-4 py-8 sm:py-10">
+        <Link href="/client/bookings" className={`mb-2 ${LINK}`}>
+          ← Semua booking
+        </Link>
         {!booking ? (
-          <p className="text-center text-dc-black/60">{error || "Memuat…"}</p>
+          error ? (
+            <ErrorState message={error} onRetry={load} />
+          ) : (
+            <div role="status" aria-label="Memuat" className="flex flex-col gap-4">
+              <Skeleton className="h-16 rounded-lg" />
+              <Skeleton className="h-20 rounded-lg" />
+              <Skeleton className="h-24 rounded-lg" />
+            </div>
+          )
         ) : (
           <>
-            <div className="mb-6 flex items-start justify-between gap-3">
-              <div>
-                <h1 className="font-heading text-2xl font-extrabold text-dc-navy">{booking.package_description || "Booking"}</h1>
-                <p className="mt-1 text-dc-black/60">{booking.event_date}</p>
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-3 border-b border-dc-gold/40 pb-6">
+              <div className="min-w-0">
+                <h1 className="font-heading break-words text-3xl leading-tight text-dc-ink">{booking.package_description || "Booking"}</h1>
+                <p className="mt-1 tabular-nums text-dc-black/70">{booking.event_date}</p>
               </div>
               <Badge tone={BOOKING_STATUS_TONE[booking.status]}>{BOOKING_STATUS_LABEL[booking.status]}</Badge>
             </div>
@@ -137,17 +151,19 @@ function ClientBookingDetailContent({ id, user }: { id: string; user: CurrentUse
             )}
 
             <Card className="mb-6 p-5">
-              <div className="flex justify-between text-sm">
-                <span className="text-dc-black/60">Total Harga</span>
-                <span className="font-semibold text-dc-navy">{formatRupiah(booking.agreed_price)}</span>
-              </div>
-              <div className="mt-2 flex justify-between text-sm">
-                <span className="text-dc-black/60">DP (30%)</span>
-                <span className="font-semibold text-dc-navy">{formatRupiah(booking.dp_amount)}</span>
-              </div>
+              <dl className="flex flex-col gap-2 text-sm tabular-nums">
+                <div className="flex justify-between gap-3">
+                  <dt className="text-dc-black/70">Total harga</dt>
+                  <dd className="font-semibold text-dc-ink">{formatRupiah(booking.agreed_price)}</dd>
+                </div>
+                <div className="flex justify-between gap-3 border-t border-dc-ink/10 pt-2">
+                  <dt className="text-dc-black/70">DP (30%)</dt>
+                  <dd className="font-semibold text-dc-ink">{formatRupiah(booking.dp_amount)}</dd>
+                </div>
+              </dl>
             </Card>
 
-            {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+            {error && <p role="alert" className={`mb-4 ${ERROR_TEXT}`}>{error}</p>}
 
             <div className="flex flex-col gap-4">
               {booking.status === "confirmed" && (
@@ -178,29 +194,37 @@ function ClientBookingDetailContent({ id, user }: { id: string; user: CurrentUse
 
               {(booking.status === "dp_paid" || booking.status === "full_paid") && (
                 <Card className="p-5">
-                  <h2 className="font-heading mb-2 font-bold text-dc-navy">Technical Meeting</h2>
+                  <h2 className={`${H2} mb-2`}>Technical Meeting</h2>
                   {meetings
                     .filter((m) => m.type === "technical_meeting")
                     .map((m) => (
-                      <p key={m.id} className="text-sm text-dc-black/70">
+                      <p key={m.id} className="break-words text-sm text-dc-black/70">
                         {new Date(m.scheduled_at).toLocaleString("id-ID")} · {m.meeting_link}
                       </p>
                     ))}
                   {!hasTechnicalMeeting && (
-                    <form onSubmit={handleScheduleMeeting} className="mt-2 flex flex-col gap-2">
+                    <form onSubmit={handleScheduleMeeting} className="mt-3 flex flex-col gap-3">
+                      <label htmlFor="tm-date" className={LABEL}>
+                        Tanggal &amp; waktu
+                      </label>
                       <input
+                        id="tm-date"
                         type="datetime-local"
                         value={meetingDate}
                         onChange={(e) => setMeetingDate(e.target.value)}
                         required
-                        className="rounded-xl border border-dc-black/15 px-3 py-2 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+                        className={INPUT}
                       />
+                      <label htmlFor="tm-link" className={LABEL}>
+                        Link meeting
+                      </label>
                       <input
+                        id="tm-link"
                         type="text"
                         placeholder="Link meeting (Zoom/Google Meet)"
                         value={meetingLink}
                         onChange={(e) => setMeetingLink(e.target.value)}
-                        className="rounded-xl border border-dc-black/15 px-3 py-2 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+                        className={INPUT}
                       />
                       <Button type="submit" className="w-auto" loading={busy}>
                         Jadwalkan
@@ -259,37 +283,40 @@ function ReviewSection({ bookingId }: { bookingId: string }) {
   if (submitted) {
     return (
       <Card className="p-5">
-        <h2 className="font-heading mb-1 font-bold text-dc-navy">Review</h2>
-        <p className="text-sm text-dc-black/60">Terima kasih, review kamu untuk vendor ini sudah tercatat.</p>
+        <h2 className={`${H2} mb-1`}>Review</h2>
+        <p className="text-sm text-dc-black/70">Terima kasih, review kamu untuk vendor ini sudah tercatat.</p>
       </Card>
     );
   }
 
   return (
     <Card className="p-5">
-      <h2 className="font-heading mb-3 font-bold text-dc-navy">Bagaimana pengalamanmu dengan vendor ini?</h2>
+      <h2 className={`${H2} mb-3`}>Bagaimana pengalamanmu dengan vendor ini?</h2>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <div className="flex gap-1">
+        <div role="group" aria-label="Rating" className="flex items-center gap-1">
           {[1, 2, 3, 4, 5].map((star) => (
             <button
               key={star}
               type="button"
               onClick={() => setRating(star)}
               aria-label={`${star} bintang`}
-              className="p-1 text-2xl leading-none"
+              aria-pressed={star === rating}
+              className={`flex h-11 w-11 items-center justify-center rounded-md text-2xl leading-none transition-colors hover:bg-dc-cream ${FOCUS}`}
             >
-              <span className={star <= rating ? "text-dc-gold" : "text-dc-black/15"}>★</span>
+              <span aria-hidden className={star <= rating ? "text-dc-gold" : "text-dc-ink/20"}>★</span>
             </button>
           ))}
+          <span className="ml-2 text-sm tabular-nums text-dc-black/70">{rating > 0 ? `${rating} dari 5` : "Belum dipilih"}</span>
         </div>
         <textarea
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           rows={3}
           placeholder="Ceritakan pengalamanmu (opsional)"
-          className="w-full rounded-xl border border-dc-black/15 px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+          aria-label="Komentar"
+          className={INPUT}
         />
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p role="alert" className={ERROR_TEXT}>{error}</p>}
         <Button type="submit" className="w-auto" loading={saving}>
           Kirim Review
         </Button>

@@ -19,7 +19,7 @@ function ConsultationsInboxContent({ user }: { user: CurrentUser }) {
   const isAdmin = user.role === "admin";
   return (
     <Shell user={user} navItems={isAdmin ? ADMIN_NAV : CONSULTANT_NAV} loginPath="/login" eyebrow={isAdmin ? "Admin" : "Consultant"}>
-      <div className="mx-auto max-w-2xl px-4 py-10">
+      <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
         <PageHeader title="Inbox Konsultasi" />
         <ConversationList
           basePath="/internal/consultations"

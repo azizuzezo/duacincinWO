@@ -1,17 +1,17 @@
 import { Card } from "./Card";
 
-const ACCENTS = { gold: "border-dc-gold", rose: "border-dc-rose", navy: "border-dc-navy" } as const;
+const ACCENTS = { gold: "border-t-dc-gold", clay: "border-t-dc-clay", ink: "border-t-dc-ink" } as const;
 
-/** Compact number tile for dashboards. `density: "soft"` (default, Client)
- * favors whitespace; `"structured"` (Internal/Admin, and the tables/tiles
- * in Vendor) adds a colored left border for faster scanning of many tiles
- * at once. Built on the shared Card, not a competing surface. */
+/** Compact number tile for dashboards. `density: "structured"` adds a 2px top
+ * rule in the accent color so many tiles scan quickly; "soft" stays plain.
+ * Value is sans with tabular figures: the display serif's numerals read worse
+ * at a glance for currency and counts. */
 export function StatTile({
   label,
   value,
   trend,
   density = "soft",
-  accent = "navy",
+  accent = "ink",
 }: {
   label: string;
   value: string | number;
@@ -20,12 +20,10 @@ export function StatTile({
   accent?: keyof typeof ACCENTS;
 }) {
   return (
-    <Card
-      className={`p-5 ${density === "structured" ? `rounded-lg border-l-4 ${ACCENTS[accent]}` : ""}`}
-    >
-      <p className="text-sm font-medium text-dc-black/60">{label}</p>
-      <p className="mt-1 font-heading text-2xl font-extrabold text-dc-navy">{value}</p>
-      {trend && <p className="mt-1 text-xs text-dc-black/50">{trend}</p>}
+    <Card className={`p-5 ${density === "structured" ? `border-t-2 ${ACCENTS[accent]}` : ""}`}>
+      <p className="text-sm font-medium text-dc-black/70">{label}</p>
+      <p className="mt-2 font-sans text-3xl font-semibold tabular-nums tracking-tight text-dc-ink">{value}</p>
+      {trend && <p className="mt-1 text-xs text-dc-black/60">{trend}</p>}
     </Card>
   );
 }

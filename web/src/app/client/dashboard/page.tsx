@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { EYEBROW, ErrorState, FOCUS, H2, LINK, Skeleton } from "@/app/client/_ui";
 import { CLIENT_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
 import { Badge } from "@/components/ui/Badge";
@@ -34,19 +35,42 @@ function ClientDashboardContent({ user }: { user: CurrentUser }) {
   const [budget, setBudget] = useState<BudgetPlan | null>(null);
   const [tasks, setTasks] = useState<PlannerTask[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [pending, setPending] = useState(3);
+  const [failed, setFailed] = useState(false);
+
+  function load() {
+    setPending(3);
+    setFailed(false);
+    const done = () => setPending((n) => n - 1);
+    const fail = () => {
+      setFailed(true);
+      done();
+    };
+    apiGet<BudgetPlan>("/api/v1/budget-plan/me")
+      .then((d) => {
+        setBudget(d);
+        done();
+      })
+      .catch(() => done()); // no plan yet is a normal state, not an error
+    apiGet<PlannerTask[]>("/api/v1/wedding-planner/tasks")
+      .then((d) => {
+        setTasks(d ?? []);
+        done();
+      })
+      .catch(fail);
+    apiGet<Booking[]>("/api/v1/bookings")
+      .then((d) => {
+        setBookings(d ?? []);
+        done();
+      })
+      .catch(fail);
+  }
 
   useEffect(() => {
-    apiGet<BudgetPlan>("/api/v1/budget-plan/me")
-      .then(setBudget)
-      .catch(() => {});
-    apiGet<PlannerTask[]>("/api/v1/wedding-planner/tasks")
-      .then((d) => setTasks(d ?? []))
-      .catch(() => {});
-    apiGet<Booking[]>("/api/v1/bookings")
-      .then((d) => setBookings(d ?? []))
-      .catch(() => {});
+    queueMicrotask(load);
   }, []);
 
+  const loading = pending > 0;
   const doneCount = tasks.filter((t) => t.status === "done").length;
   const plannerPct = tasks.length ? Math.round((doneCount / tasks.length) * 100) : 0;
   const nextTask = tasks.find((t) => t.status !== "done");
@@ -66,103 +90,122 @@ function ClientDashboardContent({ user }: { user: CurrentUser }) {
         image="/hero/adat/melayu.webp"
       />
 
-      <div className="mx-auto max-w-6xl px-4 py-10">
-        <h2 className="font-heading text-lg font-bold text-dc-navy">Ringkasan Persiapan</h2>
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+        {failed && !loading && (
+          <div className="mb-6">
+            <ErrorState message="Sebagian ringkasan gagal dimuat." onRetry={load} />
+          </div>
+        )}
+
+        <h2 className={H2}>Ringkasan Persiapan</h2>
         <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
           {/* Budget snapshot */}
-          <Card className="p-5">
-            <p className="text-xs font-semibold tracking-wide text-dc-black/50 uppercase">Budget Planner</p>
-            {budget && budget.total_budget > 0 ? (
+          <Card className="flex flex-col p-5">
+            <p className={EYEBROW}>Budget Planner</p>
+            {loading ? (
+              <Skeleton className="mt-3 h-9 w-2/3" />
+            ) : budget && budget.total_budget > 0 ? (
               <>
-                <p className="font-heading mt-2 text-2xl font-extrabold text-dc-navy">{formatRupiah(budget.total_budget)}</p>
+                <p className="mt-2 font-sans text-3xl font-semibold tabular-nums tracking-tight text-dc-ink">{formatRupiah(budget.total_budget)}</p>
                 {topCategory && (
-                  <p className="mt-1 text-sm text-dc-black/60">
-                    Alokasi terbesar: <span className="font-medium text-dc-navy">{categoryLabelFor(topCategory.category)}</span> (
+                  <p className="mt-1 text-sm text-dc-black/70">
+                    Alokasi terbesar: <span className="font-medium text-dc-ink">{categoryLabelFor(topCategory.category)}</span> (
                     {topCategory.percentage.toFixed(0)}%)
                   </p>
                 )}
               </>
             ) : (
-              <p className="mt-2 text-sm text-dc-black/60">Belum diatur. Susun alokasi budget pernikahanmu.</p>
+              <p className="mt-2 text-sm text-dc-black/70">Belum diatur. Susun alokasi budget pernikahanmu.</p>
             )}
-            <Link href="/client/budget" className="mt-4 inline-block text-sm font-semibold text-dc-gold hover:text-dc-navy">
-              {budget && budget.total_budget > 0 ? "Sesuaikan budget →" : "Atur sekarang →"}
+            <Link href="/client/budget" className={`mt-auto pt-3 ${LINK}`}>
+              {budget && budget.total_budget > 0 ? "Sesuaikan budget" : "Atur sekarang"}
             </Link>
           </Card>
 
           {/* Wedding Planner snapshot */}
-          <Card className="p-5">
-            <p className="text-xs font-semibold tracking-wide text-dc-black/50 uppercase">Wedding Planner</p>
-            <p className="font-heading mt-2 text-2xl font-extrabold text-dc-navy">
-              {doneCount}/{tasks.length} <span className="text-sm font-medium text-dc-black/50">tugas selesai</span>
-            </p>
-            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-dc-offwhite">
-              <div className="h-full rounded-full bg-dc-gold transition-all duration-500" style={{ width: `${plannerPct}%` }} />
-            </div>
-            <p className="mt-2 text-sm text-dc-black/60">
-              {nextTask ? (
-                <>
-                  Berikutnya: <span className="font-medium text-dc-navy">{nextTask.title}</span>
-                </>
-              ) : tasks.length ? (
-                "Semua tugas selesai."
-              ) : (
-                "Memuat checklist…"
-              )}
-            </p>
-            <Link href="/client/wedding-planner" className="mt-4 inline-block text-sm font-semibold text-dc-gold hover:text-dc-navy">
-              Lihat checklist →
+          <Card className="flex flex-col p-5">
+            <p className={EYEBROW}>Wedding Planner</p>
+            {loading ? (
+              <Skeleton className="mt-3 h-9 w-2/3" />
+            ) : (
+              <>
+                <p className="mt-2 font-sans text-3xl font-semibold tabular-nums tracking-tight text-dc-ink">
+                  {doneCount}/{tasks.length} <span className="text-sm font-medium tracking-normal text-dc-black/70">tugas selesai</span>
+                </p>
+                <div
+                  role="progressbar"
+                  aria-label="Progres checklist"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={plannerPct}
+                  className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-dc-ink/10"
+                >
+                  <div className="h-full bg-dc-clay transition-[width] duration-150" style={{ width: `${plannerPct}%` }} />
+                </div>
+                <p className="mt-2 text-sm text-dc-black/70">
+                  {nextTask ? (
+                    <>
+                      Berikutnya: <span className="font-medium text-dc-ink">{nextTask.title}</span>
+                    </>
+                  ) : tasks.length ? (
+                    "Semua tugas selesai."
+                  ) : (
+                    "Belum ada tugas di checklist."
+                  )}
+                </p>
+              </>
+            )}
+            <Link href="/client/wedding-planner" className={`mt-auto pt-3 ${LINK}`}>
+              Lihat checklist
             </Link>
           </Card>
 
           {/* Booking snapshot */}
-          <Card className="p-5">
-            <p className="text-xs font-semibold tracking-wide text-dc-black/50 uppercase">Booking</p>
-            {nextBooking ? (
+          <Card className="flex flex-col p-5">
+            <p className={EYEBROW}>Booking</p>
+            {loading ? (
+              <Skeleton className="mt-3 h-9 w-2/3" />
+            ) : nextBooking ? (
               <>
-                <p className="font-heading mt-2 text-2xl font-extrabold text-dc-navy">{nextBooking.event_date}</p>
-                <div className="mt-1">
+                <p className="mt-2 font-sans text-3xl font-semibold tabular-nums tracking-tight text-dc-ink">{nextBooking.event_date}</p>
+                <div className="mt-2">
                   <Badge tone={BOOKING_STATUS_TONE[nextBooking.status]}>{BOOKING_STATUS_LABEL[nextBooking.status]}</Badge>
                 </div>
               </>
             ) : (
-              <p className="mt-2 text-sm text-dc-black/60">
+              <p className="mt-2 text-sm text-dc-black/70">
                 {bookings.length ? "Belum ada booking aktif." : "Belum ada booking. Cari vendor untuk mulai."}
               </p>
             )}
-            <Link href="/client/bookings" className="mt-4 inline-block text-sm font-semibold text-dc-gold hover:text-dc-navy">
-              Lihat semua booking →
+            <Link href="/client/bookings" className={`mt-auto pt-3 ${LINK}`}>
+              Lihat semua booking
             </Link>
           </Card>
         </div>
 
-        <h2 className="font-heading mt-10 text-lg font-bold text-dc-navy">Aksi Cepat</h2>
+        <h2 className={`${H2} mt-10`}>Aksi Cepat</h2>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Link href="/inspirasi" className="group">
-            <Card className="flex h-full items-center gap-4 p-5 transition duration-300 hover:-translate-y-1 hover:border-dc-gold/40 hover:shadow-lg hover:shadow-dc-navy/10">
-              <div className="transition duration-300 group-hover:scale-110">
-                <FeatureIcon>
-                  <path d="M3 16l4-5.5 3 3.5 2-2.5L18 16M2 4h17v14H2Z" />
-                </FeatureIcon>
-              </div>
+          <Link href="/inspirasi" className={`group block rounded-lg ${FOCUS}`}>
+            <Card className="flex h-full items-center gap-4 p-5 transition-colors group-hover:border-dc-ink/30">
+              <FeatureIcon>
+                <path d="M3 16l4-5.5 3 3.5 2-2.5L18 16M2 4h17v14H2Z" />
+              </FeatureIcon>
               <div>
-                <h3 className="font-heading font-bold text-dc-navy">Inspirasi</h3>
-                <p className="mt-0.5 text-sm text-dc-black/60">Galeri foto pernikahan asli Indonesia.</p>
+                <h3 className="font-heading text-xl text-dc-ink">Inspirasi</h3>
+                <p className="mt-0.5 text-sm text-dc-black/70">Galeri foto pernikahan asli Indonesia.</p>
               </div>
             </Card>
           </Link>
 
-          <Link href="/client/consultation" className="group">
-            <Card className="flex h-full items-center gap-4 border-dc-gold/30 bg-dc-gold/5 p-5 transition duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-dc-gold/10">
-              <div className="transition duration-300 group-hover:scale-110">
-                <FeatureIcon>
-                  <path d="M12 3a8 8 0 0 0-6.9 12.1L4 21l6.2-1.1A8 8 0 1 0 12 3Z" />
-                  <path d="M9 11h6M9 14h4" />
-                </FeatureIcon>
-              </div>
+          <Link href="/client/consultation" className={`group block rounded-lg ${FOCUS}`}>
+            <Card className="flex h-full items-center gap-4 p-5 transition-colors group-hover:border-dc-ink/30">
+              <FeatureIcon>
+                <path d="M12 3a8 8 0 0 0-6.9 12.1L4 21l6.2-1.1A8 8 0 1 0 12 3Z" />
+                <path d="M9 11h6M9 14h4" />
+              </FeatureIcon>
               <div>
-                <h3 className="font-heading font-bold text-dc-navy">Konsultasi Wedding Consultant</h3>
-                <p className="mt-0.5 text-sm text-dc-black/60">Jadwalkan sesi atau chat langsung, gratis.</p>
+                <h3 className="font-heading text-xl text-dc-ink">Konsultasi Wedding Consultant</h3>
+                <p className="mt-0.5 text-sm text-dc-black/70">Jadwalkan sesi atau chat langsung, gratis.</p>
               </div>
             </Card>
           </Link>

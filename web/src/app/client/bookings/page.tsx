@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { ErrorState, FOCUS, SkeletonList } from "@/app/client/_ui";
 import { WithUser } from "@/components/WithUser";
 import { apiGet, ApiError, BOOKING_STATUS_LABEL, BOOKING_STATUS_TONE, formatRupiah, type Booking, type CurrentUser } from "@/lib/api";
 
@@ -27,7 +28,9 @@ function ClientBookingsContent({ user }: { user: CurrentUser }) {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
 
-  useEffect(() => {
+  function load() {
+    setLoading(true);
+    setError(null);
     apiGet<Booking[]>("/api/v1/bookings")
       .then((data) => {
         setBookings(data ?? []);
@@ -37,31 +40,40 @@ function ClientBookingsContent({ user }: { user: CurrentUser }) {
         setError(err instanceof ApiError ? err.message : "Gagal memuat booking.");
         setLoading(false);
       });
+  }
+
+  useEffect(() => {
+    queueMicrotask(load);
   }, []);
+
+  const visible = bookings.filter((b) => matchesBookingFilter(b.status, filter));
 
   return (
     <Shell user={user} navItems={CLIENT_NAV} loginPath="/login" eyebrow="Client">
-      <div className="mx-auto max-w-2xl px-4 py-10">
-        <PageHeader title="Booking Saya" />
+      <div className="mx-auto max-w-2xl px-4 py-8 sm:py-10">
+        <PageHeader title="Booking Saya" subtitle="Pantau status dan pembayaran tiap vendor." />
 
         {bookings.length > 0 && <BookingStatusFilter value={filter} onChange={setFilter} />}
 
-        {loading && <p className="text-dc-black/60">Memuat…</p>}
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {loading && <SkeletonList rows={4} />}
+        {error && <ErrorState message={error} onRetry={load} />}
         {!loading && !error && bookings.length === 0 && (
-          <EmptyState title="Belum ada booking" body="Cari vendor dulu untuk mengajukan booking." actionHref="/vendors" actionLabel="Cari Vendor" />
+          <EmptyState title="Belum ada booking" body="Cari vendor dulu untuk mengajukan booking." actionHref="/vendors" actionLabel="Cari vendor" />
+        )}
+        {!loading && !error && bookings.length > 0 && visible.length === 0 && (
+          <p className="rounded-lg border border-dashed border-dc-ink/20 px-4 py-10 text-center text-sm text-dc-black/70">
+            Tidak ada booking pada filter ini.
+          </p>
         )}
         <ul className="flex flex-col gap-3">
-          {bookings
-            .filter((b) => matchesBookingFilter(b.status, filter))
-            .map((b) => (
+          {visible.map((b) => (
             <li key={b.id}>
-              <Link href={`/client/bookings/${b.id}`}>
-                <Card className="p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+              <Link href={`/client/bookings/${b.id}`} className={`group block rounded-lg ${FOCUS}`}>
+                <Card className="p-4 transition-colors group-hover:border-dc-ink/30">
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-medium text-dc-navy">{b.package_description || "Booking"}</p>
-                      <p className="text-sm text-dc-black/60">
+                    <div className="min-w-0">
+                      <p className="break-words font-medium text-dc-ink">{b.package_description || "Booking"}</p>
+                      <p className="mt-0.5 text-sm tabular-nums text-dc-black/70">
                         {b.event_date} · {formatRupiah(b.agreed_price)}
                       </p>
                     </div>

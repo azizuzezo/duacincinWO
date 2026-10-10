@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { ErrorState, ERROR_TEXT, FOCUS, INPUT, SkeletonList } from "@/app/client/_ui";
 import { Button } from "@/components/Button";
 import { CLIENT_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
@@ -26,6 +27,7 @@ function RundownContent({ user }: { user: CurrentUser }) {
   const [items, setItems] = useState<RundownItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [startTime, setStartTime] = useState("");
@@ -34,9 +36,10 @@ function RundownContent({ user }: { user: CurrentUser }) {
   const [saving, setSaving] = useState(false);
 
   function load() {
+    setLoadError(null);
     return apiGet<RundownItem[]>("/api/v1/rundown")
       .then((d) => setItems(d ?? []))
-      .catch((err) => setError(err instanceof ApiError ? err.message : "Gagal memuat rundown."))
+      .catch((err) => setLoadError(err instanceof ApiError ? err.message : "Gagal memuat rundown."))
       .finally(() => setLoading(false));
   }
 
@@ -93,7 +96,7 @@ function RundownContent({ user }: { user: CurrentUser }) {
 
   return (
     <Shell user={user} navItems={CLIENT_NAV} loginPath="/login" eyebrow="Client">
-      <div className="mx-auto max-w-2xl px-4 py-10">
+      <div className="mx-auto max-w-3xl px-4 py-8 sm:py-10">
         <WeddingPlannerTabs />
         <PageHeader
           title="Rundown Acara"
@@ -108,21 +111,23 @@ function RundownContent({ user }: { user: CurrentUser }) {
         {showForm && (
           <Card className="mb-6 p-5">
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <input
                   type="time"
+                  aria-label="Jam mulai"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
                   required
-                  className="col-span-1 rounded-xl border border-dc-black/15 px-3 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+                  className={INPUT}
                 />
                 <input
                   type="text"
+                  aria-label="Judul"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Judul (mis. Akad Nikah)"
                   required
-                  className="col-span-2 rounded-xl border border-dc-black/15 px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+                  className={`${INPUT} sm:col-span-2`}
                 />
               </div>
               <textarea
@@ -130,7 +135,8 @@ function RundownContent({ user }: { user: CurrentUser }) {
                 onChange={(e) => setNotes(e.target.value)}
                 rows={2}
                 placeholder="Catatan (opsional)"
-                className="w-full rounded-xl border border-dc-black/15 px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+                aria-label="Catatan"
+                className={INPUT}
               />
               <Button type="submit" className="w-auto" loading={saving}>
                 {editingId ? "Simpan Perubahan" : "Tambah"}
@@ -139,29 +145,35 @@ function RundownContent({ user }: { user: CurrentUser }) {
           </Card>
         )}
 
-        {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+        {error && (
+          <p role="alert" className={`mb-4 ${ERROR_TEXT}`}>
+            {error}
+          </p>
+        )}
 
         {loading ? (
-          <p className="text-dc-black/60">Memuat…</p>
+          <SkeletonList rows={4} />
+        ) : loadError ? (
+          <ErrorState message={loadError} onRetry={load} />
         ) : items.length === 0 ? (
-          <EmptyState title="Belum ada rundown" body="Tambah jadwal pertama di atas." />
+          <EmptyState title="Belum ada rundown" body="Tambah jadwal pertama lewat tombol di atas." />
         ) : (
-          <ul className="relative flex flex-col gap-4 border-l-2 border-dc-gold/30 pl-6">
+          <ul className="relative ml-1.5 flex flex-col gap-3 border-l border-dc-gold/50 pl-6">
             {items.map((it) => (
               <li key={it.id} className="relative">
-                <span className="absolute -left-[29px] top-1.5 h-3 w-3 rounded-full bg-dc-gold" />
+                <span aria-hidden className="absolute -left-[30px] top-5 h-2.5 w-2.5 rounded-full border border-dc-gold bg-dc-white" />
                 <Card className="p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-heading font-bold text-dc-navy">{it.start_time}</p>
-                      <p className="mt-0.5 text-dc-navy">{it.title}</p>
-                      {it.notes && <p className="mt-1 text-sm text-dc-black/60">{it.notes}</p>}
+                  <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+                    <div className="min-w-0">
+                      <p className="font-sans text-sm font-semibold tabular-nums text-dc-clay">{it.start_time}</p>
+                      <p className="mt-0.5 break-words font-medium text-dc-ink">{it.title}</p>
+                      {it.notes && <p className="mt-1 break-words text-sm text-dc-black/70">{it.notes}</p>}
                     </div>
-                    <div className="flex shrink-0 gap-2">
-                      <button onClick={() => startEdit(it)} className="text-xs font-semibold text-dc-gold hover:text-dc-navy">
+                    <div className="flex shrink-0 gap-1">
+                      <button type="button" onClick={() => startEdit(it)} aria-label={`Ubah ${it.title}`} className={`inline-flex min-h-11 items-center rounded-md px-3 text-sm font-semibold text-dc-clay hover:bg-dc-cream ${FOCUS}`}>
                         Ubah
                       </button>
-                      <button onClick={() => handleDelete(it.id)} className="text-xs font-semibold text-dc-black/40 hover:text-red-600">
+                      <button type="button" onClick={() => handleDelete(it.id)} aria-label={`Hapus ${it.title}`} className={`inline-flex min-h-11 items-center rounded-md px-3 text-sm font-semibold text-dc-black/70 hover:bg-dc-cream hover:text-red-700 ${FOCUS}`}>
                         Hapus
                       </button>
                     </div>

@@ -3,10 +3,13 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { ErrorState, ERROR_TEXT, FOCUS, ICON_BTN, INPUT, SkeletonList } from "@/app/client/_ui";
 import { Button } from "@/components/Button";
 import { CLIENT_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
+import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/Toast";
 import { WeddingPlannerTabs } from "@/components/WeddingPlannerTabs";
@@ -39,10 +42,10 @@ const STATUS_LABEL: Record<PlannerTaskStatus, string> = {
   done: "Selesai",
 };
 
-const STATUS_STYLE: Record<PlannerTaskStatus, string> = {
-  todo: "bg-dc-offwhite text-dc-black/60",
-  in_progress: "bg-dc-gold/20 text-dc-navy",
-  done: "bg-green-100 text-green-800",
+const STATUS_TONE: Record<PlannerTaskStatus, "neutral" | "gold" | "success"> = {
+  todo: "neutral",
+  in_progress: "gold",
+  done: "success",
 };
 
 const NEXT_STATUS: Record<PlannerTaskStatus, PlannerTaskStatus> = {
@@ -63,10 +66,13 @@ function WeddingPlannerContent({ user }: { user: CurrentUser }) {
   const [savingTask, setSavingTask] = useState(false);
   const [spentByCategory, setSpentByCategory] = useState<SpentByCategory>({});
 
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   function load() {
+    setLoadError(null);
     return apiGet<PlannerTask[]>("/api/v1/wedding-planner/tasks")
       .then((data) => setTasks(data ?? []))
-      .catch((err) => setError(err instanceof ApiError ? err.message : "Gagal memuat checklist."))
+      .catch((err) => setLoadError(err instanceof ApiError ? err.message : "Gagal memuat checklist."))
       .finally(() => setLoading(false));
   }
 
@@ -131,11 +137,11 @@ function WeddingPlannerContent({ user }: { user: CurrentUser }) {
 
   return (
     <Shell user={user} navItems={CLIENT_NAV} loginPath="/login" eyebrow="Client">
-      <div className="mx-auto max-w-2xl px-4 py-10">
+      <div className="mx-auto max-w-3xl px-4 py-8 sm:py-10">
         <WeddingPlannerTabs />
         <PageHeader
           title="Checklist"
-          subtitle="Klik status untuk mengubah (Belum → Proses → Selesai)."
+          subtitle="Ketuk status untuk mengubah: Belum, Proses, lalu Selesai."
           action={
             <Button variant="ghost" className="w-auto" onClick={() => setShowAddForm((v) => !v)}>
               {showAddForm ? "Batal" : "+ Tambah Tugas"}
@@ -150,24 +156,27 @@ function WeddingPlannerContent({ user }: { user: CurrentUser }) {
                 type="text"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
+                aria-label="Judul tugas"
                 placeholder="Judul tugas"
                 required
-                className="w-full rounded-xl border border-dc-black/15 px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+                className={INPUT}
               />
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <input
                   type="text"
                   value={newTimeframe}
                   onChange={(e) => setNewTimeframe(e.target.value)}
+                  aria-label="Periode"
                   placeholder="Periode (mis. H-3 Bulan)"
                   required
-                  className="w-full rounded-xl border border-dc-black/15 px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+                  className={INPUT}
                 />
                 <input
                   type="date"
+                  aria-label="Target tanggal"
                   value={newDueDate}
                   onChange={(e) => setNewDueDate(e.target.value)}
-                  className="w-full rounded-xl border border-dc-black/15 px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+                  className={INPUT}
                 />
               </div>
               <Button type="submit" className="w-auto" loading={savingTask}>
@@ -178,44 +187,61 @@ function WeddingPlannerContent({ user }: { user: CurrentUser }) {
         )}
 
         {loading ? (
-          <p className="text-dc-black/60">Memuat…</p>
+          <SkeletonList rows={4} height="h-16" />
+        ) : loadError ? (
+          <ErrorState message={loadError} onRetry={load} />
         ) : (
           <>
             <Card className="mb-6 p-5">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-dc-navy">Progres Persiapan</span>
-                <span className="text-dc-black/60">
-                  {doneCount}/{tasks.length} selesai
+              <div className="flex items-baseline justify-between gap-3 text-sm">
+                <span className="font-medium text-dc-ink">Progres Persiapan</span>
+                <span className="tabular-nums text-dc-black/70">
+                  {doneCount}/{tasks.length} selesai ({progressPct}%)
                 </span>
               </div>
-              <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-dc-offwhite">
-                <div className="h-full rounded-full bg-dc-gold transition-all duration-500" style={{ width: `${progressPct}%` }} />
+              <div
+                role="progressbar"
+                aria-label="Progres persiapan"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={progressPct}
+                className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-dc-ink/10"
+              >
+                <div className="h-full bg-dc-clay transition-[width] duration-150" style={{ width: `${progressPct}%` }} />
               </div>
             </Card>
 
-            {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+            {error && (
+              <p role="alert" className={`mb-4 ${ERROR_TEXT}`}>
+                {error}
+              </p>
+            )}
 
-            <div className="flex flex-col gap-6">
+            {tasks.length === 0 && (
+              <EmptyState title="Belum ada tugas" body="Tambah tugas pertamamu untuk mulai menyusun persiapan." />
+            )}
+
+            <div className="flex flex-col gap-8">
               {groups.map((timeframe) => (
                 <div key={timeframe}>
-                  <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-dc-gold">{timeframe}</h2>
-                  <Card className="divide-y divide-dc-black/5">
+                  <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-dc-black/70">{timeframe}</h2>
+                  <Card className="divide-y divide-dc-ink/10">
                     {tasks
                       .filter((t) => t.timeframe === timeframe)
                       .map((task) => (
-                        <div key={task.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-                          <div>
-                            <p className="text-dc-navy">{task.title}</p>
+                        <div key={task.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3">
+                          <div className="min-w-0">
+                            <p className={`break-words ${task.status === "done" ? "text-dc-black/60 line-through" : "text-dc-ink"}`}>{task.title}</p>
                             {task.related_category && (
                               <div className="flex flex-wrap items-center gap-2">
                                 <Link
                                   href={`/vendors?category=${task.related_category}`}
-                                  className="text-xs font-semibold text-dc-gold hover:text-dc-navy"
+                                  className={`inline-flex min-h-11 items-center text-xs font-semibold text-dc-clay underline-offset-4 hover:underline ${FOCUS}`}
                                 >
-                                  Cari Vendor {categoryLabel(task.related_category)} →
+                                  Cari vendor {categoryLabel(task.related_category)}
                                 </Link>
                                 {!!spentByCategory[task.related_category] && (
-                                  <span className="text-xs text-dc-black/50">
+                                  <span className="text-xs tabular-nums text-dc-black/70">
                                     · sudah booking {formatRupiah(spentByCategory[task.related_category])}
                                   </span>
                                 )}
@@ -225,21 +251,25 @@ function WeddingPlannerContent({ user }: { user: CurrentUser }) {
                           <div className="flex shrink-0 items-center gap-2">
                             <input
                               type="date"
+                              aria-label={`Target tanggal: ${task.title}`}
                               value={task.due_date ?? ""}
                               onChange={(e) => handleSetDueDate(task.id, e.target.value)}
-                              className="rounded-lg border border-dc-black/15 px-2 py-1 text-xs outline-none focus:border-dc-gold focus:ring-1 focus:ring-dc-gold/30"
+                              className={`${INPUT} w-auto text-xs`}
                             />
                             <button
+                              type="button"
                               onClick={() => cycleStatus(task)}
-                              className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLE[task.status]}`}
+                              aria-label={`Status ${task.title}: ${STATUS_LABEL[task.status]}. Ubah status`}
+                              className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-md ${FOCUS}`}
                             >
-                              {STATUS_LABEL[task.status]}
+                              <Badge tone={STATUS_TONE[task.status]}>{STATUS_LABEL[task.status]}</Badge>
                             </button>
                             {task.is_custom && (
                               <button
+                                type="button"
                                 onClick={() => handleDeleteTask(task.id)}
-                                aria-label="Hapus tugas"
-                                className="text-dc-black/30 hover:text-red-600"
+                                aria-label={`Hapus tugas: ${task.title}`}
+                                className={`${ICON_BTN} hover:text-red-700`}
                               >
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                                   <path d="M6 6l12 12M18 6 6 18" />

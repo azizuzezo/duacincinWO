@@ -27,13 +27,13 @@ export const BUDGET_CATEGORIES: {
 // Shared with the real Budget Planner (app/client/budget) and the landing
 // page's live demo, so both visualize categories with the same colors.
 export const BUDGET_CATEGORY_COLORS: Record<BudgetCategoryKey, string> = {
-  venue_catering: "#831843",
-  decor: "#F5A623",
-  photo_video: "#A6295C",
-  mua_attire: "#D98E1F",
-  entertainment: "#C15980",
-  invitation_souvenir: "#F0B84D",
-  reserve: "#D9A6BE",
+  venue_catering: "#1b1713",
+  decor: "#b8862f",
+  photo_video: "#8e4028",
+  mua_attire: "#6e4f17",
+  entertainment: "#5c6b7a",
+  invitation_souvenir: "#9b8377",
+  reserve: "#7c8a6e",
 };
 
 export function defaultCategoryState(): { category: BudgetCategoryKey; percentage: number }[] {

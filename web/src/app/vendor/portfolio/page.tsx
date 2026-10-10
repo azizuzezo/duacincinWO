@@ -7,10 +7,17 @@ import { useEffect, useRef, useState } from "react";
 import { VENDOR_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
 import { Badge } from "@/components/ui/Badge";
-import { DashboardBanner } from "@/components/ui/DashboardBanner";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { WithUser } from "@/components/WithUser";
-import { apiDelete, apiGet, apiPostForm, ApiError, type CurrentUser, type VendorProfile } from "@/lib/api";
+import {
+  apiDelete,
+  apiGet,
+  apiPostForm,
+  ApiError,
+  type CurrentUser,
+  type VendorProfile,
+} from "@/lib/api";
 
 export default function VendorPortfolioPage() {
   return (
@@ -53,7 +60,9 @@ function VendorPortfolioContent({ user }: { user: CurrentUser }) {
       await apiPostForm("/api/v1/vendor/portfolio", form);
       await loadProfile();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Gagal mengunggah gambar.");
+      setError(
+        err instanceof ApiError ? err.message : "Gagal mengunggah gambar.",
+      );
     } finally {
       setUploading(false);
     }
@@ -89,14 +98,22 @@ function VendorPortfolioContent({ user }: { user: CurrentUser }) {
   const count = profile?.portfolio?.length ?? 0;
 
   return (
-    <Shell user={user} navItems={VENDOR_NAV} loginPath="/login" eyebrow="Vendor">
-      <DashboardBanner
-        title="Portofolio"
-        subtitle="Foto yang tampil di halaman profilmu untuk calon pengantin."
-        action={!loading && profile && <Badge tone="gold">{count} foto</Badge>}
-      />
-
-      <div className="mx-auto max-w-4xl px-4 py-10">
+    <Shell
+      user={user}
+      navItems={VENDOR_NAV}
+      loginPath="/login"
+      eyebrow="Vendor"
+    >
+      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+        <PageHeader
+          title="Portofolio"
+          subtitle="Foto yang tampil di halaman profilmu untuk calon pengantin."
+          action={
+            !loading && profile ? (
+              <Badge tone="gold">{count} foto</Badge>
+            ) : undefined
+          }
+        />
         {loading ? (
           <PortfolioSkeleton />
         ) : !profile ? (
@@ -116,15 +133,30 @@ function VendorPortfolioContent({ user }: { user: CurrentUser }) {
               onDragLeave={() => setDragOver(false)}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className={`flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed px-6 py-10 text-center transition-colors ${
-                dragOver ? "border-dc-gold bg-dc-gold/5" : "border-dc-black/15 hover:border-dc-navy/30"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label="Unggah foto portofolio"
+              className={`flex min-h-11 cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed px-6 py-8 text-center transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold ${
+                dragOver
+                  ? "border-dc-clay bg-dc-clay/5"
+                  : "border-dc-ink/25 bg-dc-white/60 hover:border-dc-ink/50"
               }`}
             >
               <UploadIcon />
-              <p className="font-heading font-bold text-dc-navy">
-                {uploading ? "Mengunggah…" : "Seret foto ke sini, atau klik untuk pilih"}
+              <p className="font-heading text-2xl text-dc-ink">
+                {uploading
+                  ? "Mengunggah…"
+                  : "Seret foto ke sini, atau klik untuk pilih"}
               </p>
-              <p className="text-sm text-dc-black/50">JPEG, PNG, atau WEBP, maksimal 5MB per foto.</p>
+              <p className="text-sm text-dc-black/70">
+                JPEG, PNG, atau WEBP, maksimal 5MB per foto.
+              </p>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -135,32 +167,49 @@ function VendorPortfolioContent({ user }: { user: CurrentUser }) {
               />
             </div>
 
-            {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+            {error && (
+              <p
+                role="alert"
+                className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+              >
+                {error}
+              </p>
+            )}
 
             {count === 0 ? (
               <div className="mt-6">
-                <EmptyState title="Belum ada foto portofolio" body="Unggah contoh hasil kerjamu supaya calon pengantin lebih yakin." />
+                <EmptyState
+                  title="Belum ada foto portofolio"
+                  body="Unggah contoh hasil kerjamu supaya calon pengantin lebih yakin."
+                />
               </div>
             ) : (
-              <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
                 <AnimatePresence initial={false}>
                   {profile.portfolio?.map((p) => (
                     <motion.div
                       key={p.id}
                       layout
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="group relative aspect-square overflow-hidden rounded-xl bg-dc-offwhite"
+                      className="relative aspect-[4/5] overflow-hidden rounded-lg border border-dc-ink/10 bg-dc-cream"
                     >
-                      <Image src={p.url} alt={p.alt_text} fill className="object-cover" unoptimized />
+                      <Image
+                        src={p.url}
+                        alt={p.alt_text}
+                        fill
+                        sizes="(min-width: 1024px) 256px, (min-width: 640px) 33vw, 50vw"
+                        className="object-cover"
+                        unoptimized
+                      />
                       <button
                         type="button"
                         onClick={() => handleDelete(p.id)}
                         disabled={deletingID === p.id}
                         aria-label="Hapus foto"
-                        className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-dc-black/60 text-dc-white opacity-0 transition group-hover:opacity-100 hover:bg-red-600 disabled:opacity-100"
+                        className="absolute right-1 top-1 flex h-11 w-11 items-center justify-center rounded-md bg-dc-ink/75 text-dc-white transition-colors hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold disabled:opacity-70"
                       >
                         {deletingID === p.id ? <Spinner /> : <TrashIcon />}
                       </button>
@@ -178,9 +227,16 @@ function VendorPortfolioContent({ user }: { user: CurrentUser }) {
 
 function PortfolioSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+    <div
+      className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4"
+      aria-busy="true"
+      aria-label="Memuat portofolio"
+    >
       {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="aspect-square animate-pulse rounded-xl bg-dc-black/5" />
+        <div
+          key={i}
+          className="aspect-[4/5] animate-pulse rounded-lg bg-dc-ink/5"
+        />
       ))}
     </div>
   );
@@ -188,20 +244,45 @@ function PortfolioSkeleton() {
 
 function UploadIcon() {
   return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="text-dc-navy/40">
-      <path d="M12 16V4M6 10l6-6 6 6M4 20h16" strokeLinecap="round" strokeLinejoin="round" />
+    <svg
+      width="28"
+      height="28"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      className="text-dc-ink/40"
+    >
+      <path
+        d="M12 16V4M6 10l6-6 6 6M4 20h16"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
 
 function TrashIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" strokeLinecap="round" strokeLinejoin="round" />
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <path
+        d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
 
 function Spinner() {
-  return <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />;
+  return (
+    <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+  );
 }

@@ -80,9 +80,9 @@ export function Modal({
             animate="visible"
             exit="exit"
             variants={variants}
-            className="relative w-full max-w-md rounded-2xl bg-dc-white p-6 shadow-xl shadow-dc-navy/20"
+            className="relative w-full max-w-md rounded-xl bg-dc-white p-6 shadow-xl shadow-dc-ink/15"
           >
-            <h2 id="modal-title" className="font-heading text-lg font-bold text-dc-navy">
+            <h2 id="modal-title" className="font-heading text-2xl text-dc-ink">
               {title}
             </h2>
             <div className="mt-4">{children}</div>

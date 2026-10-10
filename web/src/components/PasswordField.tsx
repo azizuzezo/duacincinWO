@@ -26,7 +26,7 @@ export function PasswordField({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm font-medium text-dc-navy">
+      <label htmlFor={id} className="text-sm font-medium text-dc-ink">
         {label}
       </label>
       <div className="relative">
@@ -39,13 +39,14 @@ export function PasswordField({
           placeholder={placeholder}
           minLength={minLength}
           required={required}
-          className="w-full rounded-xl border border-dc-black/15 bg-dc-white px-4 py-2.5 pr-11 text-dc-black outline-none transition focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+          className="min-h-11 w-full rounded-md border border-dc-ink/20 bg-dc-white px-4 py-2.5 pr-12 text-dc-black transition placeholder:text-dc-black/40 focus:border-dc-ink focus:outline-2 focus:outline-offset-2 focus:outline-dc-gold"
         />
         <button
           type="button"
           onClick={() => setVisible((v) => !v)}
+          aria-pressed={visible}
           aria-label={visible ? "Sembunyikan password" : "Tampilkan password"}
-          className="absolute inset-y-0 right-0 flex items-center px-3 text-dc-black/50 hover:text-dc-navy"
+          className="absolute inset-y-0 right-0 flex min-w-11 items-center justify-center rounded-md px-3 text-dc-black/60 transition-colors hover:text-dc-ink focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-dc-gold"
         >
           {visible ? <EyeOffIcon /> : <EyeIcon />}
         </button>

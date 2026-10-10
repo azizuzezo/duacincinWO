@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { ErrorState, FOCUS, SkeletonList } from "@/app/client/_ui";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { apiGet, ApiError, type Conversation } from "@/lib/api";
@@ -29,23 +30,29 @@ export function ConversationList({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  function load() {
+    setLoading(true);
+    setError(null);
     apiGet<Conversation[]>("/api/v1/conversations")
       .then((c) => setConversations(c ?? []))
       .catch((err) => setError(err instanceof ApiError ? err.message : "Gagal memuat daftar percakapan."))
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    queueMicrotask(load);
   }, []);
 
-  if (loading) return <p className="p-6 text-center text-dc-black/60">Memuat…</p>;
-  if (error) return <p className="p-6 text-center text-sm text-red-600">{error}</p>;
+  if (loading) return <SkeletonList rows={4} height="h-14" />;
+  if (error) return <ErrorState message={error} onRetry={load} />;
   if (conversations.length === 0) return <EmptyState title="Belum ada percakapan" body={emptyLabel} />;
 
   return (
-    <Card className="divide-y divide-dc-black/5">
+    <Card className="divide-y divide-dc-ink/10 overflow-hidden">
       {conversations.map((c) => (
-        <Link key={c.id} href={`${basePath}/${c.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-dc-offwhite">
-          <span className="font-medium text-dc-navy">{conversationLabel(c, currentUserId)}</span>
-          <span className="text-xs text-dc-black/40">#{c.id.slice(0, 8)}</span>
+        <Link key={c.id} href={`${basePath}/${c.id}`} className={`flex min-h-14 items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-dc-cream focus-visible:-outline-offset-2 ${FOCUS}`}>
+          <span className="min-w-0 truncate font-medium text-dc-ink">{conversationLabel(c, currentUserId)}</span>
+          <span className="shrink-0 text-xs tabular-nums text-dc-black/60">#{c.id.slice(0, 8)}</span>
         </Link>
       ))}
     </Card>

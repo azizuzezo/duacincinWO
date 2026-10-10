@@ -1,7 +1,6 @@
-/** "Bold glass" accent: gradient navy→rose, glass surface, gold glow border.
- * Used sparingly, for hero/celebratory moments and empty states, not as a
- * default card surface. Sibling to DashboardBanner (the top-of-page hero),
- * for accents that live inline within page content instead. */
+/** Single dark ink block, used at most once per page for a moment that
+ * deserves weight (a next step, a celebration). Name kept for API stability;
+ * the glow itself is gone (DESIGN.md: no glow, no gradient fills). */
 export function GlowPanel({
   title,
   subtitle,
@@ -14,14 +13,11 @@ export function GlowPanel({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-dc-gold/40 bg-gradient-to-br from-dc-navy to-dc-rose p-6 shadow-lg shadow-dc-navy/20">
-      <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-dc-gold/20 blur-3xl" />
-      <div className="relative">
-        {title && <h3 className="font-heading text-lg font-bold text-dc-white">{title}</h3>}
-        {subtitle && <p className="mt-1 text-sm text-dc-white/80">{subtitle}</p>}
-        {children}
-        {action && <div className="mt-4">{action}</div>}
-      </div>
+    <div className="rounded-lg bg-dc-ink p-6 sm:p-8">
+      {title && <h3 className="font-heading text-2xl text-dc-white">{title}</h3>}
+      {subtitle && <p className="mt-2 max-w-xl text-sm text-dc-white/75">{subtitle}</p>}
+      {children}
+      {action && <div className="mt-5">{action}</div>}
     </div>
   );
 }

@@ -1,6 +1,8 @@
 "use client";
 
-const COLORS = ["#831843", "#f5a623", "#db2777", "#c2673f", "#7c8a6e", "#3a3532", "#94a3b8"];
+// Ink / clay / gold family plus muted neutrals; every value clears 3:1 against
+// white (graphics threshold). Charts must also ship a text legend: color is never the only cue.
+const COLORS = ["#1b1713", "#8e4028", "#b8862f", "#6e4f17", "#5c6b7a", "#7c8a6e", "#9b8377"];
 
 export type DonutSegment = { label: string; value: number };
 
@@ -44,8 +46,8 @@ export function DonutChart({
   ));
 
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Diagram donat">
-      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#f6eff1" strokeWidth={16} />
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`Diagram donat: ${segments.map((s) => `${s.label} ${total > 0 ? Math.round((s.value / total) * 100) : 0}%`).join(", ")}`}>
+      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#efe8dc" strokeWidth={16} />
       {arcs}
     </svg>
   );

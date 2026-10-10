@@ -89,16 +89,24 @@ export default function ForgotPasswordPage() {
       }
       footer={
         step === "done" && (
-          <Link href="/login" className="font-semibold text-dc-navy hover:text-dc-gold">
+          <Link href="/login" className="font-semibold text-dc-clay underline underline-offset-2 hover:text-dc-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold">
             Kembali ke halaman masuk
           </Link>
         )
       }
     >
+      {step !== "done" && (
+        <p className="-mt-4 mb-6 text-xs font-semibold uppercase tracking-[0.14em] text-dc-black/60">
+          Langkah {step === "request" ? 1 : step === "verify" ? 2 : 3} dari 3
+        </p>
+      )}
+
       {step === "request" && (
         <form onSubmit={requestOtp} className="flex flex-col gap-4">
           <TextField label="Email" type="email" autoComplete="email" value={email} onChange={setEmail} />
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p role="alert" className="text-sm text-red-700">
+            {error}
+          </p>}
           <Button type="submit" loading={loading}>
             Kirim kode OTP
           </Button>
@@ -107,8 +115,10 @@ export default function ForgotPasswordPage() {
 
       {step === "verify" && (
         <form onSubmit={verifyOtp} className="flex flex-col gap-4">
-          <TextField label="Kode OTP" autoComplete="one-time-code" value={code} onChange={setCode} />
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          <TextField label="Kode OTP 6 digit" autoComplete="one-time-code" value={code} onChange={setCode} />
+          {error && <p role="alert" className="text-sm text-red-700">
+            {error}
+          </p>}
           <Button type="submit" loading={loading}>
             Verifikasi
           </Button>
@@ -124,7 +134,9 @@ export default function ForgotPasswordPage() {
             onChange={setNewPassword}
             minLength={8}
           />
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p role="alert" className="text-sm text-red-700">
+            {error}
+          </p>}
           <Button type="submit" loading={loading}>
             Simpan password baru
           </Button>
@@ -132,7 +144,9 @@ export default function ForgotPasswordPage() {
       )}
 
       {step === "done" && (
-        <p className="text-sm text-dc-black/70">Password berhasil diperbarui. Silakan masuk kembali.</p>
+        <p role="status" className="rounded-md border border-dc-ink/10 bg-dc-white p-4 text-sm text-dc-black/80">
+          Password berhasil diperbarui. Silakan masuk kembali.
+        </p>
       )}
     </AuthCard>
   );

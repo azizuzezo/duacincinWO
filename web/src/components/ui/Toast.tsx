@@ -12,8 +12,8 @@ type Toast = { id: string; message: string; tone: ToastTone };
 const ToastContext = createContext<{ show: (message: string, tone?: ToastTone) => void } | null>(null);
 
 const TONE_CLASS: Record<ToastTone, string> = {
-  neutral: "bg-dc-navy text-dc-white",
-  success: "bg-dc-navy text-dc-white border border-dc-gold/40",
+  neutral: "bg-dc-ink text-dc-white",
+  success: "bg-dc-ink text-dc-white border border-dc-gold/40",
   danger: "bg-red-600 text-white",
 };
 
@@ -47,7 +47,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               exit="exit"
               variants={variants}
               role="status"
-              className={`pointer-events-auto max-w-sm rounded-xl px-4 py-3 text-sm shadow-lg ${TONE_CLASS[t.tone]}`}
+              className={`pointer-events-auto max-w-sm rounded-lg px-4 py-3 text-sm shadow-lg ${TONE_CLASS[t.tone]}`}
             >
               {t.message}
             </motion.div>

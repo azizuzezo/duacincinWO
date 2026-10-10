@@ -5,12 +5,12 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/Button";
 import { ADMIN_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
-import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/Toast";
 import { WithUser } from "@/components/WithUser";
+import { DangerButton, ErrorBanner, INPUT, NUM, PAGE, RowsSkeleton, TableCard, TD, TEXTAREA, TH, TR } from "../../_ui";
 import { apiGet, apiPost, ApiError, categoryLabel, type CurrentUser } from "@/lib/api";
 
 type PendingVendor = {
@@ -31,6 +31,7 @@ export default function AdminVendorsPage() {
 
 function AdminVendorsContent({ user }: { user: CurrentUser }) {
   const [vendors, setVendors] = useState<PendingVendor[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [rejectTarget, setRejectTarget] = useState<PendingVendor | null>(null);
@@ -42,9 +43,12 @@ function AdminVendorsContent({ user }: { user: CurrentUser }) {
 
   async function load() {
     try {
-      setVendors(await apiGet<PendingVendor[]>("/api/v1/admin/vendors/pending"));
+      setVendors((await apiGet<PendingVendor[]>("/api/v1/admin/vendors/pending")) ?? []);
+      setError(null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Gagal memuat daftar vendor.");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -109,87 +113,114 @@ function AdminVendorsContent({ user }: { user: CurrentUser }) {
 
   return (
     <Shell user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
-      <div className="mx-auto max-w-3xl px-4 py-10">
-        <PageHeader title="Vendor Menunggu Review" />
-        {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
-        {vendors.length === 0 ? (
-          <EmptyState title="Tidak ada vendor yang menunggu review" />
+      <div className={PAGE}>
+        <PageHeader title="Vendor Menunggu Review" subtitle="Periksa pendaftaran vendor baru sebelum tampil di katalog." />
+        {error && (
+          <ErrorBanner
+            message={error}
+            onRetry={() => {
+              setLoading(true);
+              load();
+            }}
+          />
+        )}
+        {loading ? (
+          <RowsSkeleton />
+        ) : vendors.length === 0 ? (
+          !error && <EmptyState title="Tidak ada vendor yang menunggu review" body="Pendaftaran vendor baru akan muncul di sini." />
         ) : (
           <>
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cari nama usaha atau kota…"
-              className="mb-5 w-full rounded-xl border border-dc-black/15 px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
-            />
-
-            {selected.size > 0 && (
-              <div className="mb-4 flex items-center justify-between rounded-xl bg-dc-navy/5 px-4 py-3">
-                <p className="text-sm font-medium text-dc-navy">{selected.size} vendor dipilih</p>
-                <Button className="w-auto" onClick={handleBulkApprove} loading={bulkBusy}>
-                  Setujui yang Dipilih
-                </Button>
+            <div className="mb-4 flex flex-wrap items-center gap-3">
+              <div className="min-w-0 flex-1 sm:max-w-sm">
+                <label htmlFor="vendor-search" className="sr-only">
+                  Cari vendor
+                </label>
+                <input
+                  id="vendor-search"
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Cari nama usaha atau kota…"
+                  className={INPUT}
+                />
               </div>
-            )}
+              {selected.size > 0 && (
+                <div className="flex items-center gap-3">
+                  <p className="text-sm font-medium tabular-nums text-dc-ink">{selected.size} vendor dipilih</p>
+                  <Button className="w-auto" onClick={handleBulkApprove} loading={bulkBusy}>
+                    Setujui yang Dipilih
+                  </Button>
+                </div>
+              )}
+            </div>
 
-            <ul className="space-y-3">
-              {vendors
-                .filter((v) => {
-                  const q = search.trim().toLowerCase();
-                  return !q || v.business_name.toLowerCase().includes(q) || v.city.toLowerCase().includes(q);
-                })
-                .map((v) => (
-              <li key={v.user_id}>
-                <Card className="flex items-center justify-between p-4">
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={selected.has(v.user_id)}
-                      onChange={() => toggleSelect(v.user_id)}
-                      className="h-4 w-4 accent-dc-navy"
-                      aria-label={`Pilih ${v.business_name}`}
-                    />
-                    <div>
-                      <p className="font-semibold text-dc-navy">{v.business_name}</p>
-                      <p className="text-sm text-dc-black/60">
-                        {categoryLabel(v.category)} · {v.city}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" className="w-auto" onClick={() => setRejectTarget(v)} disabled={busyId === v.user_id}>
-                      Tolak
-                    </Button>
-                    <Button className="w-auto" onClick={() => handleApprove(v.user_id)} loading={busyId === v.user_id}>
-                      Setujui
-                    </Button>
-                  </div>
-                </Card>
-              </li>
-            ))}
-            </ul>
+            <TableCard minWidth="min-w-[720px]">
+              <thead className="bg-dc-cream/50">
+                <tr>
+                  <th scope="col" className={`${TH} w-12`}>
+                    <span className="sr-only">Pilih</span>
+                  </th>
+                  <th scope="col" className={TH}>Usaha</th>
+                  <th scope="col" className={TH}>Kategori</th>
+                  <th scope="col" className={TH}>Kota</th>
+                  <th scope="col" className={`${TH} text-right`}>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {vendors
+                  .filter((v) => {
+                    const q = search.trim().toLowerCase();
+                    return !q || v.business_name.toLowerCase().includes(q) || v.city.toLowerCase().includes(q);
+                  })
+                  .map((v) => (
+                    <tr key={v.user_id} className={TR}>
+                      <td className={TD}>
+                        <input
+                          type="checkbox"
+                          checked={selected.has(v.user_id)}
+                          onChange={() => toggleSelect(v.user_id)}
+                          className="h-5 w-5 accent-dc-ink"
+                          aria-label={`Pilih ${v.business_name}`}
+                        />
+                      </td>
+                      <td className={`${TD} font-semibold`}>{v.business_name}</td>
+                      <td className={`${TD} text-dc-black/70`}>{categoryLabel(v.category)}</td>
+                      <td className={`${TD} text-dc-black/70`}>{v.city}</td>
+                      <td className={`${TD} ${NUM}`}>
+                        <div className="flex justify-end gap-2">
+                          <DangerButton onClick={() => setRejectTarget(v)} disabled={busyId === v.user_id}>
+                            Tolak
+                          </DangerButton>
+                          <Button className="w-auto" onClick={() => handleApprove(v.user_id)} loading={busyId === v.user_id}>
+                            Setujui
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </TableCard>
           </>
         )}
       </div>
 
       <Modal open={!!rejectTarget} onClose={() => setRejectTarget(null)} title={`Tolak ${rejectTarget?.business_name ?? ""}`}>
-        <label className="block text-sm font-medium text-dc-navy">
+        <label className="block text-sm font-medium text-dc-ink">
           Alasan penolakan (opsional)
           <textarea
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
             rows={3}
-            className="mt-1.5 w-full rounded-xl border border-dc-black/15 px-3 py-2 text-sm outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+            className={TEXTAREA}
           />
         </label>
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="ghost" className="w-auto" onClick={() => setRejectTarget(null)}>
             Batal
           </Button>
-          <Button className="w-auto" onClick={confirmReject} loading={busyId === rejectTarget?.user_id}>
+          <DangerButton solid onClick={confirmReject} loading={busyId === rejectTarget?.user_id}>
             Tolak Vendor
-          </Button>
+          </DangerButton>
         </div>
       </Modal>
     </Shell>

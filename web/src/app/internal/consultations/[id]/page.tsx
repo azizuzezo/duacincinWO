@@ -23,8 +23,8 @@ function ConsultationThreadContent({ id, user }: { id: string; user: CurrentUser
   const isAdmin = user.role === "admin";
   return (
     <Shell user={user} navItems={isAdmin ? ADMIN_NAV : CONSULTANT_NAV} loginPath="/login" eyebrow={isAdmin ? "Admin" : "Consultant"}>
-      <div className="mx-auto max-w-2xl px-4 py-10">
-        <Link href="/internal/consultations" className="mb-4 inline-block text-sm font-semibold text-dc-navy hover:text-dc-gold">
+      <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
+        <Link href="/internal/consultations" className="mb-4 inline-flex min-h-11 items-center text-sm font-semibold text-dc-clay underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dc-clay/50">
           ← Inbox Konsultasi
         </Link>
         <ChatThread conversationId={id} currentUserId={user.id} />

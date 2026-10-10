@@ -11,40 +11,102 @@
 
 :root {
   --dc-white: #ffffff;
-  --dc-offwhite: #f6eff1;
-  /* Contrast rule: never use dc-gold as body text color on white/offwhite
-     (insufficient contrast) — only for chip/badge backgrounds, icons,
-     borders, and glow accents. */
-  --dc-gold: #f5a623;
-  /* Deep rose/burgundy — replaces the original blue-navy anchor so the
-     brand reads as "wedding" rather than corporate/fintech, while keeping
-     the same job: dark backgrounds, headings, primary text (PRD §6 update,
-     see engineering.md). */
-  --dc-navy: #831843;
-  /* Second accent alongside gold — a genuinely vivid rose, used sparingly
-     for warmth/personality (glows, decorative touches), not as the main
-     interactive color everywhere. */
-  --dc-rose: #db2777;
-  --dc-black: #0a0a0a;
+  /* Warm cream, not cold gray-white — dashboard shell background. Sits next
+     to the ink/gold palette and the cultural photography without the
+     bluish cast the previous value (#f6eff1) had. */
+  --dc-cream: #ece6da;
+  /* Decorative-only gold: badges, borders, icon fills, glow accents.
+     Contrast rule: never use dc-gold as body text color on white/cream
+     (3.2:1, fails AA) — text/icon-on-dark uses dc-gold-antique instead. */
+  --dc-gold: #b8862f;
+  /* Espresso-ink — replaces the wine/oxblood anchor with a warm near-black
+     so the identity reads as quiet luxury (editorial, jewelry, ateliers)
+     rather than "wedding pink" or corporate navy. Warmed a few degrees off
+     true black so gradients/buttons built from it don't go flat pitch-black. */
+  --dc-ink: #120e0d;
+  /* Second accent alongside gold — muted burnt clay, ~45° off dc-ink's hue
+     so it anchors as a genuinely different color, not the same dark tone
+     at a different lightness. #8e4028 clears 4.5:1 as text on dc-white AND
+     as a badge/pill fill with white text (7.2:1 either direction). */
+  --dc-clay: #8c1d2f;
+  /* Plain body/muted text (via /opacity, e.g. text-dc-black/60) — kept a
+     hair darker than --dc-ink so headings (--dc-ink) and running copy read
+     as two deliberate weights of the same warm-black family, not one flat tone. */
+  --dc-black: #1a1613;
 
-  --background: var(--dc-white);
+  --background: var(--dc-ivory);
   --foreground: var(--dc-black);
+
+  /* Landing-page-only refinements. Scoped to src/components/landing/* via
+     the dc-gold-antique/dc-ivory tokens below — kept separate from
+     dc-gold/dc-cream so the marketing page can run a lighter, airier
+     variant of the same identity without touching dashboard tone.
+     Same contrast rule as dc-gold above applies to dc-gold-antique: never
+     as text/icon color on dc-white/dc-ivory (fails contrast), only on
+     dc-ink backgrounds or as a button/badge/border fill. */
+  /* #e4c67a rather than a deeper antique gold: at this exact value, gold
+     text keeps >=4.5:1 contrast both on dc-ink and under dc-ink text on a
+     gold button (WCAG AA) — go darker and one of those two directions
+     drops below the threshold. */
+  --dc-gold-antique: #e2bf7e;
+  --dc-ivory: #f7f3ec;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-dc-white: var(--dc-white);
-  --color-dc-offwhite: var(--dc-offwhite);
+  --color-dc-cream: var(--dc-cream);
   --color-dc-gold: var(--dc-gold);
-  --color-dc-navy: var(--dc-navy);
-  --color-dc-rose: var(--dc-rose);
+  --color-dc-ink: var(--dc-ink);
+  --color-dc-clay: var(--dc-clay);
   --color-dc-black: var(--dc-black);
-  --font-heading: var(--font-plus-jakarta-sans);
-  --font-sans: var(--font-inter);
+  --color-dc-gold-antique: var(--dc-gold-antique);
+  --color-dc-ivory: var(--dc-ivory);
+  /* One serif carries every heading, site-wide — dashboards and marketing
+     now share a single editorial identity instead of the old
+     Plus-Jakarta-Sans-for-app / Bodoni-for-landing split. Numeric stat
+     values opt back into font-sans directly in StatTile, since a display
+     serif's old-style figures read worse at a glance than a clean sans. */
+  --font-heading: var(--font-jakarta);
+  --font-accent: var(--font-display);
+  --font-sans: var(--font-body);
 }
 
 /* DuaCincin keeps a white-based brand look regardless of OS theme (PRD §6). */
+
+/* Headings: Plus Jakarta Sans (modern grotesk, drawn in Jakarta), medium
+   weight, tight tracking. The serif survives only as the italic accent
+   phrase (.dc-em), so each headline has one expressive moment instead of
+   a dated all-serif voice. */
+.font-heading {
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+/* Editorial accent: one italic serif phrase inside a heading. Garnet on
+   light backgrounds, antique gold on dark/photo ones (.dc-em-light). */
+.dc-em {
+  font-family: var(--font-accent), Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--dc-clay);
+}
+.dc-em-light {
+  font-family: var(--font-accent), Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--dc-gold-antique);
+}
+
+/* Hairline rule: gold, 1px, the only gold that touches layout. */
+.dc-rule {
+  height: 1px;
+  background: var(--dc-gold);
+  opacity: 0.6;
+}
 
 body {
   background: var(--background);
@@ -56,7 +118,7 @@ body {
    palette instead of left as generic platform blue. */
 ::selection {
   background: var(--dc-gold);
-  color: var(--dc-navy);
+  color: var(--dc-white);
 }
 
 :focus-visible {
@@ -94,4 +156,84 @@ body {
   .animate-fade-up {
     animation: none;
   }
+}
+
+/* Custom range slider for the landing Budget Planner demo — the bare
+   `accent-*` input renders as the browser's default thin/gray control,
+   which reads as an unfinished form next to the rest of the page's
+   custom-drawn buttons and cards. `--progress` (0%-100%, set inline per
+   slider from its own value) drives the filled portion on Chromium/Safari
+   via a background gradient, since `-webkit-appearance: none` drops the
+   native accent-color fill; Firefox gets the same fill for free via
+   ::-moz-range-progress. */
+.dc-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--dc-clay) var(--progress, 0%),
+    color-mix(in srgb, var(--dc-ink) 12%, transparent) var(--progress, 0%)
+  );
+  cursor: pointer;
+  outline: none;
+}
+.dc-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: transparent;
+}
+.dc-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -7px;
+  border-radius: 50%;
+  background: var(--dc-clay);
+  border: 3px solid var(--dc-white);
+  transition: transform 150ms ease;
+}
+.dc-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.12);
+}
+.dc-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--dc-ink) 12%, transparent);
+}
+.dc-slider::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--dc-clay);
+}
+.dc-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--dc-clay);
+  border: 3px solid var(--dc-white);
+}
+.dc-slider:focus-visible::-webkit-slider-thumb,
+.dc-slider:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--dc-ink);
+  outline-offset: 2px;
+}
+
+/* Scroll reveal, driven by components/landing/Reveal.tsx. Without the
+   data-reveal attribute (no JS, reduced motion, above the fold) the block is
+   simply visible. */
+.dc-reveal {
+  transition:
+    opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.dc-reveal[data-reveal="hidden"] {
+  opacity: 0;
+  transform: translateY(12px);
+}
+.dc-reveal[data-reveal="shown"] {
+  opacity: 1;
+  transform: none;
 }

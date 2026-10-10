@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from "react";
 
+import { ErrorState, ERROR_TEXT, H2, ICON_BTN, INPUT, LINK, Skeleton, SkeletonList } from "@/app/client/_ui";
 import { Button } from "@/components/Button";
 import { CLIENT_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { PageHeader }
+ from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/Toast";
 import { WeddingPlannerTabs } from "@/components/WeddingPlannerTabs";
 import { WithUser } from "@/components/WithUser";
@@ -51,6 +53,7 @@ function GuestListContent({ user }: { user: CurrentUser }) {
   const [link, setLink] = useState<RSVPLink | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingLink, setEditingLink] = useState(false);
   const [eventName, setEventName] = useState("");
@@ -65,7 +68,7 @@ function GuestListContent({ user }: { user: CurrentUser }) {
   function loadGuests() {
     return apiGet<Guest[]>("/api/v1/guests")
       .then((d) => setGuests(d ?? []))
-      .catch((err) => setError(err instanceof ApiError ? err.message : "Gagal memuat daftar tamu."));
+      .catch((err) => setLoadError(err instanceof ApiError ? err.message : "Gagal memuat daftar tamu."));
   }
 
   function loadLink() {
@@ -77,8 +80,17 @@ function GuestListContent({ user }: { user: CurrentUser }) {
     });
   }
 
+  function loadAll() {
+    setLoading(true);
+    setLoadError(null);
+    Promise.all([loadGuests(), loadLink()])
+      .catch(() => setLoadError((e) => e ?? "Gagal memuat link RSVP."))
+      .finally(() => setLoading(false));
+  }
+
   useEffect(() => {
-    Promise.all([loadGuests(), loadLink()]).finally(() => setLoading(false));
+    queueMicrotask(loadAll);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const shareUrl = link && typeof window !== "undefined" ? `${window.location.origin}/rsvp/${link.token}` : "";
@@ -159,45 +171,57 @@ function GuestListContent({ user }: { user: CurrentUser }) {
 
   return (
     <Shell user={user} navItems={CLIENT_NAV} loginPath="/login" eyebrow="Client">
-      <div className="mx-auto max-w-2xl px-4 py-10">
+      <div className="mx-auto max-w-3xl px-4 py-8 sm:py-10">
         <WeddingPlannerTabs />
         <PageHeader title="Tamu & RSVP" subtitle="Bagikan link RSVP ke tamu, atau catat sendiri yang konfirmasi lewat telepon/WhatsApp." />
 
         {loading ? (
-          <p className="text-dc-black/60">Memuat…</p>
+          <div role="status" aria-label="Memuat" className="flex flex-col gap-4">
+            <div className="grid grid-cols-3 gap-3">
+              <Skeleton className="h-20 rounded-lg" />
+              <Skeleton className="h-20 rounded-lg" />
+              <Skeleton className="h-20 rounded-lg" />
+            </div>
+            <SkeletonList rows={3} />
+          </div>
+        ) : loadError ? (
+          <ErrorState message={loadError} onRetry={loadAll} />
         ) : (
           <>
-            {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+            {error && (
+              <p role="alert" className={`mb-4 ${ERROR_TEXT}`}>
+                {error}
+              </p>
+            )}
 
             <div className="mb-6 grid grid-cols-3 gap-3">
-              <Card className="p-4 text-center">
-                <p className="font-heading text-xl font-extrabold text-dc-navy">{attendingCount}</p>
-                <p className="text-xs text-dc-black/50">Hadir (orang)</p>
-              </Card>
-              <Card className="p-4 text-center">
-                <p className="font-heading text-xl font-extrabold text-dc-navy">{notAttendingCount}</p>
-                <p className="text-xs text-dc-black/50">Tidak Hadir</p>
-              </Card>
-              <Card className="p-4 text-center">
-                <p className="font-heading text-xl font-extrabold text-dc-navy">{pendingCount}</p>
-                <p className="text-xs text-dc-black/50">Belum Konfirmasi</p>
-              </Card>
+              {[
+                { label: "Hadir (orang)", value: attendingCount },
+                { label: "Tidak hadir", value: notAttendingCount },
+                { label: "Belum konfirmasi", value: pendingCount },
+              ].map((t) => (
+                <Card key={t.label} className="p-3 sm:p-4">
+                  <p className="font-sans text-2xl font-semibold tabular-nums tracking-tight text-dc-ink sm:text-3xl">{t.value}</p>
+                  <p className="mt-1 text-xs text-dc-black/70">{t.label}</p>
+                </Card>
+              ))}
             </div>
 
             <Card className="mb-6 p-5">
-              <div className="flex items-center justify-between">
-                <h2 className="font-heading font-bold text-dc-navy">Link RSVP</h2>
-                <button onClick={() => setEditingLink((v) => !v)} className="text-sm font-semibold text-dc-gold hover:text-dc-navy">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className={H2}>Link RSVP</h2>
+                <button type="button" onClick={() => setEditingLink((v) => !v)} className={LINK}>
                   {editingLink ? "Batal" : "Atur"}
                 </button>
               </div>
 
               {!editingLink ? (
-                <div className="mt-3 flex items-center gap-2">
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
                   <input
                     readOnly
+                    aria-label="Link RSVP"
                     value={shareUrl}
-                    className="flex-1 truncate rounded-xl border border-dc-black/15 bg-dc-offwhite px-3 py-2 text-sm text-dc-black/70"
+                    className={`${INPUT} min-w-0 flex-1 truncate bg-dc-cream text-dc-black/80`}
                   />
                   <Button className="w-auto" onClick={handleCopyLink}>
                     Salin
@@ -209,21 +233,24 @@ function GuestListContent({ user }: { user: CurrentUser }) {
                     type="text"
                     value={eventName}
                     onChange={(e) => setEventName(e.target.value)}
+                    aria-label="Nama acara"
                     placeholder="Nama acara (mis. Pernikahan Aziz & Dian)"
-                    className="w-full rounded-xl border border-dc-black/15 px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+                    className={INPUT}
                   />
                   <input
                     type="date"
+                    aria-label="Tanggal acara"
                     value={eventDate}
                     onChange={(e) => setEventDate(e.target.value)}
-                    className="w-full rounded-xl border border-dc-black/15 px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+                    className={INPUT}
                   />
                   <textarea
+                    aria-label="Catatan venue"
                     value={venueNote}
                     onChange={(e) => setVenueNote(e.target.value)}
                     rows={2}
                     placeholder="Catatan venue/lokasi untuk tamu"
-                    className="w-full rounded-xl border border-dc-black/15 px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+                    className={INPUT}
                   />
                   <Button type="submit" className="w-auto" loading={saving}>
                     Simpan
@@ -232,8 +259,8 @@ function GuestListContent({ user }: { user: CurrentUser }) {
               )}
             </Card>
 
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-heading font-bold text-dc-navy">Daftar Tamu</h2>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <h2 className={H2}>Daftar Tamu</h2>
               <Button variant="ghost" className="w-auto" onClick={() => setShowAddForm((v) => !v)}>
                 {showAddForm ? "Batal" : "+ Tambah Tamu"}
               </Button>
@@ -244,32 +271,36 @@ function GuestListContent({ user }: { user: CurrentUser }) {
                 <form onSubmit={handleAddGuest} className="flex flex-col gap-3">
                   <input
                     type="text"
+                    aria-label="Nama tamu"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     placeholder="Nama tamu"
                     required
-                    className="w-full rounded-xl border border-dc-black/15 px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+                    className={INPUT}
                   />
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <input
                       type="text"
                       value={newPhone}
                       onChange={(e) => setNewPhone(e.target.value)}
+                      aria-label="No. telepon"
                       placeholder="No. telepon"
-                      className="col-span-1 rounded-xl border border-dc-black/15 px-3 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+                      className={INPUT}
                     />
                     <input
                       type="number"
                       min={1}
                       value={newPartySize}
                       onChange={(e) => setNewPartySize(e.target.value)}
+                      aria-label="Jumlah orang"
                       placeholder="Jumlah orang"
-                      className="col-span-1 rounded-xl border border-dc-black/15 px-3 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+                      className={INPUT}
                     />
                     <select
+                      aria-label="Status RSVP"
                       value={newStatus}
                       onChange={(e) => setNewStatus(e.target.value as GuestRSVPStatus)}
-                      className="col-span-1 rounded-xl border border-dc-black/15 px-3 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+                      className={INPUT}
                     >
                       <option value="attending">Hadir</option>
                       <option value="not_attending">Tidak Hadir</option>
@@ -289,26 +320,27 @@ function GuestListContent({ user }: { user: CurrentUser }) {
               <ul className="flex flex-col gap-2">
                 {guests.map((g) => (
                   <li key={g.id}>
-                    <Card className="flex items-center justify-between gap-3 p-4">
+                    <Card className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 p-4">
                       <div className="min-w-0">
-                        <p className="truncate font-medium text-dc-navy">
-                          {g.name} {g.party_size > 1 && <span className="text-dc-black/50">({g.party_size} orang)</span>}
+                        <p className="break-words font-medium text-dc-ink">
+                          {g.name} {g.party_size > 1 && <span className="font-normal text-dc-black/70">({g.party_size} orang)</span>}
                         </p>
-                        {g.phone && <p className="text-xs text-dc-black/50">{g.phone}</p>}
-                        {g.message && <p className="mt-0.5 text-xs italic text-dc-black/50">&ldquo;{g.message}&rdquo;</p>}
+                        {g.phone && <p className="text-xs tabular-nums text-dc-black/70">{g.phone}</p>}
+                        {g.message && <p className="mt-0.5 break-words text-xs italic text-dc-black/70">&ldquo;{g.message}&rdquo;</p>}
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
+                        <Badge tone={STATUS_TONE[g.rsvp_status]}>{STATUS_LABEL[g.rsvp_status]}</Badge>
                         <select
+                          aria-label={`Ubah status RSVP ${g.name}`}
                           value={g.rsvp_status}
                           onChange={(e) => handleStatusChange(g, e.target.value as GuestRSVPStatus)}
-                          className="rounded-lg border border-dc-black/15 px-2 py-1 text-xs outline-none"
+                          className={`${INPUT} w-auto text-xs`}
                         >
                           <option value="attending">Hadir</option>
                           <option value="not_attending">Tidak Hadir</option>
                           <option value="pending">Belum Konfirmasi</option>
                         </select>
-                        <Badge tone={STATUS_TONE[g.rsvp_status]}>{STATUS_LABEL[g.rsvp_status]}</Badge>
-                        <button onClick={() => handleDeleteGuest(g.id)} aria-label="Hapus tamu" className="text-dc-black/30 hover:text-red-600">
+                        <button type="button" onClick={() => handleDeleteGuest(g.id)} aria-label={`Hapus tamu: ${g.name}`} className={`${ICON_BTN} hover:text-red-700`}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                             <path d="M6 6l12 12M18 6 6 18" />
                           </svg>

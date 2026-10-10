@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { ErrorState, ERROR_TEXT, H2, ICON_BTN, INPUT, SkeletonList } from "@/app/client/_ui";
 import { Button } from "@/components/Button";
 import { CLIENT_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
@@ -26,6 +27,7 @@ function SeatingContent({ user }: { user: CurrentUser }) {
   const [board, setBoard] = useState<SeatingBoard | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [showAddTable, setShowAddTable] = useState(false);
   const [tableName, setTableName] = useState("");
   const [tableCapacity, setTableCapacity] = useState("8");
@@ -34,9 +36,10 @@ function SeatingContent({ user }: { user: CurrentUser }) {
   const [dragOverTarget, setDragOverTarget] = useState<string | null>(null);
 
   function load() {
+    setLoadError(null);
     return apiGet<SeatingBoard>("/api/v1/seating/board")
       .then(setBoard)
-      .catch((err) => setError(err instanceof ApiError ? err.message : "Gagal memuat denah."))
+      .catch((err) => setLoadError(err instanceof ApiError ? err.message : "Gagal memuat denah."))
       .finally(() => setLoading(false));
   }
 
@@ -99,7 +102,7 @@ function SeatingContent({ user }: { user: CurrentUser }) {
 
   return (
     <Shell user={user} navItems={CLIENT_NAV} loginPath="/login" eyebrow="Client">
-      <div className="mx-auto max-w-4xl px-4 py-10">
+      <div className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
         <WeddingPlannerTabs />
         <PageHeader
           title="Denah Meja"
@@ -120,7 +123,8 @@ function SeatingContent({ user }: { user: CurrentUser }) {
                 onChange={(e) => setTableName(e.target.value)}
                 placeholder="Nama meja (mis. Meja 1)"
                 required
-                className="flex-1 rounded-xl border border-dc-black/15 px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30"
+                aria-label="Nama meja"
+                className={`${INPUT} flex-1`}
               />
               <input
                 type="number"
@@ -128,7 +132,8 @@ function SeatingContent({ user }: { user: CurrentUser }) {
                 value={tableCapacity}
                 onChange={(e) => setTableCapacity(e.target.value)}
                 placeholder="Kapasitas"
-                className="w-full rounded-xl border border-dc-black/15 px-4 py-2.5 outline-none focus:border-dc-gold focus:ring-2 focus:ring-dc-gold/30 sm:w-32"
+                aria-label="Kapasitas"
+                className={`${INPUT} sm:w-32`}
               />
               <Button type="submit" className="w-auto" loading={saving}>
                 Tambah
@@ -137,14 +142,20 @@ function SeatingContent({ user }: { user: CurrentUser }) {
           </Card>
         )}
 
-        {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+        {error && (
+          <p role="alert" className={`mb-4 ${ERROR_TEXT}`}>
+            {error}
+          </p>
+        )}
 
         {loading ? (
-          <p className="text-dc-black/60">Memuat…</p>
+          <SkeletonList rows={3} />
+        ) : loadError ? (
+          <ErrorState message={loadError} onRetry={load} />
         ) : !board ? null : (
           <div className="flex flex-col gap-6">
             <div>
-              <h2 className="mb-2 font-heading font-bold text-dc-navy">Belum Ditempatkan</h2>
+              <h2 className={`${H2} mb-2`}>Belum Ditempatkan</h2>
               <div
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -152,22 +163,22 @@ function SeatingContent({ user }: { user: CurrentUser }) {
                 }}
                 onDragLeave={() => setDragOverTarget(null)}
                 onDrop={handleDropOnUnassigned}
-                className={`flex min-h-16 flex-wrap gap-2 rounded-2xl border-2 border-dashed p-4 transition ${
-                  dragOverTarget === "unassigned" ? "border-dc-gold bg-dc-gold/5" : "border-dc-black/10"
+                className={`flex min-h-16 flex-wrap gap-2 rounded-lg border border-dashed p-4 transition-colors ${
+                  dragOverTarget === "unassigned" ? "border-dc-clay bg-dc-clay/5" : "border-dc-ink/25 bg-dc-white/60"
                 }`}
               >
                 {board.unassigned.length === 0 ? (
-                  <p className="text-sm text-dc-black/40">Semua tamu sudah ditempatkan.</p>
+                  <p className="text-sm text-dc-black/70">Semua tamu sudah ditempatkan.</p>
                 ) : (
                   board.unassigned.map((g) => (
                     <span
                       key={g.id}
                       draggable
                       onDragStart={() => setDraggingGuestId(g.id)}
-                      className="cursor-grab rounded-full bg-dc-white px-3 py-1.5 text-sm text-dc-navy shadow-sm shadow-dc-navy/10"
+                      className="cursor-grab rounded-md border border-dc-ink/15 bg-dc-white px-3 py-2 text-sm text-dc-ink active:cursor-grabbing"
                     >
                       {g.name}
-                      {g.party_size > 1 && <span className="text-dc-black/50"> ({g.party_size})</span>}
+                      {g.party_size > 1 && <span className="text-dc-black/70"> ({g.party_size})</span>}
                     </span>
                   ))
                 )}
@@ -191,14 +202,14 @@ function SeatingContent({ user }: { user: CurrentUser }) {
                       onDragLeave={() => setDragOverTarget(null)}
                       onDrop={() => handleDropOnTable(t.id)}
                     >
-                      <Card className={`p-4 transition ${dragOverTarget === t.id ? "ring-2 ring-dc-gold" : ""}`}>
+                      <Card className={`p-4 transition-colors ${dragOverTarget === t.id ? "border-dc-clay bg-dc-clay/5" : ""}`}>
                         <div className="flex items-center justify-between">
-                          <p className="font-heading font-bold text-dc-navy">{t.name}</p>
+                          <p className="font-heading text-xl text-dc-ink">{t.name}</p>
                           <div className="flex items-center gap-2">
-                            <span className={`text-xs font-semibold ${full ? "text-dc-rose" : "text-dc-black/50"}`}>
-                              {seatedCount}/{t.capacity}
+                            <span className={`text-xs font-semibold tabular-nums ${full ? "text-dc-clay" : "text-dc-black/70"}`}>
+                              {seatedCount}/{t.capacity}{full ? " penuh" : ""}
                             </span>
-                            <button onClick={() => handleDeleteTable(t.id)} aria-label="Hapus meja" className="text-dc-black/30 hover:text-red-600">
+                            <button type="button" onClick={() => handleDeleteTable(t.id)} aria-label={`Hapus ${t.name}`} className={`${ICON_BTN} -mr-2 hover:text-red-700`}>
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                                 <path d="M6 6l12 12M18 6 6 18" />
                               </svg>
@@ -211,10 +222,10 @@ function SeatingContent({ user }: { user: CurrentUser }) {
                               key={g.id}
                               draggable
                               onDragStart={() => setDraggingGuestId(g.id)}
-                              className="cursor-grab rounded-full bg-dc-offwhite px-2.5 py-1 text-xs text-dc-navy"
+                              className="cursor-grab rounded-md bg-dc-cream px-2.5 py-1.5 text-xs text-dc-ink active:cursor-grabbing"
                             >
                               {g.name}
-                              {g.party_size > 1 && <span className="text-dc-black/50"> ({g.party_size})</span>}
+                              {g.party_size > 1 && <span className="text-dc-black/70"> ({g.party_size})</span>}
                             </span>
                           ))}
                         </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { EYEBROW } from "@/app/client/_ui";
 import { PasswordSection } from "@/components/PasswordSection";
 import { CLIENT_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
@@ -19,14 +20,20 @@ export default function ClientAccountPage() {
 function ClientAccountContent({ user }: { user: CurrentUser }) {
   return (
     <Shell user={user} navItems={CLIENT_NAV} loginPath="/login" eyebrow="Client">
-      <div className="mx-auto max-w-2xl px-4 py-10">
+      <div className="mx-auto max-w-2xl px-4 py-8 sm:py-10">
         <PageHeader title="Akun" subtitle="Informasi akunmu dan pengaturan keamanan." />
 
         <Card className="mb-6 p-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-dc-black/50">Nama</p>
-          <p className="font-heading mt-1 text-lg font-bold text-dc-navy">{user.full_name || "-"}</p>
-          <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-dc-black/50">Email</p>
-          <p className="mt-1 text-dc-navy">{user.email}</p>
+          <dl className="grid gap-4 sm:grid-cols-2">
+            <div className="min-w-0">
+              <dt className={EYEBROW}>Nama</dt>
+              <dd className="mt-1 break-words text-dc-ink">{user.full_name || "-"}</dd>
+            </div>
+            <div className="min-w-0">
+              <dt className={EYEBROW}>Email</dt>
+              <dd className="mt-1 break-words text-dc-ink">{user.email}</dd>
+            </div>
+          </dl>
         </Card>
 
         <Card className="p-5">
