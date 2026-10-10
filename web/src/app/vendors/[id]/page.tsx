@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { use, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/Button";
+import { REVIEW_SOURCE_NOTE, ReviewList, ReviewSummary } from "@/components/vendor/Reviews";
 import { Footer } from "@/components/landing/Footer";
 import { Navbar } from "@/components/landing/Navbar";
 import { TextField } from "@/components/TextField";
@@ -211,17 +212,13 @@ export default function VendorDetailPage({ params }: PageProps<"/vendors/[id]">)
                       <h2 id="ulasan" className="font-heading text-3xl text-dc-ink">
                         Ulasan dari <span className="dc-em">klien</span>
                       </h2>
-                      <ul className="mt-6 divide-y divide-dc-ink/10 border-y border-dc-ink/10">
-                        {reviews.map((r) => (
-                          <li key={r.id} className="py-5">
-                            <p className="text-dc-clay" role="img" aria-label={`Rating ${r.rating} dari 5`}>
-                              {"★".repeat(r.rating)}
-                              <span className="text-dc-ink/25">{"★".repeat(5 - r.rating)}</span>
-                            </p>
-                            {r.comment && <p className="mt-2 max-w-2xl text-dc-black/80">{r.comment}</p>}
-                          </li>
-                        ))}
-                      </ul>
+                      <p className="mt-2 max-w-xl text-sm text-dc-black/70">{REVIEW_SOURCE_NOTE}</p>
+                      <div className="mt-6">
+                        <ReviewSummary reviews={reviews} />
+                      </div>
+                      <div className="mt-8">
+                        <ReviewList reviews={reviews} />
+                      </div>
                     </section>
                   )}
                 </div>

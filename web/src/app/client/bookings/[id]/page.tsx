@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
 
-import { ErrorState, ERROR_TEXT, FOCUS, H2, INPUT, LABEL, LINK, Skeleton } from "@/app/client/_ui";
+import { ErrorState, ERROR_TEXT, H2, INPUT, LABEL, LINK, Skeleton } from "@/app/client/_ui";
 import { BookingStepper } from "@/components/BookingStepper";
 import { FundStatus } from "@/components/ui/FundStatus";
+import { StarInput } from "@/components/ui/StarInput";
 import { Button } from "@/components/Button";
 import { CLIENT_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
@@ -298,21 +299,7 @@ function ReviewSection({ bookingId }: { bookingId: string }) {
     <Card className="p-5">
       <h2 className={`${H2} mb-3`}>Bagaimana pengalamanmu dengan vendor ini?</h2>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <div role="group" aria-label="Rating" className="flex items-center gap-1">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <button
-              key={star}
-              type="button"
-              onClick={() => setRating(star)}
-              aria-label={`${star} bintang`}
-              aria-pressed={star === rating}
-              className={`flex h-11 w-11 items-center justify-center rounded-md text-2xl leading-none transition-colors hover:bg-dc-cream ${FOCUS}`}
-            >
-              <span aria-hidden className={star <= rating ? "text-dc-gold" : "text-dc-ink/20"}>★</span>
-            </button>
-          ))}
-          <span className="ml-2 text-sm tabular-nums text-dc-black/70">{rating > 0 ? `${rating} dari 5` : "Belum dipilih"}</span>
-        </div>
+        <StarInput value={rating} onChange={setRating} label="Rating untuk vendor ini" />
         <textarea
           value={comment}
           onChange={(e) => setComment(e.target.value)}

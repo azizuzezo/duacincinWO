@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/Card";
 import { DashboardBanner } from "@/components/ui/DashboardBanner";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { StatTile } from "@/components/ui/StatTile";
+import { ReviewList, ReviewSummary } from "@/components/vendor/Reviews";
 import { WithUser } from "@/components/WithUser";
 import {
   apiGet,
@@ -19,6 +20,7 @@ import {
   type Booking,
   type CurrentUser,
   type Payout,
+  type Review,
   type VendorPackage,
   type VendorProfile,
 } from "@/lib/api";
@@ -64,6 +66,7 @@ function VendorDashboardContent({ user }: { user: CurrentUser }) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [packages, setPackages] = useState<VendorPackage[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [dataError, setDataError] = useState(false);
   const [reload, setReload] = useState(0);
 
@@ -72,7 +75,10 @@ function VendorDashboardContent({ user }: { user: CurrentUser }) {
     apiGet<Booking[]>("/api/v1/bookings").then((d) => setBookings(d ?? [])).catch(() => setDataError(true));
     apiGet<Payout[]>("/api/v1/vendor/payouts").then((d) => setPayouts(d ?? [])).catch(() => setDataError(true));
     apiGet<VendorPackage[]>("/api/v1/vendor/packages").then((d) => setPackages(d ?? [])).catch(() => setDataError(true));
-  }, [reload]);
+    // The public reviews endpoint, scoped to the vendor's own id: reviews are
+    // public by design, so the vendor sees exactly what clients see.
+    apiGet<Review[]>(`/api/v1/vendors/${user.id}/reviews`).then((d) => setReviews(d ?? [])).catch(() => {});
+  }, [reload, user.id]);
 
   const shell = (children: React.ReactNode) => (
     <Shell user={user} navItems={VENDOR_NAV} loginPath="/login" eyebrow="Vendor">
@@ -234,6 +240,18 @@ function VendorDashboardContent({ user }: { user: CurrentUser }) {
                 </Link>
               ))}
             </Card>
+            {reviews.length > 0 && (
+              <div className="mt-8" id="ulasan-vendor">
+                <h2 className="font-heading text-2xl text-dc-ink">Ulasan dari client</h2>
+                <div className="mt-4 rounded-lg border border-dc-ink/10 bg-dc-white p-5">
+                  <ReviewSummary reviews={reviews} />
+                </div>
+                <div className="mt-4">
+                  <ReviewList reviews={reviews.slice(0, 3)} />
+                </div>
+                {reviews.length > 3 && <p className="mt-2 text-sm text-dc-black/70">Menampilkan 3 dari {reviews.length} ulasan terbaru.</p>}
+              </div>
+            )}
             {profile.status === "approved" && (
               <Link
                 href={`/vendors/${user.id}`}
