@@ -28,7 +28,7 @@ export function VendorCard({ card, horizontal = false }: { card: DirectoryCard; 
             className="object-cover transition-transform duration-500 group-hover:scale-[1.03] motion-reduce:transition-none"
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-sm text-dc-black/60">Belum ada foto</div>
+          <div className="flex h-full items-center justify-center text-sm text-dc-black/70">Belum ada foto</div>
         )}
       </div>
 

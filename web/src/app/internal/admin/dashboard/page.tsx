@@ -97,7 +97,7 @@ function AdminDashboardContent({ user }: { user: CurrentUser }) {
                         href={q.href}
                         className="flex min-h-16 flex-wrap items-center gap-x-5 gap-y-2 px-5 py-4 transition-colors hover:bg-dc-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-dc-clay/50 sm:px-6"
                       >
-                        <span className={`w-12 shrink-0 font-sans text-3xl font-semibold tabular-nums ${n > 0 ? "text-dc-clay" : "text-dc-ink/30"}`}>{n}</span>
+                        <span className={`w-12 shrink-0 font-sans text-3xl font-semibold tabular-nums ${n > 0 ? "text-dc-clay" : "text-dc-ink/60"}`}>{n}</span>
                         <span className="min-w-0 flex-1">
                           <span className="block font-heading text-xl text-dc-ink">{q.title}</span>
                           <span className="block text-sm text-dc-black/70">{q.body}</span>
