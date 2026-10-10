@@ -15,6 +15,7 @@ func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 	r.Get("/vendors", Directory(deps))
 	r.Get("/vendors/{id}", VendorDetail(deps))
 	r.Get("/vendors/{id}/reviews", ListVendorReviews(deps))
+	r.Get("/vendors/{id}/packages", ListVendorPackages(deps))
 
 	r.Route("/vendor", func(r chi.Router) {
 		r.Use(auth.RequireAuth(cfg))
@@ -26,5 +27,9 @@ func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 		r.Post("/portfolio", UploadPortfolio(deps))
 		r.Delete("/portfolio/{id}", DeletePortfolio(deps))
 		r.Get("/payouts", ListMyPayouts(deps))
+		r.Get("/packages", ListMyPackages(deps))
+		r.Post("/packages", CreatePackage(deps))
+		r.Put("/packages/{id}", UpdatePackage(deps))
+		r.Delete("/packages/{id}", DeletePackage(deps))
 	})
 }

@@ -25,8 +25,9 @@ type Deps struct {
 	Storage       *storage.Client
 	Reviews       *repository.ReviewRepo
 	Disbursements *repository.DisbursementRepo
+	Packages      *repository.PackageRepo
 }
 
 func NewDeps(vendors *repository.VendorRepo, nameChange *repository.VendorNameChangeRepo, storageClient *storage.Client, reviews *repository.ReviewRepo, disbursements *repository.DisbursementRepo) *Deps {
-	return &Deps{Vendors: vendors, NameChange: nameChange, Storage: storageClient, Reviews: reviews, Disbursements: disbursements}
+	return &Deps{Vendors: vendors, NameChange: nameChange, Storage: storageClient, Reviews: reviews, Disbursements: disbursements, Packages: vendors.Packages()}
 }
