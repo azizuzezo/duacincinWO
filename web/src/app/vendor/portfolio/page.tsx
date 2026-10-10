@@ -9,6 +9,7 @@ import { Shell } from "@/components/shell/Shell";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { EtalaseTabs } from "@/components/vendor/EtalaseTabs";
 import { WithUser } from "@/components/WithUser";
 import {
   apiDelete,
@@ -105,6 +106,7 @@ function VendorPortfolioContent({ user }: { user: CurrentUser }) {
       eyebrow="Vendor"
     >
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+        <EtalaseTabs publicId={profile?.status === "approved" ? user.id : undefined} />
         <PageHeader
           title="Portofolio"
           subtitle="Foto yang tampil di halaman profilmu untuk calon pengantin."

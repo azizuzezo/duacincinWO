@@ -28,12 +28,17 @@ export const CLIENT_NAV: NavItem[] = [
 ];
 
 export const VENDOR_NAV: NavItem[] = [
-  { tab: true, href: "/vendor/dashboard", label: "Dashboard", icon: ICON.home },
-  { href: "/vendor/profile", label: "Profil", icon: ICON.badge },
-  { tab: true, href: "/vendor/portfolio", label: "Portofolio", icon: ICON.image },
+  { tab: true, href: "/vendor/dashboard", label: "Hari ini", icon: ICON.home },
   { tab: true, href: "/vendor/bookings", label: "Booking", icon: ICON.calendar },
-  { href: "/vendor/payouts", label: "Pencairan", icon: ICON.cash },
   { tab: true, href: "/vendor/messages", label: "Pesan", icon: ICON.chat },
+  {
+    tab: true,
+    href: "/vendor/profile",
+    match: ["/vendor/portfolio", "/vendor/paket"],
+    label: "Etalase",
+    icon: ICON.image,
+  },
+  { href: "/vendor/payouts", label: "Pencairan", icon: ICON.cash },
 ];
 
 export const ADMIN_NAV: NavItem[] = [

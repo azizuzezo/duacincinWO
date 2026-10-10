@@ -19,6 +19,7 @@ import {
   type Conversation,
   type CurrentUser,
   type Review,
+  type VendorPackage,
   type VendorProfile,
 } from "@/lib/api";
 
@@ -28,6 +29,7 @@ export default function VendorDetailPage({ params }: PageProps<"/vendors/[id]">)
 
   const [profile, setProfile] = useState<VendorProfile | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [packages, setPackages] = useState<VendorPackage[]>([]);
   // Vendor profiles are public (see engineering.md) — chat & booking still
   // need a Client account, so we check the session without redirecting
   // an anonymous visitor away from the profile itself.
@@ -47,6 +49,9 @@ export default function VendorDetailPage({ params }: PageProps<"/vendors/[id]">)
     apiGet<VendorProfile>(`/api/v1/vendors/${id}`)
       .then(setProfile)
       .catch((err) => setError(err instanceof ApiError ? err.message : "Vendor tidak ditemukan."));
+    apiGet<VendorPackage[]>(`/api/v1/vendors/${id}/packages`)
+      .then((d) => setPackages(d ?? []))
+      .catch(() => {});
     apiGet<Review[]>(`/api/v1/vendors/${id}/reviews`)
       .then((d) => setReviews(d ?? []))
       .catch(() => {});
@@ -166,6 +171,40 @@ export default function VendorDetailPage({ params }: PageProps<"/vendors/[id]">)
                       {profile.description || "Vendor belum menambahkan deskripsi."}
                     </p>
                   </section>
+
+                  {packages.length > 0 && (
+                    <section aria-labelledby="paket" className="mt-14">
+                      <h2 id="paket" className="font-heading text-3xl text-dc-ink">
+                        Paket <span className="dc-em">harga</span>
+                      </h2>
+                      <ul className="mt-6 divide-y divide-dc-ink/10 border-y border-dc-ink/10">
+                        {packages.map((p) => (
+                          <li key={p.id} className="flex flex-col gap-4 py-6 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="min-w-0">
+                              <h3 className="font-heading break-words text-2xl text-dc-ink">{p.name}</h3>
+                              {p.description && <p className="mt-2 max-w-xl whitespace-pre-line break-words text-sm leading-relaxed text-dc-black/70">{p.description}</p>}
+                            </div>
+                            <div className="shrink-0 sm:text-right">
+                              <p className="font-sans text-xl font-semibold tabular-nums text-dc-ink">{p.price > 0 ? formatRupiah(p.price) : "Gratis"}</p>
+                              {isClient && (
+                                <a
+                                  href="#booking-form"
+                                  onClick={() => {
+                                    setPackageDescription(p.name);
+                                    setAgreedPrice(p.price > 0 ? String(p.price) : "");
+                                    setShowBookingForm(true);
+                                  }}
+                                  className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-dc-clay underline underline-offset-4 hover:text-dc-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold"
+                                >
+                                  Ajukan paket ini
+                                </a>
+                              )}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
 
                   {reviews.length > 0 && (
                     <section aria-labelledby="ulasan" className="mt-14">

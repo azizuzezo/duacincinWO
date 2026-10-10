@@ -127,6 +127,13 @@ export type VendorProfile = {
   review_count: number;
 };
 
+export type VendorPackage = {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+};
+
 export type Review = {
   id: string;
   rating: number;

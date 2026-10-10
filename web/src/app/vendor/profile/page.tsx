@@ -12,6 +12,7 @@ import { TextField } from "@/components/TextField";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { EtalaseTabs } from "@/components/vendor/EtalaseTabs";
 import { WithUser } from "@/components/WithUser";
 import {
   apiGet,
@@ -106,6 +107,7 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
       eyebrow="Vendor"
     >
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+        <EtalaseTabs publicId={profile?.status === "approved" ? user.id : undefined} />
         <PageHeader
           title={profile?.business_name || "Lengkapi profil vendor"}
           subtitle={

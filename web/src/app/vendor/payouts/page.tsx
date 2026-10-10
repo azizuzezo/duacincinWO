@@ -76,7 +76,7 @@ function VendorPayoutsContent({ user }: { user: CurrentUser }) {
           subtitle="Estimasi pendapatan bersih (setelah komisi) dari booking yang sudah selesai."
         />
 
-        <div className="mb-6 grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <StatTile
             label="Menunggu dicairkan"
             value={formatRupiah(totalPending)}

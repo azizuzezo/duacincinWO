@@ -12,17 +12,20 @@ export function StatTile({
   trend,
   density = "soft",
   accent = "ink",
+  className = "",
 }: {
   label: string;
   value: string | number;
   trend?: string;
   density?: "soft" | "structured";
   accent?: keyof typeof ACCENTS;
+  /** Grid placement, e.g. "col-span-2 lg:col-span-1" for a long currency value on mobile. */
+  className?: string;
 }) {
   return (
-    <Card className={`p-5 ${density === "structured" ? `border-t-2 ${ACCENTS[accent]}` : ""}`}>
+    <Card className={`p-5 ${density === "structured" ? `border-t-2 ${ACCENTS[accent]}` : ""} ${className}`}>
       <p className="text-sm font-medium text-dc-black/70">{label}</p>
-      <p className="mt-2 font-sans text-3xl font-semibold tabular-nums tracking-tight text-dc-ink">{value}</p>
+      <p className="mt-2 font-sans text-2xl font-semibold tabular-nums tracking-tight text-dc-ink sm:text-3xl">{value}</p>
       {trend && <p className="mt-1 text-xs text-dc-black/60">{trend}</p>}
     </Card>
   );

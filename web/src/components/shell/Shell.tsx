@@ -10,13 +10,20 @@ import { apiPost, type CurrentUser } from "@/lib/api";
 
 /** `short` is the label used in the mobile bottom tab bar, where 5 tabs leave ~70px each;
  * `tab` marks the (up to 4) destinations promoted to that bar, the rest live under "Lainnya". */
-export type NavItem = { href: string; label: string; short?: string; tab?: boolean; icon: readonly string[]; badgeCount?: number };
+export type NavItem = { href: string; label: string; short?: string; tab?: boolean; match?: string[]; icon: readonly string[]; badgeCount?: number };
 
 function initials(user: CurrentUser): string {
   const source = user.full_name?.trim() || user.email;
   const parts = source.split(/\s+/).filter(Boolean);
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
   return source.slice(0, 2).toUpperCase();
+}
+
+/** A nav item is active on its own href, or on any `match` prefix (grouped pages like Etalase). */
+function isActive(item: NavItem, pathname: string | null): boolean {
+  if (!pathname) return false;
+  if (pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))) return true;
+  return !!item.match?.some((m) => pathname.startsWith(m));
 }
 
 function NavIcon({ paths }: { paths: readonly string[] }) {
@@ -33,7 +40,7 @@ function NavLinks({ navItems, pathname, onNavigate, dark = false }: { navItems: 
   return (
     <>
       {navItems.map((item) => {
-        const active = pathname === item.href || (item.href !== "/" && pathname?.startsWith(item.href));
+        const active = isActive(item, pathname);
         return (
           <Link
             key={item.href}
@@ -240,7 +247,7 @@ export function Shell({
         className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-dc-ink/10 bg-dc-white pb-[env(safe-area-inset-bottom)] md:hidden"
       >
         {tabItems.map((item) => {
-          const active = pathname === item.href || (item.href !== "/" && pathname?.startsWith(item.href));
+          const active = isActive(item, pathname);
           return (
             <Link
               key={item.href}
