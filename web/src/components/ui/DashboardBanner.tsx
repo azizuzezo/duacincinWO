@@ -1,34 +1,35 @@
 import Image from "next/image";
 
-/** Page opener for dashboards: serif title on paper over a gold hairline,
- * replacing the old full-bleed dark banner so data starts higher on screen. */
+/** Page opener for dashboards: an ink band with the title in white. An optional
+ * `photo` sits under a flat ink veil (client dashboard) so the first screen
+ * carries the same cinematic note as the public site; without it the band is
+ * plain ink (admin). Content below can overlap the band with a negative top
+ * margin to pull the main action up. */
 export function DashboardBanner({
   title,
   subtitle,
   action,
-  image,
+  photo,
 }: {
   title: string;
   subtitle?: string;
   action?: React.ReactNode;
-  /** Optional photo (client dashboard only), shown as a small framed portrait. */
-  image?: string;
+  photo?: string;
 }) {
   return (
-    <div className="border-b border-dc-gold/40 bg-dc-ivory">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-end justify-between gap-6 px-4 pb-8 pt-10 sm:px-6 sm:pt-14">
+    <div className="relative isolate overflow-hidden bg-dc-ink">
+      {photo && (
+        <>
+          <Image src={photo} alt="" fill priority sizes="100vw" className="-z-20 object-cover object-center" />
+          <div className="absolute inset-0 -z-10 bg-dc-ink/70" aria-hidden />
+        </>
+      )}
+      <div className="mx-auto flex max-w-6xl flex-wrap items-end justify-between gap-6 px-4 pb-16 pt-10 sm:px-6 sm:pb-20 sm:pt-14">
         <div className="animate-fade-up">
-          <h1 className="font-heading text-4xl leading-[1.1] text-dc-ink sm:text-5xl">{title}</h1>
-          {subtitle && <p className="mt-3 max-w-xl text-dc-black/70">{subtitle}</p>}
+          <h1 className="font-heading text-4xl leading-[1.05] text-dc-white sm:text-5xl">{title}</h1>
+          {subtitle && <p className="mt-3 max-w-xl text-dc-white/80">{subtitle}</p>}
         </div>
-        <div className="flex items-end gap-6">
-          {action && <div className="animate-fade-up shrink-0">{action}</div>}
-          {image && (
-            <div className="relative hidden h-28 w-24 shrink-0 overflow-hidden rounded-md bg-dc-cream sm:block">
-              <Image src={image} alt="" fill sizes="96px" className="object-contain object-bottom" />
-            </div>
-          )}
-        </div>
+        {action && <div className="animate-fade-up shrink-0">{action}</div>}
       </div>
     </div>
   );

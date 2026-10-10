@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { DashboardBanner } from "@/components/ui/DashboardBanner";
 import { FeatureIcon } from "@/components/ui/FeatureIcon";
+import { FundStatus } from "@/components/ui/FundStatus";
 import { WithUser } from "@/components/WithUser";
 import {
   apiGet,
@@ -22,6 +23,37 @@ import {
   type PlannerTask,
 } from "@/lib/api";
 import { categoryLabelFor } from "@/lib/budget";
+
+type NextStep = { title: string; body: string; cta: string; href: string };
+
+/** One recommended action, derived from the soonest active booking (PRD §8.11
+ * order), else from whether a budget exists. */
+function nextStep(booking: Booking | undefined, budget: BudgetPlan | null, hasAnyBooking: boolean): NextStep {
+  if (booking) {
+    const href = `/client/bookings/${booking.id}`;
+    switch (booking.status) {
+      case "requested":
+        return { title: "Menunggu konfirmasi vendor", body: "Vendor sedang meninjau pengajuanmu. Kamu akan diberi tahu begitu dikonfirmasi.", cta: "Lihat booking", href };
+      case "confirmed":
+        return { title: "Bayar DP untuk mengunci tanggal", body: "Vendor sudah mengonfirmasi. DP ditahan escrow DuaCincin dan belum diteruskan ke vendor.", cta: "Bayar DP", href };
+      case "dp_paid":
+        return { title: "Lunasi sisa pembayaran", body: "Jadwalkan meeting dengan konsultan bila perlu, lalu lunasi pembayaran sebelum hari-H.", cta: "Buka booking", href };
+      case "full_paid":
+        return { title: "Siapkan technical meeting", body: "Sepakati rundown, denah, dan jadwal kru bersama vendor sebelum hari-H.", cta: "Atur meeting", href };
+      default:
+        return { title: "Lihat booking-mu", body: "Cek status terbaru booking yang sedang berjalan.", cta: "Buka booking", href };
+    }
+  }
+  if (!budget || budget.total_budget <= 0) {
+    return { title: "Mulai dari anggaran", body: "Masukkan total budget dan lihat alokasinya per kategori. Kamu bisa menyesuaikannya kapan saja.", cta: "Atur budget", href: "/client/budget" };
+  }
+  return {
+    title: hasAnyBooking ? "Cari vendor berikutnya" : "Cari vendor pertamamu",
+    body: "Bandingkan portofolio dan harga mulai dari, lalu diskusi lewat chat di dalam DuaCincin.",
+    cta: "Cari vendor",
+    href: "/vendors",
+  };
+}
 
 export default function ClientDashboardPage() {
   return (
@@ -82,15 +114,45 @@ function ClientDashboardContent({ user }: { user: CurrentUser }) {
     .slice()
     .sort((a, b) => a.event_date.localeCompare(b.event_date))[0];
 
+  const next = nextStep(nextBooking, budget, bookings.length > 0);
+
   return (
     <Shell user={user} navItems={CLIENT_NAV} loginPath="/login" eyebrow="Client">
       <DashboardBanner
         title={`Halo, ${user.full_name || user.email}`}
         subtitle="Ringkasan persiapan pernikahanmu, semua dalam satu tempat."
-        image="/hero/adat/melayu.webp"
+        photo="/stock/hero-reception.webp"
       />
 
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+      <div className="mx-auto max-w-6xl px-4 pb-10 sm:px-6">
+        {/* The one primary action: what to do next, and where the money is. */}
+        <section aria-labelledby="langkah-berikutnya" className="relative -mt-10 mb-10 rounded-lg border border-dc-ink/10 bg-dc-white p-6 sm:-mt-12 sm:p-8">
+          {loading ? (
+            <Skeleton className="h-24 w-full" />
+          ) : (
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+              <div className="max-w-xl">
+                <p className="text-sm font-semibold text-dc-clay">Langkah berikutnya</p>
+                <h2 id="langkah-berikutnya" className="mt-1 font-heading text-3xl leading-tight text-dc-ink sm:text-4xl">
+                  {next.title}
+                </h2>
+                <p className="mt-2 text-dc-black/70">{next.body}</p>
+                {nextBooking && (
+                  <div className="mt-4 border-t border-dc-ink/10 pt-4">
+                    <FundStatus status={nextBooking.status} />
+                  </div>
+                )}
+              </div>
+              <Link
+                href={next.href}
+                className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-md bg-dc-clay px-7 text-sm font-semibold text-dc-white transition-colors hover:bg-dc-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-ink"
+              >
+                {next.cta}
+              </Link>
+            </div>
+          )}
+        </section>
+
         {failed && !loading && (
           <div className="mb-6">
             <ErrorState message="Sebagian ringkasan gagal dimuat." onRetry={load} />

@@ -17,34 +17,34 @@ const ICON = {
 } as const;
 
 export const CLIENT_NAV: NavItem[] = [
-  { href: "/client/dashboard", label: "Dashboard", icon: ICON.home },
-  { href: "/vendors", label: "Cari Vendor", icon: ICON.search },
-  { href: "/client/budget", label: "Budget Planner", icon: ICON.pie },
-  { href: "/client/wedding-planner", label: "Wedding Planner", icon: ICON.checklist },
-  { href: "/client/bookings", label: "Booking", icon: ICON.calendar },
+  { tab: true, href: "/client/dashboard", label: "Dashboard", icon: ICON.home },
+  { tab: true, href: "/vendors", label: "Cari Vendor", short: "Vendor", icon: ICON.search },
+  { href: "/client/budget", label: "Budget Planner", short: "Budget", icon: ICON.pie },
+  { href: "/client/wedding-planner", label: "Wedding Planner", short: "Planner", icon: ICON.checklist },
+  { tab: true, href: "/client/bookings", label: "Booking", icon: ICON.calendar },
   { href: "/client/consultation", label: "Konsultasi", icon: ICON.users },
-  { href: "/client/messages", label: "Pesan", icon: ICON.chat },
+  { tab: true, href: "/client/messages", label: "Pesan", icon: ICON.chat },
   { href: "/client/account", label: "Akun", icon: ICON.badge },
 ];
 
 export const VENDOR_NAV: NavItem[] = [
-  { href: "/vendor/dashboard", label: "Dashboard", icon: ICON.home },
+  { tab: true, href: "/vendor/dashboard", label: "Dashboard", icon: ICON.home },
   { href: "/vendor/profile", label: "Profil", icon: ICON.badge },
-  { href: "/vendor/portfolio", label: "Portofolio", icon: ICON.image },
-  { href: "/vendor/bookings", label: "Booking", icon: ICON.calendar },
+  { tab: true, href: "/vendor/portfolio", label: "Portofolio", icon: ICON.image },
+  { tab: true, href: "/vendor/bookings", label: "Booking", icon: ICON.calendar },
   { href: "/vendor/payouts", label: "Pencairan", icon: ICON.cash },
-  { href: "/vendor/messages", label: "Pesan", icon: ICON.chat },
+  { tab: true, href: "/vendor/messages", label: "Pesan", icon: ICON.chat },
 ];
 
 export const ADMIN_NAV: NavItem[] = [
-  { href: "/internal/admin/dashboard", label: "Dashboard", icon: ICON.home },
-  { href: "/internal/admin/vendors", label: "Vendor Pending", icon: ICON.badge },
-  { href: "/internal/admin/vendors/approved", label: "Vendor Aktif", icon: ICON.users },
+  { tab: true, href: "/internal/admin/dashboard", label: "Dashboard", icon: ICON.home },
+  { tab: true, href: "/internal/admin/vendors", label: "Vendor Pending", short: "Pending", icon: ICON.badge },
+  { href: "/internal/admin/vendors/approved", label: "Vendor Aktif", short: "Aktif", icon: ICON.users },
   { href: "/internal/admin/vendor-name-changes", label: "Ganti Nama Vendor", icon: ICON.badge },
-  { href: "/internal/admin/disputes", label: "Sengketa", icon: ICON.warning },
-  { href: "/internal/admin/disbursements", label: "Pencairan", icon: ICON.cash },
+  { tab: true, href: "/internal/admin/disputes", label: "Sengketa", icon: ICON.warning },
+  { tab: true, href: "/internal/admin/disbursements", label: "Pencairan", icon: ICON.cash },
   { href: "/internal/admin/inspirasi", label: "Inspirasi", icon: ICON.image },
-  { href: "/internal/consultations", label: "Konsultasi", icon: ICON.chat },
+  { tab: true, href: "/internal/consultations", label: "Konsultasi", icon: ICON.chat },
   { href: "/internal/admin/audit-log", label: "Audit Log", icon: ICON.checklist },
 ];
 

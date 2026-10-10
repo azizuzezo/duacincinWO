@@ -8,7 +8,9 @@ import { useEffect, useState } from "react";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import { apiPost, type CurrentUser } from "@/lib/api";
 
-export type NavItem = { href: string; label: string; icon: readonly string[]; badgeCount?: number };
+/** `short` is the label used in the mobile bottom tab bar, where 5 tabs leave ~70px each;
+ * `tab` marks the (up to 4) destinations promoted to that bar, the rest live under "Lainnya". */
+export type NavItem = { href: string; label: string; short?: string; tab?: boolean; icon: readonly string[]; badgeCount?: number };
 
 function initials(user: CurrentUser): string {
   const source = user.full_name?.trim() || user.email;
@@ -27,7 +29,7 @@ function NavIcon({ paths }: { paths: readonly string[] }) {
   );
 }
 
-function NavLinks({ navItems, pathname, onNavigate }: { navItems: NavItem[]; pathname: string | null; onNavigate?: () => void }) {
+function NavLinks({ navItems, pathname, onNavigate, dark = false }: { navItems: NavItem[]; pathname: string | null; onNavigate?: () => void; dark?: boolean }) {
   return (
     <>
       {navItems.map((item) => {
@@ -38,7 +40,13 @@ function NavLinks({ navItems, pathname, onNavigate }: { navItems: NavItem[]; pat
             href={item.href}
             onClick={onNavigate}
             className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors duration-150 ${
-              active ? "bg-dc-ink text-dc-white" : "text-dc-ink/75 hover:bg-dc-cream hover:text-dc-ink"
+              dark
+                ? active
+                  ? "bg-dc-white/12 text-dc-white"
+                  : "text-dc-white/75 hover:bg-dc-white/8 hover:text-dc-white"
+                : active
+                  ? "bg-dc-ink text-dc-white"
+                  : "text-dc-ink/75 hover:bg-dc-cream hover:text-dc-ink"
             }`}
           >
             <NavIcon paths={item.icon} />
@@ -73,12 +81,22 @@ export function Shell({
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const flagged = navItems.filter((i) => i.tab);
+  const tabItems = (flagged.length ? flagged : navItems).slice(0, 4);
 
   useEffect(() => {
     // Close the mobile drawer on route change — deferred to a microtask so
     // this doesn't set state synchronously inside the effect body.
     queueMicrotask(() => setMobileOpen(false));
   }, [pathname]);
+
+  // Escape closes the mobile drawer (keyboard accessibility, R-32).
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMobileOpen(false);
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [mobileOpen]);
 
   async function handleLogout() {
     await apiPost("/api/v1/auth/logout", {});
@@ -119,18 +137,52 @@ export function Shell({
     </div>
   );
 
+  const brandDark = (
+    <Link href="/" className="group flex items-center gap-2 px-1">
+      <Image
+        src="/brand/duacincin-logo.webp"
+        alt="DuaCincin"
+        width={28}
+        height={28}
+        className=""
+      />
+      <span className="font-heading text-2xl text-dc-white">DuaCincin</span>
+    </Link>
+  );
+
+  const userCardDark = (
+    <div className="flex items-center gap-3 rounded-md border border-dc-white/15 bg-dc-white/5 p-2.5">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-dc-white text-xs font-semibold text-dc-ink">
+        {initials(user)}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-dc-white">{user.full_name || user.email}</p>
+        {eyebrow && <p className="text-xs text-dc-white/70">{eyebrow}</p>}
+      </div>
+      <button
+        onClick={handleLogout}
+        aria-label="Keluar"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-dc-white/70 transition hover:bg-dc-white/10 hover:text-dc-white"
+      >
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+        </svg>
+      </button>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-dc-ivory md:flex">
       {/* Desktop sidebar */}
-      <aside className="hidden w-64 shrink-0 border-r border-dc-ink/10 bg-dc-white md:sticky md:top-0 md:flex md:h-screen md:flex-col md:gap-6 md:p-4">
+      <aside className="hidden w-64 shrink-0 bg-dc-ink md:sticky md:top-0 md:flex md:h-screen md:flex-col md:gap-6 md:p-4">
         <div className="flex items-center justify-between">
-          {brand}
-          <NotificationBell />
+          {brandDark}
+          <NotificationBell light />
         </div>
         <nav className="flex flex-1 flex-col gap-1">
-          <NavLinks navItems={navItems} pathname={pathname} />
+          <NavLinks navItems={navItems} pathname={pathname} dark />
         </nav>
-        {userCard}
+        {userCardDark}
       </aside>
 
       {/* Mobile top bar */}
@@ -187,7 +239,7 @@ export function Shell({
         aria-label="Navigasi utama"
         className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-dc-ink/10 bg-dc-white pb-[env(safe-area-inset-bottom)] md:hidden"
       >
-        {navItems.slice(0, 4).map((item) => {
+        {tabItems.map((item) => {
           const active = pathname === item.href || (item.href !== "/" && pathname?.startsWith(item.href));
           return (
             <Link
@@ -199,7 +251,7 @@ export function Shell({
               }`}
             >
               <NavIcon paths={item.icon} />
-              <span className="max-w-full truncate px-1">{item.label}</span>
+              <span className="max-w-full truncate px-1">{item.short ?? item.label}</span>
               {!!item.badgeCount && (
                 <span className="absolute right-[22%] top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-dc-clay px-1 text-[10px] font-semibold text-dc-white">
                   {item.badgeCount > 99 ? "99+" : item.badgeCount}

@@ -7,7 +7,7 @@ import { apiGet, apiPost, type AppNotification } from "@/lib/api";
 
 const POLL_MS = 30000;
 
-export function NotificationBell() {
+export function NotificationBell({ light = false }: { light?: boolean } = {}) {
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
   const [items, setItems] = useState<AppNotification[]>([]);
@@ -63,7 +63,7 @@ export function NotificationBell() {
       <button
         onClick={handleToggle}
         aria-label="Notifikasi"
-        className="relative flex h-11 w-11 items-center justify-center rounded-lg text-dc-ink transition hover:bg-dc-ink/5"
+        className={`relative flex h-11 w-11 items-center justify-center rounded-lg transition ${light ? "text-dc-white hover:bg-dc-white/10" : "text-dc-ink hover:bg-dc-ink/5"}`}
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />

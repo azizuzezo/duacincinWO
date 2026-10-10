@@ -5,6 +5,7 @@ import { use, useEffect, useState } from "react";
 
 import { ErrorState, ERROR_TEXT, FOCUS, H2, INPUT, LABEL, LINK, Skeleton } from "@/app/client/_ui";
 import { BookingStepper } from "@/components/BookingStepper";
+import { FundStatus } from "@/components/ui/FundStatus";
 import { Button } from "@/components/Button";
 import { CLIENT_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
@@ -149,6 +150,10 @@ function ClientBookingDetailContent({ id, user }: { id: string; user: CurrentUse
                 <BookingStepper status={booking.status} />
               </Card>
             )}
+
+            <Card className="mb-6 p-5">
+              <FundStatus status={booking.status} />
+            </Card>
 
             <Card className="mb-6 p-5">
               <dl className="flex flex-col gap-2 text-sm tabular-nums">

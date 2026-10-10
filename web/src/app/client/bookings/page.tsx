@@ -8,6 +8,7 @@ import { CLIENT_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { FundStatus } from "@/components/ui/FundStatus";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ErrorState, FOCUS, SkeletonList } from "@/app/client/_ui";
@@ -78,6 +79,9 @@ function ClientBookingsContent({ user }: { user: CurrentUser }) {
                       </p>
                     </div>
                     <Badge tone={BOOKING_STATUS_TONE[b.status]}>{BOOKING_STATUS_LABEL[b.status]}</Badge>
+                  </div>
+                  <div className="mt-3 border-t border-dc-ink/10 pt-3">
+                    <FundStatus status={b.status} compact />
                   </div>
                 </Card>
               </Link>
