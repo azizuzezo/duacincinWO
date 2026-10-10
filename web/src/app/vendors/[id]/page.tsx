@@ -157,7 +157,7 @@ export default function VendorDetailPage({ params }: PageProps<"/vendors/[id]">)
               {portfolio.length > 0 ? (
                 <Gallery items={portfolio} onOpen={setLightbox} />
               ) : (
-                <div className="flex aspect-[16/7] items-center justify-center rounded-lg border border-dashed border-dc-ink/20 bg-dc-white/60 text-sm text-dc-black/70">
+                <div className="flex min-h-40 items-center justify-center rounded-lg border border-dashed border-dc-ink/20 bg-dc-white/60 px-4 text-center text-sm text-dc-black/70">
                   Vendor ini belum mengunggah portofolio.
                 </div>
               )}
