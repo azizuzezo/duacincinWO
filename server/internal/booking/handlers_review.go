@@ -70,7 +70,7 @@ func SubmitReview(deps *Deps) http.HandlerFunc {
 			return
 		}
 
-		notify(deps, r.Context(), b.VendorID, "review.received", "Ulasan baru diterima", fmt.Sprintf("Rating %d bintang untuk booking-mu.", rev.Rating), "/vendor/profile")
+		notify(deps, r.Context(), b.VendorID, "review.received", "Ulasan baru diterima", fmt.Sprintf("Rating %d bintang untuk booking-mu.", rev.Rating), "/vendor/dashboard#ulasan-vendor")
 
 		httpx.JSON(w, http.StatusCreated, reviewDTO{ID: rev.ID, Rating: rev.Rating, Comment: rev.Comment, CreatedAt: rev.CreatedAt.Format("2006-01-02T15:04:05Z07:00")})
 	}
