@@ -2,16 +2,32 @@ package inspiration
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
+	"duacincin/server/internal/auth"
 	"duacincin/server/internal/httpx"
 	"duacincin/server/internal/imageupload"
 	"duacincin/server/internal/repository"
 )
+
+// logAction records one Admin write to the audit trail — mirrors
+// internal/admin's own helper (not shared directly to avoid an import
+// cycle back into admin). Best-effort: failures are logged and swallowed
+// since the underlying action already succeeded.
+func logAction(deps *Deps, r *http.Request, action, targetType, targetID string, metadata map[string]any) {
+	claims, ok := auth.ClaimsFromContext(r.Context())
+	if !ok {
+		return
+	}
+	if err := deps.AuditLog.Create(r.Context(), claims.UserID, claims.Role, action, targetType, targetID, metadata); err != nil {
+		log.Printf("audit log: %v", err)
+	}
+}
 
 type itemDTO struct {
 	ID           string `json:"id"`
@@ -110,6 +126,7 @@ func Upload(deps *Deps) http.HandlerFunc {
 			return
 		}
 
+		logAction(deps, r, "inspiration.upload", "inspiration_item", item.ID, map[string]any{"category": category})
 		httpx.JSON(w, http.StatusCreated, toItemDTO(item))
 	}
 }
@@ -135,6 +152,7 @@ func Delete(deps *Deps) http.HandlerFunc {
 			_ = deps.Storage.Delete(r.Context(), Bucket, item.StoragePath)
 		}
 
+		logAction(deps, r, "inspiration.delete", "inspiration_item", id, nil)
 		httpx.JSON(w, http.StatusOK, map[string]string{"message": "item dihapus"})
 	}
 }

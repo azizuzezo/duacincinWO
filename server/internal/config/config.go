@@ -28,6 +28,11 @@ type Config struct {
 	MidtransServerKey    string
 	MidtransClientKey    string
 	MidtransIsProduction bool
+
+	// WhatsAppBotSecret authenticates requests between this API and the
+	// whatsapp-bot/ relay process in both directions (see internal/whatsapp).
+	WhatsAppBotSecret      string
+	WhatsAppBotCallbackURL string
 }
 
 // Load reads environment variables, falling back to a local .env file
@@ -53,6 +58,9 @@ func Load() (*Config, error) {
 		MidtransServerKey:    os.Getenv("MIDTRANS_SERVER_KEY"),
 		MidtransClientKey:    os.Getenv("MIDTRANS_CLIENT_KEY"),
 		MidtransIsProduction: os.Getenv("MIDTRANS_IS_PRODUCTION") == "true",
+
+		WhatsAppBotSecret:      os.Getenv("WHATSAPP_BOT_SECRET"),
+		WhatsAppBotCallbackURL: os.Getenv("WHATSAPP_BOT_CALLBACK_URL"),
 	}
 
 	if cfg.DatabasePooler == "" {
@@ -74,6 +82,9 @@ func Load() (*Config, error) {
 	}
 	if cfg.MidtransServerKey == "" {
 		log.Println("warning: MIDTRANS_SERVER_KEY is not set — payments run in dev-simulation mode instead of calling Midtrans")
+	}
+	if cfg.WhatsAppBotSecret == "" {
+		log.Println("warning: WHATSAPP_BOT_SECRET is not set — the WhatsApp relay webhook will reject every request")
 	}
 
 	return cfg, nil

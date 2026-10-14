@@ -17,6 +17,11 @@ server/bin/
 server/*.exe
 server/duacincin-server
 
+# WhatsApp bot (Node/Baileys)
+whatsapp-bot/node_modules/
+whatsapp-bot/auth_info_baileys/
+whatsapp-bot/npm-debug.log*
+
 # OS / editor
 .DS_Store
 *.log

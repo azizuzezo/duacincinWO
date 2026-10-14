@@ -15,8 +15,9 @@ const Bucket = "inspirasi"
 type Deps struct {
 	Inspiration *repository.InspirationRepo
 	Storage     *storage.Client
+	AuditLog    *repository.AuditLogRepo
 }
 
-func NewDeps(inspirationRepo *repository.InspirationRepo, storageClient *storage.Client) *Deps {
-	return &Deps{Inspiration: inspirationRepo, Storage: storageClient}
+func NewDeps(inspirationRepo *repository.InspirationRepo, storageClient *storage.Client, auditLog *repository.AuditLogRepo) *Deps {
+	return &Deps{Inspiration: inspirationRepo, Storage: storageClient, AuditLog: auditLog}
 }

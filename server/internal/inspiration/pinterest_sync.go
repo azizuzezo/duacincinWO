@@ -112,6 +112,10 @@ func SyncPinterest(deps *Deps) http.HandlerFunc {
 			imported++
 		}
 
+		logAction(deps, r, "inspiration.sync_pinterest", "inspiration_item", "", map[string]any{
+			"board_url": boardURL,
+			"imported":  imported,
+		})
 		httpx.JSON(w, http.StatusOK, syncPinterestResponse{
 			Imported:         imported,
 			AlreadySynced:    len(existingRefs),

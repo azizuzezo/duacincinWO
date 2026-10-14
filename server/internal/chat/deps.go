@@ -5,12 +5,21 @@
 package chat
 
 import (
+	"context"
+
 	"duacincin/server/internal/repository"
 	"duacincin/server/internal/storage"
 )
 
 // AttachmentBucket holds images shared in chat (see UploadAttachment).
 const AttachmentBucket = "chat-attachments"
+
+// Notifier is told about every new message right after it's persisted and
+// broadcast over the Hub, so a side channel (e.g. the WhatsApp relay) can
+// forward it without this package needing to import that channel's code.
+type Notifier interface {
+	NotifyNewMessage(ctx context.Context, conv *repository.Conversation, senderUserID string, msg *repository.Message)
+}
 
 type Deps struct {
 	Chat          *repository.ChatRepo
@@ -20,6 +29,9 @@ type Deps struct {
 	Hub           *Hub
 	Notifications *repository.NotificationRepo
 	Storage       *storage.Client
+	// Notifier is optional (nil-safe) — set once the WhatsApp relay's Deps
+	// exist, since it's constructed after chat.Deps in main.go.
+	Notifier Notifier
 }
 
 func NewDeps(chatRepo *repository.ChatRepo, vendors *repository.VendorRepo, disputes *repository.DisputeRepo, users *repository.UserRepo, hub *Hub, notifications *repository.NotificationRepo, storageClient *storage.Client) *Deps {

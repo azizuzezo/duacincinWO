@@ -243,6 +243,9 @@ func SendMessage(deps *Deps) http.HandlerFunc {
 		dto := toMessageDTOWithReply(deps, r.Context(), message)
 		deps.Hub.Broadcast(conv.ID, map[string]any{"type": "message.new", "message": dto})
 		notifyOtherParticipant(deps, r.Context(), conv, claims.UserID, req.Body)
+		if deps.Notifier != nil {
+			deps.Notifier.NotifyNewMessage(r.Context(), conv, claims.UserID, message)
+		}
 
 		httpx.JSON(w, http.StatusCreated, dto)
 	}

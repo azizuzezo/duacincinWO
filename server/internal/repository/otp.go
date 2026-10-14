@@ -10,6 +10,7 @@ import (
 )
 
 const PurposePasswordReset = "password_reset"
+const PurposePhoneLink = "phone_link"
 
 type OTPCode struct {
 	ID        string

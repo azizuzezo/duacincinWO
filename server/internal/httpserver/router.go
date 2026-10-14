@@ -24,6 +24,7 @@ import (
 	"duacincin/server/internal/seating"
 	"duacincin/server/internal/vendors"
 	"duacincin/server/internal/weddingplanner"
+	"duacincin/server/internal/whatsapp"
 )
 
 // Deps bundles every feature's dependencies for NewRouter.
@@ -40,6 +41,7 @@ type Deps struct {
 	GuestList      *guestlist.Deps
 	Rundown        *rundown.Deps
 	Seating        *seating.Deps
+	Whatsapp       *whatsapp.Deps
 }
 
 // NewRouter builds the root chi router for the DuaCincin API.
@@ -74,6 +76,7 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config, deps Deps) http.Handler {
 			guestlist.Mount(r, deps.GuestList, cfg)
 			rundown.Mount(r, deps.Rundown, cfg)
 			seating.Mount(r, deps.Seating, cfg)
+			whatsapp.Mount(r, deps.Whatsapp, cfg)
 		})
 
 		// Inspiration gets a longer timeout on its own: the Admin

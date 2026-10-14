@@ -142,6 +142,9 @@ func MyProfile(deps *Deps) http.HandlerFunc {
 
 		dto := toProfileDTO(profile)
 		dto.Portfolio = toPortfolioDTOs(items)
+		if avg, count, err := deps.Reviews.GetAggregateForVendor(r.Context(), claims.UserID); err == nil {
+			dto.AverageRating, dto.ReviewCount = avg, count
+		}
 
 		if pending, err := deps.NameChange.GetPendingForVendor(r.Context(), claims.UserID); err == nil {
 			nameChange := toNameChangeDTO(pending)

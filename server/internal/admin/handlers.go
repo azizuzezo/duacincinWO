@@ -131,6 +131,7 @@ func bulkApproveVendors(deps *Deps) http.HandlerFunc {
 				continue
 			}
 			logAction(deps, r, "vendor.approve", "vendor", id, map[string]any{"bulk": true})
+			notify(deps, r.Context(), id, "vendor.approved", "Profil disetujui", "Profilmu sudah disetujui dan tampil di direktori.", ptrStr("/vendor/profile"))
 			approved++
 		}
 

@@ -56,3 +56,18 @@ func RenderPasswordResetOTPEmail(logoURL, code string) (subject, html string, er
 	}
 	return "Kode OTP DuaCincin, berlaku 5 menit", buf.String(), nil
 }
+
+// RenderPhoneLinkOTPEmail renders the branded OTP email sent when a user
+// links a WhatsApp number to their DuaCincin account (see internal/whatsapp).
+func RenderPhoneLinkOTPEmail(logoURL, code string) (subject, html string, err error) {
+	var buf bytes.Buffer
+	data := otpTemplateData{
+		LogoURL: logoURL,
+		Intro:   "Gunakan kode berikut untuk menghubungkan nomor WhatsApp ke akun DuaCincin kamu:",
+		Code:    code,
+	}
+	if err := otpTemplate.Execute(&buf, data); err != nil {
+		return "", "", err
+	}
+	return "Kode OTP DuaCincin, berlaku 5 menit", buf.String(), nil
+}

@@ -1,0 +1,21 @@
+{
+  "name": "duacincin-whatsapp-bot",
+  "version": "1.0.0",
+  "description": "Thin WhatsApp transport for DuaCincin's vendor_chat relay — all business logic lives in the Go API (internal/whatsapp); this process only shuttles text in and out.",
+  "type": "module",
+  "main": "index.js",
+  "private": true,
+  "scripts": {
+    "start": "node index.js"
+  },
+  "engines": {
+    "node": "22.x"
+  },
+  "dependencies": {
+    "@hapi/boom": "^10.0.1",
+    "@whiskeysockets/baileys": "^6.7.19",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "qrcode-terminal": "^0.12.0"
+  }
+}

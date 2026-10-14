@@ -25,6 +25,7 @@ import (
 	"duacincin/server/internal/storage"
 	"duacincin/server/internal/vendors"
 	"duacincin/server/internal/weddingplanner"
+	"duacincin/server/internal/whatsapp"
 	"duacincin/server/migrations"
 )
 
@@ -67,24 +68,35 @@ func main() {
 	auditLogRepo := repository.NewAuditLogRepo(pool)
 	notificationRepo := repository.NewNotificationRepo(pool)
 	guestRepo := repository.NewGuestRepo(pool)
+	otpRepo := repository.NewOTPRepo(pool)
+	whatsappLinkRepo := repository.NewWhatsAppLinkRepo(pool)
 	chatHub := chat.NewHub()
 	limiter := ratelimit.New(pool)
 	midtransClient := payment.NewClient(cfg.MidtransServerKey, cfg.MidtransIsProduction)
+	mailer := email.NewClient(cfg.ResendAPIKey, cfg.ResendFromEmail)
+
+	chatDeps := chat.NewDeps(chatRepo, vendorRepo, disputeRepo, userRepo, chatHub, notificationRepo, storageClient)
+	whatsappDeps := whatsapp.NewDeps(whatsappLinkRepo, chatRepo, vendorRepo, userRepo, otpRepo, disputeRepo, limiter, chatHub, mailer, cfg)
+	// chat.Deps is built first (chat doesn't know about whatsapp), then
+	// wired to the relay here so a new message sent from the web app also
+	// gets forwarded to WhatsApp when the other participant is linked.
+	chatDeps.Notifier = whatsappDeps
 
 	deps := httpserver.Deps{
 		Auth: auth.NewDeps(
 			userRepo,
-			repository.NewOTPRepo(pool),
+			otpRepo,
 			repository.NewAgreementRepo(pool),
 			limiter,
-			email.NewClient(cfg.ResendAPIKey, cfg.ResendFromEmail),
+			mailer,
 			cfg,
 		),
 		Vendors:        vendors.NewDeps(vendorRepo, vendorNameChangeRepo, storageClient, reviewRepo, disbursementRepo),
 		Admin:          admin.NewDeps(vendorRepo, vendorNameChangeRepo, disbursementRepo, disputeRepo, userRepo, bookingRepo, auditLogRepo, notificationRepo),
-		Chat:           chat.NewDeps(chatRepo, vendorRepo, disputeRepo, userRepo, chatHub, notificationRepo, storageClient),
+		Chat:           chatDeps,
+		Whatsapp:       whatsappDeps,
 		Budget:         budget.NewDeps(repository.NewBudgetRepo(pool)),
-		Inspiration:    inspiration.NewDeps(repository.NewInspirationRepo(pool), storageClient),
+		Inspiration:    inspiration.NewDeps(repository.NewInspirationRepo(pool), storageClient, auditLogRepo),
 		WeddingPlanner: weddingplanner.NewDeps(plannerRepo),
 		Notifications:  notifications.NewDeps(notificationRepo),
 		GuestList:      guestlist.NewDeps(guestRepo, repository.NewRSVPLinkRepo(pool), limiter),
