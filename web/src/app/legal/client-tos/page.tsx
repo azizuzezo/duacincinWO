@@ -1,4 +1,8 @@
+import type { Metadata } from "next";
+
 import { LegalPage } from "@/components/landing/LegalPage";
+
+export const metadata: Metadata = { title: "Ketentuan Layanan Client" };
 
 export default function ClientTosPage() {
   return (
