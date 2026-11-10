@@ -14,6 +14,7 @@ const ICON = {
   warning: ["M11 2 1 19h20L11 2ZM11 9v4M11 15.5h.01"],
   cash: ["M11 1v20M16 4.5H8.2a3 3 0 0 0 0 6h5.6a3 3 0 0 1 0 6H5"],
   image: ["M1 15l4-5.5 3 3.5 2-2.5L16 15M0 3h18v14H0Z"],
+  envelope: ["M3 6.5A1.5 1.5 0 0 1 4.5 5h15A1.5 1.5 0 0 1 21 6.5v11a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5Z", "m3.5 6 8.5 7 8.5-7"],
 } as const;
 
 export const CLIENT_NAV: NavItem[] = [
@@ -21,6 +22,7 @@ export const CLIENT_NAV: NavItem[] = [
   { tab: true, href: "/vendors", label: "Cari Vendor", short: "Vendor", icon: ICON.search },
   { href: "/client/budget", label: "Budget Planner", short: "Budget", icon: ICON.pie },
   { href: "/client/wedding-planner", label: "Wedding Planner", short: "Planner", icon: ICON.checklist },
+  { href: "/client/undangan", label: "Undangan", icon: ICON.envelope },
   { tab: true, href: "/client/bookings", label: "Booking", icon: ICON.calendar },
   { href: "/client/consultation", label: "Konsultasi", icon: ICON.users },
   { tab: true, href: "/client/messages", label: "Pesan", icon: ICON.chat },

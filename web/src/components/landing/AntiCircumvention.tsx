@@ -21,36 +21,47 @@ const POINTS = [
   },
 ];
 
-/** The single dark ink block of the page. */
+/** Why transactions stay inside: four real protections as a numbered
+ * two-column index on paper (not cards), with the legal pages as proof. */
 export function AntiCircumvention() {
   return (
-    <section className="bg-dc-ink text-dc-ivory">
-      <div className="mx-auto grid max-w-[1200px] gap-12 px-4 py-20 sm:px-6 lg:grid-cols-12 lg:gap-16 lg:px-10 lg:py-28">
-        <Reveal className="lg:col-span-5">
-          <h2 className="font-heading text-4xl leading-[1.05] sm:text-5xl">
-            Boleh lihat-lihat bebas. <span className="dc-em-light">Transaksinya</span> tetap di dalam.
-          </h2>
-          <p className="mt-5 max-w-md leading-relaxed text-dc-ivory/80">
+    <section aria-labelledby="perlindungan-judul" className="bg-dc-cream">
+      <div className="dc-container py-20 sm:py-28">
+        <Reveal className="grid gap-6 lg:grid-cols-12 lg:items-end">
+          <div className="lg:col-span-7">
+            <p className="dc-eyebrow">Perlindungan dua arah</p>
+            <h2 id="perlindungan-judul" className="mt-4 font-heading text-[clamp(2.3rem,4.4vw,3.8rem)] leading-[1.04] text-dc-ink">
+              Boleh lihat-lihat bebas. <span className="dc-em">Transaksinya</span> tetap di dalam.
+            </h2>
+          </div>
+          <p className="max-w-md leading-relaxed text-dc-text-2 lg:col-span-5">
             Portofolio vendor terbuka tanpa login. Begitu masuk ke chat, booking, dan pembayaran, semuanya berjalan di
             DuaCincin supaya dua pihak sama-sama terlindungi.
           </p>
-          <div className="mt-8 flex flex-wrap gap-x-6">
-            <Link href="/legal/client-tos" className="inline-flex min-h-11 items-center text-sm font-semibold underline underline-offset-4 hover:text-dc-white">
-              Baca ketentuan client
-            </Link>
-            <Link href="/legal/vendor-agreement" className="inline-flex min-h-11 items-center text-sm font-semibold underline underline-offset-4 hover:text-dc-white">
-              Baca perjanjian vendor
-            </Link>
-          </div>
         </Reveal>
-        <ul className="lg:col-span-7">
-          {POINTS.map((p) => (
-            <li key={p.title} className="border-t border-dc-ivory/20 py-6 last:border-b">
-              <h3 className="font-heading text-3xl">{p.title}</h3>
-              <p className="mt-2 max-w-xl leading-relaxed text-dc-ivory/80">{p.body}</p>
+        <Reveal>
+        <ol className="dc-stagger mt-12 grid gap-x-16 sm:grid-cols-2">
+          {POINTS.map((p, i) => (
+            <li key={p.title} className="grid grid-cols-[2.5rem_1fr] gap-3 border-t border-dc-line-strong py-7">
+              <span aria-hidden className="pt-1 text-sm font-semibold tabular-nums text-dc-clay">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <div>
+                <h3 className="font-heading text-[1.75rem] leading-tight text-dc-ink">{p.title}</h3>
+                <p className="mt-2 leading-relaxed text-dc-text-2">{p.body}</p>
+              </div>
             </li>
           ))}
-        </ul>
+        </ol>
+        </Reveal>
+        <div className="mt-6 flex flex-wrap gap-x-8">
+          <Link href="/legal/client-tos" className="inline-flex min-h-11 items-center font-semibold text-dc-ink underline decoration-dc-gold underline-offset-[6px] hover:text-dc-clay">
+            Baca ketentuan client
+          </Link>
+          <Link href="/legal/vendor-agreement" className="inline-flex min-h-11 items-center font-semibold text-dc-ink underline decoration-dc-gold underline-offset-[6px] hover:text-dc-clay">
+            Baca perjanjian vendor
+          </Link>
+        </div>
       </div>
     </section>
   );

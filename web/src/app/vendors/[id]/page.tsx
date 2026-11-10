@@ -1,21 +1,26 @@
 "use client";
 
-import Image from "next/image";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { use, useEffect, useRef, useState } from "react";
+import { use, useEffect, useState } from "react";
 
-import { Button } from "@/components/Button";
-import { REVIEW_SOURCE_NOTE, ReviewList, ReviewSummary } from "@/components/vendor/Reviews";
 import { Footer } from "@/components/landing/Footer";
 import { Navbar } from "@/components/landing/Navbar";
-import { TextField } from "@/components/TextField";
+import { Reveal } from "@/components/landing/Reveal";
+import { Badge } from "@/components/ui/Badge";
+import { ButtonLink } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { GlowPanel } from "@/components/ui/GlowPanel";
+import { Skeleton, SkeletonGroup, SkeletonText } from "@/components/ui/Skeleton";
+import { TabPanel, Tabs } from "@/components/ui/Tabs";
+import { REVIEW_SOURCE_NOTE, ReviewList, ReviewSummary, Stars } from "@/components/vendor/Reviews";
 import {
   apiGet,
   apiPost,
   ApiError,
   categoryLabel,
-  formatRupiah,
   type Booking,
   type Conversation,
   type CurrentUser,
@@ -23,40 +28,68 @@ import {
   type VendorPackage,
   type VendorProfile,
 } from "@/lib/api";
+import { blurReveal, fadeUp, motionSafe, useReducedMotion } from "@/lib/motion";
+import { citySlug } from "@/lib/server-api";
+
+import { BookingCard, BookingSheet, EscrowSteps, MobileActionBar } from "./_ui/Booking";
+import { Gallery, Lightbox, PortfolioGrid } from "./_ui/Gallery";
+import { PackageCards } from "./_ui/Packages";
+
+type Load = "loading" | "ok" | "error";
+type Tab = "portofolio" | "paket" | "ulasan";
 
 export default function VendorDetailPage({ params }: PageProps<"/vendors/[id]">) {
   const { id } = use(params);
   const router = useRouter();
+  const reduced = useReducedMotion();
 
   const [profile, setProfile] = useState<VendorProfile | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [packages, setPackages] = useState<VendorPackage[]>([]);
-  // Vendor profiles are public (see engineering.md) — chat & booking still
+  const [pkgLoad, setPkgLoad] = useState<Load>("loading");
+  const [revLoad, setRevLoad] = useState<Load>("loading");
+  // Vendor profiles are public (see engineering.md). Chat and booking still
   // need a Client account, so we check the session without redirecting
   // an anonymous visitor away from the profile itself.
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [checkingUser, setCheckingUser] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
-  const [showBookingForm, setShowBookingForm] = useState(false);
-  const [eventDate, setEventDate] = useState("");
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [eventDate, setEventDateRaw] = useState("");
+  const [dateError, setDateError] = useState<string | null>(null);
   const [packageDescription, setPackageDescription] = useState("");
   const [agreedPrice, setAgreedPrice] = useState("");
   const [bookingSaving, setBookingSaving] = useState(false);
   const [lightbox, setLightbox] = useState<number | null>(null);
+  const [tab, setTab] = useState<Tab>("paket");
   const [reloadKey, setReloadKey] = useState(0);
+  const [pkgKey, setPkgKey] = useState(0);
+  const [revKey, setRevKey] = useState(0);
 
   useEffect(() => {
     apiGet<VendorProfile>(`/api/v1/vendors/${id}`)
       .then(setProfile)
       .catch((err) => setError(err instanceof ApiError ? err.message : "Vendor tidak ditemukan."));
-    apiGet<VendorPackage[]>(`/api/v1/vendors/${id}/packages`)
-      .then((d) => setPackages(d ?? []))
-      .catch(() => {});
-    apiGet<Review[]>(`/api/v1/vendors/${id}/reviews`)
-      .then((d) => setReviews(d ?? []))
-      .catch(() => {});
   }, [id, reloadKey]);
+
+  useEffect(() => {
+    apiGet<VendorPackage[]>(`/api/v1/vendors/${id}/packages`)
+      .then((d) => {
+        setPackages(d ?? []);
+        setPkgLoad("ok");
+      })
+      .catch(() => setPkgLoad("error"));
+  }, [id, reloadKey, pkgKey]);
+
+  useEffect(() => {
+    apiGet<Review[]>(`/api/v1/vendors/${id}/reviews`)
+      .then((d) => {
+        setReviews(d ?? []);
+        setRevLoad("ok");
+      })
+      .catch(() => setRevLoad("error"));
+  }, [id, reloadKey, revKey]);
 
   useEffect(() => {
     apiGet<CurrentUser>("/api/v1/auth/me")
@@ -67,6 +100,8 @@ export default function VendorDetailPage({ params }: PageProps<"/vendors/[id]">)
 
   function retryLoad() {
     setError(null);
+    setPkgLoad("loading");
+    setRevLoad("loading");
     setReloadKey((k) => k + 1);
   }
 
@@ -81,8 +116,20 @@ export default function VendorDetailPage({ params }: PageProps<"/vendors/[id]">)
     }
   }
 
+  function setEventDate(v: string) {
+    setEventDateRaw(v);
+    if (v) setDateError(null);
+  }
+
   async function handleSubmitBooking(e: React.FormEvent) {
     e.preventDefault();
+    // The calendar is a custom control, so the browser cannot enforce
+    // "required" on it: check here and point at the field.
+    if (!eventDate) {
+      setDateError("Pilih tanggal acara dulu.");
+      document.querySelector<HTMLButtonElement>("#booking-form button[aria-expanded]")?.focus();
+      return;
+    }
     setBookingSaving(true);
     setError(null);
     try {
@@ -99,201 +146,284 @@ export default function VendorDetailPage({ params }: PageProps<"/vendors/[id]">)
     }
   }
 
+  function fillPackage(p: VendorPackage) {
+    setPackageDescription(p.name);
+    setAgreedPrice(p.price > 0 ? String(p.price) : "");
+  }
+
+  function choosePackage(p: VendorPackage) {
+    fillPackage(p);
+    setSheetOpen(true);
+  }
+
+  function clearPackage() {
+    setPackageDescription("");
+    setAgreedPrice("");
+  }
+
+  function openTab(t: Tab) {
+    setTab(t);
+    document.getElementById("detail-vendor")?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+  }
+
   const isClient = user?.role === "client";
   const portfolio = profile?.portfolio ?? [];
+  const selected = packages.find((p) => p.name === packageDescription) ?? null;
+
+  const actions = {
+    isClient,
+    checkingUser,
+    starting,
+    onChat: handleStartChat,
+    onBook: () => setSheetOpen(true),
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-dc-ivory">
       <Navbar />
-      <main className="flex-1 pb-20 lg:pb-0">
-        <div className="mx-auto w-full max-w-[1200px] px-4 pb-20 pt-8 sm:px-6 lg:px-10 lg:pt-10">
-          <Link
-            href="/vendors"
-            className="inline-flex min-h-11 items-center text-sm font-medium text-dc-clay underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold"
-          >
-            Kembali ke direktori
-          </Link>
-
+      <main id="konten" className="flex-1 pb-28 lg:pb-0">
+        <div className="dc-container pb-20 pt-5 lg:pt-8">
           {error && !profile ? (
-            <div role="alert" className="mt-6 flex flex-col items-center rounded-lg border border-dc-ink/10 bg-dc-white px-6 py-16 text-center">
-              <p className="font-heading text-3xl text-dc-ink">Vendor tidak bisa dimuat</p>
-              <p className="mt-2 max-w-sm text-sm text-dc-black/70">{error}</p>
-              <div className="mt-6 flex flex-wrap justify-center gap-3">
-                <Button className="w-auto" onClick={retryLoad}>
-                  Coba lagi
-                </Button>
-                <Link href="/vendors">
-                  <Button variant="ghost" className="w-auto">
-                    Lihat vendor lain
-                  </Button>
-                </Link>
+            <div className="mt-10">
+              <ErrorState title="Profil vendor belum bisa dibuka" body={error} onRetry={retryLoad} />
+              <div className="mt-4 flex justify-center">
+                <ButtonLink href="/vendors" variant="quiet" size="sm">
+                  Lihat vendor lain
+                </ButtonLink>
               </div>
             </div>
           ) : !profile ? (
             <DetailSkeleton />
           ) : (
             <>
-              <header className="mt-4">
-                <p className="text-sm font-semibold text-dc-clay">
+              <nav aria-label="Lokasi halaman" className="text-sm text-dc-text-2">
+                <ol className="flex flex-wrap items-center gap-x-1">
+                  <li>
+                    <Link href="/vendors" className="inline-flex min-h-11 items-center rounded-md px-1 hover:text-dc-ink hover:underline focus-visible:outline-2 focus-visible:outline-dc-gold">
+                      Vendor
+                    </Link>
+                  </li>
+                  <li aria-hidden className="text-dc-text-3">/</li>
+                  <li>
+                    <Link
+                      href={`/kategori/${profile.category}`}
+                      className="inline-flex min-h-11 items-center rounded-md px-1 hover:text-dc-ink hover:underline focus-visible:outline-2 focus-visible:outline-dc-gold"
+                    >
+                      {categoryLabel(profile.category)}
+                    </Link>
+                  </li>
+                  <li aria-hidden className="text-dc-text-3">/</li>
+                  <li aria-current="page" className="min-w-0 truncate px-1 font-semibold text-dc-ink">
+                    {profile.business_name}
+                  </li>
+                </ol>
+              </nav>
+
+              {/* Arrival: the name settles out of a light blur, the page's one entrance. */}
+              <motion.header className="mt-2 sm:mt-4" variants={motionSafe(reduced, blurReveal)} initial="hidden" animate="visible">
+                <p className="dc-eyebrow">
                   {categoryLabel(profile.category)}
-                  {profile.city ? <span className="text-dc-black/60"> / {profile.city}</span> : null}
+                  {profile.city ? ` di ${profile.city}` : ""}
                 </p>
-                <h1 className="font-heading mt-3 max-w-4xl text-5xl leading-[1.05] text-dc-ink sm:text-6xl lg:text-7xl">
-                  {profile.business_name}
-                </h1>
-                {profile.review_count > 0 && (
-                  <p className="mt-4 text-sm font-medium text-dc-ink">
-                    <span className="text-dc-clay" aria-hidden="true">
-                      ★
-                    </span>{" "}
-                    {profile.average_rating.toFixed(1)}{" "}
-                    <span className="text-dc-black/60">dari {profile.review_count} ulasan</span>
-                  </p>
-                )}
-              </header>
-
-              <div className="dc-rule my-8" />
-
-              {portfolio.length > 0 ? (
-                <Gallery items={portfolio} onOpen={setLightbox} />
-              ) : (
-                <div className="flex min-h-40 items-center justify-center rounded-lg border border-dashed border-dc-ink/20 bg-dc-white/60 px-4 text-center text-sm text-dc-black/70">
-                  Vendor ini belum mengunggah portofolio.
+                <h1 className="font-heading mt-3 max-w-4xl break-words text-[2.6rem] leading-[1.02] text-dc-ink sm:text-6xl lg:text-7xl">{profile.business_name}</h1>
+                <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
+                  {profile.review_count > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => openTab("ulasan")}
+                      className="-ml-1 inline-flex min-h-11 items-center gap-2 rounded-md px-1 text-dc-ink focus-visible:outline-2 focus-visible:outline-dc-gold"
+                    >
+                      <Stars rating={profile.average_rating} />
+                      <span className="font-bold tabular-nums">{profile.average_rating.toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</span>
+                      <span className="text-sm text-dc-text-2 underline underline-offset-4">{profile.review_count} ulasan</span>
+                    </button>
+                  ) : (
+                    <span className="inline-flex min-h-11 items-center text-sm text-dc-text-2">Belum ada ulasan</span>
+                  )}
+                  {profile.status === "approved" && (
+                    <Badge tone="success">
+                      <svg aria-hidden width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M10 2.5 16 5v4.6c0 3.6-2.5 6.4-6 7.9-3.5-1.5-6-4.3-6-7.9V5z" />
+                        <path d="m7.2 10 2 2 3.6-3.8" />
+                      </svg>
+                      Terverifikasi DuaCincin
+                    </Badge>
+                  )}
+                  {profile.city && (
+                    <Link
+                      href={`/kategori/${profile.category}/${citySlug(profile.city)}`}
+                      className="inline-flex min-h-11 items-center gap-1.5 rounded-md px-1 text-sm text-dc-text-2 hover:text-dc-ink hover:underline focus-visible:outline-2 focus-visible:outline-dc-gold"
+                    >
+                      <svg aria-hidden width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7">
+                        <path d="M10 18s6-5.2 6-10a6 6 0 1 0-12 0c0 4.8 6 10 6 10Z" />
+                        <circle cx="10" cy="8" r="2.2" />
+                      </svg>
+                      {profile.city}
+                    </Link>
+                  )}
                 </div>
-              )}
+              </motion.header>
 
-              <div className="mt-12 flex flex-col gap-12 lg:flex-row lg:items-start lg:gap-16">
-                <div className="min-w-0 flex-1 lg:order-1">
+              <div className="mt-6 sm:mt-8">
+                {portfolio.length > 0 ? (
+                  <Gallery items={portfolio} onOpen={setLightbox} />
+                ) : (
+                  <div className="flex min-h-48 flex-col items-center justify-center rounded-2xl border border-dashed border-dc-line-strong bg-dc-cream/60 px-6 text-center">
+                    <p className="font-heading text-2xl text-dc-ink">Foto portofolio belum diunggah</p>
+                    <p className="mt-1 max-w-sm text-sm text-dc-text-2">Minta contoh hasil kerja lewat chat dengan vendor.</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-10 grid gap-10 lg:mt-14 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-14">
+                <div className="min-w-0">
                   <section aria-labelledby="tentang">
-                    <h2 id="tentang" className="font-heading text-3xl text-dc-ink">
-                      Tentang <span className="dc-em">vendor ini</span>
+                    <h2 id="tentang" className="font-heading text-[2.1rem] leading-tight text-dc-ink sm:text-[2.5rem]">
+                      Tentang <span className="dc-em">{profile.business_name}</span>
                     </h2>
-                    <p className="mt-4 max-w-2xl whitespace-pre-line leading-relaxed text-dc-black/80">
-                      {profile.description || "Vendor belum menambahkan deskripsi."}
+                    <p className="mt-4 max-w-2xl whitespace-pre-line break-words text-[1.02rem] leading-relaxed text-dc-text-2">
+                      {profile.description || "Vendor belum menambahkan deskripsi. Tanyakan detail layanan lewat chat."}
                     </p>
                   </section>
 
-                  {packages.length > 0 && (
-                    <section aria-labelledby="paket" className="mt-14">
-                      <h2 id="paket" className="font-heading text-3xl text-dc-ink">
-                        Paket <span className="dc-em">harga</span>
-                      </h2>
-                      <ul className="mt-6 divide-y divide-dc-ink/10 border-y border-dc-ink/10">
-                        {packages.map((p) => (
-                          <li key={p.id} className="flex flex-col gap-4 py-6 sm:flex-row sm:items-start sm:justify-between">
-                            <div className="min-w-0">
-                              <h3 className="font-heading break-words text-2xl text-dc-ink">{p.name}</h3>
-                              {p.description && <p className="mt-2 max-w-xl whitespace-pre-line break-words text-sm leading-relaxed text-dc-black/70">{p.description}</p>}
-                            </div>
-                            <div className="shrink-0 sm:text-right">
-                              <p className="font-sans text-xl font-semibold tabular-nums text-dc-ink">{p.price > 0 ? formatRupiah(p.price) : "Gratis"}</p>
-                              {isClient && (
-                                <a
-                                  href="#booking-form"
-                                  onClick={() => {
-                                    setPackageDescription(p.name);
-                                    setAgreedPrice(p.price > 0 ? String(p.price) : "");
-                                    setShowBookingForm(true);
-                                  }}
-                                  className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-dc-clay underline underline-offset-4 hover:text-dc-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold"
-                                >
-                                  Ajukan paket ini
-                                </a>
-                              )}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </section>
-                  )}
+                  <div className="mt-8 lg:hidden">
+                    <BookingCard
+                      profile={profile}
+                      {...actions}
+                      eventDate={eventDate}
+                      setEventDate={setEventDate}
+                      selected={selected}
+                      onClearPackage={clearPackage}
+                      onSeePackages={() => openTab("paket")}
+                      error={sheetOpen ? null : error}
+                    />
+                  </div>
 
-                  {reviews.length > 0 && (
-                    <section aria-labelledby="ulasan" className="mt-14">
-                      <h2 id="ulasan" className="font-heading text-3xl text-dc-ink">
-                        Ulasan dari <span className="dc-em">klien</span>
-                      </h2>
-                      <p className="mt-2 max-w-xl text-sm text-dc-black/70">{REVIEW_SOURCE_NOTE}</p>
-                      <div className="mt-6">
-                        <ReviewSummary reviews={reviews} />
+                  <section id="detail-vendor" aria-label="Portofolio, paket, dan ulasan" className="mt-12 scroll-mt-24">
+                    <Tabs
+                      label="Detail vendor"
+                      idBase="vendor"
+                      value={tab}
+                      onChange={(t) => setTab(t as Tab)}
+                      items={[
+                        { id: "portofolio", label: "Portofolio", count: portfolio.length },
+                        { id: "paket", label: "Paket", count: pkgLoad === "ok" ? packages.length : undefined },
+                        { id: "ulasan", label: "Ulasan", count: revLoad === "ok" ? reviews.length : undefined },
+                      ]}
+                    />
+
+                    <TabPanel idBase="vendor" id="portofolio" value={tab} className="mt-6">
+                      {portfolio.length > 0 ? (
+                        <PortfolioGrid items={portfolio} onOpen={setLightbox} />
+                      ) : (
+                        <EmptyState title="Belum ada foto" body="Vendor ini belum mengunggah portofolio. Kamu bisa meminta contoh hasil kerja lewat chat." />
+                      )}
+                    </TabPanel>
+
+                    <TabPanel idBase="vendor" id="paket" value={tab} className="mt-6">
+                      {pkgLoad === "loading" ? (
+                        <SkeletonGroup label="Memuat paket" className="grid gap-4 sm:grid-cols-2">
+                          <Skeleton className="h-56 rounded-xl" />
+                          <Skeleton className="h-56 rounded-xl" />
+                        </SkeletonGroup>
+                      ) : pkgLoad === "error" ? (
+                        <ErrorState
+                          compact
+                          title="Paket belum bisa dimuat"
+                          onRetry={() => {
+                            setPkgLoad("loading");
+                            setPkgKey((k) => k + 1);
+                          }}
+                        />
+                      ) : packages.length === 0 ? (
+                        <EmptyState title="Belum ada paket tertulis" body={`Harga ${profile.business_name} disesuaikan dengan kebutuhanmu. Tanyakan lewat chat.`} />
+                      ) : (
+                        <>
+                          <p className="mb-4 text-sm text-dc-text-2">Harga final tetap disepakati lewat chat. Memilih paket hanya mengisi form booking.</p>
+                          <PackageCards packages={packages} selectedId={selected?.id ?? null} isClient={isClient} onChoose={choosePackage} />
+                        </>
+                      )}
+                    </TabPanel>
+
+                    <TabPanel idBase="vendor" id="ulasan" value={tab} className="mt-6">
+                      {revLoad === "loading" ? (
+                        <SkeletonGroup label="Memuat ulasan" className="grid gap-3">
+                          <Skeleton className="h-40 rounded-xl" />
+                          <SkeletonText lines={3} />
+                        </SkeletonGroup>
+                      ) : revLoad === "error" ? (
+                        <ErrorState
+                          compact
+                          title="Ulasan belum bisa dimuat"
+                          onRetry={() => {
+                            setRevLoad("loading");
+                            setRevKey((k) => k + 1);
+                          }}
+                        />
+                      ) : reviews.length === 0 ? (
+                        <EmptyState title="Belum ada ulasan" body="Ulasan muncul setelah client menyelesaikan booking dengan vendor ini lewat DuaCincin." />
+                      ) : (
+                        <motion.div variants={motionSafe(reduced, fadeUp)} initial="hidden" animate="visible">
+                          <ReviewSummary reviews={reviews} />
+                          <p className="mt-4 flex items-start gap-2 text-sm leading-relaxed text-dc-text-2">
+                            <svg aria-hidden width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0 text-dc-success">
+                              <path d="M10 2.5 16 5v4.6c0 3.6-2.5 6.4-6 7.9-3.5-1.5-6-4.3-6-7.9V5z" />
+                              <path d="m7.2 10 2 2 3.6-3.8" />
+                            </svg>
+                            {REVIEW_SOURCE_NOTE}
+                          </p>
+                          <div className="mt-6">
+                            <ReviewList reviews={reviews} initial={6} />
+                          </div>
+                        </motion.div>
+                      )}
+                    </TabPanel>
+                  </section>
+
+                  <Reveal className="mt-16">
+                    <GlowPanel
+                      title={
+                        <>
+                          Kenapa booking <span className="dc-em-light">lewat DuaCincin</span>
+                        </>
+                      }
+                      subtitle="Semua chat, kesepakatan, dan pembayaran tercatat di satu tempat, jadi ada bukti bila terjadi masalah."
+                    >
+                      <div className="mt-7 grid gap-8 md:grid-cols-2">
+                        <div>
+                          <p className="mb-4 text-sm font-semibold text-dc-gold-antique">Alur dana escrow</p>
+                          <EscrowSteps tone="ink" />
+                        </div>
+                        <ul className="grid content-start gap-5">
+                          <li>
+                            <p className="font-semibold text-dc-on-dark">Ulasan hanya dari booking selesai</p>
+                            <p className="mt-1 text-sm leading-relaxed text-dc-on-dark/80">Tidak ada yang bisa menulis ulasan tanpa menyelesaikan booking lewat DuaCincin.</p>
+                          </li>
+                          <li>
+                            <p className="font-semibold text-dc-on-dark">Didampingi Wedding Consultant</p>
+                            <p className="mt-1 text-sm leading-relaxed text-dc-on-dark/80">Masih ragu memilih? Tim DuaCincin membantu lewat chat konsultasi sampai hari H.</p>
+                            <ButtonLink href="/client/consultation" variant="ghostLight" size="sm" className="mt-3">
+                              Chat Wedding Consultant
+                            </ButtonLink>
+                          </li>
+                        </ul>
                       </div>
-                      <div className="mt-8">
-                        <ReviewList reviews={reviews} />
-                      </div>
-                    </section>
-                  )}
+                    </GlowPanel>
+                  </Reveal>
                 </div>
 
-                {/* Booking panel: first on mobile (right after the gallery), sticky column on desktop. */}
-                <aside id="panel-booking" aria-label="Chat dan booking" className="order-first scroll-mt-20 w-full lg:sticky lg:top-24 lg:order-2 lg:w-[360px] lg:shrink-0">
-                  <div className="rounded-lg border border-dc-ink/10 bg-dc-white p-6">
-                    <p className="text-sm text-dc-black/70">Harga mulai dari</p>
-                    <p className="mt-1 font-sans text-4xl font-semibold tabular-nums tracking-tight text-dc-ink">
-                      {profile.price_min > 0 ? formatRupiah(profile.price_min) : "Lewat diskusi"}
-                    </p>
-                    {profile.price_max > profile.price_min && (
-                      <p className="mt-1 text-sm text-dc-black/70">hingga {formatRupiah(profile.price_max)}, tergantung paket</p>
-                    )}
-                    <p className="mt-4 rounded-md bg-dc-cream px-3 py-2 text-sm text-dc-ink">
-                      Bayar lewat escrow DuaCincin: dana ditahan dan baru diteruskan ke vendor setelah acaramu selesai.
-                    </p>
-                    <div className="dc-rule my-5" />
-
-                    {checkingUser ? (
-                      <div className="h-11 animate-pulse rounded-md bg-dc-ink/10 motion-reduce:animate-none" aria-hidden="true" />
-                    ) : isClient ? (
-                      <div className="flex flex-col gap-3">
-                        <Button onClick={handleStartChat} loading={starting}>
-                          Chat dengan vendor ini
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          aria-expanded={showBookingForm}
-                          aria-controls="booking-form"
-                          onClick={() => setShowBookingForm((v) => !v)}
-                        >
-                          {showBookingForm ? "Tutup form booking" : "Ajukan booking"}
-                        </Button>
-                      </div>
-                    ) : (
-                      <div>
-                        <p className="text-sm text-dc-black/70">Masuk sebagai Client untuk chat dan mengajukan booking ke vendor ini.</p>
-                        <Link href="/login" className="mt-4 block">
-                          <Button>Masuk untuk chat</Button>
-                        </Link>
-                      </div>
-                    )}
-
-                    {error && (
-                      <p role="alert" className="mt-4 text-sm text-red-700">
-                        {error}
-                      </p>
-                    )}
-
-                    {showBookingForm && isClient && (
-                      <form id="booking-form" onSubmit={handleSubmitBooking} className="mt-6 flex flex-col gap-4 border-t border-dc-ink/10 pt-6">
-                        <p className="text-sm text-dc-black/70">
-                          Ajukan booking setelah harga dan paket disepakati lewat chat. Vendor akan mengonfirmasi sebelum kamu membayar DP.
-                        </p>
-                        <div className="flex flex-col gap-1.5">
-                          <label htmlFor="event-date" className="text-sm font-medium text-dc-ink">
-                            Tanggal acara
-                          </label>
-                          <input
-                            id="event-date"
-                            type="date"
-                            value={eventDate}
-                            onChange={(e) => setEventDate(e.target.value)}
-                            required
-                            className="min-h-11 w-full rounded-md border border-dc-ink/20 bg-dc-white px-4 py-2.5 text-dc-black transition focus:border-dc-ink focus:outline-2 focus:outline-offset-2 focus:outline-dc-gold"
-                          />
-                        </div>
-                        <TextField label="Deskripsi paket" value={packageDescription} onChange={setPackageDescription} />
-                        <TextField label="Harga disepakati (Rp)" type="number" value={agreedPrice} onChange={setAgreedPrice} />
-                        <Button type="submit" loading={bookingSaving}>
-                          Kirim pengajuan booking
-                        </Button>
-                      </form>
-                    )}
+                <aside aria-label="Chat dan booking" className="hidden lg:block">
+                  <div className="sticky top-24">
+                    <BookingCard
+                      profile={profile}
+                      {...actions}
+                      eventDate={eventDate}
+                      setEventDate={setEventDate}
+                      selected={selected}
+                      onClearPackage={clearPackage}
+                      onSeePackages={() => openTab("paket")}
+                      error={sheetOpen ? null : error}
+                    />
                   </div>
                 </aside>
               </div>
@@ -302,25 +432,27 @@ export default function VendorDetailPage({ params }: PageProps<"/vendors/[id]">)
         </div>
       </main>
 
-      {/* Mobile-only sticky action bar: price + jump to the booking panel, which
-          sits right after the gallery. Hidden on desktop where the panel is sticky. */}
-      {profile && (
-        <div className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-4 border-t border-dc-ink/10 bg-dc-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden">
-          <div>
-            <p className="text-xs text-dc-black/70">Mulai dari</p>
-            <p className="font-sans text-lg font-semibold tabular-nums text-dc-ink">
-              {profile.price_min > 0 ? formatRupiah(profile.price_min) : "Lewat diskusi"}
-            </p>
-          </div>
-          <a
-            href="#panel-booking"
-            className="inline-flex min-h-11 items-center rounded-md bg-dc-ink px-6 text-sm font-semibold text-dc-white transition-colors hover:bg-dc-clay focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold"
-          >
-            Chat atau booking
-          </a>
-        </div>
-      )}
+      {profile && <MobileActionBar profile={profile} {...actions} />}
       <Footer />
+
+      {isClient && (
+        <BookingSheet
+          open={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+          packages={packages}
+          eventDate={eventDate}
+          setEventDate={setEventDate}
+          packageDescription={packageDescription}
+          setPackageDescription={setPackageDescription}
+          agreedPrice={agreedPrice}
+          setAgreedPrice={setAgreedPrice}
+          onPickPackage={fillPackage}
+          saving={bookingSaving}
+          error={error}
+          dateError={dateError}
+          onSubmit={handleSubmitBooking}
+        />
+      )}
 
       {profile && lightbox !== null && portfolio[lightbox] && (
         <Lightbox items={portfolio} index={lightbox} onChange={setLightbox} onClose={() => setLightbox(null)} />
@@ -329,164 +461,24 @@ export default function VendorDetailPage({ params }: PageProps<"/vendors/[id]">)
   );
 }
 
-type PortfolioItem = { id: string; url: string; alt_text: string };
-
-function Gallery({ items, onOpen }: { items: PortfolioItem[]; onOpen: (i: number) => void }) {
-  const [first, ...rest] = items;
-  const shown = rest.slice(0, 6);
-  return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:grid-rows-2">
-      <GalleryTile item={first} index={0} onOpen={onOpen} className="col-span-2 aspect-[4/3] lg:row-span-2 lg:aspect-auto lg:min-h-[480px]" priority />
-      {shown.map((p, i) => (
-        <GalleryTile
-          key={p.id}
-          item={p}
-          index={i + 1}
-          onOpen={onOpen}
-          className="aspect-square"
-          more={i === shown.length - 1 && rest.length > shown.length ? rest.length - shown.length : 0}
-        />
-      ))}
-    </div>
-  );
-}
-
-function GalleryTile({
-  item,
-  index,
-  onOpen,
-  className,
-  priority,
-  more = 0,
-}: {
-  item: PortfolioItem;
-  index: number;
-  onOpen: (i: number) => void;
-  className: string;
-  priority?: boolean;
-  more?: number;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={() => onOpen(index)}
-      aria-label={`Perbesar foto: ${item.alt_text || "Portofolio vendor"}`}
-      className={`group relative overflow-hidden rounded-lg border border-dc-ink/10 bg-dc-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold ${className}`}
-    >
-      <Image
-        src={item.url}
-        alt={item.alt_text || "Portofolio vendor"}
-        fill
-        priority={priority}
-        sizes={priority ? "(min-width: 1024px) 600px, 100vw" : "(min-width: 1024px) 300px, 50vw"}
-        className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
-        unoptimized
-      />
-      {more > 0 && (
-        <span className="absolute inset-0 flex items-center justify-center bg-dc-ink/70 text-sm font-semibold text-dc-white">
-          Lihat {more} foto lagi
-        </span>
-      )}
-    </button>
-  );
-}
-
-function Lightbox({
-  items,
-  index,
-  onChange,
-  onClose,
-}: {
-  items: PortfolioItem[];
-  index: number;
-  onChange: (i: number) => void;
-  onClose: () => void;
-}) {
-  const closeRef = useRef<HTMLButtonElement>(null);
-  const item = items[index];
-  const prev = () => onChange((index - 1 + items.length) % items.length);
-  const next = () => onChange((index + 1) % items.length);
-
-  useEffect(() => {
-    const opener = document.activeElement as HTMLElement | null;
-    closeRef.current?.focus();
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prevOverflow;
-      opener?.focus();
-    };
-  }, []);
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-      if (e.key === "ArrowLeft") onChange((index - 1 + items.length) % items.length);
-      if (e.key === "ArrowRight") onChange((index + 1) % items.length);
-      if (e.key === "Tab") {
-        // Keep focus inside the dialog.
-        const f = Array.from(document.querySelectorAll<HTMLElement>("[data-lb] button"));
-        if (f.length === 0) return;
-        const first = f[0];
-        const last = f[f.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
-    }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [index, items.length, onChange, onClose]);
-
-  const nav =
-    "flex min-h-11 min-w-11 items-center justify-center rounded-md border border-dc-white/30 bg-dc-ink/60 px-3 text-sm font-semibold text-dc-white transition-colors hover:bg-dc-clay focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold";
-
-  return (
-    <div
-      data-lb
-      role="dialog"
-      aria-modal="true"
-      aria-label="Galeri portofolio"
-      className="fixed inset-0 z-[60] flex flex-col bg-dc-ink/95 p-4 sm:p-8"
-      onClick={onClose}
-    >
-      <div className="flex items-center justify-between text-sm text-dc-white" onClick={(e) => e.stopPropagation()}>
-        <p>
-          Foto {index + 1} dari {items.length}
-        </p>
-        <button ref={closeRef} type="button" onClick={onClose} className={nav}>
-          Tutup
-        </button>
-      </div>
-      <div className="relative my-4 min-h-0 flex-1">
-        <Image src={item.url} alt={item.alt_text || "Portofolio vendor"} fill sizes="100vw" className="object-contain" unoptimized />
-      </div>
-      {items.length > 1 && (
-        <div className="flex justify-center gap-3" onClick={(e) => e.stopPropagation()}>
-          <button type="button" onClick={prev} className={nav}>
-            Sebelumnya
-          </button>
-          <button type="button" onClick={next} className={nav}>
-            Berikutnya
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function DetailSkeleton() {
   return (
-    <div role="status" aria-label="Memuat profil vendor" className="mt-6">
-      <div className="h-3 w-32 animate-pulse rounded bg-dc-ink/10 motion-reduce:animate-none" />
-      <div className="mt-4 h-14 w-2/3 animate-pulse rounded bg-dc-ink/10 motion-reduce:animate-none" />
-      <div className="mt-10 aspect-[16/7] animate-pulse rounded-lg bg-dc-ink/10 motion-reduce:animate-none" />
-      <div className="mt-10 h-4 w-full max-w-xl animate-pulse rounded bg-dc-ink/10 motion-reduce:animate-none" />
-      <div className="mt-3 h-4 w-3/4 max-w-xl animate-pulse rounded bg-dc-ink/10 motion-reduce:animate-none" />
-    </div>
+    <SkeletonGroup label="Memuat profil vendor" className="pt-6">
+      <Skeleton className="h-4 w-48 rounded-full" />
+      <Skeleton className="mt-5 h-4 w-40 rounded-full" />
+      <Skeleton className="mt-4 h-14 w-3/4 max-w-2xl rounded-xl" />
+      <Skeleton className="mt-4 h-5 w-56 rounded-full" />
+      <div className="mt-8 grid gap-3 md:h-[min(62vh,560px)] md:grid-cols-4 md:grid-rows-2">
+        <Skeleton className="aspect-[4/5] rounded-2xl md:col-span-2 md:row-span-2 md:aspect-auto md:h-full" />
+        <Skeleton className="hidden h-full rounded-xl md:block" />
+        <Skeleton className="hidden h-full rounded-xl md:block" />
+        <Skeleton className="hidden h-full rounded-xl md:block" />
+        <Skeleton className="hidden h-full rounded-xl md:block" />
+      </div>
+      <div className="mt-12 grid gap-10 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <SkeletonText lines={4} className="max-w-2xl" />
+        <Skeleton className="hidden h-96 rounded-2xl lg:block" />
+      </div>
+    </SkeletonGroup>
   );
 }

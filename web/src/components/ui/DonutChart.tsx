@@ -1,8 +1,13 @@
 "use client";
 
-// Ink / clay / gold family plus muted neutrals; every value clears 3:1 against
-// white (graphics threshold). Charts must also ship a text legend: color is never the only cue.
-const COLORS = ["#1b1713", "#8e4028", "#b8862f", "#6e4f17", "#5c6b7a", "#7c8a6e", "#9b8377"];
+import { useEffect, useState } from "react";
+
+import { useReducedMotion } from "@/lib/motion";
+
+// Brand series: ink, gold, then warm neutrals and two rare calm accents (rose,
+// sage) from the invitation palette. Each clears 3:1 against the card surface
+// (graphics threshold). Charts must also ship a text legend: color is never the only cue.
+const COLORS = ["#15110d", "#a17d36", "#7a5c24", "#b46a5c", "#4f6b5c", "#6b6157", "#8c7a5e"];
 
 export type DonutSegment = { label: string; value: number };
 
@@ -19,6 +24,15 @@ export function DonutChart({
    * used elsewhere on the page for the same categories (Budget Planner). */
   colors?: string[];
 }) {
+  // Arcs draw from empty to their share once on mount, so the split reads as
+  // "this is where the money goes". Reduced motion: drawn at once.
+  const reduced = useReducedMotion();
+  const [drawn, setDrawn] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setDrawn(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+  const show = drawn || !!reduced;
   const total = segments.reduce((sum, s) => sum + s.value, 0);
   const radius = size / 2 - 12;
   const circumference = 2 * Math.PI * radius;
@@ -37,17 +51,17 @@ export function DonutChart({
       fill="none"
       stroke={colors[i % colors.length]}
       strokeWidth={16}
-      strokeDasharray={`${dashes[i]} ${circumference - dashes[i]}`}
+      strokeDasharray={show ? `${dashes[i]} ${circumference - dashes[i]}` : `0 ${circumference}`}
       strokeDashoffset={-offsets[i]}
       strokeLinecap="butt"
       transform={`rotate(-90 ${size / 2} ${size / 2})`}
-      style={{ transition: "stroke-dasharray 0.6s cubic-bezier(0.16,1,0.3,1)" }}
+      style={{ transition: reduced ? undefined : `stroke-dasharray 0.4s cubic-bezier(0.16,1,0.3,1) ${i * 0.05}s` }}
     />
   ));
 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`Diagram donat: ${segments.map((s) => `${s.label} ${total > 0 ? Math.round((s.value / total) * 100) : 0}%`).join(", ")}`}>
-      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#efe8dc" strokeWidth={16} />
+      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#f3ecdf" strokeWidth={16} />
       {arcs}
     </svg>
   );

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -33,6 +34,17 @@ type Config struct {
 	// whatsapp-bot/ relay process in both directions (see internal/whatsapp).
 	WhatsAppBotSecret      string
 	WhatsAppBotCallbackURL string
+
+	// DuaCincin Invitation link (internal/invitationlink). WOLinkSecret is
+	// shared with the invitation app (same WO_LINK_SECRET there) and is
+	// server-only: never sent to the browser or logged.
+	InvitationBaseURL string
+	WOLinkSecret      string
+
+	// GoogleClientID is the Google OAuth web client ID used to check the
+	// audience of "Masuk dengan Google" ID tokens (internal/googleauth).
+	// Same client as DuaCincin Invitation. Public value, but read from env.
+	GoogleClientID string
 }
 
 // Load reads environment variables, falling back to a local .env file
@@ -61,6 +73,11 @@ func Load() (*Config, error) {
 
 		WhatsAppBotSecret:      os.Getenv("WHATSAPP_BOT_SECRET"),
 		WhatsAppBotCallbackURL: os.Getenv("WHATSAPP_BOT_CALLBACK_URL"),
+
+		InvitationBaseURL: strings.TrimRight(getEnv("INVITATION_BASE_URL", "https://invitation.duacincin.id"), "/"),
+		WOLinkSecret:      os.Getenv("WO_LINK_SECRET"),
+
+		GoogleClientID: strings.TrimSpace(os.Getenv("GOOGLE_CLIENT_ID")),
 	}
 
 	if cfg.DatabasePooler == "" {
@@ -82,6 +99,12 @@ func Load() (*Config, error) {
 	}
 	if cfg.MidtransServerKey == "" {
 		log.Println("warning: MIDTRANS_SERVER_KEY is not set — payments run in dev-simulation mode instead of calling Midtrans")
+	}
+	if len(cfg.WOLinkSecret) < 32 {
+		log.Println("warning: WO_LINK_SECRET is not set (min 32 chars) — the DuaCincin Invitation link is disabled")
+	}
+	if cfg.GoogleClientID == "" {
+		log.Println("warning: GOOGLE_CLIENT_ID is not set — \"Masuk dengan Google\" is disabled")
 	}
 	if cfg.WhatsAppBotSecret == "" {
 		log.Println("warning: WHATSAPP_BOT_SECRET is not set — the WhatsApp relay webhook will reject every request")

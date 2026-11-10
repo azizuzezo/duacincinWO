@@ -1,17 +1,19 @@
 "use client";
 
+import { AnimatePresence } from "framer-motion";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { Button } from "@/components/Button";
 import { ADMIN_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
+import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Modal } from "@/components/ui/Modal";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/Toast";
 import { WithUser } from "@/components/WithUser";
-import { DangerButton, ErrorBanner, INPUT, NUM, PAGE, RowsSkeleton, TableCard, TD, TEXTAREA, TH, TR } from "../../_ui";
 import { apiGet, apiPost, ApiError, categoryLabel, type CurrentUser } from "@/lib/api";
+import { ConfirmDialog, DangerGhostButton, ErrorBanner, Monogram, PAGE, QueueItem, ResultCount, RowsSkeleton, SearchField, SubNav } from "../../_ui";
 
 type PendingVendor = {
   user_id: string;
@@ -20,6 +22,12 @@ type PendingVendor = {
   city: string;
   status: string;
 };
+
+const REJECT_PICKS = [
+  "Nama usaha belum jelas atau tidak sesuai",
+  "Kategori tidak sesuai dengan layanan",
+  "Kota layanan belum diisi dengan benar",
+];
 
 export default function AdminVendorsPage() {
   return (
@@ -32,20 +40,26 @@ export default function AdminVendorsPage() {
 function AdminVendorsContent({ user }: { user: CurrentUser }) {
   const [vendors, setVendors] = useState<PendingVendor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [rejectTarget, setRejectTarget] = useState<PendingVendor | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkBusy, setBulkBusy] = useState(false);
   const { show } = useToast();
 
   async function load() {
     try {
-      setVendors((await apiGet<PendingVendor[]>("/api/v1/admin/vendors/pending")) ?? []);
-      setError(null);
+      const data = (await apiGet<PendingVendor[]>("/api/v1/admin/vendors/pending")) ?? [];
+      setVendors(data);
+      // Drop selections for vendors that are no longer pending.
+      setSelected((prev) => new Set([...prev].filter((id) => data.some((v) => v.user_id === id))));
+      setLoadFailed(false);
     } catch (err) {
+      setLoadFailed(true);
       setError(err instanceof ApiError ? err.message : "Gagal memuat daftar vendor.");
     } finally {
       setLoading(false);
@@ -53,16 +67,15 @@ function AdminVendorsContent({ user }: { user: CurrentUser }) {
   }
 
   useEffect(() => {
-    // `load()` sets state, so it can't be called directly in an effect body —
-    // schedule it as a microtask instead of invoking it synchronously here.
     queueMicrotask(load);
   }, []);
 
-  async function handleApprove(id: string) {
-    setBusyId(id);
+  async function handleApprove(v: PendingVendor) {
+    setBusyId(v.user_id);
+    setError(null);
     try {
-      await apiPost(`/api/v1/admin/vendors/${id}/approve`, {});
-      show("Vendor disetujui.", "success");
+      await apiPost(`/api/v1/admin/vendors/${v.user_id}/approve`, {});
+      show(`${v.business_name} disetujui dan tampil di direktori.`, "success");
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Gagal menyetujui vendor.");
@@ -82,13 +95,16 @@ function AdminVendorsContent({ user }: { user: CurrentUser }) {
 
   async function handleBulkApprove() {
     setBulkBusy(true);
+    setError(null);
     try {
       const res = await apiPost<{ approved: number }>("/api/v1/admin/vendors/bulk-approve", { ids: Array.from(selected) });
       show(`${res.approved} vendor disetujui.`, "success");
       setSelected(new Set());
+      setBulkOpen(false);
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Gagal menyetujui vendor terpilih.");
+      setBulkOpen(false);
     } finally {
       setBulkBusy(false);
     }
@@ -96,11 +112,12 @@ function AdminVendorsContent({ user }: { user: CurrentUser }) {
 
   async function confirmReject() {
     if (!rejectTarget) return;
-    const id = rejectTarget.user_id;
-    setBusyId(id);
+    const target = rejectTarget;
+    setBusyId(target.user_id);
+    setError(null);
     try {
-      await apiPost(`/api/v1/admin/vendors/${id}/reject`, { reason: rejectReason });
-      show("Vendor ditolak.", "success");
+      await apiPost(`/api/v1/admin/vendors/${target.user_id}/reject`, { reason: rejectReason });
+      show(`${target.business_name} ditolak.`, "success");
       setRejectTarget(null);
       setRejectReason("");
       await load();
@@ -111,118 +128,195 @@ function AdminVendorsContent({ user }: { user: CurrentUser }) {
     }
   }
 
+  const q = search.trim().toLowerCase();
+  const shown = vendors.filter((v) => !q || v.business_name.toLowerCase().includes(q) || v.city.toLowerCase().includes(q));
+  const selectedVendors = vendors.filter((v) => selected.has(v.user_id));
+  const allShownSelected = shown.length > 0 && shown.every((v) => selected.has(v.user_id));
+
   return (
     <Shell user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
       <div className={PAGE}>
-        <PageHeader title="Vendor Menunggu Review" subtitle="Periksa pendaftaran vendor baru sebelum tampil di katalog." />
-        {error && (
-          <ErrorBanner
-            message={error}
+        <PageHeader
+          eyebrow="Verifikasi vendor"
+          title={
+            <>
+              Vendor <span className="dc-em">menunggu</span> review
+            </>
+          }
+          subtitle="Vendor baru tampil di direktori setelah kamu setujui. Vendor yang ditolak menerima alasanmu."
+        />
+        <SubNav
+          label="Daftar vendor"
+          items={[
+            { href: "/internal/admin/vendors", label: "Menunggu", count: loading ? null : vendors.length },
+            { href: "/internal/admin/vendors/approved", label: "Aktif dan komisi" },
+          ]}
+        />
+
+        {error && !loadFailed && <ErrorBanner message={error} />}
+
+        {loading ? (
+          <RowsSkeleton rows={3} label="Memuat vendor" />
+        ) : loadFailed ? (
+          <ErrorState
+            title="Daftar vendor belum bisa dimuat"
             onRetry={() => {
               setLoading(true);
+              setError(null);
               load();
             }}
           />
-        )}
-        {loading ? (
-          <RowsSkeleton />
         ) : vendors.length === 0 ? (
-          !error && <EmptyState title="Tidak ada vendor yang menunggu review" body="Pendaftaran vendor baru akan muncul di sini." />
+          <EmptyState
+            title="Tidak ada vendor yang menunggu"
+            body="Pendaftaran vendor baru akan muncul di sini untuk kamu tinjau."
+            actionHref="/internal/admin/vendors/approved"
+            actionLabel="Lihat vendor aktif"
+          />
         ) : (
           <>
-            <div className="mb-4 flex flex-wrap items-center gap-3">
-              <div className="min-w-0 flex-1 sm:max-w-sm">
-                <label htmlFor="vendor-search" className="sr-only">
-                  Cari vendor
-                </label>
+            <div className="mb-5 flex flex-wrap items-center gap-x-5 gap-y-3">
+              <SearchField value={search} onChange={setSearch} label="Cari vendor" placeholder="Cari nama usaha atau kota" />
+              <label className="inline-flex min-h-11 cursor-pointer items-center gap-2.5 text-sm font-medium text-dc-text-2">
                 <input
-                  id="vendor-search"
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Cari nama usaha atau kota…"
-                  className={INPUT}
+                  type="checkbox"
+                  checked={allShownSelected}
+                  onChange={() =>
+                    setSelected((prev) => {
+                      const next = new Set(prev);
+                      shown.forEach((v) => (allShownSelected ? next.delete(v.user_id) : next.add(v.user_id)));
+                      return next;
+                    })
+                  }
+                  className="h-5 w-5 accent-dc-ink"
                 />
-              </div>
-              {selected.size > 0 && (
-                <div className="flex items-center gap-3">
-                  <p className="text-sm font-medium tabular-nums text-dc-ink">{selected.size} vendor dipilih</p>
-                  <Button className="w-auto" onClick={handleBulkApprove} loading={bulkBusy}>
-                    Setujui yang Dipilih
-                  </Button>
-                </div>
-              )}
+                Pilih semua yang tampil
+              </label>
+              <ResultCount shown={shown.length} total={vendors.length} noun="vendor" />
             </div>
 
-            <TableCard minWidth="min-w-[720px]">
-              <thead className="bg-dc-cream/50">
-                <tr>
-                  <th scope="col" className={`${TH} w-12`}>
-                    <span className="sr-only">Pilih</span>
-                  </th>
-                  <th scope="col" className={TH}>Usaha</th>
-                  <th scope="col" className={TH}>Kategori</th>
-                  <th scope="col" className={TH}>Kota</th>
-                  <th scope="col" className={`${TH} text-right`}>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {vendors
-                  .filter((v) => {
-                    const q = search.trim().toLowerCase();
-                    return !q || v.business_name.toLowerCase().includes(q) || v.city.toLowerCase().includes(q);
-                  })
-                  .map((v) => (
-                    <tr key={v.user_id} className={TR}>
-                      <td className={TD}>
-                        <input
-                          type="checkbox"
-                          checked={selected.has(v.user_id)}
-                          onChange={() => toggleSelect(v.user_id)}
-                          className="h-5 w-5 accent-dc-ink"
-                          aria-label={`Pilih ${v.business_name}`}
-                        />
-                      </td>
-                      <td className={`${TD} font-semibold`}>{v.business_name}</td>
-                      <td className={`${TD} text-dc-black/70`}>{categoryLabel(v.category)}</td>
-                      <td className={`${TD} text-dc-black/70`}>{v.city}</td>
-                      <td className={`${TD} ${NUM}`}>
-                        <div className="flex justify-end gap-2">
-                          <DangerButton onClick={() => setRejectTarget(v)} disabled={busyId === v.user_id}>
-                            Tolak
-                          </DangerButton>
-                          <Button className="w-auto" onClick={() => handleApprove(v.user_id)} loading={busyId === v.user_id}>
-                            Setujui
-                          </Button>
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 rounded-lg bg-dc-cream px-4 py-3 text-sm text-dc-text-2">
+              <p>
+                <span className="font-semibold text-dc-ink">Sebelum menyetujui:</span> pastikan nama usaha, kategori, dan kota sesuai layanan yang dijual. Setiap vendor sudah menyetujui Perjanjian Kemitraan saat mendaftar.
+              </p>
+              <Link
+                href="/legal/vendor-agreement"
+                target="_blank"
+                className="inline-flex min-h-11 items-center font-semibold text-dc-clay underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold"
+              >
+                Baca perjanjian
+                <span className="sr-only"> (tab baru)</span>
+              </Link>
+            </div>
+
+            {shown.length === 0 ? (
+              <EmptyState title="Tidak ada yang cocok" body={`Tidak ada vendor dengan nama atau kota "${search}".`} action={<Button variant="ghost" size="sm" onClick={() => setSearch("")}>Hapus pencarian</Button>} />
+            ) : (
+              <ul className="grid gap-4 lg:grid-cols-2">
+                <AnimatePresence initial={false}>
+                {shown.map((v, i) => {
+                  const isSel = selected.has(v.user_id);
+                  return (
+                    <QueueItem key={v.user_id} index={i}>
+                      <article
+                        aria-labelledby={`v-${v.user_id}`}
+                        className={`flex h-full flex-col rounded-xl border bg-dc-white transition-colors ${isSel ? "border-dc-ink" : "border-dc-line"}`}
+                      >
+                        <div className="flex items-start gap-4 px-5 py-5 sm:px-6">
+                          <Monogram name={v.business_name} />
+                          <div className="min-w-0 flex-1">
+                            <h2 id={`v-${v.user_id}`} className="font-heading text-2xl leading-tight text-dc-ink">
+                              {v.business_name}
+                            </h2>
+                            <p className="mt-1 text-sm text-dc-text-2">
+                              {categoryLabel(v.category)} · {v.city}
+                            </p>
+                          </div>
+                          <label className="-m-2 inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full hover:bg-dc-cream">
+                            <input type="checkbox" checked={isSel} onChange={() => toggleSelect(v.user_id)} className="h-5 w-5 accent-dc-ink" aria-label={`Pilih ${v.business_name}`} />
+                          </label>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </TableCard>
+
+                        <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-dc-line px-5 py-3 sm:px-6">
+                          <span className="flex items-center gap-1.5 text-sm text-dc-text-2">
+                            <svg aria-hidden viewBox="0 0 20 20" className="h-4 w-4 shrink-0 text-dc-success" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="m4.5 10.5 3.5 3.5 7.5-8" />
+                            </svg>
+                            Perjanjian kemitraan disetujui
+                          </span>
+                          <span className="flex gap-2">
+                          <DangerGhostButton onClick={() => setRejectTarget(v)} disabled={busyId === v.user_id}>
+                            Tolak
+                          </DangerGhostButton>
+                          <Button size="sm" onClick={() => handleApprove(v)} loading={busyId === v.user_id}>
+                            Setujui vendor
+                          </Button>
+                          </span>
+                        </div>
+                      </article>
+                    </QueueItem>
+                  );
+                })}
+                </AnimatePresence>
+              </ul>
+            )}
           </>
         )}
+        {selected.size > 0 && <div aria-hidden className="h-20" />}
       </div>
 
-      <Modal open={!!rejectTarget} onClose={() => setRejectTarget(null)} title={`Tolak ${rejectTarget?.business_name ?? ""}`}>
-        <label className="block text-sm font-medium text-dc-ink">
-          Alasan penolakan (opsional)
-          <textarea
-            value={rejectReason}
-            onChange={(e) => setRejectReason(e.target.value)}
-            rows={3}
-            className={TEXTAREA}
-          />
-        </label>
-        <div className="mt-4 flex justify-end gap-2">
-          <Button variant="ghost" className="w-auto" onClick={() => setRejectTarget(null)}>
-            Batal
-          </Button>
-          <DangerButton solid onClick={confirmReject} loading={busyId === rejectTarget?.user_id}>
-            Tolak Vendor
-          </DangerButton>
+      {/* Sticky bulk bar: appears only with a selection, above the mobile tab bar. */}
+      {selected.size > 0 && (
+        <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 px-4 md:bottom-6 md:left-[272px]">
+          <div className="mx-auto flex max-w-xl animate-fade-up items-center justify-between gap-3 rounded-full bg-dc-ink py-2 pl-5 pr-2 text-dc-on-dark shadow-float">
+            <p className="text-sm font-medium tabular-nums" aria-live="polite">
+              {selected.size} vendor dipilih
+            </p>
+            <div className="flex items-center gap-1">
+              <button type="button" onClick={() => setSelected(new Set())} className="min-h-11 rounded-full px-3 text-sm font-semibold text-dc-on-dark/80 hover:text-dc-on-dark focus-visible:outline-2 focus-visible:outline-dc-gold-antique">
+                Batal pilih
+              </button>
+              <Button variant="light" size="sm" onClick={() => setBulkOpen(true)}>
+                Setujui semua
+              </Button>
+            </div>
+          </div>
         </div>
-      </Modal>
+      )}
+
+      <ConfirmDialog
+        open={!!rejectTarget}
+        onClose={() => {
+          setRejectTarget(null);
+          setRejectReason("");
+        }}
+        onConfirm={confirmReject}
+        busy={!!rejectTarget && busyId === rejectTarget.user_id}
+        title={`Tolak ${rejectTarget?.business_name ?? "vendor"}?`}
+        consequence="Vendor ini tidak akan tampil di direktori. Alasanmu disimpan bersama penolakan agar vendor tahu apa yang perlu diperbaiki."
+        confirmLabel="Tolak vendor"
+        reason={{ value: rejectReason, onChange: setRejectReason, label: "Alasan penolakan", picks: REJECT_PICKS, hint: "Tulis dengan sopan dan jelas. Pilih salah satu di atas atau tulis sendiri." }}
+      />
+
+      <ConfirmDialog
+        open={bulkOpen}
+        onClose={() => setBulkOpen(false)}
+        onConfirm={handleBulkApprove}
+        busy={bulkBusy}
+        tone="primary"
+        title={`Setujui ${selected.size} vendor?`}
+        consequence="Semua vendor di bawah langsung tampil di direktori dan bisa menerima booking."
+        confirmLabel={`Setujui ${selected.size} vendor`}
+      >
+        <ul className="max-h-48 overflow-y-auto rounded-lg border border-dc-line">
+          {selectedVendors.map((v, i) => (
+            <li key={v.user_id} className={`flex items-center justify-between gap-3 px-4 py-2.5 text-sm ${i > 0 ? "border-t border-dc-line" : ""}`}>
+              <span className="font-semibold text-dc-ink">{v.business_name}</span>
+              <span className="text-dc-text-3">{v.city}</span>
+            </li>
+          ))}
+        </ul>
+      </ConfirmDialog>
     </Shell>
   );
 }

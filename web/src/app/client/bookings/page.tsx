@@ -1,19 +1,20 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { BookingStatusFilter, matchesBookingFilter } from "@/components/BookingStatusFilter";
+import { BookingCard, BookingCardSkeleton, CLIENT_NEXT_ACTION } from "@/components/booking/BookingCard";
+import { useVendorLookup } from "@/components/booking/useVendorLookup";
+import { BookingStatusFilter, countBookingFilters, matchesBookingFilter } from "@/components/BookingStatusFilter";
 import { CLIENT_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
-import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
-import { FundStatus } from "@/components/ui/FundStatus";
+import { ButtonLink } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { CountUp, MotionItem, MotionList } from "@/components/ui/Motion";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { ErrorState, FOCUS, SkeletonList } from "@/app/client/_ui";
+import { SkeletonGroup } from "@/components/ui/Skeleton";
 import { WithUser } from "@/components/WithUser";
-import { apiGet, ApiError, BOOKING_STATUS_LABEL, BOOKING_STATUS_TONE, formatRupiah, type Booking, type CurrentUser } from "@/lib/api";
+import { apiGet, ApiError, formatRupiah, type Booking, type BookingStatus, type CurrentUser } from "@/lib/api";
 
 export default function ClientBookingsPage() {
   return (
@@ -21,6 +22,16 @@ export default function ClientBookingsPage() {
       {(user) => <ClientBookingsContent user={user} />}
     </WithUser>
   );
+}
+
+// Active bookings first (soonest event on top), then finished, then cancelled.
+const ORDER: Record<BookingStatus, number> = { confirmed: 0, dp_paid: 0, full_paid: 0, requested: 0, completed: 1, cancelled: 2 };
+
+/** Money the couple has paid that DuaCincin is holding, from real booking data. */
+function heldAmount(b: Booking): number {
+  if (b.status === "dp_paid") return b.dp_amount;
+  if (b.status === "full_paid") return b.agreed_price;
+  return 0;
 }
 
 function ClientBookingsContent({ user }: { user: CurrentUser }) {
@@ -47,47 +58,117 @@ function ClientBookingsContent({ user }: { user: CurrentUser }) {
     queueMicrotask(load);
   }, []);
 
-  const visible = bookings.filter((b) => matchesBookingFilter(b.status, filter));
+  const vendors = useVendorLookup(bookings.map((b) => b.vendor_id));
+  const sorted = [...bookings].sort((a, b) => ORDER[a.status] - ORDER[b.status] || a.event_date.localeCompare(b.event_date));
+  const visible = sorted.filter((b) => matchesBookingFilter(b.status, filter));
+  const held = bookings.reduce((sum, b) => sum + heldAmount(b), 0);
+  const released = bookings.filter((b) => b.status === "completed").reduce((sum, b) => sum + b.agreed_price, 0);
+  const needsAction = bookings.filter((b) => CLIENT_NEXT_ACTION[b.status]).length;
+  const active = bookings.filter((b) => matchesBookingFilter(b.status, "active")).length;
 
   return (
     <Shell user={user} navItems={CLIENT_NAV} loginPath="/login" eyebrow="Client">
-      <div className="mx-auto max-w-2xl px-4 py-8 sm:py-10">
-        <PageHeader title="Booking Saya" subtitle="Pantau status dan pembayaran tiap vendor." />
+      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
+        <PageHeader
+          eyebrow="Booking"
+          title={
+            <>
+              Booking <span className="dc-em">vendormu</span>
+            </>
+          }
+          subtitle="Tahap tiap vendor dan di mana uangmu berada sekarang."
+          action={
+            bookings.length > 0 ? (
+              <ButtonLink href="/vendors" variant="ghost" size="sm">
+                Cari vendor lain
+              </ButtonLink>
+            ) : undefined
+          }
+        />
 
-        {bookings.length > 0 && <BookingStatusFilter value={filter} onChange={setFilter} />}
+        {loading && (
+          <SkeletonGroup label="Memuat booking" className="flex flex-col gap-4">
+            <span className="dc-skeleton block h-32 rounded-xl" />
+            <BookingCardSkeleton />
+            <BookingCardSkeleton />
+          </SkeletonGroup>
+        )}
 
-        {loading && <SkeletonList rows={4} />}
-        {error && <ErrorState message={error} onRetry={load} />}
+        {!loading && error && <ErrorState title="Booking belum bisa dimuat" body={error} onRetry={load} />}
+
         {!loading && !error && bookings.length === 0 && (
-          <EmptyState title="Belum ada booking" body="Cari vendor dulu untuk mengajukan booking." actionHref="/vendors" actionLabel="Cari vendor" />
+          <EmptyState
+            title="Belum ada booking"
+            body="Setelah kamu sepakat dengan vendor lewat chat, ajukan booking dari halaman vendornya. Semua pembayaran ditahan escrow sampai acaramu selesai."
+            action={
+              <div className="flex flex-wrap justify-center gap-2">
+                <ButtonLink href="/vendors" size="sm">
+                  Cari vendor
+                </ButtonLink>
+                <ButtonLink href="/client/consultation" variant="ghost" size="sm">
+                  Minta rekomendasi konsultan
+                </ButtonLink>
+              </div>
+            }
+          />
         )}
-        {!loading && !error && bookings.length > 0 && visible.length === 0 && (
-          <p className="rounded-lg border border-dashed border-dc-ink/20 px-4 py-10 text-center text-sm text-dc-black/70">
-            Tidak ada booking pada filter ini.
-          </p>
+
+        {!loading && !error && bookings.length > 0 && (
+          <div className="animate-fade-up">
+            {/* Escrow summary: the held amount is the one figure that matters most, so it leads. */}
+            <section aria-label="Ringkasan dana" className="mb-8 grid gap-px overflow-hidden rounded-xl border border-dc-line bg-dc-line shadow-soft grid-cols-2 sm:grid-cols-[1.4fr_1fr_1fr]">
+              <div className="col-span-2 bg-dc-white p-5 sm:col-span-1 sm:p-6">
+                <p className="text-sm font-medium text-dc-text-2">Dana ditahan escrow</p>
+                <p className="mt-1 font-heading text-[2.4rem] leading-none lining-nums tabular-nums text-dc-ink sm:text-[2.75rem]">
+                  <CountUp value={held} format={formatRupiah} />
+                </p>
+                <p className="mt-2 text-xs leading-relaxed text-dc-text-3">
+                  {held > 0 ? "Aman di DuaCincin, diteruskan ke vendor setelah acaramu selesai." : "Belum ada pembayaran yang sedang ditahan."}
+                </p>
+              </div>
+              <div className="bg-dc-white p-4 sm:p-6">
+                <p className="text-sm font-medium text-dc-text-2">Booking aktif</p>
+                <p className="mt-1 font-heading text-[2.2rem] leading-none lining-nums tabular-nums text-dc-ink">
+                  <CountUp value={active} />
+                </p>
+                <p className="mt-2 text-xs text-dc-text-3">
+                  {needsAction > 0 ? `${needsAction} menunggu tindakanmu` : "Tidak ada yang menunggumu"}
+                </p>
+              </div>
+              <div className="bg-dc-white p-4 sm:p-6">
+                <p className="text-sm font-medium text-dc-text-2">Sudah diteruskan</p>
+                <p className="mt-1 text-xl font-bold leading-tight tabular-nums text-dc-ink">{formatRupiah(released)}</p>
+                <p className="mt-2 text-xs text-dc-text-3">Ke vendor yang acaranya selesai</p>
+              </div>
+            </section>
+
+            <BookingStatusFilter value={filter} onChange={setFilter} counts={countBookingFilters(bookings.map((b) => b.status))} />
+
+            {visible.length === 0 ? (
+              <EmptyState
+                title="Tidak ada booking di sini"
+                body="Coba pilih filter lain untuk melihat booking lainnya."
+                action={
+                  <button
+                    type="button"
+                    onClick={() => setFilter("all")}
+                    className="inline-flex min-h-11 items-center rounded-full border border-dc-line-strong px-5 text-sm font-semibold text-dc-ink transition-colors hover:border-dc-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold"
+                  >
+                    Tampilkan semua
+                  </button>
+                }
+              />
+            ) : (
+              <MotionList className="flex flex-col gap-4">
+                {visible.map((b) => (
+                  <MotionItem key={b.id}>
+                    <BookingCard booking={b} vendor={vendors[b.vendor_id]} />
+                  </MotionItem>
+                ))}
+              </MotionList>
+            )}
+          </div>
         )}
-        <ul className="flex flex-col gap-3">
-          {visible.map((b) => (
-            <li key={b.id}>
-              <Link href={`/client/bookings/${b.id}`} className={`group block rounded-lg ${FOCUS}`}>
-                <Card className="p-4 transition-colors group-hover:border-dc-ink/30">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="break-words font-medium text-dc-ink">{b.package_description || "Booking"}</p>
-                      <p className="mt-0.5 text-sm tabular-nums text-dc-black/70">
-                        {b.event_date} · {formatRupiah(b.agreed_price)}
-                      </p>
-                    </div>
-                    <Badge tone={BOOKING_STATUS_TONE[b.status]}>{BOOKING_STATUS_LABEL[b.status]}</Badge>
-                  </div>
-                  <div className="mt-3 border-t border-dc-ink/10 pt-3">
-                    <FundStatus status={b.status} compact />
-                  </div>
-                </Card>
-              </Link>
-            </li>
-          ))}
-        </ul>
       </div>
     </Shell>
   );

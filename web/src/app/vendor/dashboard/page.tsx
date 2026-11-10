@@ -5,17 +5,20 @@ import { useEffect, useState } from "react";
 
 import { VENDOR_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
-import { Badge } from "@/components/ui/Badge";
+import { ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { DashboardBanner } from "@/components/ui/DashboardBanner";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { StatTile } from "@/components/ui/StatTile";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { Skeleton, SkeletonGroup } from "@/components/ui/Skeleton";
+import { CountUp } from "@/components/ui/Motion";
 import { ReviewList, ReviewSummary } from "@/components/vendor/Reviews";
+import { BookingRow, BookingRowSkeleton, heldAmount, todayLabel } from "@/components/vendor-ops/ops";
+import { StaggerItem, StaggerList } from "@/components/vendor-ops/motion";
 import { WithUser } from "@/components/WithUser";
 import {
   apiGet,
-  BOOKING_STATUS_LABEL,
-  BOOKING_STATUS_TONE,
+  ApiError,
   formatRupiah,
   type Booking,
   type CurrentUser,
@@ -33,45 +36,54 @@ export default function VendorDashboardPage() {
   );
 }
 
-type NextStep = { title: string; body: string; cta: string; href: string };
+type NextStep = { eyebrow: string; title: string; body: string; cta: string; href: string };
 
-/** One recommended action, in priority order: finish the storefront, wait for
- * approval, answer new booking requests, then keep it fresh. */
+/** One recommended action, in priority order: fix a rejected profile, answer
+ * new booking requests, then finish the storefront, wait for approval, keep
+ * it fresh. A single request links straight to that booking. */
 function nextStep(profile: VendorProfile, packages: VendorPackage[], requested: Booking[]): NextStep {
   if (profile.status === "rejected") {
-    return { title: "Profilmu perlu diperbaiki", body: profile.rejection_reason || "Admin menolak profilmu. Perbarui datanya lalu kirim ulang.", cta: "Perbarui profil", href: "/vendor/profile" };
+    return { eyebrow: "Perlu diperbaiki", title: "Profilmu perlu diperbaiki", body: profile.rejection_reason || "Admin menolak profilmu. Perbarui datanya lalu kirim ulang.", cta: "Perbarui profil", href: "/vendor/profile" };
   }
   if (requested.length > 0) {
     return {
-      title: requested.length === 1 ? "1 permintaan booking menunggu jawabanmu" : `${requested.length} permintaan booking menunggu jawabanmu`,
-      body: "Client menunggu konfirmasi tanggal dan paket. Jawaban cepat membantu mereka memutuskan.",
-      cta: "Lihat permintaan",
-      href: "/vendor/bookings",
+      eyebrow: "Paling penting sekarang",
+      title: requested.length === 1 ? "Satu client menunggu jawabanmu" : `${requested.length} client menunggu jawabanmu`,
+      body: "Terima atau tolak permintaan booking. Jawaban cepat membantu client mengunci tanggalnya.",
+      cta: requested.length === 1 ? "Jawab permintaan" : "Lihat permintaan",
+      href: requested.length === 1 ? `/vendor/bookings/${requested[0].id}` : "/vendor/bookings",
     };
   }
   if ((profile.portfolio?.length ?? 0) === 0) {
-    return { title: "Tambahkan foto portofolio", body: "Client memilih vendor dari foto lebih dulu. Profil tanpa foto tidak menarik untuk dibuka.", cta: "Unggah foto", href: "/vendor/portfolio" };
+    return { eyebrow: "Lengkapi etalase", title: "Tambahkan foto portofolio", body: "Client memilih vendor dari foto lebih dulu. Profil tanpa foto jarang dibuka.", cta: "Unggah foto", href: "/vendor/portfolio" };
   }
   if (packages.length === 0) {
-    return { title: "Tambahkan paket harga", body: "Paket membantu client membandingkan pilihan dan harga sebelum mengajak chat.", cta: "Buat paket", href: "/vendor/paket" };
+    return { eyebrow: "Lengkapi etalase", title: "Tambahkan paket harga", body: "Paket membantu client membandingkan pilihan dan harga sebelum mengajak chat.", cta: "Buat paket", href: "/vendor/paket" };
   }
   if (profile.status === "pending") {
-    return { title: "Profilmu sedang ditinjau Admin", body: "Etalasemu sudah lengkap. Profil muncul di direktori begitu Admin menyetujuinya.", cta: "Lihat etalase", href: "/vendor/profile" };
+    return { eyebrow: "Sedang ditinjau", title: "Profilmu sedang ditinjau Admin", body: "Etalasemu sudah lengkap. Profil muncul di direktori begitu Admin menyetujuinya.", cta: "Lihat etalase", href: "/vendor/profile" };
   }
-  return { title: "Tidak ada yang mendesak", body: "Tidak ada permintaan baru. Perbarui foto atau paket agar etalasemu tetap segar.", cta: "Kelola etalase", href: "/vendor/profile" };
+  return { eyebrow: "Semua beres", title: "Tidak ada yang mendesak", body: "Tidak ada permintaan baru. Perbarui foto atau paket agar etalasemu tetap segar.", cta: "Kelola etalase", href: "/vendor/profile" };
 }
 
 function VendorDashboardContent({ user }: { user: CurrentUser }) {
   const [profile, setProfile] = useState<VendorProfile | null | undefined>(undefined);
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [payouts, setPayouts] = useState<Payout[]>([]);
+  const [bookings, setBookings] = useState<Booking[] | null>(null);
+  const [payouts, setPayouts] = useState<Payout[] | null>(null);
   const [packages, setPackages] = useState<VendorPackage[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [dataError, setDataError] = useState(false);
+  const [profileFailed, setProfileFailed] = useState(false);
   const [reload, setReload] = useState(0);
 
   useEffect(() => {
-    apiGet<VendorProfile>("/api/v1/vendor/profile/me").then(setProfile).catch(() => setProfile(null));
+    apiGet<VendorProfile>("/api/v1/vendor/profile/me")
+      .then((p) => {
+        setProfileFailed(false);
+        setProfile(p);
+      })
+      // 404 = no profile yet (show the setup prompt); anything else is a load failure.
+      .catch((err) => (err instanceof ApiError && err.status === 404 ? setProfile(null) : setProfileFailed(true)));
     apiGet<Booking[]>("/api/v1/bookings").then((d) => setBookings(d ?? [])).catch(() => setDataError(true));
     apiGet<Payout[]>("/api/v1/vendor/payouts").then((d) => setPayouts(d ?? [])).catch(() => setDataError(true));
     apiGet<VendorPackage[]>("/api/v1/vendor/packages").then((d) => setPackages(d ?? [])).catch(() => setDataError(true));
@@ -86,16 +98,34 @@ function VendorDashboardContent({ user }: { user: CurrentUser }) {
     </Shell>
   );
 
+  if (profile === undefined && profileFailed) {
+    return shell(
+      <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
+        <ErrorState
+          title="Halaman ini belum bisa dimuat"
+          body="Periksa koneksi internetmu, lalu coba lagi."
+          onRetry={() => {
+            setProfileFailed(false);
+            setDataError(false);
+            setReload((n) => n + 1);
+          }}
+        />
+      </div>,
+    );
+  }
+
   if (profile === undefined) {
     return shell(
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6" aria-busy="true" aria-label="Memuat dashboard">
-        <div className="mb-10 h-14 w-72 animate-pulse rounded-md bg-dc-ink/5" />
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-28 animate-pulse rounded-lg bg-dc-ink/5" />
-          ))}
-        </div>
-      </div>,
+      <>
+        <DashboardBanner title="Hari ini" subtitle={todayLabel()} />
+        <SkeletonGroup label="Memuat dashboard" className="mx-auto max-w-6xl px-4 sm:px-6">
+          <Skeleton className="relative -mt-10 h-44 rounded-2xl sm:-mt-12" />
+          <div className="mt-8 grid gap-3">
+            <BookingRowSkeleton />
+            <BookingRowSkeleton />
+          </div>
+        </SkeletonGroup>
+      </>,
     );
   }
 
@@ -104,7 +134,7 @@ function VendorDashboardContent({ user }: { user: CurrentUser }) {
       <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
         <EmptyState
           title="Lengkapi profil dulu"
-          body="Isi profil usahamu supaya dashboard bisa menampilkan data booking, rating, dan pencairan."
+          body="Isi profil usahamu supaya halaman ini bisa menampilkan booking, ulasan, dan pencairan."
           actionHref="/vendor/profile"
           actionLabel="Lengkapi profil"
         />
@@ -112,159 +142,215 @@ function VendorDashboardContent({ user }: { user: CurrentUser }) {
     );
   }
 
-  const requested = bookings.filter((b) => b.status === "requested");
-  const upcoming = bookings
+  const list = bookings ?? [];
+  const requested = list.filter((b) => b.status === "requested").sort((a, b) => a.event_date.localeCompare(b.event_date));
+  const upcoming = list
     .filter((b) => ["confirmed", "dp_paid", "full_paid"].includes(b.status))
-    .slice()
     .sort((a, b) => a.event_date.localeCompare(b.event_date))
-    .slice(0, 4);
-  const activeCount = bookings.filter((b) => b.status !== "cancelled" && b.status !== "completed").length;
-  const pendingPayout = payouts.filter((p) => p.status === "pending").reduce((sum, p) => sum + p.net_amount, 0);
+    .slice(0, 3);
+  const held = list.reduce((sum, b) => sum + heldAmount(b), 0);
+  const ready = (payouts ?? []).filter((p) => p.status === "pending").reduce((sum, p) => sum + p.net_amount, 0);
   const next = nextStep(profile, packages, requested);
+  const urgent = requested.length > 0 || profile.status === "rejected";
 
   const checklist = [
-    { done: true, label: "Profil usaha", href: "/vendor/profile" },
-    { done: (profile.portfolio?.length ?? 0) > 0, label: `Portofolio (${profile.portfolio?.length ?? 0} foto)`, href: "/vendor/portfolio" },
-    { done: packages.length > 0, label: `Paket harga (${packages.length})`, href: "/vendor/paket" },
-    { done: profile.status === "approved", label: profile.status === "approved" ? "Disetujui Admin, tampil di direktori" : "Menunggu persetujuan Admin", href: "/vendor/profile" },
+    { done: (profile.portfolio?.length ?? 0) > 0, label: "Foto portofolio", detail: `${profile.portfolio?.length ?? 0} foto`, href: "/vendor/portfolio" },
+    { done: packages.length > 0, label: "Paket harga", detail: `${packages.length} paket`, href: "/vendor/paket" },
+    { done: profile.status === "approved", label: "Disetujui Admin", detail: profile.status === "approved" ? "Tampil di direktori" : "Menunggu persetujuan", href: "/vendor/profile" },
   ];
+  const storefrontDone = checklist.every((c) => c.done);
+  const retry = () => {
+    setDataError(false);
+    setReload((n) => n + 1);
+  };
 
   return shell(
     <>
-      <DashboardBanner title="Hari ini" subtitle={profile.business_name} />
+      <DashboardBanner
+        eyebrow={profile.business_name}
+        title={
+          <>
+            Hari <span className="dc-em-light">ini</span>
+          </>
+        }
+        subtitle={todayLabel()}
+      />
 
-      <div className="mx-auto max-w-6xl px-4 pb-10 sm:px-6">
-        <section aria-labelledby="langkah-vendor" className="relative -mt-10 mb-8 rounded-lg border border-dc-ink/10 bg-dc-white p-6 sm:-mt-12 sm:p-8">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mx-auto max-w-6xl px-4 pb-12 sm:px-6">
+        {/* The one focal point: the single most useful thing to do now. */}
+        <section
+          aria-labelledby="langkah-vendor"
+          className={`animate-fade-up relative -mt-10 mb-10 rounded-2xl border bg-dc-white p-6 shadow-lift sm:-mt-12 sm:p-8 ${urgent ? "border-dc-gold/70" : "border-dc-line"}`}
+        >
+          <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <div className="max-w-xl">
-              <p className="text-sm font-semibold text-dc-clay">Langkah berikutnya</p>
-              <h2 id="langkah-vendor" className="mt-1 font-heading text-3xl leading-tight text-dc-ink sm:text-4xl">
+              <p className="dc-eyebrow">{next.eyebrow}</p>
+              <h2 id="langkah-vendor" className="mt-2 font-heading text-[2rem] leading-[1.08] text-dc-ink sm:text-[2.6rem]">
                 {next.title}
               </h2>
-              <p className="mt-2 text-dc-black/70">{next.body}</p>
+              <p className="mt-2 leading-relaxed text-dc-text-2">{next.body}</p>
             </div>
-            <Link
-              href={next.href}
-              className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-md bg-dc-clay px-7 text-sm font-semibold text-dc-white transition-colors hover:bg-dc-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-ink"
-            >
+            <ButtonLink href={next.href} variant={urgent ? "gold" : "primary"} size="lg" className="w-full shrink-0 md:w-auto">
               {next.cta}
-            </Link>
+            </ButtonLink>
           </div>
         </section>
 
         {dataError && (
-          <div role="alert" className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-            <span>Sebagian data gagal dimuat.</span>
-            <button
-              type="button"
-              onClick={() => {
-                setDataError(false);
-                setReload((n) => n + 1);
-              }}
-              className="inline-flex min-h-11 items-center rounded-md border border-red-300 px-4 font-semibold hover:bg-red-100"
-            >
-              Coba lagi
-            </button>
+          <div className="mb-8">
+            <ErrorState compact title="Sebagian data belum termuat" body="Booking atau pencairan belum bisa ditampilkan. Periksa koneksimu." onRetry={retry} />
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatTile label="Permintaan baru" value={requested.length} density="structured" accent="clay" />
-          <StatTile label="Booking aktif" value={activeCount} density="structured" accent="ink" />
-          <StatTile
-            label="Rating"
-            value={profile.review_count > 0 ? profile.average_rating.toFixed(1) : "-"}
-            trend={profile.review_count > 0 ? `${profile.review_count} ulasan` : "Belum ada ulasan"}
-            density="structured"
-            accent="gold"
-            className="col-span-2 lg:col-span-1"
-          />
-          <StatTile label="Estimasi pencairan" value={formatRupiah(pendingPayout)} trend="menunggu dicairkan Admin" density="structured" accent="gold" className="col-span-2 lg:col-span-1" />
-        </div>
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-8">
+          <div className="flex flex-col gap-10 lg:col-span-7">
+            {/* Requests first: they are the only thing that expires if ignored. */}
+            <section aria-labelledby="permintaan-baru">
+              <SectionHead id="permintaan-baru" title="Permintaan baru" count={bookings ? requested.length : undefined} href={requested.length > 2 ? "/vendor/bookings" : undefined} />
+              {bookings === null && !dataError ? (
+                <div className="grid gap-3">
+                  <BookingRowSkeleton />
+                </div>
+              ) : requested.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-dc-line-strong bg-dc-white/70 px-5 py-6 text-sm leading-relaxed text-dc-text-2">
+                  Belum ada permintaan baru. Permintaan booking dari client muncul di sini lebih dulu.
+                </p>
+              ) : (
+                <StaggerList>
+                  {requested.slice(0, 2).map((b) => (
+                    <StaggerItem key={b.id}>
+                      <BookingRow booking={b} />
+                    </StaggerItem>
+                  ))}
+                </StaggerList>
+              )}
+            </section>
 
-        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-12">
-          <section aria-labelledby="acara-mendatang" className="lg:col-span-7">
-            <h2 id="acara-mendatang" className="font-heading text-2xl text-dc-ink">
-              Acara mendatang
-            </h2>
-            {upcoming.length === 0 ? (
-              <p className="mt-3 rounded-lg border border-dashed border-dc-ink/20 px-4 py-8 text-center text-sm text-dc-black/70">Belum ada acara yang dikonfirmasi.</p>
-            ) : (
-              <ul className="mt-3 flex flex-col gap-3">
-                {upcoming.map((b) => (
-                  <li key={b.id}>
-                    <Link
-                      href={`/vendor/bookings/${b.id}`}
-                      className="group block rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold"
-                    >
-                      <Card className="flex items-start justify-between gap-3 p-4 transition-colors group-hover:border-dc-ink/30">
-                        <div className="min-w-0">
-                          <p className="break-words font-medium text-dc-ink">{b.package_description || "Booking"}</p>
-                          <p className="mt-0.5 text-sm tabular-nums text-dc-black/70">
-                            {b.event_date} · {formatRupiah(b.agreed_price)}
-                          </p>
-                        </div>
-                        <Badge tone={BOOKING_STATUS_TONE[b.status]}>{BOOKING_STATUS_LABEL[b.status]}</Badge>
-                      </Card>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <Link href="/vendor/bookings" className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-dc-clay underline underline-offset-4 hover:text-dc-ink">
-              Semua booking
-            </Link>
-          </section>
+            <section aria-labelledby="acara-terdekat">
+              <SectionHead id="acara-terdekat" title="Acara terdekat" href="/vendor/bookings" linkLabel="Semua booking" />
+              {bookings === null && !dataError ? (
+                <div className="grid gap-3">
+                  <BookingRowSkeleton />
+                  <BookingRowSkeleton />
+                </div>
+              ) : upcoming.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-dc-line-strong bg-dc-white/70 px-5 py-6 text-sm leading-relaxed text-dc-text-2">
+                  Belum ada acara yang dikonfirmasi. Booking yang sudah kamu terima akan muncul di sini, urut dari yang paling dekat.
+                </p>
+              ) : (
+                <StaggerList>
+                  {upcoming.map((b) => (
+                    <StaggerItem key={b.id}>
+                      <BookingRow booking={b} />
+                    </StaggerItem>
+                  ))}
+                </StaggerList>
+              )}
+            </section>
+          </div>
 
-          <section aria-labelledby="kelengkapan" className="lg:col-span-5">
-            <h2 id="kelengkapan" className="font-heading text-2xl text-dc-ink">
-              Kelengkapan etalase
-            </h2>
-            <Card className="mt-3 divide-y divide-dc-ink/10">
-              {checklist.map((c) => (
-                <Link
-                  key={c.label}
-                  href={c.href}
-                  className="flex min-h-12 items-center gap-3 px-4 py-3 text-sm text-dc-ink transition-colors hover:bg-dc-ivory focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-dc-gold"
-                >
-                  <span
-                    aria-hidden
-                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-bold ${
-                      c.done ? "border-dc-ink bg-dc-ink text-dc-white" : "border-dc-ink/30 text-transparent"
-                    }`}
-                  >
-                    ✓
-                  </span>
-                  <span className="flex-1">{c.label}</span>
-                  <span className="sr-only">{c.done ? "selesai" : "belum selesai"}</span>
-                </Link>
-              ))}
-            </Card>
-            {reviews.length > 0 && (
-              <div className="mt-8" id="ulasan-vendor">
-                <h2 className="font-heading text-2xl text-dc-ink">Ulasan dari client</h2>
-                <div className="mt-4 rounded-lg border border-dc-ink/10 bg-dc-white p-5">
+          <div className="flex flex-col gap-10 lg:col-span-5">
+            {/* Money: what is ready to be transferred vs what escrow still holds. */}
+            <section aria-labelledby="uang-vendor">
+              <SectionHead id="uang-vendor" title="Pencairan" href="/vendor/payouts" linkLabel="Rincian" />
+              <Card className="overflow-hidden p-0">
+                {payouts === null && bookings === null && !dataError ? (
+                  <SkeletonGroup label="Memuat pencairan" className="p-6">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="mt-3 h-10 w-48" />
+                  </SkeletonGroup>
+                ) : (
+                  <>
+                    <div className="p-6">
+                      <p className="text-sm font-medium text-dc-text-2">Siap dicairkan Admin</p>
+                      <p className="mt-1 font-heading text-[2.4rem] font-semibold leading-tight text-dc-ink [font-variant-numeric:lining-nums_tabular-nums]">
+                        <CountUp value={ready} format={formatRupiah} />
+                      </p>
+                      <p className="mt-1 text-sm text-dc-text-3">{ready > 0 ? "Sudah dipotong komisi, ditransfer Admin ke rekeningmu." : "Muncul setelah client menandai acara selesai."}</p>
+                    </div>
+                    <div className="flex items-center justify-between gap-4 border-t border-dc-line bg-dc-cream/60 px-6 py-4">
+                      <div>
+                        <p className="text-sm font-medium text-dc-text-2">Ditahan escrow</p>
+                        <p className="text-xs text-dc-text-3">Dibayar client, menunggu acara selesai</p>
+                      </div>
+                      <p className="shrink-0 text-lg font-bold tabular-nums text-dc-ink">{formatRupiah(held)}</p>
+                    </div>
+                  </>
+                )}
+              </Card>
+            </section>
+
+            <section aria-labelledby="ulasan-vendor">
+              <SectionHead
+                id="ulasan-vendor"
+                title="Ulasan terbaru"
+                href={profile.status === "approved" ? `/vendors/${user.id}` : undefined}
+                linkLabel="Halaman publik"
+              />
+              {reviews.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-dc-line-strong bg-dc-white/70 px-5 py-6 text-sm leading-relaxed text-dc-text-2">
+                  Belum ada ulasan. Client bisa memberi ulasan setelah acaranya selesai.
+                </p>
+              ) : (
+                <>
                   <ReviewSummary reviews={reviews} />
-                </div>
-                <div className="mt-4">
-                  <ReviewList reviews={reviews.slice(0, 3)} />
-                </div>
-                {reviews.length > 3 && <p className="mt-2 text-sm text-dc-black/70">Menampilkan 3 dari {reviews.length} ulasan terbaru.</p>}
-              </div>
+                  <div className="mt-4">
+                    <ReviewList reviews={reviews.slice(0, 2)} />
+                  </div>
+                  {reviews.length > 2 && <p className="mt-2 text-sm text-dc-text-3">Menampilkan 2 dari {reviews.length} ulasan.</p>}
+                </>
+              )}
+            </section>
+
+            {!storefrontDone && (
+              <section aria-labelledby="kelengkapan">
+                <SectionHead id="kelengkapan" title="Kelengkapan etalase" />
+                <Card className="divide-y divide-dc-line p-0">
+                  {checklist.map((c) => (
+                    <Link
+                      key={c.label}
+                      href={c.href}
+                      className="flex min-h-14 items-center gap-3 px-5 py-3 text-sm transition-colors first:rounded-t-xl last:rounded-b-xl hover:bg-dc-ivory focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-dc-gold"
+                    >
+                      <span
+                        aria-hidden
+                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${c.done ? "border-dc-success bg-dc-success text-dc-white" : "border-dc-line-strong"}`}
+                      >
+                        {c.done && (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M5 12l5 5L19 7" />
+                          </svg>
+                        )}
+                      </span>
+                      <span className="flex-1 font-medium text-dc-ink">{c.label}</span>
+                      <span className="text-dc-text-3">{c.detail}</span>
+                      <span className="sr-only">{c.done ? ", selesai" : ", belum selesai"}</span>
+                    </Link>
+                  ))}
+                </Card>
+              </section>
             )}
-            {profile.status === "approved" && (
-              <Link
-                href={`/vendors/${user.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-dc-clay underline underline-offset-4 hover:text-dc-ink"
-              >
-                Lihat tampilan publik (tab baru)
-              </Link>
-            )}
-          </section>
+          </div>
         </div>
       </div>
     </>,
+  );
+}
+
+function SectionHead({ id, title, count, href, linkLabel = "Lihat semua" }: { id: string; title: string; count?: number; href?: string; linkLabel?: string }) {
+  return (
+    <div className="mb-3 flex items-end justify-between gap-3">
+      <h2 id={id} className="flex items-baseline gap-2 font-heading text-[1.7rem] leading-tight text-dc-ink">
+        {title}
+        {count !== undefined && count > 0 && (
+          <span className="inline-flex min-w-7 items-center justify-center rounded-full bg-dc-gold/20 px-2 py-0.5 font-sans text-sm font-bold text-dc-clay tabular-nums">{count}</span>
+        )}
+      </h2>
+      {href && (
+        <Link href={href} className="inline-flex min-h-11 shrink-0 items-center text-sm font-semibold text-dc-clay underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold">
+          {linkLabel}
+        </Link>
+      )}
+    </div>
   );
 }

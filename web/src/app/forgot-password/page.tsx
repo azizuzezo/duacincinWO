@@ -7,6 +7,7 @@ import { AuthCard } from "@/components/AuthCard";
 import { Button } from "@/components/Button";
 import { PasswordField } from "@/components/PasswordField";
 import { TextField } from "@/components/TextField";
+import { SuccessPop } from "@/components/ui/Motion";
 import { apiPost, ApiError } from "@/lib/api";
 
 type Step = "request" | "verify" | "reset" | "done";
@@ -89,22 +90,27 @@ export default function ForgotPasswordPage() {
       }
       footer={
         step === "done" && (
-          <Link href="/login" className="font-semibold text-dc-clay underline underline-offset-2 hover:text-dc-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold">
+          <Link href="/login" className="font-semibold text-dc-ink underline decoration-dc-gold underline-offset-4 hover:text-dc-clay">
             Kembali ke halaman masuk
           </Link>
         )
       }
     >
       {step !== "done" && (
-        <p className="-mt-4 mb-6 text-xs font-semibold uppercase tracking-[0.14em] text-dc-black/60">
-          Langkah {step === "request" ? 1 : step === "verify" ? 2 : 3} dari 3
-        </p>
+        <div className="-mt-3 mb-7">
+          <div className="flex gap-1.5" aria-hidden>
+            {[1, 2, 3].map((n) => (
+              <span key={n} className={`h-1 flex-1 rounded-full transition-colors duration-500 ${n <= (step === "request" ? 1 : step === "verify" ? 2 : 3) ? "bg-dc-gold" : "bg-dc-paper-3"}`} />
+            ))}
+          </div>
+          <p className="mt-2 text-sm font-semibold text-dc-text-2">Langkah {step === "request" ? 1 : step === "verify" ? 2 : 3} dari 3</p>
+        </div>
       )}
 
       {step === "request" && (
         <form onSubmit={requestOtp} className="flex flex-col gap-4">
           <TextField label="Email" type="email" autoComplete="email" value={email} onChange={setEmail} />
-          {error && <p role="alert" className="text-sm text-red-700">
+          {error && <p role="alert" className="text-sm text-dc-danger">
             {error}
           </p>}
           <Button type="submit" loading={loading}>
@@ -116,7 +122,7 @@ export default function ForgotPasswordPage() {
       {step === "verify" && (
         <form onSubmit={verifyOtp} className="flex flex-col gap-4">
           <TextField label="Kode OTP 6 digit" autoComplete="one-time-code" value={code} onChange={setCode} />
-          {error && <p role="alert" className="text-sm text-red-700">
+          {error && <p role="alert" className="text-sm text-dc-danger">
             {error}
           </p>}
           <Button type="submit" loading={loading}>
@@ -133,8 +139,9 @@ export default function ForgotPasswordPage() {
             value={newPassword}
             onChange={setNewPassword}
             minLength={8}
+            hint="Minimal 8 karakter."
           />
-          {error && <p role="alert" className="text-sm text-red-700">
+          {error && <p role="alert" className="text-sm text-dc-danger">
             {error}
           </p>}
           <Button type="submit" loading={loading}>
@@ -144,7 +151,8 @@ export default function ForgotPasswordPage() {
       )}
 
       {step === "done" && (
-        <p role="status" className="rounded-md border border-dc-ink/10 bg-dc-white p-4 text-sm text-dc-black/80">
+        <p role="status" className="flex items-center gap-3 rounded-xl border border-dc-success/30 bg-dc-success/[0.06] p-4 text-sm font-medium text-dc-success">
+          <SuccessPop tone="success" className="shrink-0" />
           Password berhasil diperbarui. Silakan masuk kembali.
         </p>
       )}

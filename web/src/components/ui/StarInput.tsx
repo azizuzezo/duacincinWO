@@ -48,14 +48,14 @@ export function StarInput({ value, onChange, label = "Rating" }: { value: number
           tabIndex={star === tabStop ? 0 : -1}
           onClick={() => onChange(star)}
           onKeyDown={(e) => onKeyDown(e, star)}
-          className="flex h-11 w-11 items-center justify-center rounded-md text-2xl leading-none transition-colors hover:bg-dc-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold"
+          className="flex h-11 w-11 items-center justify-center rounded-md text-2xl leading-none transition-colors hover:bg-dc-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold motion-safe:active:scale-90"
         >
-          <span aria-hidden className={star <= value ? "text-dc-gold" : "text-dc-ink/25"}>
+          <span aria-hidden className={`transition-colors ${star <= value ? "text-dc-gold" : "text-dc-line-strong"}`}>
             ★
           </span>
         </button>
       ))}
-      <span className="ml-2 text-sm tabular-nums text-dc-black/70" aria-live="polite">
+      <span className="ml-2 text-sm tabular-nums text-dc-text-2" aria-live="polite">
         {value > 0 ? `${value} dari 5` : "Belum dipilih"}
       </span>
     </div>

@@ -292,7 +292,7 @@ func (d *Deps) sendLinkOTPEmail(ctx context.Context, to, code string) {
 	if err != nil {
 		return
 	}
-	_ = d.Mailer.Send(ctx, to, subject, html)
+	_ = d.Mailer.SendWithText(ctx, to, subject, html, email.RenderPhoneLinkOTPText(code))
 }
 
 func messagePayload(m *repository.Message) map[string]any {

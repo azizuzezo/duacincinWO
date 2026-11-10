@@ -6,6 +6,7 @@ import { Suspense, useState } from "react";
 
 import { AgreementCheckbox } from "@/components/AgreementCheckbox";
 import { AuthCard } from "@/components/AuthCard";
+import { AuthDivider, GoogleSignIn } from "@/components/auth/GoogleSignIn";
 import { Button } from "@/components/Button";
 import { PasswordField } from "@/components/PasswordField";
 import { TextField } from "@/components/TextField";
@@ -106,13 +107,13 @@ function RegisterContent() {
 
   return (
     <AuthCard
-      variant={role ?? "unified"}
+      variant={role ?? "register"}
       title={role ? `Daftar sebagai ${ROLE_CONFIG[role].cardTitle}` : "Buat akun DuaCincin"}
       subtitle={role ? undefined : "Pilih peranmu untuk mulai."}
       footer={
         <>
           Sudah punya akun?{" "}
-          <Link href="/login" className="font-semibold text-dc-clay underline underline-offset-2 hover:text-dc-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold">
+          <Link href="/login" className="font-semibold text-dc-ink underline decoration-dc-gold underline-offset-4 hover:text-dc-clay">
             Masuk di sini
           </Link>
         </>
@@ -125,10 +126,11 @@ function RegisterContent() {
               key={r}
               type="button"
               onClick={() => setRole(r)}
-              className="group min-h-11 rounded-lg border border-dc-ink/15 bg-dc-white p-5 text-left transition-colors hover:border-dc-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold"
+              className="group relative min-h-11 rounded-xl border border-dc-line bg-dc-white p-5 pr-12 text-left shadow-soft transition-[transform,box-shadow,border-color] duration-500 ease-dc hover:border-dc-gold hover:shadow-lift motion-safe:hover:-translate-y-0.5"
             >
-              <p className="font-heading text-2xl text-dc-ink">{ROLE_CONFIG[r].cardTitle}</p>
-              <p className="mt-1 text-sm text-dc-black/70">{ROLE_CONFIG[r].cardDescription}</p>
+              <p className="font-heading text-[1.75rem] leading-tight text-dc-ink">{ROLE_CONFIG[r].cardTitle}</p>
+              <p className="mt-1 text-sm leading-relaxed text-dc-text-2">{ROLE_CONFIG[r].cardDescription}</p>
+              <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" className="absolute right-5 top-1/2 -translate-y-1/2 text-dc-gold transition-transform duration-500 ease-dc group-hover:translate-x-1"><path d="M9 6l6 6-6 6" /></svg>
             </button>
           ))}
         </div>
@@ -137,10 +139,16 @@ function RegisterContent() {
           <button
             type="button"
             onClick={resetChoice}
-            className="-mt-1 inline-flex min-h-11 items-center self-start text-sm font-medium text-dc-clay underline underline-offset-2 hover:text-dc-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold"
+            className="-mt-1 inline-flex min-h-11 items-center self-start text-sm font-semibold text-dc-clay underline-offset-4 hover:underline"
           >
             Ganti peran
           </button>
+          {role === "client" && (
+            <div className="flex flex-col gap-5 empty:hidden">
+              <GoogleSignIn text="signup_with" acceptTerms={acceptTerms} />
+              <AuthDivider />
+            </div>
+          )}
           <TextField
             label={ROLE_CONFIG[role].nameLabel}
             autoComplete={ROLE_CONFIG[role].nameAutoComplete}
@@ -154,15 +162,15 @@ function RegisterContent() {
             value={password}
             onChange={setPassword}
             minLength={8}
+            hint="Minimal 8 karakter."
           />
-          <p className="-mt-2 text-xs text-dc-black/70">Minimal 8 karakter.</p>
           <AgreementCheckbox
             checked={acceptTerms}
             onChange={setAcceptTerms}
             href={ROLE_CONFIG[role].agreementHref}
             label={ROLE_CONFIG[role].agreementLabel}
           />
-          {error && <p role="alert" className="text-sm text-red-700">
+          {error && <p role="alert" className="text-sm text-dc-danger">
             {error}
           </p>}
           <Button type="submit" loading={loading} disabled={!acceptTerms}>

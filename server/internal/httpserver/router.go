@@ -17,8 +17,10 @@ import (
 	"duacincin/server/internal/budget"
 	"duacincin/server/internal/chat"
 	"duacincin/server/internal/config"
+	"duacincin/server/internal/googleauth"
 	"duacincin/server/internal/guestlist"
 	"duacincin/server/internal/inspiration"
+	"duacincin/server/internal/invitationlink"
 	"duacincin/server/internal/notifications"
 	"duacincin/server/internal/rundown"
 	"duacincin/server/internal/seating"
@@ -42,6 +44,8 @@ type Deps struct {
 	Rundown        *rundown.Deps
 	Seating        *seating.Deps
 	Whatsapp       *whatsapp.Deps
+	InvitationLink *invitationlink.Deps
+	GoogleAuth     *googleauth.Deps
 }
 
 // NewRouter builds the root chi router for the DuaCincin API.
@@ -66,6 +70,7 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config, deps Deps) http.Handler {
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.Timeout(15 * time.Second))
 			auth.Mount(r, deps.Auth)
+			googleauth.Mount(r, deps.GoogleAuth)
 			vendors.Mount(r, deps.Vendors, cfg)
 			admin.Mount(r, deps.Admin, cfg)
 			chat.Mount(r, deps.Chat, cfg)
@@ -77,6 +82,7 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config, deps Deps) http.Handler {
 			rundown.Mount(r, deps.Rundown, cfg)
 			seating.Mount(r, deps.Seating, cfg)
 			whatsapp.Mount(r, deps.Whatsapp, cfg)
+			invitationlink.Mount(r, deps.InvitationLink, cfg)
 		})
 
 		// Inspiration gets a longer timeout on its own: the Admin

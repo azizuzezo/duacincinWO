@@ -1,18 +1,20 @@
 "use client";
 
+import { AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 
-import { Button } from "@/components/Button";
 import { ADMIN_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Modal } from "@/components/ui/Modal";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { TabPanel, Tabs } from "@/components/ui/Tabs";
 import { useToast } from "@/components/ui/Toast";
 import { WithUser } from "@/components/WithUser";
-import { DangerButton, ErrorBanner, PAGE, RowsSkeleton, TableCard, Tabs, TD, TH, TEXTAREA, TR } from "../../_ui";
 import { apiGet, apiPost, ApiError, type CurrentUser } from "@/lib/api";
+import { ConfirmDialog, DangerGhostButton, ErrorBanner, PAGE, QueueItem, RowsSkeleton, tanggal } from "../../_ui";
 
 type PendingNameChange = {
   id: string;
@@ -24,6 +26,8 @@ type PendingNameChange = {
   admin_note?: string;
   created_at: string;
 };
+
+const REJECT_PICKS = ["Nama baru mirip vendor lain", "Nama baru tidak menggambarkan usaha", "Mohon lampirkan alasan yang lebih jelas"];
 
 export default function AdminVendorNameChangesPage() {
   return (
@@ -37,8 +41,10 @@ function AdminVendorNameChangesContent({ user }: { user: CurrentUser }) {
   const [tab, setTab] = useState<"pending" | "resolved">("pending");
   const [requests, setRequests] = useState<PendingNameChange[]>([]);
   const [loadedTab, setLoadedTab] = useState<string | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [approveTarget, setApproveTarget] = useState<PendingNameChange | null>(null);
   const [rejectTarget, setRejectTarget] = useState<PendingNameChange | null>(null);
   const [rejectNote, setRejectNote] = useState("");
   const { show } = useToast();
@@ -46,8 +52,9 @@ function AdminVendorNameChangesContent({ user }: { user: CurrentUser }) {
   async function load() {
     try {
       setRequests((await apiGet<PendingNameChange[]>(`/api/v1/admin/vendor-name-changes/${tab}`)) ?? []);
-      setError(null);
+      setLoadFailed(false);
     } catch (err) {
+      setLoadFailed(true);
       setError(err instanceof ApiError ? err.message : "Gagal memuat daftar permintaan.");
     } finally {
       setLoadedTab(tab);
@@ -59,14 +66,19 @@ function AdminVendorNameChangesContent({ user }: { user: CurrentUser }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
-  async function handleApprove(id: string) {
+  async function confirmApprove() {
+    if (!approveTarget) return;
+    const id = approveTarget.id;
     setBusyId(id);
+    setError(null);
     try {
       await apiPost(`/api/v1/admin/vendor-name-changes/${id}/resolve`, { approve: true, admin_note: "" });
-      show("Permintaan ganti nama disetujui.", "success");
+      show(`Nama vendor diganti jadi ${approveTarget.requested_name}.`, "success");
+      setApproveTarget(null);
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Gagal memproses permintaan.");
+      setApproveTarget(null);
     } finally {
       setBusyId(null);
     }
@@ -76,6 +88,7 @@ function AdminVendorNameChangesContent({ user }: { user: CurrentUser }) {
     if (!rejectTarget) return;
     const id = rejectTarget.id;
     setBusyId(id);
+    setError(null);
     try {
       await apiPost(`/api/v1/admin/vendor-name-changes/${id}/resolve`, { approve: false, admin_note: rejectNote });
       show("Permintaan ganti nama ditolak.", "success");
@@ -90,86 +103,128 @@ function AdminVendorNameChangesContent({ user }: { user: CurrentUser }) {
   }
 
   const loading = loadedTab !== tab;
+  const pending = tab === "pending";
 
   return (
     <Shell user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
       <div className={PAGE}>
-        <PageHeader title="Permintaan Ganti Nama Vendor" subtitle="Setujui atau tolak permintaan perubahan nama usaha dari vendor." />
+        <PageHeader
+          eyebrow="Verifikasi vendor"
+          title={
+            <>
+              Ganti <span className="dc-em">nama</span> vendor
+            </>
+          }
+          subtitle="Nama baru langsung tampil di halaman publik vendor setelah kamu setujui."
+        />
 
         <Tabs
+          idBase="ganti-nama"
           label="Status permintaan"
           value={tab}
-          onChange={setTab}
-          tabs={[
-            { value: "pending", label: "Menunggu" },
-            { value: "resolved", label: "Riwayat" },
+          onChange={(id) => {
+            setError(null);
+            setTab(id as "pending" | "resolved");
+          }}
+          items={[
+            { id: "pending", label: "Menunggu", count: loadedTab === "pending" && !loadFailed ? requests.length : undefined },
+            { id: "resolved", label: "Riwayat" },
           ]}
         />
 
-        {error && <ErrorBanner message={error} onRetry={load} />}
-        {loading ? (
-          <RowsSkeleton />
-        ) : requests.length === 0 ? (
-          !error && <EmptyState title={tab === "pending" ? "Tidak ada permintaan ganti nama yang menunggu" : "Belum ada riwayat"} />
-        ) : (
-          <TableCard minWidth="min-w-[760px]">
-            <thead className="bg-dc-cream/50">
-              <tr>
-                <th scope="col" className={TH}>Nama lama</th>
-                <th scope="col" className={TH}>Nama baru</th>
-                <th scope="col" className={TH}>Alasan</th>
-                <th scope="col" className={`${TH} text-right`}>{tab === "pending" ? "Aksi" : "Hasil"}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {requests.map((req) => (
-                <tr key={req.id} className={TR}>
-                  <td className={`${TD} text-dc-black/70`}>{req.current_name}</td>
-                  <td className={`${TD} font-semibold`}>{req.requested_name}</td>
-                  <td className={`${TD} max-w-xs text-dc-black/80`}>{req.reason}</td>
-                  <td className={`${TD} text-right`}>
-                    {tab === "pending" ? (
-                      <div className="flex justify-end gap-2">
-                        <DangerButton onClick={() => setRejectTarget(req)} disabled={busyId === req.id}>
-                          Tolak
-                        </DangerButton>
-                        <Button className="w-auto" onClick={() => handleApprove(req.id)} loading={busyId === req.id}>
-                          Setujui
-                        </Button>
+        <TabPanel idBase="ganti-nama" id={tab} value={tab} className="mt-6">
+          {error && !loadFailed && <ErrorBanner message={error} />}
+          {loading ? (
+            <RowsSkeleton rows={3} label="Memuat permintaan" />
+          ) : loadFailed ? (
+            <ErrorState title="Permintaan belum bisa dimuat" onRetry={() => { setError(null); load(); }} />
+          ) : requests.length === 0 ? (
+            <EmptyState
+              title={pending ? "Tidak ada yang menunggu" : "Belum ada riwayat"}
+              body={pending ? "Pengajuan ganti nama dari vendor akan muncul di sini." : "Pengajuan yang sudah kamu proses akan tercatat di sini."}
+            />
+          ) : (
+            <ul className="flex flex-col gap-4">
+              <AnimatePresence initial={false}>
+              {requests.map((req, i) => (
+                <QueueItem key={req.id} index={i}>
+                  <article className="rounded-xl border border-dc-line bg-dc-white" aria-label={`Ganti nama ${req.current_name} jadi ${req.requested_name}`}>
+                    <div className="grid gap-5 p-5 sm:p-6 md:grid-cols-[1fr_1.1fr]">
+                      {/* Old -> new reads as one line of change; the new name carries the weight. */}
+                      <div>
+                        <p className="text-sm text-dc-text-3">Nama sekarang</p>
+                        <p className="mt-0.5 text-lg text-dc-text-2">{req.current_name}</p>
+                        <p className="mt-3 text-sm text-dc-text-3">Diganti jadi</p>
+                        <p className="mt-0.5 font-heading text-3xl leading-tight text-dc-ink">{req.requested_name}</p>
                       </div>
-                    ) : (
-                      <div className="flex flex-col items-end gap-1">
-                        <Badge tone={req.status === "approved" ? "success" : "danger"}>{req.status === "approved" ? "Disetujui" : "Ditolak"}</Badge>
-                        {req.admin_note && <span className="text-xs text-dc-black/70">{req.admin_note}</span>}
+                      <div className="rounded-lg bg-dc-cream px-4 py-3">
+                        <p className="text-sm font-semibold text-dc-ink">Alasan vendor</p>
+                        <p className="mt-1 leading-relaxed text-dc-text-2">{req.reason || "Vendor tidak menulis alasan."}</p>
+                        {req.created_at && <p className="mt-3 text-xs text-dc-text-3">Diajukan {tanggal(req.created_at)}</p>}
                       </div>
-                    )}
-                  </td>
-                </tr>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-dc-line px-5 py-4 sm:px-6">
+                      {pending ? (
+                        <>
+                          <span className="text-sm text-dc-text-3">Menunggu keputusanmu</span>
+                          <div className="flex flex-wrap gap-2">
+                            <DangerGhostButton onClick={() => setRejectTarget(req)} disabled={busyId === req.id}>
+                              Tolak
+                            </DangerGhostButton>
+                            <Button size="sm" onClick={() => setApproveTarget(req)} disabled={busyId === req.id}>
+                              Setujui nama baru
+                            </Button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <Badge tone={req.status === "approved" ? "success" : "danger"}>{req.status === "approved" ? "Disetujui" : "Ditolak"}</Badge>
+                          {req.admin_note && <p className="min-w-0 flex-1 text-sm text-dc-text-2 sm:text-right">Catatan: {req.admin_note}</p>}
+                        </>
+                      )}
+                    </div>
+                  </article>
+                </QueueItem>
               ))}
-            </tbody>
-          </TableCard>
-        )}
+              </AnimatePresence>
+            </ul>
+          )}
+        </TabPanel>
       </div>
 
-      <Modal open={!!rejectTarget} onClose={() => setRejectTarget(null)} title={`Tolak permintaan ganti nama`}>
-        <label className="block text-sm font-medium text-dc-ink">
-          Catatan penolakan (opsional)
-          <textarea
-            value={rejectNote}
-            onChange={(e) => setRejectNote(e.target.value)}
-            rows={3}
-            className={TEXTAREA}
-          />
-        </label>
-        <div className="mt-4 flex justify-end gap-2">
-          <Button variant="ghost" className="w-auto" onClick={() => setRejectTarget(null)}>
-            Batal
-          </Button>
-          <DangerButton solid onClick={confirmReject} loading={busyId === rejectTarget?.id}>
-            Tolak Permintaan
-          </DangerButton>
-        </div>
-      </Modal>
+      <ConfirmDialog
+        open={!!approveTarget}
+        onClose={() => setApproveTarget(null)}
+        onConfirm={confirmApprove}
+        busy={!!approveTarget && busyId === approveTarget.id}
+        tone="primary"
+        title="Setujui nama baru?"
+        consequence={
+          <>
+            <span className="text-dc-text-2">{approveTarget?.current_name}</span> akan tampil sebagai{" "}
+            <span className="font-semibold text-dc-ink">{approveTarget?.requested_name}</span> di direktori dan halaman vendor. Vendor mendapat notifikasi.
+          </>
+        }
+        confirmLabel="Ganti nama"
+      />
+
+      <ConfirmDialog
+        open={!!rejectTarget}
+        onClose={() => {
+          setRejectTarget(null);
+          setRejectNote("");
+        }}
+        onConfirm={confirmReject}
+        busy={!!rejectTarget && busyId === rejectTarget.id}
+        title="Tolak permintaan ganti nama?"
+        consequence={
+          <>
+            Nama tetap <span className="font-semibold">{rejectTarget?.current_name}</span>. Vendor mendapat notifikasi. Catatanmu tersimpan di riwayat.
+          </>
+        }
+        confirmLabel="Tolak permintaan"
+        reason={{ value: rejectNote, onChange: setRejectNote, label: "Catatan untuk vendor", picks: REJECT_PICKS }}
+      />
     </Shell>
   );
 }

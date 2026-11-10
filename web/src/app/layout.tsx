@@ -1,27 +1,35 @@
 import type { Metadata, Viewport } from "next";
-import { Hanken_Grotesk, Instrument_Serif, Plus_Jakarta_Sans } from "next/font/google";
+import { Cormorant_Garamond, Great_Vibes, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
 import { ToastProvider } from "@/components/ui/Toast";
 
-const bodyFont = Hanken_Grotesk({
+// One type family with invitation.duacincin.id (see DESIGN.md "Tipografi").
+// UI and body: Plus Jakarta Sans, drawn in Jakarta (Tokotype), round and friendly.
+const bodyFont = Plus_Jakarta_Sans({
   variable: "--font-body",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
-// Accent only: a real italic serif for the single expressive phrase per
-// headline (.dc-em). Headings themselves are Plus Jakarta Sans, see DESIGN.md.
-const jakarta = Plus_Jakarta_Sans({
-  variable: "--font-jakarta",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
-
-const headingFont = Instrument_Serif({
+// Display serif for every heading, with its italic for the accent phrase (.dc-em).
+const displayFont = Cormorant_Garamond({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: "400",
+  weight: ["500", "600"],
   style: ["normal", "italic"],
+  display: "swap",
+});
+
+// Script: one emotional word per screen (.dc-script). Not preloaded: it is
+// below the LCP text weight and only a few glyphs are ever drawn.
+const scriptFont = Great_Vibes({
+  variable: "--font-script-face",
+  subsets: ["latin"],
+  weight: "400",
+  display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -35,16 +43,16 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f7f3ec",
+  themeColor: "#faf6ef",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="id"
-      className={`${bodyFont.variable} ${headingFont.variable} ${jakarta.variable} h-full antialiased`}
+      className={`${bodyFont.variable} ${displayFont.variable} ${scriptFont.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-dc-ivory text-dc-black">
+      <body className="flex min-h-full flex-col bg-dc-ivory text-dc-black">
         <ToastProvider>{children}</ToastProvider>
       </body>
     </html>

@@ -13,9 +13,11 @@ import (
 	"duacincin/server/internal/config"
 	"duacincin/server/internal/db"
 	"duacincin/server/internal/email"
+	"duacincin/server/internal/googleauth"
 	"duacincin/server/internal/guestlist"
 	"duacincin/server/internal/httpserver"
 	"duacincin/server/internal/inspiration"
+	"duacincin/server/internal/invitationlink"
 	"duacincin/server/internal/notifications"
 	"duacincin/server/internal/payment"
 	"duacincin/server/internal/ratelimit"
@@ -82,11 +84,14 @@ func main() {
 	// gets forwarded to WhatsApp when the other participant is linked.
 	chatDeps.Notifier = whatsappDeps
 
+	agreementRepo := repository.NewAgreementRepo(pool)
+
 	deps := httpserver.Deps{
+		GoogleAuth: googleauth.NewDeps(userRepo, agreementRepo, limiter, cfg),
 		Auth: auth.NewDeps(
 			userRepo,
 			otpRepo,
-			repository.NewAgreementRepo(pool),
+			agreementRepo,
 			limiter,
 			mailer,
 			cfg,
@@ -101,6 +106,7 @@ func main() {
 		Notifications:  notifications.NewDeps(notificationRepo),
 		GuestList:      guestlist.NewDeps(guestRepo, repository.NewRSVPLinkRepo(pool), limiter),
 		Rundown:        rundown.NewDeps(repository.NewRundownRepo(pool)),
+		InvitationLink: invitationlink.NewDeps(userRepo, guestRepo, repository.NewRSVPLinkRepo(pool), bookingRepo, limiter, cfg),
 		Seating:        seating.NewDeps(repository.NewSeatingTableRepo(pool), repository.NewSeatingAssignmentRepo(pool), guestRepo),
 		Booking: booking.NewDeps(
 			bookingRepo,

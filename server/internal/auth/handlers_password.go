@@ -94,7 +94,7 @@ func sendOTPEmail(r *http.Request, deps *Deps, to, code string) {
 		log.Printf("render otp email: %v", err)
 		return
 	}
-	if err := deps.Mailer.Send(r.Context(), to, subject, html); err != nil {
+	if err := deps.Mailer.SendWithText(r.Context(), to, subject, html, email.RenderPasswordResetOTPText(code)); err != nil {
 		log.Printf("send otp email to %s: %v", to, err)
 	}
 }

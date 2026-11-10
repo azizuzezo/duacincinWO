@@ -59,6 +59,20 @@ func (r *RSVPLinkRepo) GetByToken(ctx context.Context, token string) (*RSVPLink,
 	return link, err
 }
 
+// GetForClient returns the client's RSVP settings without creating a row
+// (read-only; used by the invitation link). ErrNotFound when none exist yet.
+func (r *RSVPLinkRepo) GetForClient(ctx context.Context, clientID string) (*RSVPLink, error) {
+	row := r.pool.QueryRow(ctx, `
+		select client_id, token, event_name, event_date, venue_note, created_at
+		from wedding_rsvp_links where client_id = $1
+	`, clientID)
+	link, err := scanRSVPLink(row)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	return link, err
+}
+
 func (r *RSVPLinkRepo) UpdateSettings(ctx context.Context, clientID, eventName string, eventDate *time.Time, venueNote string) error {
 	_, err := r.pool.Exec(ctx, `
 		update wedding_rsvp_links set event_name = $2, event_date = $3, venue_note = $4

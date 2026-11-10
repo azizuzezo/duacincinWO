@@ -1,54 +1,70 @@
-# DuaCincin: Design Direction
+# DuaCincin WO: Design Direction
 
-Design Read: marketplace vendor pernikahan + dashboard operasional untuk calon pengantin Indonesia, vendor, dan tim internal, bergaya editorial luxury terang (majalah pernikahan, bukan template SaaS). Dial ENERGY 2 / RHYTHM 3 / MOTION 2 (publik), ENERGY 1 / RHYTHM 1 / MOTION 1 (dashboard).
+Satu keluarga merek dengan DuaCincin Undangan (invitation.duacincin.id). Arah ini menggantikan "v3 garnet" (Okt 2026). Sumber token: `src/app/globals.css`. Cara memakai komponen: `src/components/README.md`. Turunan dari `.ai/design-language/DESIGN_LANGUAGE.md` di repo undangan (romantis, editorial, satu aksi utama per halaman, gerak untuk menjelaskan bukan menghias). Filter: skill `antislop` (mode DURING) dan `ui-ux-pro-max` (aksesibilitas, sentuh, gerak, tipografi). Palet merah muda yang disarankan `ui-ux-pro-max` untuk "wedding" ditolak: arah merek pemilik (ivory, tinta, emas) yang berlaku.
 
-Referensi riset (REA, 10 Okt 2026): Antler (tipografi besar ringan + satu frasa italic, tombol persegi, kartu foto-pertama), IndoWedding (pencarian di hero, kategori), Weddingku/WeddingMarket (kepadatan katalog, filter kota). Diambil: ketegasan tipografi, katalog foto-pertama, pencarian sebagai pintu utama. Tidak diambil: popup promosi, warna pink/neon, banner bertumpuk.
+Design Read: marketplace vendor pernikahan + dashboard operasional untuk calon pengantin Indonesia, vendor, dan tim internal, dalam bahasa visual "modern & ceria" milik DuaCincin: kertas ivory, tinta hangat, emas, serif display dengan satu frasa script, foto nyata yang di-grade hangat.
+Dial publik: ENERGY 3 / RHYTHM 3 / MOTION 3 (hero), MOTION 2 di section lain. Dial dashboard: ENERGY 2 / RHYTHM 1 / MOTION 1.
 
-## Aturan konten (jawaban pemilik)
+## Aturan konten (jawaban pemilik, tetap berlaku)
 - Tanpa angka, testimoni, atau logo palsu. Angka hanya dari API nyata; kalau tidak ada, jangan tampil.
-- Foto hanya dari aset repo (`/hero/adat/*`, dan foto portofolio vendor dari API). Tidak membuat avatar atau logo baru.
-- Tanpa em dash di teks UI.
-
-## Arah v3 (10 Okt 2026, menggantikan "editorial luxury terang polos")
-Keluhan pemilik atas v2: terlalu polos dan kosong, serif kuno, palet krem-cokelat membosankan, foto pasangan di kotak krem terlihat seperti stiker. Arah baru: **foto-pertama, sinematik**. Dial publik ENERGY 3 / RHYTHM 3 / MOTION 2.
-- Foto penuh layar sebagai hero dan penutup; ritme bergantian terang, foto, gelap.
-- Foto saat ini adalah **stok Pexels sebagai placeholder** (public/stock/README.md). Wajib diganti foto nyata Indonesia/vendor sebelum go-live (PRD §8.7).
-- Dilarang: foto pasangan transparan di dalam kotak berwarna.
+- Aset nyata saja: `public/scene/*` (lukisan/foto berlisensi dari situs undangan + cutout pasangan, gapura, dan busana milik pemilik), `public/hero/adat/*`, `public/brand/*`, dan foto portofolio vendor dari API. `public/stock/*` adalah placeholder Pexels, hanya di tempat yang sudah memakainya (README di folder itu). Kredit lukisan/foto wajib tampil di dekat gambar (lihat `components/landing/scenes.ts`).
+- Tidak membuat avatar, logo, atau foto orang baru. Avatar = inisial.
+- Tanpa em dash di teks UI. Tanpa istilah teknis (server, API, slug, token) di UI.
+- Klaim escrow, konsultan, verifikasi vendor harus sama dengan perilaku produk (PRD §8.5, §8.11).
+- Setiap daftar/tabel/data punya tiga state: loading (`Skeleton`), kosong (`EmptyState` dengan tindakan), gagal (`ErrorState` dengan "Coba lagi").
 
 ## Warna
-| Token | Nilai | Peran |
+| Token Tailwind | Nilai | Peran |
 |---|---|---|
-| dc-ink | #120e0d | teks, blok gelap, tombol utama |
-| dc-ivory / dc-cream | #f7f3ec / #ece6da | latar kertas / permukaan sekunder |
-| dc-white | #ffffff | kartu di atas kertas |
-| dc-clay (garnet) | #8c1d2f | satu-satunya aksen: tombol aksi di atas foto, italic headline, tautan. Terhubung ke warna bunga merah di foto hero |
-| dc-gold-antique | #e2bf7e | teks italic aksen di atas foto/gelap saja |
-| dc-gold | #b8862f | hanya hairline dan ornamen, tidak pernah teks |
-Kontras: garnet/ivory sekitar 9:1, putih di atas foto dijamin scrim bawah (bg-linear-to-t dari ink), emas antik/ink sekitar 11:1.
+| `dc-ink` | #15110d | teks judul, blok gelap, sidebar, tombol utama |
+| `dc-ink-2` / `dc-ink-3` | #241d17 / #3a3027 | permukaan dan garis di atas ink |
+| `dc-ivory` | #faf6ef | latar halaman (kertas) |
+| `dc-cream` | #f3ecdf | section selang-seling, chip, track |
+| `dc-paper-3` | #e9dfcc | skeleton, rel |
+| `dc-white` | #fffdf9 | permukaan kartu (hangat, bukan putih murni) |
+| `dc-gold` | #b8924a | isi, garis, ikon, cincin. **Bukan teks di atas terang** (2,7:1) |
+| `dc-gold-antique` | #dcbb76 | emas di atas ink/foto: teks, ikon, aksen (10:1 di ink) |
+| `dc-clay` | #7a5c24 | emas tua untuk TEKS di atas terang: tautan aktif, aksen italic (5,3:1 di cream) |
+| `dc-black` | #1d1712 | teks isi |
+| `dc-text-2` / `dc-text-3` | #4d443b / #6b6157 | isi sekunder (8:1) / meta (5,1:1 di cream) |
+| `dc-on-dark` | #f6efe3 | teks di atas ink |
+| `dc-line` / `dc-line-strong` | #e6dccb / #d3c4ab | hairline kartu / pembatas daftar |
+| `dc-success` / `dc-danger` | #2f6a47 / #a3362a | status saja, bukan dekorasi |
+
+Emas adalah satu-satunya aksen. Tidak ada biru, ungu, pink. Gradien hanya dua: scrim keterbacaan di atas foto, dan tombol `gold` (logam).
 
 ## Tipografi
-- Heading: **Plus Jakarta Sans** 500, tracking -0.03em. Dipilih karena modern, rapat, terbaca di ukuran besar, dan dirancang di Jakarta (cocok untuk merek Indonesia). Menggantikan serif penuh yang terasa kuno.
-- Aksen: **Instrument Serif italic** (`.dc-em` garnet di terang, `.dc-em-light` emas di gelap/foto), tepat satu frasa per headline.
-- Isi: Hanken Grotesk. Angka dashboard: sans, tabular-nums.
+- Judul: **Cormorant Garamond** 500/600 (`font-heading`). Serif tinggi kontras yang sama dengan situs undangan; terasa seperti kartu undangan cetak.
+- Aksen: italic Cormorant (`.dc-em` emas tua di terang, `.dc-em-light` emas di gelap), tepat satu frasa per judul.
+- Script: **Great Vibes** (`.dc-script` / `.dc-script-light`), maksimal satu frasa per layar (hero, auth, penutup), ukuran besar saja.
+- Teks dan UI: **Plus Jakarta Sans** (buatan Tokotype, Jakarta), bulat dan ramah, identitas lokal.
+- Angka: StatTile memakai serif dengan `lining-nums tabular-nums`; rupiah di kartu memakai sans tebal tabular.
+- Label section: `.dc-eyebrow` (motif dua cincin + kalimat biasa). Tanpa huruf kapital ber-tracking lebar.
 
 ## Bentuk dan permukaan
-- Radius: tombol dan input 6px (`rounded-md`), kartu dan foto 8px (`rounded-lg`), modal 12px. Pil hanya untuk Badge status. Tidak ada radius 2xl+.
-- Kartu: latar putih, border hairline `border-dc-ink/10`, tanpa shadow. Shadow hanya pada elemen melayang (dropdown, modal, toast).
-- Tidak ada glow, blur dekoratif, glassmorphism (kecuali navbar yang mengunci saat scroll: satu-satunya blur). Gradient hanya sebagai scrim keterbacaan di atas foto (bawah foto ke ink), bukan dekorasi.
-- Hairline gold 1px sebagai pembatas section dan di bawah judul halaman.
-- Motif identitas: dua cincin saling bertaut (garis tipis) sebagai ornamen kecil, tidak berputar.
+- Radius (skala Tailwind diubah): `rounded-md` 12px input, `rounded-lg` 18px, `rounded-xl` 24px kartu, `rounded-2xl` 32px panel/foto besar. Pill (`rounded-full`) hanya untuk tombol aksi, chip, badge status, tab.
+- Semua elemen yang bisa diklik memakai kursor tangan (diatur global di `globals.css`) dan memberi umpan balik tekan (skala 0,98 sampai 0,99).
+- Elevasi: `shadow-soft` kartu diam, `shadow-lift` kartu di-hover / foto penting, `shadow-float` dropdown, modal, sheet, toast, `shadow-gold` hanya hover tombol gold.
+- Glass: hanya navbar publik setelah scroll dan top bar mobile app. Glow: hanya satu cahaya emas lembut di `GlowPanel`/blok konsultan.
+- Motif identitas: dua cincin bertaut. Logo `BrandLogo` = logo asli DuaCincin WO (angsa emas dan dua cincin, `/brand/duacincin-logo.webp`, kolaborasi dengan Kaloka): **jangan diubah, digambar ulang, atau diganti logo undangan**; di sebelahnya teks "DuaCincin" (serif), `.dc-eyebrow`, `Rings`, `FeatureIcon`, ornamen cincin besar tipis di ink.
+- Grain kertas (`.dc-grain`) hanya di section kertas besar.
 
-## Tombol
-- Primary: ink solid, teks putih, hover clay. Secondary: border ink/25 transparan. Tertaut teks: clay garis bawah.
-- Tinggi minimum 44px. CTA spesifik ("Cari vendor", "Daftar sebagai vendor"), bukan "Get Started".
+## Tombol (`components/ui/Button.tsx`)
+- `primary` pill ink, `gold` satu aksi terpenting per layar, `ghost`/`ghostLight` sekunder, `light` utama di atas foto, `quiet` aksi teks di dalam kartu, `danger` konfirmasi hapus.
+- Tinggi minimum 44px. CTA spesifik ("Cari vendor", "Daftar sebagai vendor", "Buat akun client"), bukan "Get Started". Panah hanya bila menunjuk navigasi lanjut.
 
 ## Layout
-- Publik: lebar maks 1200px, gutter 16/24/40px. Ritme section sengaja berbeda (hero asimetris, strip direktori horizontal, split editorial, blok gelap tunggal, penutup).
-- Dashboard: sidebar 256px kertas, konten maks 1152px, kepadatan tinggi, judul halaman serif 32px, tanpa banner gelap besar.
+- Publik: `.dc-container` maks 1240px, gutter clamp 16 sampai 48px. Ritme section sengaja berbeda: scene, kertas, cream, ink, kertas, putih, cream, kertas, foto. Ink penuh maksimal satu blok per halaman (selain footer).
+- App: sidebar ink 272px mulai `lg` (1024px), top bar ivory + tab bar bawah 5 item di bawah `lg` (HP dan tablet potret, supaya konten 768px tidak terjepit sidebar), konten maks 1152px (`max-w-6xl`), `PageHeader` di atas setiap halaman.
+- Breakpoint: 320 sampai 1920px tanpa scroll horizontal, target sentuh 44px.
 
-## Gerak
-- Publik: reveal sekali saat scroll (opacity + 12px), hero headline per baris. Dashboard: hanya transisi hover/focus 150ms.
-- Hormati prefers-reduced-motion di semua kasus.
-
-## State wajib
-Setiap daftar/tabel/data: loading (skeleton netral), empty (EmptyState dengan tindakan), error (pesan + coba lagi).
+## Gerak (`src/lib/motion.ts`)
+Setiap gerak punya tujuan:
+- Hero: crossfade dunia (adat berganti), ken burns (still film), parallax tiga lapis mouse + scroll (kedalaman). Berhenti saat hover/fokus/di luar layar, ada tombol jeda.
+- Scroll reveal satu kali (naik 18px, opacity + transform saja) untuk blok di bawah lipatan.
+- Maksimal 1 sampai 2 elemen bergerak per layar; tidak ada loop dekoratif (cahaya bokeh dihapus). Animasi keluar 60 sampai 70% durasi masuk. Semua gerak bisa diinterupsi dan tidak memblokir input.
+- Sticky storytelling escrow: koin emas berpindah stasiun mengikuti tahap.
+- Shared layout: indikator nav aktif, tab, tab bar bawah meluncur antar item.
+- Hover depth: kartu naik 4px + shadow-lift. Tombol naik 2px.
+- Dashboard: hanya transisi hover/fokus dan masuk halaman (`animate-fade-up`).
+- `prefers-reduced-motion`: semua di atas mati, perubahan jadi instan (pakai `motionSafe()` / `useReducedMotion`).

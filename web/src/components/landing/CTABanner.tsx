@@ -1,32 +1,29 @@
 import Image from "next/image";
-import Link from "next/link";
 
 import { Reveal } from "@/components/landing/Reveal";
+import { ButtonLink } from "@/components/ui/Button";
 
-/** Closing band: full-bleed photo so the page ends on the same cinematic
- * note it opened with. */
+/** Closing band: full-bleed photo under an ink veil, one script word, two
+ * specific actions. Ends the page on the same cinematic note it opened with. */
 export function CTABanner() {
   return (
-    <section className="relative isolate overflow-hidden bg-dc-ink">
+    <section aria-labelledby="penutup-judul" className="dc-on-dark relative isolate overflow-hidden bg-dc-ink">
       <Image src="/stock/couple-walk.webp" alt="" fill sizes="100vw" className="-z-20 object-cover object-center" />
-      <div className="absolute inset-0 -z-10 bg-dc-ink/70" aria-hidden />
-      <Reveal className="mx-auto max-w-[1200px] px-4 py-28 text-center sm:px-6 lg:px-10 lg:py-40">
-        <h2 className="mx-auto max-w-4xl font-heading text-[clamp(2.5rem,7vw,5.5rem)] font-medium leading-[1] text-dc-white">
-          Mulai dari anggaran, <span className="dc-em-light">bukan dari tebakan.</span>
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(21,17,13,0.6),rgba(21,17,13,0.85))]" aria-hidden />
+      <Reveal className="dc-container py-28 text-center sm:py-36 lg:py-44">
+        <h2 id="penutup-judul" className="mx-auto max-w-4xl font-heading text-[clamp(2.6rem,6.6vw,5.6rem)] font-medium leading-[1] text-[#fbf6ec]">
+          Mulai dari anggaran, <span className="dc-script-light text-[1.15em]">bukan tebakan</span>.
         </h2>
+        <p className="mx-auto mt-6 max-w-lg leading-relaxed text-[#fbf6ec]/85">
+          Buat akun, susun budget, lalu temukan vendor yang pas dengan anggaranmu.
+        </p>
         <div className="mt-10 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
-          <Link
-            href="/register?role=client"
-            className="inline-flex min-h-12 items-center justify-center rounded-md bg-dc-white px-8 text-sm font-semibold text-dc-ink transition-colors hover:bg-dc-gold-antique focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-white"
-          >
+          <ButtonLink href="/register?role=client" variant="gold" size="lg">
             Buat akun client
-          </Link>
-          <Link
-            href="/vendors"
-            className="inline-flex min-h-12 items-center justify-center rounded-md border border-dc-white/50 px-8 text-sm font-semibold text-dc-white transition-colors hover:border-dc-white hover:bg-dc-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-white"
-          >
+          </ButtonLink>
+          <ButtonLink href="/vendors" variant="ghostLight" size="lg">
             Lihat direktori vendor
-          </Link>
+          </ButtonLink>
         </div>
       </Reveal>
     </section>

@@ -29,14 +29,22 @@ type sendRequest struct {
 	To      []string `json:"to"`
 	Subject string   `json:"subject"`
 	HTML    string   `json:"html"`
+	Text    string   `json:"text,omitempty"`
 }
 
 func (c *Client) Send(ctx context.Context, to, subject, html string) error {
+	return c.SendWithText(ctx, to, subject, html, "")
+}
+
+// SendWithText sends an HTML email with a plain-text alternative part
+// (omitted when text is empty).
+func (c *Client) SendWithText(ctx context.Context, to, subject, html, text string) error {
 	body, err := json.Marshal(sendRequest{
 		From:    c.from,
 		To:      []string{to},
 		Subject: subject,
 		HTML:    html,
+		Text:    text,
 	})
 	if err != nil {
 		return fmt.Errorf("encode email payload: %w", err)

@@ -5,19 +5,12 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { AuthCard } from "@/components/AuthCard";
+import { AuthDivider, GoogleSignIn } from "@/components/auth/GoogleSignIn";
+import { DASHBOARD_BY_ROLE } from "@/components/auth/redirect";
 import { Button } from "@/components/Button";
 import { PasswordField } from "@/components/PasswordField";
 import { TextField } from "@/components/TextField";
 import { apiPost, ApiError, type CurrentUser } from "@/lib/api";
-
-// One dashboard per role. The backend already tells us which one via
-// `role` on the login response, so there's nothing to ask the user upfront.
-const DASHBOARD_BY_ROLE: Record<CurrentUser["role"], string> = {
-  client: "/client/dashboard",
-  vendor: "/vendor/dashboard",
-  admin: "/internal/admin/dashboard",
-  wedding_consultant: "/internal/consultations",
-};
 
 export default function LoginPage() {
   const router = useRouter();
@@ -48,21 +41,25 @@ export default function LoginPage() {
       footer={
         <>
           Belum punya akun?{" "}
-          <Link href="/register" className="font-semibold text-dc-clay underline underline-offset-2 hover:text-dc-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold">
+          <Link href="/register" className="font-semibold text-dc-ink underline decoration-dc-gold underline-offset-4 hover:text-dc-clay">
             Daftar di sini
           </Link>
         </>
       }
     >
+      <div className="mb-5 flex flex-col gap-5 empty:hidden">
+        <GoogleSignIn text="signin_with" />
+        <AuthDivider />
+      </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <TextField label="Email" type="email" autoComplete="email" value={email} onChange={setEmail} />
         <PasswordField label="Password" value={password} onChange={setPassword} />
         <div className="-mt-2 text-right text-sm">
-          <Link href="/forgot-password" className="inline-flex min-h-11 items-center text-dc-clay underline underline-offset-2 hover:text-dc-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold">
+          <Link href="/forgot-password" className="inline-flex min-h-11 items-center font-medium text-dc-clay underline-offset-4 hover:underline">
             Lupa password?
           </Link>
         </div>
-        {error && <p role="alert" className="text-sm text-red-700">
+        {error && <p role="alert" className="text-sm text-dc-danger">
             {error}
           </p>}
         <Button type="submit" loading={loading}>

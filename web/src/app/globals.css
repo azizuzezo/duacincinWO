@@ -1,8 +1,13 @@
 @import "tailwindcss";
 
-/* Smooth in-page anchor jumps (e.g. Navbar's "Budget Planner" link) site-wide.
-   Guarded behind no-preference so reduced-motion visitors still get an
-   instant jump instead of an animated scroll. */
+/* ==========================================================================
+   DuaCincin WO brand layer. One brand family with invitation.duacincin.id:
+   ivory paper, warm ink, gold as the single accent, Cormorant Garamond for
+   display, Great Vibes for one script phrase, Plus Jakarta Sans for UI.
+   Source of truth for every color, font, radius, shadow and motion curve.
+   See web/DESIGN.md (direction) and src/components/README.md (usage).
+   ========================================================================== */
+
 @media (prefers-reduced-motion: no-preference) {
   html {
     scroll-behavior: smooth;
@@ -10,122 +15,238 @@
 }
 
 :root {
-  --dc-white: #ffffff;
-  /* Warm cream, not cold gray-white — dashboard shell background. Sits next
-     to the ink/gold palette and the cultural photography without the
-     bluish cast the previous value (#f6eff1) had. */
-  --dc-cream: #ece6da;
-  /* Decorative-only gold: badges, borders, icon fills, glow accents.
-     Contrast rule: never use dc-gold as body text color on white/cream
-     (3.2:1, fails AA) — text/icon-on-dark uses dc-gold-antique instead. */
-  --dc-gold: #b8862f;
-  /* Espresso-ink — replaces the wine/oxblood anchor with a warm near-black
-     so the identity reads as quiet luxury (editorial, jewelry, ateliers)
-     rather than "wedding pink" or corporate navy. Warmed a few degrees off
-     true black so gradients/buttons built from it don't go flat pitch-black. */
-  --dc-ink: #120e0d;
-  /* Second accent alongside gold — muted burnt clay, ~45° off dc-ink's hue
-     so it anchors as a genuinely different color, not the same dark tone
-     at a different lightness. #8e4028 clears 4.5:1 as text on dc-white AND
-     as a badge/pill fill with white text (7.2:1 either direction). */
-  --dc-clay: #8c1d2f;
-  /* Plain body/muted text (via /opacity, e.g. text-dc-black/60) — kept a
-     hair darker than --dc-ink so headings (--dc-ink) and running copy read
-     as two deliberate weights of the same warm-black family, not one flat tone. */
-  --dc-black: #1a1613;
+  /* Ink (dark surfaces, primary text) */
+  --dc-ink: #15110d;
+  --dc-ink-2: #241d17; /* raised dark surface (sidebar cards, hover) */
+  --dc-ink-3: #3a3027; /* dark hairline */
+  /* Paper (light surfaces) */
+  --dc-ivory: #faf6ef; /* page background */
+  --dc-cream: #f3ecdf; /* champagne wash: alternate section, chips, tracks */
+  --dc-paper-3: #e9dfcc; /* deeper champagne: skeletons, rails */
+  --dc-white: #fffdf9; /* card surface (warm, never pure white) */
+  /* Gold: the only accent */
+  --dc-gold: #b8924a; /* fills, rules, icons, rings. Never text on light (2.7:1) */
+  --dc-gold-antique: #dcbb76; /* gold on dark: text and icons on ink (10:1) */
+  --dc-clay: #7a5c24; /* gold-deep: accent TEXT on light, links, active states (5.3:1 on cream) */
+  /* Text */
+  --dc-black: #1d1712; /* running text; use /70 for muted copy */
+  --dc-text-2: #4d443b; /* body copy (8.1:1 on cream) */
+  --dc-text-3: #6b6157; /* meta copy (5.1:1 on cream) */
+  --dc-on-dark: #f6efe3;
+  /* Lines */
+  --dc-line: #e6dccb;
+  --dc-line-strong: #d3c4ab;
+  /* Semantic (status only, never decoration) */
+  --dc-success: #2f6a47;
+  --dc-danger: #a3362a;
 
   --background: var(--dc-ivory);
   --foreground: var(--dc-black);
 
-  /* Landing-page-only refinements. Scoped to src/components/landing/* via
-     the dc-gold-antique/dc-ivory tokens below — kept separate from
-     dc-gold/dc-cream so the marketing page can run a lighter, airier
-     variant of the same identity without touching dashboard tone.
-     Same contrast rule as dc-gold above applies to dc-gold-antique: never
-     as text/icon color on dc-white/dc-ivory (fails contrast), only on
-     dc-ink backgrounds or as a button/badge/border fill. */
-  /* #e4c67a rather than a deeper antique gold: at this exact value, gold
-     text keeps >=4.5:1 contrast both on dc-ink and under dc-ink text on a
-     gold button (WCAG AA) — go darker and one of those two directions
-     drops below the threshold. */
-  --dc-gold-antique: #e2bf7e;
-  --dc-ivory: #f7f3ec;
+  --dc-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --dc-ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-dc-white: var(--dc-white);
-  --color-dc-cream: var(--dc-cream);
-  --color-dc-gold: var(--dc-gold);
   --color-dc-ink: var(--dc-ink);
+  --color-dc-ink-2: var(--dc-ink-2);
+  --color-dc-ink-3: var(--dc-ink-3);
+  --color-dc-ivory: var(--dc-ivory);
+  --color-dc-cream: var(--dc-cream);
+  --color-dc-paper-3: var(--dc-paper-3);
+  --color-dc-white: var(--dc-white);
+  --color-dc-gold: var(--dc-gold);
+  --color-dc-gold-antique: var(--dc-gold-antique);
   --color-dc-clay: var(--dc-clay);
   --color-dc-black: var(--dc-black);
-  --color-dc-gold-antique: var(--dc-gold-antique);
-  --color-dc-ivory: var(--dc-ivory);
-  /* One serif carries every heading, site-wide — dashboards and marketing
-     now share a single editorial identity instead of the old
-     Plus-Jakarta-Sans-for-app / Bodoni-for-landing split. Numeric stat
-     values opt back into font-sans directly in StatTile, since a display
-     serif's old-style figures read worse at a glance than a clean sans. */
-  --font-heading: var(--font-jakarta);
+  --color-dc-text-2: var(--dc-text-2);
+  --color-dc-text-3: var(--dc-text-3);
+  --color-dc-on-dark: var(--dc-on-dark);
+  --color-dc-line: var(--dc-line);
+  --color-dc-line-strong: var(--dc-line-strong);
+  --color-dc-success: var(--dc-success);
+  --color-dc-danger: var(--dc-danger);
+
+  /* Fonts (loaded with next/font in app/layout.tsx) */
+  --font-heading: var(--font-display);
   --font-accent: var(--font-display);
+  --font-script: var(--font-script-face);
   --font-sans: var(--font-body);
+
+  /* Radius scale, softened to the "ceria" brand: cards 18px, panels 24px,
+     inputs 12px. Pills (rounded-full) are for primary actions, chips and
+     status badges only. Existing rounded-md/lg classes inherit this. */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-2xl: 32px;
+
+  /* Elevation: soft = resting card on paper, lift = hovered card / sticky
+     bar, float = dropdown, modal, sheet, toast. Gold = primary gold button hover only. */
+  --shadow-soft: 0 1px 2px rgba(21, 17, 13, 0.04), 0 2px 8px rgba(21, 17, 13, 0.04);
+  --shadow-lift: 0 2px 6px rgba(21, 17, 13, 0.05), 0 18px 40px -12px rgba(21, 17, 13, 0.16);
+  --shadow-float: 0 4px 12px rgba(21, 17, 13, 0.06), 0 40px 80px -24px rgba(21, 17, 13, 0.3);
+  --shadow-gold: 0 10px 30px -10px rgba(184, 146, 74, 0.6);
+
+  --ease-dc: var(--dc-ease);
 }
 
-/* DuaCincin keeps a white-based brand look regardless of OS theme (PRD §6). */
+/* ── Base ─────────────────────────────────────────────────────────── */
+html {
+  text-rendering: optimizeLegibility;
+}
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  -moz-osx-font-smoothing: grayscale;
+}
 
-/* Headings: Plus Jakarta Sans (modern grotesk, drawn in Jakarta), medium
-   weight, tight tracking. The serif survives only as the italic accent
-   phrase (.dc-em), so each headline has one expressive moment instead of
-   a dated all-serif voice. */
+::selection {
+  background: rgba(184, 146, 74, 0.28);
+  color: var(--dc-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--dc-gold);
+  outline-offset: 3px;
+}
+
+/* Tailwind 4 resets buttons to the default cursor; everything clickable in
+   DuaCincin shows the hand (ui-ux-pro-max: cursor-pointer on clickables). */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+[role="tab"],
+select,
+summary,
+label[for],
+input[type="checkbox"]:not(:disabled),
+input[type="radio"]:not(:disabled),
+input[type="range"] {
+  cursor: pointer;
+}
+
+/* ── Typography ───────────────────────────────────────────────────── */
+
+/* Display serif (Cormorant Garamond). Same voice as the invitation site. */
 .font-heading {
   font-weight: 500;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.012em;
 }
 
-/* Editorial accent: one italic serif phrase inside a heading. Garnet on
-   light backgrounds, antique gold on dark/photo ones (.dc-em-light). */
-.dc-em {
-  font-family: var(--font-accent), Georgia, serif;
-  font-style: italic;
-  font-weight: 400;
-  letter-spacing: -0.01em;
-  color: var(--dc-clay);
-}
+/* Accent phrase inside a heading: serif italic in gold. One per headline.
+   .dc-em on light paper, .dc-em-light on ink or photo. */
+.dc-em,
 .dc-em-light {
   font-family: var(--font-accent), Georgia, serif;
   font-style: italic;
   font-weight: 400;
   letter-spacing: -0.01em;
+}
+.dc-em {
+  color: var(--dc-clay);
+}
+.dc-em-light {
   color: var(--dc-gold-antique);
 }
 
-/* Hairline rule: gold, 1px, the only gold that touches layout. */
+/* Script (Great Vibes): one emotional word per SCREEN at most (hero, auth).
+   Needs a large size; never below 28px. */
+.dc-script,
+.dc-script-light {
+  font-family: var(--font-script), cursive;
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: 0;
+  line-height: 0.8;
+  padding-inline: 0.06em;
+}
+.dc-script {
+  color: var(--dc-clay);
+}
+.dc-script-light {
+  color: var(--dc-gold-antique);
+}
+
+/* Section label with the identity motif (two interlocked rings). Sentence
+   case, no wide tracking: it reads as a label, not a template eyebrow. */
+.dc-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-sans), sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--dc-clay);
+}
+.dc-eyebrow::before {
+  content: "";
+  width: 26px;
+  height: 16px;
+  flex-shrink: 0;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 16' fill='none' stroke='%23000' stroke-width='1.6'%3E%3Ccircle cx='9' cy='8' r='6.2'/%3E%3Ccircle cx='17' cy='8' r='6.2'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 16' fill='none' stroke='%23000' stroke-width='1.6'%3E%3Ccircle cx='9' cy='8' r='6.2'/%3E%3Ccircle cx='17' cy='8' r='6.2'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+.dc-on-dark .dc-eyebrow,
+.dc-eyebrow.is-light {
+  color: var(--dc-gold-antique);
+}
+
+/* Hairline rule: fades at both ends, the only gold that touches layout. */
 .dc-rule {
   height: 1px;
-  background: var(--dc-gold);
-  opacity: 0.6;
+  border: 0;
+  background: linear-gradient(90deg, transparent, var(--dc-line-strong), transparent);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+/* ── Layout ───────────────────────────────────────────────────────── */
+.dc-container {
+  width: 100%;
+  max-width: 1240px;
+  margin-inline: auto;
+  padding-inline: clamp(16px, 4vw, 48px);
 }
 
-/* Browser-drawn surfaces (focus rings, text selection) themed from the
-   palette instead of left as generic platform blue. */
-::selection {
-  background: var(--dc-gold);
-  color: var(--dc-white);
+/* Editorial paper grain (pure CSS, no request). Use on large paper or ink
+   sections only, never on cards. */
+.dc-grain {
+  position: relative;
+}
+.dc-grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.35;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.38 0 0 0 0 0.3 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-:focus-visible {
-  outline: 2px solid var(--dc-gold);
-  outline-offset: 2px;
+/* Skip link (first focusable element on every page). */
+.dc-skip {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 100;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: var(--dc-ink);
+  color: var(--dc-on-dark);
+  font-weight: 600;
+  transform: translateY(-160%);
+  transition: transform 0.3s var(--dc-ease);
+}
+.dc-skip:focus {
+  transform: translateY(0);
 }
 
+/* ── Motion utilities ─────────────────────────────────────────────── */
 @keyframes dc-spin-slow {
   to {
     transform: rotate(360deg);
@@ -135,9 +256,7 @@ body {
   animation: dc-spin-slow 40s linear infinite;
 }
 
-/* Entrance animation for above-the-fold content (dashboard banners, cards)
-   that's visible immediately on load, so IntersectionObserver-based .reveal
-   wouldn't add anything — a plain CSS keyframe covers it more cheaply. */
+/* Above-the-fold entrance (dashboard banners, auth cards). */
 @keyframes dc-fade-up {
   from {
     opacity: 0;
@@ -149,23 +268,83 @@ body {
   }
 }
 .animate-fade-up {
-  animation: dc-fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: dc-fade-up 0.4s var(--dc-ease) both;
+}
+
+/* Skeleton shimmer: a slow champagne sweep, calmer than animate-pulse. */
+@keyframes dc-shimmer {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+.dc-skeleton {
+  background: linear-gradient(90deg, var(--dc-cream) 0%, var(--dc-paper-3) 40%, var(--dc-cream) 80%) 0 0 / 200% 100%;
+  animation: dc-shimmer 1.6s var(--dc-ease-soft) infinite;
+}
+
+/* Ken burns for hero photos: the slow breath of a film still. */
+@keyframes dc-kenburns {
+  from {
+    transform: scale(1.1);
+  }
+  to {
+    transform: scale(1.02);
+  }
+}
+.dc-kenburns {
+  animation: dc-kenburns 12s var(--dc-ease-soft) both;
+}
+
+/* Page enter: every app page rises in softly when you navigate (Shell). */
+@keyframes dc-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* fill-mode backwards (not both): once the enter ends the wrapper keeps no
+   transform, so position:fixed children (mobile chat, sheets) stay anchored
+   to the viewport instead of this wrapper. */
+.dc-page-enter {
+  animation: dc-page-enter 0.4s var(--dc-ease) backwards;
+}
+
+/* Delayed entrance for a sequence of above-the-fold items (hero copy):
+   style={{ animationDelay: "120ms" }} on each .animate-fade-up child. */
+
+/* Success tick: the check draws itself (toasts, confirmations). */
+@keyframes dc-draw {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.dc-draw {
+  stroke-dasharray: 24;
+  animation: dc-draw 0.36s 0.12s var(--dc-ease) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-fade-up {
+  .dc-page-enter,
+  .dc-draw,
+  .animate-fade-up,
+  .animate-spin-slow,
+  .dc-kenburns,
+  .dc-skeleton {
     animation: none;
   }
 }
 
-/* Custom range slider for the landing Budget Planner demo — the bare
-   `accent-*` input renders as the browser's default thin/gray control,
-   which reads as an unfinished form next to the rest of the page's
-   custom-drawn buttons and cards. `--progress` (0%-100%, set inline per
-   slider from its own value) drives the filled portion on Chromium/Safari
-   via a background gradient, since `-webkit-appearance: none` drops the
-   native accent-color fill; Firefox gets the same fill for free via
-   ::-moz-range-progress. */
+/* ── Range slider (Budget Planner) ────────────────────────────────── */
 .dc-slider {
   -webkit-appearance: none;
   appearance: none;
@@ -174,7 +353,7 @@ body {
   border-radius: 999px;
   background: linear-gradient(
     to right,
-    var(--dc-clay) var(--progress, 0%),
+    var(--dc-gold) var(--progress, 0%),
     color-mix(in srgb, var(--dc-ink) 12%, transparent) var(--progress, 0%)
   );
   cursor: pointer;
@@ -187,12 +366,12 @@ body {
 }
 .dc-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 20px;
-  height: 20px;
-  margin-top: -7px;
+  width: 22px;
+  height: 22px;
+  margin-top: -8px;
   border-radius: 50%;
-  background: var(--dc-clay);
-  border: 3px solid var(--dc-white);
+  background: var(--dc-ink);
+  border: 3px solid var(--dc-gold-antique);
   transition: transform 150ms ease;
 }
 .dc-slider::-webkit-slider-thumb:hover {
@@ -206,34 +385,55 @@ body {
 .dc-slider::-moz-range-progress {
   height: 6px;
   border-radius: 999px;
-  background: var(--dc-clay);
+  background: var(--dc-gold);
 }
 .dc-slider::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  background: var(--dc-clay);
-  border: 3px solid var(--dc-white);
+  background: var(--dc-ink);
+  border: 3px solid var(--dc-gold-antique);
 }
-.dc-slider:focus-visible::-webkit-slider-thumb,
+.dc-slider:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--dc-gold);
+  outline-offset: 3px;
+}
 .dc-slider:focus-visible::-moz-range-thumb {
-  outline: 2px solid var(--dc-ink);
-  outline-offset: 2px;
+  outline: 2px solid var(--dc-gold);
+  outline-offset: 3px;
 }
 
-/* Scroll reveal, driven by components/landing/Reveal.tsx. Without the
-   data-reveal attribute (no JS, reduced motion, above the fold) the block is
-   simply visible. */
+/* ── Scroll reveal (components/landing/Reveal.tsx) ────────────────── */
+/* Opacity + transform only (compositor-friendly, no blur cost on low-end phones). */
 .dc-reveal {
   transition:
-    opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity 0.8s var(--dc-ease),
+    transform 0.8s var(--dc-ease);
 }
 .dc-reveal[data-reveal="hidden"] {
   opacity: 0;
-  transform: translateY(12px);
+  transform: translateY(18px);
 }
 .dc-reveal[data-reveal="shown"] {
   opacity: 1;
   transform: none;
 }
+
+/* Stagger: put .dc-stagger on a list inside a <Reveal>; its children rise
+   one after another (70ms apart) when the block scrolls into view. */
+.dc-stagger > * {
+  transition:
+    opacity 0.7s var(--dc-ease),
+    transform 0.7s var(--dc-ease);
+}
+.dc-reveal[data-reveal="hidden"] .dc-stagger > * {
+  opacity: 0;
+  transform: translateY(16px);
+}
+.dc-stagger > :nth-child(2) { transition-delay: 70ms; }
+.dc-stagger > :nth-child(3) { transition-delay: 140ms; }
+.dc-stagger > :nth-child(4) { transition-delay: 210ms; }
+.dc-stagger > :nth-child(5) { transition-delay: 280ms; }
+.dc-stagger > :nth-child(6) { transition-delay: 350ms; }
+.dc-stagger > :nth-child(7) { transition-delay: 420ms; }
+.dc-stagger > :nth-child(n + 8) { transition-delay: 490ms; }

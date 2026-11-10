@@ -1,0 +1,55 @@
+/* Home hero (HeroScene.tsx). The grade is a scrim, not decoration: it keeps
+   ivory text >= 4.5:1 over every backdrop (left and top are darkest on
+   desktop, top and bottom on mobile) and warms the paintings into one film. */
+
+.grade {
+  background:
+    linear-gradient(180deg, rgba(14, 10, 7, 0.9) 0%, rgba(14, 10, 7, 0.82) 38%, rgba(14, 10, 7, 0.55) 62%, rgba(14, 10, 7, 0.35) 78%, rgba(14, 10, 7, 0.92) 100%);
+}
+.grade::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #b8924a;
+  mix-blend-mode: soft-light;
+  opacity: 0.32;
+}
+@media (min-width: 1024px) {
+  .grade {
+    background:
+      linear-gradient(90deg, rgba(14, 10, 7, 0.94) 0%, rgba(14, 10, 7, 0.86) 34%, rgba(14, 10, 7, 0.45) 52%, rgba(14, 10, 7, 0.1) 70%, rgba(14, 10, 7, 0.2) 100%),
+      linear-gradient(0deg, rgba(14, 10, 7, 0.95) 0%, rgba(14, 10, 7, 0.5) 14%, rgba(14, 10, 7, 0) 32%),
+      linear-gradient(180deg, rgba(14, 10, 7, 0.6) 0%, rgba(14, 10, 7, 0) 22%);
+  }
+}
+
+/* A soft pool of shade right behind the words, for bright backdrops. */
+.copy::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -14% -20% -12% -30%;
+  background: radial-gradient(closest-side, rgba(14, 10, 7, 0.55), rgba(14, 10, 7, 0));
+  pointer-events: none;
+}
+
+/* Couple grounding: a warm floor shadow so the cutout stands in the scene. */
+.floor {
+  background: radial-gradient(closest-side, rgba(14, 10, 7, 0.75), rgba(14, 10, 7, 0));
+}
+
+/* Scene progress ring on the active chip. */
+.ring circle { fill: none; stroke-width: 2.4; }
+.ringBg { stroke: rgba(21, 17, 13, 0.18); }
+.ringFg {
+  stroke: #7a5c24;
+  stroke-dasharray: 50.27;
+  stroke-dashoffset: 50.27;
+  stroke-linecap: round;
+}
+.ringRun { animation: ring linear forwards; }
+@keyframes ring { to { stroke-dashoffset: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ringRun { animation: none; }
+}
