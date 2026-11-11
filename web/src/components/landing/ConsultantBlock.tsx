@@ -12,7 +12,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import Image from "next/image";
 import { useRef } from "react";
 
-import { PhoneFrame } from "@/components/landing/Devices";
+import { PhoneFrame } from "@/components/ui/DeviceFrame";
 import { Reveal } from "@/components/landing/Reveal";
 import { ButtonLink } from "@/components/ui/Button";
 import { useReducedMotion } from "@/lib/motion";
@@ -38,7 +38,7 @@ export function ConsultantBlock() {
           <div className="relative">
             <div aria-hidden className="absolute -inset-3 rounded-t-full border border-dc-gold/50" />
             <div className="relative aspect-[4/5] overflow-hidden rounded-t-full bg-dc-paper-3">
-              <Image src="/photos/momen/jember-tertawa-1400.webp" alt="Pasangan pengantin Jember Sari tertawa bersama, berkalung untaian melati" fill sizes="(min-width: 640px) 400px, 76vw" className="object-cover object-[50%_30%]" />
+              <Image src="/photos/momen/sunda-lengkung-1000.webp" alt="Pasangan pengantin Sunda tersenyum, mempelai putri bermahkota siger" fill sizes="(min-width: 640px) 400px, 76vw" className="object-cover object-center" />
             </div>
           </div>
           <motion.div style={{ y: drift }} className="absolute bottom-0 right-0 w-[38%]">

@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
@@ -133,46 +134,56 @@ function VendorDirectory() {
             </div>
 
             {/* Category index as photo tiles: the fastest way in is a picture of
-                what you need. Tiles enter in a short CSS stagger on first paint (off
-                under reduced motion; CSS keeps server and client HTML identical). */}
+                what you need. One graded photo set (same warm light, same subject
+                scale), label on a soft scrim. Motion purpose: tiles enter in a short
+                CSS stagger on first paint; hover zooms the photo (this is the one
+                you are about to open); the picked tile lifts with a gold ring and
+                the gold rule glides to it (shared layout). Reduced motion: static.
+                Phones: a swipeable row that snaps tile by tile. */}
             <ul
               aria-label="Pilih kategori"
-              className="-mx-4 mt-7 flex snap-x scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 pt-1 [scrollbar-width:none] sm:mx-0 sm:px-0 lg:mt-10 lg:grid lg:grid-cols-8 lg:overflow-visible lg:pb-0"
+              className="-mx-4 mt-7 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-3 pt-2 [scrollbar-width:none] sm:mx-0 sm:px-0 lg:mt-10 lg:grid lg:grid-cols-8 lg:overflow-visible lg:pb-0"
             >
               {[{ value: "", label: "Semua" }, ...VENDOR_CATEGORIES].map((c, i) => {
                 const on = category === c.value;
                 const art = c.value ? CATEGORY_ART[c.value] : null;
                 return (
-                  <li key={c.value || "all"} className="animate-fade-up w-[34%] shrink-0 snap-start sm:w-[22%] lg:w-auto" style={{ animationDelay: `${i * 50}ms` }}>
+                  <li key={c.value || "all"} className="animate-fade-up w-[38%] shrink-0 snap-start sm:w-[22%] lg:w-auto" style={{ animationDelay: `${i * 50}ms` }}>
                     <button
                       type="button"
                       aria-pressed={on}
                       onClick={() => selectCategory(c.value)}
-                      className="group block w-full rounded-lg text-left"
+                      className="group block w-full rounded-xl text-left"
                     >
                       <span
-                        className={`relative block aspect-4/5 overflow-hidden rounded-lg transition-[box-shadow,transform] duration-500 ease-dc motion-safe:group-hover:-translate-y-0.5 ${
-                          on ? "shadow-lift ring-2 ring-dc-ink ring-offset-2 ring-offset-dc-ivory" : "shadow-soft"
-                        } ${art ? "bg-dc-cream" : "bg-dc-ink"}`}
+                        className={`relative block aspect-4/5 overflow-hidden rounded-xl bg-dc-cream transition-[box-shadow,transform] duration-500 ease-dc ${
+                          on
+                            ? "shadow-lift ring-2 ring-dc-gold ring-offset-2 ring-offset-dc-ivory motion-safe:-translate-y-1"
+                            : "shadow-soft motion-safe:group-hover:-translate-y-0.5"
+                        }`}
                       >
                         {art ? (
-                          <CategoryPicture art={art} sizes="(min-width: 1024px) 140px, (min-width: 640px) 22vw, 34vw" decorative />
+                          <CategoryPicture
+                            art={{ ...art, src: art.src.replace("-1400.", "-720.") }}
+                            sizes="(min-width: 1024px) 150px, (min-width: 640px) 22vw, 38vw"
+                            decorative
+                            className="transition-transform duration-700 ease-dc motion-safe:group-hover:scale-[1.06]"
+                          />
                         ) : (
-                          <span className="flex h-full items-center justify-center text-dc-gold-antique">
-                            <Rings className="h-10 w-16" stroke="currentColor" />
-                          </span>
+                          <AllCategoriesCollage />
                         )}
+                        <span aria-hidden className="absolute inset-x-0 bottom-0 h-3/4 bg-linear-to-t from-dc-ink/90 via-dc-ink/55 via-45% to-transparent" />
+                        <span className="absolute inset-x-2.5 bottom-2.5 block text-[0.95rem] font-semibold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.45)] sm:inset-x-3 sm:bottom-3">
+                          {!art && <Rings className="mb-1.5 block h-3.5 w-6 text-dc-gold-antique" stroke="currentColor" strokeWidth={5} />}
+                          {c.label}
+                          {on && <span className="sr-only">, dipilih</span>}
+                          {on ? (
+                            <motion.span layoutId="kategori-aktif" className="mt-1.5 block h-0.5 w-7 rounded-full bg-dc-gold-antique" transition={{ duration: reduced ? 0 : 0.45, ease: EASE }} />
+                          ) : (
+                            <span className="mt-1.5 block h-0.5 w-7" />
+                          )}
+                        </span>
                       </span>
-                      <span className={`mt-2 block text-sm font-semibold leading-snug ${on ? "text-dc-ink" : "text-dc-text-2 group-hover:text-dc-ink"}`}>
-                        {c.label}
-                        {on && <span className="sr-only">, dipilih</span>}
-                      </span>
-                      {/* The gold rule glides to the picked tile (shared layout). */}
-                      {on ? (
-                        <motion.span layoutId="kategori-aktif" className="mt-1 block h-0.5 w-8 rounded-full bg-dc-gold" transition={{ duration: reduced ? 0 : 0.45, ease: EASE }} />
-                      ) : (
-                        <span className="mt-1 block h-0.5 w-8" />
-                      )}
                     </button>
                   </li>
                 );
@@ -352,5 +363,20 @@ function VendorDirectory() {
       </main>
       <Footer />
     </div>
+  );
+}
+
+/** "Semua" tile: four category photos in a 2x2 grid, so "all" reads as a
+ * bit of everything instead of an empty box. */
+const COLLAGE = ["venue", "mua_attire", "decor", "catering"];
+function AllCategoriesCollage() {
+  return (
+    <span aria-hidden className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-px bg-dc-ivory transition-transform duration-700 ease-dc motion-safe:group-hover:scale-[1.06]">
+      {COLLAGE.map((key) => (
+        <span key={key} className="relative block overflow-hidden">
+          <Image src={CATEGORY_ART[key].src.replace("-1400.", "-720.")} alt="" fill sizes="80px" className="object-cover" />
+        </span>
+      ))}
+    </span>
   );
 }

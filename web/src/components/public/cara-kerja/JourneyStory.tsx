@@ -19,7 +19,7 @@ import { FundStatus } from "@/components/ui/FundStatus";
 import { BOOKING_STATUS_LABEL, type BookingStatus } from "@/lib/api";
 import { EASE, SPRING_SNAPPY, useReducedMotion } from "@/lib/motion";
 
-import { PhoneFrame } from "./DeviceFrame";
+import { PHONE_FRAME_RATIO, PhoneFrame } from "@/components/ui/DeviceFrame";
 
 type Station = 0 | 1 | 2;
 
@@ -61,7 +61,7 @@ function Stagecraft({ stages, index, onJump, reduced }: { stages: Stage[]; index
     <div className="flex items-start gap-7 xl:gap-9">
       <div className="relative w-[248px] shrink-0 xl:w-[270px]">
         <div aria-hidden className="absolute -inset-x-16 -inset-y-10 -z-10 bg-[radial-gradient(closest-side,rgba(234,215,174,0.75),rgba(243,236,223,0.4)_60%,transparent)]" />
-        <div className="relative" style={{ aspectRatio: "404 / 858" }}>
+        <div className="relative" style={{ aspectRatio: PHONE_FRAME_RATIO }}>
           <AnimatePresence initial={false}>
             <motion.div
               key={stage.screen.src}

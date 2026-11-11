@@ -5,7 +5,7 @@ import { PublicShell } from "@/components/landing/PublicShell";
 import { Reveal } from "@/components/landing/Reveal";
 import { JourneyStory, type Stage } from "@/components/public/cara-kerja/JourneyStory";
 import { PhonePair } from "@/components/public/cara-kerja/PhonePair";
-import { PhoneFrame } from "@/components/public/cara-kerja/DeviceFrame";
+import { PhoneFrame } from "@/components/ui/DeviceFrame";
 import { ButtonLink } from "@/components/ui/Button";
 import { FeatureIcon } from "@/components/ui/FeatureIcon";
 import { Rings } from "@/components/ui/Rings";

@@ -5,7 +5,7 @@ import { useRef } from "react";
 
 import { EASE, useReducedMotion } from "@/lib/motion";
 
-import { PhoneFrame } from "./DeviceFrame";
+import { PhoneFrame } from "@/components/ui/DeviceFrame";
 
 type Shot = { src: string; alt: string };
 

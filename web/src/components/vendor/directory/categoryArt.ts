@@ -30,7 +30,7 @@ export const CATEGORY_ART: Record<string, CategoryArt> = {
   },
   catering: {
     src: "/photos/kategori/katering-1400.webp",
-    alt: "Tamu mengambil nasi tumpeng dan lauk dari meja prasmanan",
+    alt: "Tumpeng nasi kuning dengan lauk pauk lengkap di atas daun pisang",
     covers: "Prasmanan, gubukan, menu adat",
     intro:
       "Hidangan adalah hal yang paling diingat tamu. Bandingkan jenis paket, menu, dan harga mulai dari, lalu minta detail porsi per tamu lewat chat sebelum memilih.",
@@ -62,7 +62,7 @@ export const CATEGORY_ART: Record<string, CategoryArt> = {
   },
   entertainment: {
     src: "/photos/kategori/hiburan-1400.webp",
-    alt: "Pemain gamelan Jawa mengiringi upacara pernikahan adat Yogyakarta",
+    alt: "Pemain gamelan Jawa tampil di Yogyakarta",
     covers: "Musik, MC, hiburan adat",
     intro:
       "Musik dan pembawa acara menjaga suasana tetap hidup. Dengarkan contoh penampilan bila vendor menyediakannya, dan bicarakan susunan lagu sesuai rundown acaramu.",
@@ -70,7 +70,7 @@ export const CATEGORY_ART: Record<string, CategoryArt> = {
   },
   invitation_souvenir: {
     src: "/photos/kategori/suvenir-1400.webp",
-    alt: "Kantong suvenir pernikahan dari linen berhias pita dan renda",
+    alt: "Undangan pernikahan cetak berhias bunga mawar, dengan amplopnya",
     covers: "Undangan cetak, papan nama, suvenir",
     intro:
       "Undangan adalah kesan pertama tamu, suvenir kesan terakhirnya. Bandingkan bahan dan harga mulai dari, lalu tanyakan waktu produksi agar sempat dibagikan.",

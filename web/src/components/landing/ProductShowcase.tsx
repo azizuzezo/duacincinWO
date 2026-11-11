@@ -19,9 +19,10 @@ import { useEffect, useRef, useState } from "react";
 
 import { WORLD_LIST } from "@/components/landing/scenes";
 import { ButtonLink } from "@/components/ui/Button";
+import { LaptopFrame, PhoneFrame } from "@/components/ui/DeviceFrame";
 import { EASE, useReducedMotion } from "@/lib/motion";
 
-type Chapter = { id: string; kicker: string; title: string; line: string; laptop: string; phone: string; laptopAlt: string; phoneAlt: string; scene: number };
+type Chapter = { phoneBar?: string; id: string; kicker: string; title: string; line: string; laptop: string; phone: string; laptopAlt: string; phoneAlt: string; scene: number };
 
 const CHAPTERS: Chapter[] = [
   {
@@ -42,6 +43,7 @@ const CHAPTERS: Chapter[] = [
     line: "Tanggal, paket, dan foto referensi tersimpan dalam satu percakapan di akunmu.",
     laptop: "/showcase/chat-laptop.webp",
     phone: "/showcase/chat-phone.webp",
+    phoneBar: "bg-dc-white",
     laptopAlt: "Kotak masuk chat di laptop dengan percakapan bersama vendor venue",
     phoneAlt: "Percakapan dengan vendor di ponsel",
     scene: 1,
@@ -81,34 +83,30 @@ const CHAPTERS: Chapter[] = [
   },
 ];
 
-function Screen({ src, alt, sizes, ratio, round }: { src: string; alt: string; sizes: string; ratio: string; round: string }) {
+/** Crossfading capture that fills a device screen (same device, new page). */
+function Screen({ src, alt, sizes }: { src: string; alt: string; sizes: string }) {
   const reduced = useReducedMotion();
   return (
-    <div className={`relative overflow-hidden bg-dc-ivory ${ratio} ${round}`}>
-      <AnimatePresence initial={false}>
-        <motion.div
-          key={src}
-          className="absolute inset-0"
-          initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 1.03 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: reduced ? 0.01 : 0.6, ease: EASE }}
-        >
-          <Image src={src} alt={alt} fill sizes={sizes} className="object-cover object-top" />
-        </motion.div>
-      </AnimatePresence>
-    </div>
+    <AnimatePresence initial={false}>
+      <motion.div
+        key={src}
+        className="absolute inset-0"
+        initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 1.03 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: reduced ? 0.01 : 0.6, ease: EASE }}
+      >
+        <Image src={src} alt={alt} fill sizes={sizes} className="object-cover object-top" />
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
-function Phone({ src, alt, sizes, className = "" }: { src: string; alt: string; sizes: string; className?: string }) {
+function Phone({ src, alt, sizes, bar, className = "" }: { src: string; alt: string; sizes: string; bar?: string; className?: string }) {
   return (
-    <div className={`rounded-[2.6rem] bg-[#0b0907] p-[3.2%] shadow-[0_40px_80px_-30px_rgba(0,0,0,0.8)] ring-1 ring-dc-gold-antique/25 ${className}`}>
-      <div className="relative">
-        <Screen src={src} alt={alt} sizes={sizes} ratio="aspect-[640/1385]" round="rounded-[2.2rem]" />
-        <span aria-hidden className="absolute left-1/2 top-[1.4%] h-[2.6%] w-[30%] -translate-x-1/2 rounded-full bg-[#0b0907]" />
-      </div>
-    </div>
+    <PhoneFrame surface="dark" statusBg={bar} className={className}>
+      <Screen src={src} alt={alt} sizes={sizes} />
+    </PhoneFrame>
   );
 }
 
@@ -175,14 +173,11 @@ export function ProductShowcase() {
           <div aria-hidden className="absolute inset-x-0 bottom-0 h-40 bg-linear-to-t from-dc-ink to-transparent" />
 
           <div className="absolute right-[8vw] top-[46%] w-[min(46vw,760px)] -translate-y-1/2">
-            <div className="rounded-t-[1.1rem] bg-[#0b0907] p-[1.4%] pb-[1.8%] shadow-[0_50px_100px_-40px_rgba(0,0,0,0.9)] ring-1 ring-dc-gold-antique/20">
-              <Screen src={c.laptop} alt={c.laptopAlt} sizes="(min-width: 1024px) 760px, 1px" ratio="aspect-[16/10]" round="rounded-[0.3rem]" />
-            </div>
-            <div aria-hidden className="relative mx-[-5%] h-4 rounded-b-[1.2rem] bg-linear-to-b from-[#3a3027] to-[#1d1712]">
-              <span className="absolute left-1/2 top-0 h-1.5 w-[16%] -translate-x-1/2 rounded-b-md bg-[#15110d]" />
-            </div>
+            <LaptopFrame surface="dark">
+              <Screen src={c.laptop} alt={c.laptopAlt} sizes="(min-width: 1024px) 760px, 1px" />
+            </LaptopFrame>
             <motion.div style={{ y: drift }} className="absolute -bottom-[10%] -right-[6%] w-[26%]">
-              <Phone src={c.phone} alt={c.phoneAlt} sizes="(min-width: 1024px) 230px, 1px" />
+              <Phone src={c.phone} alt={c.phoneAlt} bar={c.phoneBar} sizes="(min-width: 1024px) 230px, 1px" />
             </motion.div>
           </div>
 
@@ -220,7 +215,7 @@ export function ProductShowcase() {
                   <Image src={`${WORLD_LIST[ch.scene].bg}-720.webp`} alt="" fill sizes="100vw" className="object-cover opacity-50" style={{ objectPosition: WORLD_LIST[ch.scene].focus }} />
                   <div aria-hidden className="absolute inset-0 bg-linear-to-t from-dc-ink/70 to-transparent" />
                   <div className="relative mx-auto max-w-[250px] translate-y-[8%] sm:max-w-[280px]">
-                    <Phone src={ch.phone} alt={ch.phoneAlt} sizes="300px" />
+                    <Phone src={ch.phone} alt={ch.phoneAlt} bar={ch.phoneBar} sizes="300px" />
                   </div>
                 </div>
               </article>

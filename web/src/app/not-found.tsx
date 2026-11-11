@@ -4,6 +4,8 @@ import { Footer } from "@/components/landing/Footer";
 import { Navbar } from "@/components/landing/Navbar";
 import { Button } from "@/components/ui/Button";
 import { Rings } from "@/components/ui/Rings";
+import { Picker } from "@/components/ui/Picker";
+import { categoryOptions } from "@/components/vendor/directory/categoryOptions";
 import { VENDOR_CATEGORIES } from "@/lib/api";
 import { GoldArch } from "@/components/ornament/GoldArch";
 
@@ -34,17 +36,18 @@ export default function NotFound() {
             </p>
 
             <form action="/vendors" method="get" role="search" aria-label="Cari vendor" className="mt-8 flex max-w-xl flex-col gap-2 rounded-2xl border border-dc-line bg-dc-white p-2 shadow-lift sm:flex-row sm:items-center">
-              <label htmlFor="nf-kategori" className="sr-only">
-                Kategori
-              </label>
-              <select id="nf-kategori" name="category" defaultValue="" className="min-h-12 rounded-xl bg-dc-cream px-4 text-sm font-semibold text-dc-ink sm:w-44">
-                <option value="">Semua kategori</option>
-                {VENDOR_CATEGORIES.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
+              <div className="sm:w-48 sm:shrink-0">
+                <Picker
+                  id="nf-kategori"
+                  name="category"
+                  label="Kategori"
+                  defaultValue=""
+                  options={categoryOptions()}
+                  panelMinWidth={360}
+                  valueClassName="text-sm font-semibold text-dc-ink"
+                  className="flex min-h-12 w-full items-center rounded-xl bg-dc-cream px-4 text-left transition-colors hover:bg-dc-paper-3"
+                />
+              </div>
               <label htmlFor="nf-q" className="sr-only">
                 Kota atau nama vendor
               </label>

@@ -86,13 +86,13 @@ const SHOWCASE: ShowcaseItem[] = [
 // Category photos shared with the home mosaic and /kategori (Wikimedia
 // Commons, credited on /kredit).
 const CATEGORY_PHOTO: Record<string, { src: string; studio?: boolean; note: string }> = {
-  venue: { src: "/photos/kategori/venue-720.webp", note: "Gedung, ballroom, taman" },
-  catering: { src: "/photos/kategori/katering-720.webp", note: "Prasmanan, gubukan, menu adat" },
-  decor: { src: "/photos/kategori/dekorasi-720.webp", note: "Pelaminan, gapura, bunga" },
-  mua_attire: { src: "/photos/kategori/rias-720.webp", note: "Rias, busana adat, gaun" },
-  photo_video: { src: "/photos/kategori/foto-720.webp", note: "Foto, video, prewedding" },
-  entertainment: { src: "/photos/kategori/hiburan-720.webp", note: "Musik, MC, hiburan adat" },
-  invitation_souvenir: { src: "/photos/kategori/suvenir-720.webp", note: "Undangan cetak, suvenir" },
+  venue: { src: "/photos/kategori/venue-1400.webp", note: "Gedung, ballroom, taman" },
+  catering: { src: "/photos/kategori/katering-1400.webp", note: "Prasmanan, gubukan, menu adat" },
+  decor: { src: "/photos/kategori/dekorasi-1400.webp", note: "Pelaminan, gapura, bunga" },
+  mua_attire: { src: "/photos/kategori/rias-1400.webp", note: "Rias, busana adat, gaun" },
+  photo_video: { src: "/photos/kategori/foto-1400.webp", note: "Foto, video, prewedding" },
+  entertainment: { src: "/photos/kategori/hiburan-1400.webp", note: "Musik, MC, hiburan adat" },
+  invitation_souvenir: { src: "/photos/kategori/suvenir-1400.webp", note: "Undangan cetak, suvenir" },
 };
 
 const FACTS = [

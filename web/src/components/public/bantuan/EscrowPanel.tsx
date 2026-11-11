@@ -14,7 +14,7 @@ import { FundStatus } from "@/components/ui/FundStatus";
 import type { BookingStatus } from "@/lib/api";
 import { EASE, SPRING_SNAPPY, useReducedMotion } from "@/lib/motion";
 
-import { PhoneFrame } from "../cara-kerja/DeviceFrame";
+import { PhoneFrame } from "@/components/ui/DeviceFrame";
 
 const STEPS: { place: string; title: string; body: string; status: BookingStatus; screen: string; alt: string }[] = [
   {

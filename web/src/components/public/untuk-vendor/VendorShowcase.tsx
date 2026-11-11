@@ -11,7 +11,7 @@ import { useRef, useState } from "react";
 
 import { EASE, SPRING_SNAPPY, useReducedMotion } from "@/lib/motion";
 
-import { BrowserFrame, PhoneFrame } from "../cara-kerja/DeviceFrame";
+import { BrowserFrame, PhoneFrame } from "@/components/ui/DeviceFrame";
 
 export type ShowcaseItem = { id: string; title: string; body: string; src: string; alt: string; address: string; /** Same screen on a phone, shown below lg. */ phoneSrc: string };
 

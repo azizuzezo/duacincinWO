@@ -5,7 +5,7 @@ import { useRef } from "react";
 
 import { EASE, useReducedMotion } from "@/lib/motion";
 
-import { BrowserFrame, PhoneFrame } from "../cara-kerja/DeviceFrame";
+import { BrowserFrame, PhoneFrame } from "@/components/ui/DeviceFrame";
 import { GoldArch } from "@/components/ornament/GoldArch";
 
 /** Hero visual: the real vendor dashboard on a laptop-sized window, the

@@ -20,6 +20,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { Picker } from "@/components/ui/Picker";
+import { categoryOptions } from "@/components/vendor/directory/categoryOptions";
 import { VENDOR_CATEGORIES } from "@/lib/api";
 import { EASE, SPRING_SOFT, useReducedMotion } from "@/lib/motion";
 
@@ -29,6 +31,7 @@ import { GoldArch } from "@/components/ornament/GoldArch";
 
 const STEP_MS = 7000;
 const POPULAR = ["venue", "decor", "mua_attire", "photo_video"];
+const CATEGORY_OPTIONS = categoryOptions();
 
 function useDepth(sx: MotionValue<number>, sy: MotionValue<number>, f: number) {
   return { x: useTransform(sx, (v) => v * f), y: useTransform(sy, (v) => v * f) };
@@ -152,17 +155,17 @@ export function HeroScene() {
             style={{ animationDelay: "270ms" }}
             className="animate-fade-up mt-9 grid gap-1 rounded-2xl bg-dc-white p-2 text-dc-ink shadow-float sm:grid-cols-[1fr_1.25fr_auto] sm:items-stretch sm:rounded-full"
           >
-            <label className="flex flex-col justify-center rounded-xl px-4 py-2 transition-colors focus-within:bg-dc-cream focus-within:ring-2 focus-within:ring-dc-gold hover:bg-dc-cream sm:rounded-full sm:pl-6">
-              <span className="text-xs font-semibold text-dc-text-3">Kategori</span>
-              <select name="category" defaultValue="" className="-ml-1 min-h-8 cursor-pointer bg-transparent text-[0.95rem] font-semibold text-dc-ink focus:outline-none">
-                <option value="">Semua kategori</option>
-                {VENDOR_CATEGORIES.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {/* Branded picker (hidden input "category"), so the GET to /vendors is unchanged. */}
+            <Picker
+              name="category"
+              label="Kategori"
+              showLabel
+              defaultValue=""
+              options={CATEGORY_OPTIONS}
+              panelMinWidth={360}
+              sheetDescription="Pilih jenis vendor yang ingin kamu cari."
+              className="flex min-h-14 w-full items-center rounded-xl px-4 py-2 text-left transition-colors hover:bg-dc-cream focus-visible:bg-dc-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dc-gold aria-expanded:bg-dc-cream sm:rounded-full sm:pl-6"
+            />
             <label className="flex flex-col justify-center rounded-xl px-4 py-2 transition-colors focus-within:bg-dc-cream focus-within:ring-2 focus-within:ring-dc-gold hover:bg-dc-cream sm:rounded-full sm:border-l sm:border-dc-line">
               <span className="text-xs font-semibold text-dc-text-3">Kota atau nama vendor</span>
               <input
@@ -241,7 +244,7 @@ export function HeroScene() {
                     aria-pressed={on}
                     onClick={() => pick(i)}
                     className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-colors ${
-                      on ? "border-[#fbf6ec] bg-[#fbf6ec] text-dc-ink" : "border-[#fbf6ec]/30 bg-dc-ink/40 text-[#fbf6ec]/90 hover:border-[#fbf6ec]/70 hover:text-white"
+                      on ? "border-[#fbf6ec] bg-[#fbf6ec] text-dc-ink" : "border-[#fbf6ec]/30 bg-dc-ink/80 backdrop-blur-sm text-[#fbf6ec] hover:border-[#fbf6ec]/70 hover:text-white"
                     }`}
                   >
                     {on && (

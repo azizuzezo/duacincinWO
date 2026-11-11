@@ -20,6 +20,7 @@ import { Reveal } from "@/components/landing/Reveal";
 import { WORLD_LIST } from "@/components/landing/scenes";
 import { ButtonLink } from "@/components/ui/Button";
 import { EASE, useReducedMotion } from "@/lib/motion";
+import { PhoneFrame } from "@/components/ui/DeviceFrame";
 
 // scene: index into WORLD_LIST (backdrop behind the fan; the nearest world).
 const THEMES = [
@@ -133,18 +134,16 @@ export function InvitationLink() {
                   style={{ zIndex: 10 - ad, pointerEvents: visible ? "auto" : "none" }}
                   className="absolute left-1/2 top-0 -ml-[105px] w-[210px] origin-bottom sm:-ml-[125px] sm:w-[250px] lg:-ml-[150px] lg:w-[300px]"
                 >
-                  <span className="block rounded-[2.6rem] bg-[#0b0907] p-[3.2%] shadow-[0_40px_80px_-30px_rgba(0,0,0,0.9)] ring-1 ring-dc-gold-antique/35">
-                    <span className="relative block aspect-[780/1690] overflow-hidden rounded-[2.2rem] bg-dc-ink-2">
-                      <Image
-                        src={`/showcase/undangan/preview-v2-${th.key}.webp`}
-                        alt={d === 0 ? `Contoh undangan digital DuaCincin bertema ${th.label}` : ""}
-                        fill
-                        draggable={false}
-                        sizes="(min-width: 1024px) 300px, 250px"
-                        className="object-cover object-top"
-                      />
-                    </span>
-                  </span>
+                  <PhoneFrame screen="dark" surface="dark" immersive>
+                    <Image
+                      src={`/showcase/undangan/preview-v2-${th.key}.webp`}
+                      alt={d === 0 ? `Contoh undangan digital DuaCincin bertema ${th.label}` : ""}
+                      fill
+                      draggable={false}
+                      sizes="(min-width: 1024px) 300px, 250px"
+                      className="object-cover object-top"
+                    />
+                  </PhoneFrame>
                 </motion.button>
               );
             })}

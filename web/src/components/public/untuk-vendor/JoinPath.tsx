@@ -3,7 +3,7 @@
 import { motion, useScroll, useSpring } from "framer-motion";
 import { useRef } from "react";
 
-import { BrowserFrame, PhoneFrame } from "../cara-kerja/DeviceFrame";
+import { BrowserFrame, PhoneFrame } from "@/components/ui/DeviceFrame";
 
 export type JoinStep = {
   title: string;

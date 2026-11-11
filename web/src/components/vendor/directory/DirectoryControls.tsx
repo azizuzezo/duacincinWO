@@ -3,9 +3,11 @@
 import { useId, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
+import { Picker } from "@/components/ui/Picker";
 import { Sheet } from "@/components/ui/Sheet";
 import { VENDOR_CATEGORIES } from "@/lib/api";
 
+import { categoryOptions } from "./categoryOptions";
 import { BUDGETS, SORTS, type Filters, type Sort } from "./filters";
 
 type Props = {
@@ -20,12 +22,16 @@ type Props = {
 };
 
 const SEGMENT =
-  "flex min-h-14 flex-col justify-center gap-0.5 px-4 transition-colors hover:bg-dc-cream/50 focus-within:bg-dc-cream/70 focus-within:ring-2 focus-within:ring-inset focus-within:ring-dc-gold";
+  "flex min-h-14 transition-colors hover:bg-dc-cream/50 focus-within:bg-dc-cream/70 focus-within:ring-2 focus-within:ring-inset focus-within:ring-dc-gold";
 const SEG_LABEL = "text-xs font-semibold text-dc-text-3";
-// The select covers the whole 56px segment so the full cell is the target;
-// the small label sits above it and lets clicks pass through.
-const SEG_SELECT =
-  "absolute inset-0 h-full w-full cursor-pointer appearance-none bg-transparent pb-2 pl-4 pr-10 pt-6 text-sm font-semibold text-dc-ink outline-none focus-visible:outline-none";
+// The picker trigger fills the whole 56px segment, so the full cell is the
+// target; its caption is the segment label and the value sits under it.
+const SEG_PICKER = {
+  className: "flex min-h-14 w-full items-center px-4 text-left outline-none focus-visible:outline-none aria-expanded:bg-dc-cream/70",
+  captionClassName: SEG_LABEL,
+  valueClassName: "text-sm font-semibold text-dc-ink",
+};
+const CATEGORY_OPTIONS = categoryOptions();
 
 /** Sticky search + filters under the directory hero.
  * Desktop (lg): one white bar of labelled segments, so every filter stays in
@@ -85,43 +91,33 @@ export function DirectoryControls({ category, onCategory, filters, onChange, onR
       {/* Desktop bar */}
       <div className="hidden overflow-hidden rounded-2xl border border-dc-line-strong bg-dc-white shadow-soft focus-within:border-dc-ink/40 lg:flex">
         {search("d")}
-        <Segment label="Kategori">
-          <select aria-label="Kategori" value={category} onChange={(e) => onCategory(e.target.value)} className={SEG_SELECT}>
-            <option value="">Semua kategori</option>
-            {VENDOR_CATEGORIES.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label}
-              </option>
-            ))}
-          </select>
+        <Segment wide>
+          <Picker label="Kategori" showLabel value={category} onChange={onCategory} options={CATEGORY_OPTIONS} panelMinWidth={360} {...SEG_PICKER} />
         </Segment>
-        <Segment label="Kota">
-          <select aria-label="Kota" value={filters.city} onChange={(e) => onChange({ city: e.target.value })} className={SEG_SELECT}>
-            <option value="">Semua kota</option>
-            {cities.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
+        <Segment>
+          <Picker
+            label="Kota"
+            showLabel
+            value={filters.city}
+            onChange={(v) => onChange({ city: v })}
+            options={[{ value: "", label: "Semua kota" }, ...cities.map((c) => ({ value: c, label: c }))]}
+            panelMinWidth={220}
+            {...SEG_PICKER}
+          />
         </Segment>
-        <Segment label="Budget mulai dari" wide>
-          <select aria-label="Budget mulai dari" value={filters.budget} onChange={(e) => onChange({ budget: e.target.value })} className={SEG_SELECT}>
-            {BUDGETS.map((b) => (
-              <option key={b.value || "all"} value={b.value}>
-                {b.short}
-              </option>
-            ))}
-          </select>
+        <Segment wide>
+          <Picker
+            label="Budget mulai dari"
+            showLabel
+            value={filters.budget}
+            onChange={(v) => onChange({ budget: v })}
+            options={BUDGETS.map((b) => ({ value: b.value, label: b.short }))}
+            panelMinWidth={240}
+            {...SEG_PICKER}
+          />
         </Segment>
-        <Segment label="Urutkan">
-          <select aria-label="Urutkan" value={filters.sort} onChange={(e) => onChange({ sort: e.target.value as Sort })} className={SEG_SELECT}>
-            {SORTS.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </select>
+        <Segment>
+          <Picker label="Urutkan" showLabel value={filters.sort} onChange={(v) => onChange({ sort: v as Sort })} options={SORTS} panelMinWidth={220} {...SEG_PICKER} />
         </Segment>
       </div>
 
@@ -195,28 +191,8 @@ export function DirectoryControls({ category, onCategory, filters, onChange, onR
   );
 }
 
-function Segment({ label, wide = false, children }: { label: string; wide?: boolean; children: React.ReactNode }) {
-  return (
-    <div className={`${SEGMENT} relative ${wide ? "w-[13rem]" : "w-[11.5rem]"} shrink-0 border-l border-dc-line`}>
-      <span aria-hidden className={`${SEG_LABEL} pointer-events-none relative -mt-5`}>
-        {label}
-      </span>
-      {children}
-      <svg
-        aria-hidden
-        width="14"
-        height="14"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        className="pointer-events-none absolute bottom-[1.05rem] right-4 text-dc-text-3"
-      >
-        <path d="m6 9 6 6 6-6" />
-      </svg>
-    </div>
-  );
+function Segment({ wide = false, children }: { wide?: boolean; children: React.ReactNode }) {
+  return <div className={`${SEGMENT} ${wide ? "w-[13rem]" : "w-[11.5rem]"} shrink-0 border-l border-dc-line`}>{children}</div>;
 }
 
 /** Single-choice chips for the sheet (44px targets, aria-pressed). */

@@ -29,12 +29,12 @@ const SQUARE = "(min-width: 1024px) 25vw, 50vw";
 
 const PICS: Record<string, Pic> = {
   venue: { src: "/photos/kategori/venue-1400.webp", alt: "Gedung resepsi pernikahan di Jakarta dengan lampu gantung dan lorong bunga menuju pelaminan", note: "Gedung, ballroom, taman, rumah adat", tile: "col-span-2 aspect-square sm:aspect-[16/10] lg:aspect-auto lg:row-span-2", sizes: BIG },
-  mua_attire: { src: "/photos/kategori/rias-720.webp", alt: "Riasan pengantin putri Jember Pendalungan dengan mahkota emas dan untaian melati", note: "Rias, busana adat, gaun", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto", sizes: SQUARE },
-  catering: { src: "/photos/kategori/katering-720.webp", alt: "Tamu mengambil nasi tumpeng dan lauk dari meja prasmanan", note: "Prasmanan, gubukan, menu adat", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto", sizes: SQUARE },
+  mua_attire: { src: "/photos/kategori/rias-1400.webp", alt: "Riasan pengantin putri Jember Pendalungan dengan mahkota emas dan untaian melati", note: "Rias, busana adat, gaun", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto", sizes: SQUARE },
+  catering: { src: "/photos/kategori/katering-1400.webp", alt: "Tumpeng nasi kuning dengan lauk pauk lengkap di atas daun pisang", note: "Prasmanan, gubukan, menu adat", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto", sizes: SQUARE },
   decor: { src: "/photos/kategori/dekorasi-1400.webp", alt: "Pelaminan adat Minangkabau berukir emas dengan kursi pengantin merah", note: "Pelaminan, gapura, bunga, lampu", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto lg:col-span-2", sizes: WIDE },
   photo_video: { src: "/photos/kategori/foto-1400.webp", alt: "Potret pengantin Bali bermahkota emas saat upacara pernikahan", note: "Foto, video, prewedding", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto lg:col-span-2", sizes: WIDE },
-  entertainment: { src: "/photos/kategori/hiburan-720.webp", alt: "Pemain gamelan Jawa mengiringi upacara pernikahan adat Yogyakarta", note: "Musik, MC, hiburan adat", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto", sizes: SQUARE },
-  invitation_souvenir: { src: "/photos/kategori/suvenir-720.webp", alt: "Kantong suvenir pernikahan dari linen berhias pita dan renda", note: "Undangan cetak, suvenir", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto", sizes: SQUARE },
+  entertainment: { src: "/photos/kategori/hiburan-1400.webp", alt: "Pemain gamelan Jawa tampil di Yogyakarta", note: "Musik, MC, hiburan adat", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto", sizes: SQUARE },
+  invitation_souvenir: { src: "/photos/kategori/suvenir-1400.webp", alt: "Undangan pernikahan cetak berhias bunga mawar, dengan amplopnya", note: "Undangan cetak, suvenir", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto", sizes: SQUARE },
 };
 
 // Desktop order fills the 4 x 3 grid exactly (venue 2x2, decor and photo 2x1).
@@ -84,7 +84,7 @@ export function CategoryMosaic() {
                     className="group relative block h-full overflow-hidden rounded-2xl bg-dc-cream shadow-soft transition-[transform,box-shadow] duration-500 ease-dc hover:shadow-lift focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-dc-gold active:scale-[0.985] motion-safe:hover:-translate-y-1.5"
                   >
                     <Picture pic={pic} />
-                    <div aria-hidden className="absolute inset-x-0 bottom-0 h-[72%] bg-linear-to-t from-dc-ink via-dc-ink/75 to-transparent" />
+                    <div aria-hidden className="absolute inset-x-0 bottom-0 h-[78%] bg-linear-to-t from-dc-ink via-dc-ink/80 to-transparent" />
                     {n > 0 && (
                       <span className="absolute left-3 top-3 inline-flex items-center rounded-full bg-dc-white px-3 py-1 text-xs font-semibold tabular-nums text-dc-ink shadow-soft sm:left-4 sm:top-4">
                         <Counting value={n} />
