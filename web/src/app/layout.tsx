@@ -3,6 +3,7 @@ import { Cormorant_Garamond, Great_Vibes, Plus_Jakarta_Sans } from "next/font/go
 import "./globals.css";
 
 import { ToastProvider } from "@/components/ui/Toast";
+import { OPEN_GRAPH_BASE, SITE_URL } from "@/lib/site";
 
 // One type family with invitation.duacincin.id (see DESIGN.md "Tipografi").
 // UI and body: Plus Jakarta Sans, drawn in Jakarta (Tokotype), round and friendly.
@@ -33,12 +34,13 @@ const scriptFont = Great_Vibes({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  // Absolute og:image / twitter:image URLs. Production by default (src/lib/site.ts).
+  metadataBase: new URL(SITE_URL),
   // "Nama Halaman | DuaCincin" on every page that sets its own title (PRD §10.7).
   title: { default: "DuaCincin: Rencanakan Pernikahanmu Bersama Vendor Tepercaya", template: "%s | DuaCincin" },
   description:
     "DuaCincin menghubungkan calon pengantin dengan vendor pernikahan terverifikasi di Indonesia. Direktori vendor, budget planner otomatis, dan pembayaran escrow dalam satu platform.",
-  openGraph: { siteName: "DuaCincin", locale: "id_ID", type: "website" },
+  openGraph: { ...OPEN_GRAPH_BASE, type: "website" },
   twitter: { card: "summary_large_image" },
 };
 

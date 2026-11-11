@@ -1,8 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { VENDOR_CATEGORIES } from "@/lib/api";
-
-const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+import { SITE_URL as SITE } from "@/lib/site";
 
 // Static public routes plus one landing URL per category. Category x city
 // pages and vendor detail pages join once the API exposes a public listing

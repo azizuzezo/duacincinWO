@@ -1,30 +1,33 @@
 import type { Metadata } from "next";
 
-import { categoryLabel, type VendorProfile } from "@/lib/api";
+import { categoryLabel } from "@/lib/api";
+import { fetchPublicVendor } from "@/lib/server-api";
+import { OPEN_GRAPH_BASE } from "@/lib/site";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
-
-// Profiles are public, so the title, description and share image come from
-// the vendor itself. Any failure falls back to the generic site metadata.
+// Profiles are public, so the title and description come from the vendor
+// itself. The share image is ./opengraph-image.tsx (vendor photo, name,
+// category, city). Any failure falls back to the generic site metadata.
 export async function generateMetadata({ params }: LayoutProps<"/vendors/[id]">): Promise<Metadata> {
   const { id } = await params;
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/v1/vendors/${encodeURIComponent(id)}`, { next: { revalidate: 300 } });
-    if (!res.ok) return { title: "Profil Vendor" };
-    const v = (await res.json()) as VendorProfile;
-    const where = [categoryLabel(v.category), v.city].filter(Boolean).join(" di ");
-    const title = `${v.business_name}: ${where}`;
-    const description = (v.description?.trim() || `${v.business_name}, vendor pernikahan terverifikasi di DuaCincin.`).slice(0, 160);
-    const photo = v.portfolio?.[0]?.url;
-    return {
-      title,
-      description,
-      openGraph: { title, description, type: "profile", ...(photo ? { images: [{ url: photo, alt: v.portfolio?.[0]?.alt_text || v.business_name }] } : {}) },
-      twitter: { title, description, ...(photo ? { images: [photo] } : {}) },
-    };
-  } catch {
-    return { title: "Profil Vendor" };
-  }
+  const v = await fetchPublicVendor(id);
+  if (!v) return { title: "Profil Vendor" };
+  const where = [categoryLabel(v.category), v.city].filter(Boolean).join(" di ");
+  const title = where ? `${v.business_name}: ${where}` : v.business_name;
+  const description = clip(v.description?.trim() || `${v.business_name}, vendor pernikahan terverifikasi di DuaCincin.`, 160);
+  return {
+    title,
+    description,
+    alternates: { canonical: `/vendors/${encodeURIComponent(id)}` },
+    openGraph: { ...OPEN_GRAPH_BASE, title, description, type: "profile", url: `/vendors/${encodeURIComponent(id)}` },
+    twitter: { card: "summary_large_image", title, description },
+  };
+}
+
+/** Cut at a word boundary so previews never end mid-word. */
+function clip(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max - 1);
+  return `${cut.slice(0, cut.lastIndexOf(" ")).replace(/[\s,.;:]+$/, "")}…`;
 }
 
 export default function Layout({ children }: { children: React.ReactNode }) {

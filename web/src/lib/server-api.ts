@@ -1,4 +1,4 @@
-import type { DirectoryCard } from "@/lib/api";
+import type { DirectoryCard, VendorProfile } from "@/lib/api";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
@@ -14,6 +14,23 @@ export async function fetchDirectory(category: string, city?: string): Promise<{
     return { cards: ((await res.json()) as DirectoryCard[] | null) ?? [], failed: false };
   } catch {
     return { cards: [], failed: true };
+  }
+}
+
+/** Public vendor profile for server metadata and share images. Cached for 5
+ * minutes, gives up after 5 seconds, and returns null on any failure so the
+ * caller falls back to the generic DuaCincin preview. */
+export async function fetchPublicVendor(id: string): Promise<VendorProfile | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/v1/vendors/${encodeURIComponent(id)}`, {
+      next: { revalidate: 300 },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return null;
+    const v = (await res.json()) as VendorProfile | null;
+    return v?.business_name ? v : null;
+  } catch {
+    return null;
   }
 }
 

@@ -11,8 +11,7 @@ import { CategoryPicture } from "@/components/vendor/directory/CategoryPicture";
 import { VendorCard } from "@/components/vendor/VendorCard";
 import { categoryLabel, VENDOR_CATEGORIES, type DirectoryCard } from "@/lib/api";
 import { citySlug } from "@/lib/server-api";
-
-const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+import { SITE_URL as SITE } from "@/lib/site";
 
 const LINK = "font-semibold text-dc-clay underline decoration-dc-gold/60 underline-offset-4 hover:text-dc-ink";
 
