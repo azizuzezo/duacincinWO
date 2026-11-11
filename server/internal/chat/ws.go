@@ -20,17 +20,26 @@ import (
 // panics if the prefix is already mounted elsewhere in the tree, which
 // routes.go's Mount (the REST routes) already does for "/conversations".
 func MountWS(r chi.Router, deps *Deps, cfg *config.Config) {
-	r.With(auth.RequireAuth(cfg)).Get("/conversations/{id}/ws", ServeWS(deps))
+	r.With(auth.RequireAuth(cfg)).Get("/conversations/{id}/ws", ServeWS(deps, cfg))
 }
 
-// upgrader restricts the handshake to the same front-end origin the REST
-// API's CORS policy already allows (see httpserver/router.go). The default
-// zero-value Upgrader accepts any origin, which we don't want here.
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		origin := r.Header.Get("Origin")
-		return origin == "" || origin == "http://localhost:3000"
-	},
+// newUpgrader restricts the handshake to the same front-end origins the REST
+// API's CORS policy already allows (cfg.AllowedOrigins, see
+// httpserver/router.go). The default zero-value Upgrader accepts any origin,
+// which we don't want here. An empty Origin (non-browser client) is allowed,
+// as before; the route still requires a valid session.
+func newUpgrader(cfg *config.Config) websocket.Upgrader {
+	allowed := make(map[string]bool, len(cfg.AllowedOrigins)+1)
+	allowed["http://localhost:3000"] = true
+	for _, o := range cfg.AllowedOrigins {
+		allowed[o] = true
+	}
+	return websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			origin := r.Header.Get("Origin")
+			return origin == "" || allowed[origin]
+		},
+	}
 }
 
 // ServeWS upgrades an authenticated, authorized participant's connection so
@@ -38,7 +47,8 @@ var upgrader = websocket.Upgrader{
 // real time. Clients don't send anything over this socket in this scope:
 // sending messages and marking read both stay REST endpoints (SendMessage,
 // MarkRead) so they get the same validation/response handling either way.
-func ServeWS(deps *Deps) http.HandlerFunc {
+func ServeWS(deps *Deps, cfg *config.Config) http.HandlerFunc {
+	upgrader := newUpgrader(cfg)
 	return func(w http.ResponseWriter, r *http.Request) {
 		claims, _ := auth.ClaimsFromContext(r.Context())
 		conv, err := deps.Chat.GetByID(r.Context(), chi.URLParam(r, "id"))

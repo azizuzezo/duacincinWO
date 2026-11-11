@@ -47,6 +47,13 @@ type Config struct {
 	// audience of "Masuk dengan Google" ID tokens (internal/googleauth).
 	// Same client as DuaCincin Invitation. Public value, but read from env.
 	GoogleClientID string
+
+	// CookieDomain is the Domain attribute of the session cookie
+	// (COOKIE_DOMAIN, e.g. ".duacincin.id"). Empty = host-only cookie, the
+	// safest default: the API at api.duacincin.id and the web at
+	// www.duacincin.id are same-site, so a host-only SameSite=Lax cookie is
+	// already sent on the web's credentialed fetches.
+	CookieDomain string
 }
 
 // Load reads environment variables, falling back to a local .env file
@@ -81,6 +88,8 @@ func Load() (*Config, error) {
 		WOLinkSecret:      os.Getenv("WO_LINK_SECRET"),
 
 		GoogleClientID: strings.TrimSpace(os.Getenv("GOOGLE_CLIENT_ID")),
+
+		CookieDomain: strings.TrimSpace(os.Getenv("COOKIE_DOMAIN")),
 	}
 
 	if cfg.DatabasePooler == "" {
