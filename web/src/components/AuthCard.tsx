@@ -15,7 +15,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { SCENES } from "@/components/landing/scenes";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import { EASE, SPRING_SOFT, useReducedMotion } from "@/lib/motion";
-import { GoldArch } from "@/components/ornament/GoldArch";
+import { GoldArchFrame } from "@/components/ornament/GoldArch";
 
 type Variant = "client" | "vendor" | "internal" | "unified" | "register";
 
@@ -124,25 +124,26 @@ function World({ variant, holdRef }: { variant: Variant; holdRef: React.RefObjec
         aria-hidden
         className="absolute inset-0 -z-30 bg-[linear-gradient(180deg,rgba(14,10,7,0.88)_0%,rgba(14,10,7,0.35)_32%,rgba(14,10,7,0.2)_55%,rgba(14,10,7,0.93)_88%)]"
       />
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-[36%] top-[12%] -z-20 [mask-image:linear-gradient(to_bottom,#000_80%,transparent)]">
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-[36%] top-[12%] -z-20 [mask-image:linear-gradient(to_bottom,#000_90%,transparent)]">
         <motion.div className="absolute inset-x-0 bottom-0 flex h-full justify-center" style={{ x: archX }}>
-          <GoldArch className="h-full w-auto max-w-none opacity-85" />
+          <div className="aspect-square h-full bg-[radial-gradient(closest-side,rgba(220,187,118,0.24),rgba(220,187,118,0.07)_55%,rgba(220,187,118,0))]" />
         </motion.div>
-        <motion.div className="absolute inset-x-0 bottom-0 flex h-[80%] justify-center" style={{ x: coupleX, y: coupleY }}>
-          <AnimatePresence initial={false} mode="popLayout">
-            <motion.div
-              key={scene.key}
-              className="h-full"
-              initial={reduced ? { opacity: 0 } : { opacity: 0, y: 30, filter: "blur(8px)" }}
-              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              exit={{ opacity: 0, transition: { duration: reduced ? 0.15 : 0.5 } }}
-              transition={{ duration: reduced ? 0.2 : 1, ease: EASE }}
-            >
-              <div className="relative aspect-[3/4] h-full overflow-hidden rounded-t-full border-2 border-[#e9cf94]/70 bg-dc-ink shadow-[0_30px_60px_rgba(0,0,0,0.55)]">
+        <motion.div className="absolute inset-x-0 bottom-0 flex h-full justify-center" style={{ x: coupleX, y: coupleY }}>
+          {/* Gold gate with the couple in its window: one object, same as the home hero. */}
+          <GoldArchFrame className="h-full" shineKey={scene.key}>
+            <AnimatePresence initial={false} mode="popLayout">
+              <motion.div
+                key={scene.key}
+                className="absolute inset-0"
+                initial={reduced ? { opacity: 0 } : { opacity: 0, y: 30, filter: "blur(8px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                exit={{ opacity: 0, transition: { duration: reduced ? 0.15 : 0.5 } }}
+                transition={{ duration: reduced ? 0.2 : 1, ease: EASE }}
+              >
                 <Image src={`${scene.couple}.webp`} alt="" fill priority={idx === 0} sizes="24vw" className="object-cover" />
-              </div>
-            </motion.div>
-          </AnimatePresence>
+              </motion.div>
+            </AnimatePresence>
+          </GoldArchFrame>
         </motion.div>
       </div>
 

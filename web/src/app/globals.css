@@ -312,7 +312,30 @@ input[type="range"] {
   transform: translateY(0);
 }
 
-/* ── Motion utilities ─────────────────────────────────────────────── */
+/* ── Motion system ────────────────────────────────────────────────────
+   One vocabulary for the whole product (mirrored in src/lib/motion.ts).
+   Every preset answers "what changed?", never decorates:
+   - reveal   640ms, blur 6px -> sharp (>=768px) + 20px rise: a section
+              arrives as you scroll to it. Starts BEFORE it enters the
+              viewport (Reveal.tsx), so nothing sits blank on screen.
+   - stagger  520ms per item, 55ms apart, capped at 6 steps (330ms): the
+              items of one list arrive in reading order.
+   - media    1s scale 1.06 -> 1 on photos inside a revealing list: the
+              picture settles into its frame.
+   - enter    420ms, 10px rise: above-the-fold items on page load.
+   - route    260ms opacity: dashboard page content after a navigation;
+              the shell stays, so a page swap is one calm cut.
+   Curve: --dc-ease (fast out, long settle). Exits are faster than enters.
+   prefers-reduced-motion: all of it is off and content is shown as is. */
+:root {
+  --dc-dur-reveal: 640ms;
+  --dc-dur-stagger: 520ms;
+  --dc-stagger-step: 55ms;
+  --dc-dur-enter: 420ms;
+  --dc-dur-route-in: 260ms;
+  --dc-rise: 20px;
+}
+
 @keyframes dc-spin-slow {
   to {
     transform: rotate(360deg);
@@ -322,19 +345,21 @@ input[type="range"] {
   animation: dc-spin-slow 40s linear infinite;
 }
 
-/* Above-the-fold entrance (dashboard banners, auth cards). */
+/* enter: above-the-fold entrance (dashboard banners, cards, auth cards).
+   Uses `translate` and ends on `none`, so a finished card keeps no
+   transform (position:fixed children stay anchored to the viewport). */
 @keyframes dc-fade-up {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    translate: 0 10px;
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    translate: none;
   }
 }
 .animate-fade-up {
-  animation: dc-fade-up 0.4s var(--dc-ease) both;
+  animation: dc-fade-up var(--dc-dur-enter) var(--dc-ease) both;
 }
 
 /* Skeleton shimmer: a slow champagne sweep, calmer than animate-pulse. */
@@ -364,22 +389,20 @@ input[type="range"] {
   animation: dc-kenburns 12s var(--dc-ease-soft) both;
 }
 
-/* Page enter: every app page rises in softly when you navigate (Shell). */
+/* route: a dashboard page swap. The shell (sidebar, bottom tab bar) stays
+   in place because the user is already known (WithUser), so only the page
+   content changes: it fades in over the same paper, a calm cut with no
+   white flash. Opacity only: the cards inside rise on their own
+   (.animate-fade-up), so nothing travels twice, and the wrapper never holds
+   a transform (position:fixed children such as the mobile chat and sheets
+   stay anchored to the viewport). */
 @keyframes dc-page-enter {
   from {
     opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
   }
 }
-/* fill-mode backwards (not both): once the enter ends the wrapper keeps no
-   transform, so position:fixed children (mobile chat, sheets) stay anchored
-   to the viewport instead of this wrapper. */
 .dc-page-enter {
-  animation: dc-page-enter 0.4s var(--dc-ease) backwards;
+  animation: dc-page-enter var(--dc-dur-route-in) var(--dc-ease-soft) backwards;
 }
 
 /* Delayed entrance for a sequence of above-the-fold items (hero copy):
@@ -470,39 +493,79 @@ input[type="range"] {
 }
 
 /* ── Scroll reveal (components/landing/Reveal.tsx) ────────────────── */
-/* Opacity + transform only (compositor-friendly, no blur cost on low-end phones). */
-.dc-reveal {
-  transition:
-    opacity 0.8s var(--dc-ease),
-    transform 0.8s var(--dc-ease);
-}
+/* Three states set by Reveal.tsx: "hidden" (below the fold, waiting),
+   "shown" (transitions run), "done" (no motion rules left, so hover and
+   focus transitions of the content are untouched). No data-reveal at all
+   (server HTML, no JS, reduced motion, above the fold) = fully visible.
+   Uses the `translate` property, never `transform`, so it composes with
+   Tailwind translate/scale utilities on the same element. */
 .dc-reveal[data-reveal="hidden"] {
   opacity: 0;
-  transform: translateY(18px);
+  translate: 0 var(--dc-rise);
+}
+/* Blur-to-sharp on text blocks only, from tablet up: a light focus pull
+   that reads as "this just came into view". Photo grids and phones skip
+   it (a blur filter on a large layer is the expensive part). */
+@media (min-width: 768px) {
+  .dc-reveal[data-reveal="hidden"]:not(:has(.dc-stagger)) {
+    filter: blur(6px);
+  }
 }
 .dc-reveal[data-reveal="shown"] {
+  transition:
+    opacity calc(var(--dc-dur-reveal) * 0.75) var(--dc-ease),
+    translate var(--dc-dur-reveal) var(--dc-ease),
+    filter var(--dc-dur-reveal) var(--dc-ease);
+}
+/* A reveal that holds a list does not travel itself: the list items do
+   (otherwise the items move twice and fade twice). When the list is the
+   only thing inside, the wrapper does not fade either. */
+.dc-reveal[data-reveal="hidden"]:has(.dc-stagger) {
+  translate: none;
+}
+.dc-reveal[data-reveal="hidden"]:has(> .dc-stagger:only-child) {
   opacity: 1;
-  transform: none;
 }
 
-/* Stagger: put .dc-stagger on a list inside a <Reveal>; its children rise
-   one after another (70ms apart) when the block scrolls into view. */
-.dc-stagger > * {
-  transition:
-    opacity 0.7s var(--dc-ease),
-    transform 0.7s var(--dc-ease);
-}
+/* stagger: put .dc-stagger on a list inside a <Reveal>; its items rise in
+   reading order, 55ms apart, capped so the last one is never late. */
 .dc-reveal[data-reveal="hidden"] .dc-stagger > * {
   opacity: 0;
-  transform: translateY(16px);
+  translate: 0 16px;
 }
-.dc-stagger > :nth-child(2) { transition-delay: 70ms; }
-.dc-stagger > :nth-child(3) { transition-delay: 140ms; }
-.dc-stagger > :nth-child(4) { transition-delay: 210ms; }
-.dc-stagger > :nth-child(5) { transition-delay: 280ms; }
-.dc-stagger > :nth-child(6) { transition-delay: 350ms; }
-.dc-stagger > :nth-child(7) { transition-delay: 420ms; }
-.dc-stagger > :nth-child(n + 8) { transition-delay: 490ms; }
+.dc-reveal[data-reveal="shown"] .dc-stagger > * {
+  transition:
+    opacity var(--dc-dur-stagger) var(--dc-ease),
+    translate var(--dc-dur-stagger) var(--dc-ease);
+}
+.dc-reveal[data-reveal="shown"] .dc-stagger > :nth-child(2) { transition-delay: calc(var(--dc-stagger-step) * 1); }
+.dc-reveal[data-reveal="shown"] .dc-stagger > :nth-child(3) { transition-delay: calc(var(--dc-stagger-step) * 2); }
+.dc-reveal[data-reveal="shown"] .dc-stagger > :nth-child(4) { transition-delay: calc(var(--dc-stagger-step) * 3); }
+.dc-reveal[data-reveal="shown"] .dc-stagger > :nth-child(5) { transition-delay: calc(var(--dc-stagger-step) * 4); }
+.dc-reveal[data-reveal="shown"] .dc-stagger > :nth-child(6) { transition-delay: calc(var(--dc-stagger-step) * 5); }
+.dc-reveal[data-reveal="shown"] .dc-stagger > :nth-child(n + 7) { transition-delay: calc(var(--dc-stagger-step) * 6); }
+
+/* media: photos inside a revealing list settle into their frame (the
+   frames already clip with overflow:hidden). `scale` composes with the
+   hover zoom utilities, which take over once the reveal is done. */
+.dc-reveal[data-reveal="hidden"] .dc-stagger img {
+  scale: 1.06;
+}
+.dc-reveal[data-reveal="shown"] .dc-stagger img {
+  transition: scale 1s var(--dc-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dc-reveal[data-reveal],
+  .dc-reveal[data-reveal] .dc-stagger > *,
+  .dc-reveal[data-reveal] .dc-stagger img {
+    opacity: 1;
+    translate: none;
+    scale: none;
+    filter: none;
+    transition: none;
+  }
+}
 
 @keyframes dc-otp-pop {
   0% { transform: scale(0.88); }

@@ -7,30 +7,32 @@
 // - CountUp: a hero number settles on its value, so the eye reads "this is
 //   the figure that matters" and notices when it changes later.
 // - SuccessPop: a real milestone just happened (saved, approved, sent).
-// Transform and opacity only, 150-400ms, exits ~60% of the enter.
+// Transform and opacity only, presets from lib/motion MOTION (same rhythm as
+// the CSS reveals in globals.css), exits ~60% of the enter.
 // prefers-reduced-motion: everything renders in its final state at once.
 
 import { animate, AnimatePresence, motion, useInView, type Variants } from "framer-motion";
 import { useEffect, useLayoutEffect, useRef } from "react";
 
 import { Reveal } from "@/components/landing/Reveal";
-import { EASE, SPRING_SNAPPY, useReducedMotion } from "@/lib/motion";
+import { EASE, MOTION, SPRING_SNAPPY, useReducedMotion } from "@/lib/motion";
 
 import { Rings } from "./Rings";
 
 const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
-// Same trigger as <Reveal>: any pixel inside the viewport minus the bottom 8%.
-const VIEWPORT = { once: true, amount: 0, margin: "0px 0px -8% 0px" } as const;
+// Same trigger as <Reveal>: starts just before the block enters the viewport,
+// so it is already arriving when it comes into view (never blank on screen).
+const VIEWPORT = { once: true, amount: 0, margin: "0px 0px 10% 0px" } as const;
 
 const listVariants: Variants = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.045, delayChildren: 0.03 } },
+  visible: { transition: { staggerChildren: MOTION.staggerStep, delayChildren: 0.03 } },
 };
 
 const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 12 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.34, ease: EASE } },
+  hidden: { opacity: 0, y: 10 },
+  visible: { opacity: 1, y: 0, transition: { duration: MOTION.enter, ease: EASE } },
   exit: { opacity: 0, y: -6, scale: 0.98, transition: { duration: 0.2, ease: EASE } },
 };
 
@@ -103,9 +105,10 @@ export function MotionItem({
   );
 }
 
-/** Block that fades up once: when it scrolls into view (`inView`, the
- * default, same CSS reveal as the public pages: visible without JS and never
- * hidden when already on screen), or right away on mount. */
+/** Block that arrives once: when it scrolls into view (`inView`, the
+ * default: the same "reveal" preset as the public pages, visible without JS
+ * and never hidden when already on screen), or right away on mount ("enter"
+ * preset). */
 export function FadeIn({
   children,
   className = "",
@@ -120,7 +123,7 @@ export function FadeIn({
   const reduced = useReducedMotion();
   if (inView) {
     return (
-      <Reveal className={`[transition-duration:400ms]! ${className}`} delay={delay}>
+      <Reveal className={className} delay={delay}>
         {children}
       </Reveal>
     );
@@ -128,7 +131,7 @@ export function FadeIn({
   // Same element and initial state on server and client (no hydration mismatch);
   // reduced motion only makes the transition instant, so content is never left hidden.
   return (
-    <motion.div className={className} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0, transition: reduced ? { duration: 0 } : { duration: 0.36, ease: EASE, delay } }}>
+    <motion.div className={className} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0, transition: reduced ? { duration: 0 } : { duration: MOTION.enter, ease: EASE, delay } }}>
       {children}
     </motion.div>
   );

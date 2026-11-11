@@ -1,8 +1,10 @@
 // Hero worlds: one Nusantara wedding per scene. Backdrops ("worlds") are
 // public-domain paintings and licensed photos (public/scene/<bg>-720|1400.webp
 // copied from invitation.duacincin.id, and public/photos/latar/). Couples are
-// real wedding photos from Wikimedia Commons, shown whole in an arch window
-// (public/photos/pasangan/, 3:4 crops with headroom for the arch curve). They
+// real wedding photos from Wikimedia Commons taken at a pelaminan, palace or
+// warm backdrop (no plain white studio walls), shown whole in the window of the
+// gold gate (public/photos/pasangan/, 3:4 crops with headroom for the arch
+// curve, one shared warm grade and soft vignette). They
 // are not cut out: background removal ate hair and left wall patches, so the
 // full photo is framed instead. Every third-party picture is listed on /kredit
 // (components/kredit/credits.ts).
@@ -15,6 +17,7 @@ export type Credit = { kind: string; title: string; author: string; license: str
 export type World = { key: string; bg: string; focus: string; credit: Credit };
 
 const BY_SA_4 = "https://creativecommons.org/licenses/by-sa/4.0";
+const BY_SA_3 = "https://creativecommons.org/licenses/by-sa/3.0";
 
 export const WORLDS = {
   java: {
@@ -111,16 +114,16 @@ export const SCENES: Scene[] = [
     ...WORLDS.java,
     key: "jawa",
     label: "Jawa",
-    caption: "Pengantin Jember Sari, Jawa Timur",
+    caption: "Pengantin adat Jawa",
     couple: "/photos/pasangan/jawa",
-    coupleAlt: "Pasangan pengantin berbusana adat Jember Sari, Jawa Timur",
+    coupleAlt: "Pasangan pengantin Jawa berbusana beludru hitam bersulam emas dengan untaian melati",
     coupleCredit: {
       kind: "Foto",
-      title: "Visualisasi Pasangan Pengantin Jember Sari 5",
-      author: "Curah Manis Studio",
+      title: "Pengantin adat Jawa",
+      author: "Inul21",
       license: "CC BY-SA 4.0",
       licenseUrl: BY_SA_4,
-      source: "https://commons.wikimedia.org/wiki/File:Visualisasi_Pasangan_Pengantin_Jember_Sari_5.png",
+      source: "https://commons.wikimedia.org/wiki/File:Inul21.jpg",
     },
   },
   {
@@ -145,30 +148,30 @@ export const SCENES: Scene[] = [
     label: "Batak",
     caption: "Pengantin adat Batak Karo",
     couple: "/photos/pasangan/karo",
-    coupleAlt: "Pasangan pengantin berbusana adat Batak Karo dengan uis merah",
+    coupleAlt: "Pasangan pengantin Batak Karo berselempang uis merah di depan pelaminan berhias bunga",
     coupleCredit: {
       kind: "Foto",
-      title: "Pakaian Pernikahan Adat Karo",
-      author: "Sokokuphoto",
-      license: "CC BY-SA 4.0",
-      licenseUrl: BY_SA_4,
-      source: "https://commons.wikimedia.org/wiki/File:Pakaian_Pernikahan_Adat_Karo.jpg",
+      title: "Batak Karo Wedding",
+      author: "Picsplease",
+      license: "CC BY-SA 3.0",
+      licenseUrl: BY_SA_3,
+      source: "https://commons.wikimedia.org/wiki/File:Batak_Karo_Wedding.jpg",
     },
   },
   {
     ...WORLDS.maimun,
     key: "melayu",
     label: "Melayu",
-    caption: "Pengantin Melayu Deli",
+    caption: "Pengantin Melayu Deli di Istana Maimun",
     couple: "/photos/pasangan/melayu",
-    coupleAlt: "Pasangan pengantin berbusana adat Melayu Deli berwarna emas",
+    coupleAlt: "Pasangan pengantin Melayu Deli berbusana merah keemasan di depan singgasana Istana Maimun",
     coupleCredit: {
       kind: "Foto",
-      title: "Pengantin Melayu Deli Indonesia 2",
-      author: "Riski Syahputra",
+      title: "Pengantin Melayu Deli",
+      author: "Alberttito",
       license: "CC BY-SA 4.0",
       licenseUrl: BY_SA_4,
-      source: "https://commons.wikimedia.org/wiki/File:Pengantin_Melayu_Deli_Indonesia_2.jpg",
+      source: "https://commons.wikimedia.org/wiki/File:Pengantin_Melayu_Deli.jpg",
     },
   },
 ];

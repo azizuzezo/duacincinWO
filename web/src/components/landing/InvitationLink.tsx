@@ -19,7 +19,7 @@ import { useRef, useState, type KeyboardEvent } from "react";
 import { Reveal } from "@/components/landing/Reveal";
 import { WORLD_LIST } from "@/components/landing/scenes";
 import { ButtonLink } from "@/components/ui/Button";
-import { EASE, useReducedMotion } from "@/lib/motion";
+import { dissolve, useReducedMotion } from "@/lib/motion";
 import { PhoneFrame } from "@/components/ui/DeviceFrame";
 
 // scene: index into WORLD_LIST (backdrop behind the fan; the nearest world).
@@ -72,10 +72,7 @@ export function InvitationLink() {
         <motion.div
           key={scene.key}
           className="absolute inset-0 -z-20"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: reduced ? 0.01 : 1.2, ease: EASE }}
+          {...dissolve(reduced, 0.9)}
         >
           <Image src={`${scene.bg}-1400.webp`} alt="" fill sizes="100vw" className="object-cover" style={{ objectPosition: scene.focus }} />
         </motion.div>

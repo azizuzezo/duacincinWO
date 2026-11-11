@@ -35,6 +35,14 @@ Pakai yang ada dulu; buat komponen baru hanya bila tidak ada padanannya. Jangan 
 
 ## Gerak
 `import { fadeUp, staggerList, blurReveal, motionSafe, useReducedMotion, EASE, SPRING_SNAPPY } from "@/lib/motion"`. Selalu `variants={motionSafe(reduced, fadeUp)}`. Tulis satu baris komentar tujuan gerak.
+Satu sistem gerak (nilai di `MOTION` lib/motion.ts dan token `--dc-dur-*` di globals.css "Motion system"):
+- `reveal`: blok di bawah lipatan, pakai `<Reveal>` (blur ke tajam di tablet ke atas + naik 20px, 640ms, mulai sedikit sebelum masuk layar).
+- `stagger`: daftar di dalam `<Reveal>` diberi `.dc-stagger` (item muncul berurutan 55ms, maks 6 langkah). Foto di dalamnya otomatis "mengendap" (scale 1.06 ke 1).
+- `enter`: elemen di atas lipatan saat halaman dibuka, `.animate-fade-up` (420ms, naik 10px) atau `<FadeIn inView={false}>`.
+- `route`: konten halaman dasbor setelah pindah menu, `.dc-page-enter` di Shell (opacity 260ms). Sidebar dan tab bar tetap di tempat karena user disimpan `WithUser`.
+- `panel`: isi tab berganti, `<TabPanel>` (280ms), indikator tab meluncur (`layoutId`).
+- `dissolve()`: gambar berganti di bingkai yang sama (layar perangkat, latar hero): yang baru muncul di atas yang lama, tidak pernah dua-duanya pudar.
+Jangan menambah fade/slide baru di luar preset ini.
 
 ## Uji
 Harness Playwright bersama: lihat `HARNESS.md` di scratchpad koordinator (`scratchpad/wo/HARNESS.md`). Dev server bersama di port 3100, jangan jalankan yang kedua.

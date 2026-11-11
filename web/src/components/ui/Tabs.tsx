@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { useId, useRef } from "react";
 
-import { EASE, SPRING_SNAPPY, useReducedMotion } from "@/lib/motion";
+import { EASE, MOTION, SPRING_SNAPPY, useReducedMotion } from "@/lib/motion";
 
 export type TabItem = { id: string; label: string; count?: number };
 
@@ -107,7 +107,7 @@ export function Tabs({
   );
 }
 
-/** Panel for one tab. It rises in (240ms) when its tab is chosen, so the
+/** Panel for one tab. It rises in ("panel" preset, 280ms) when its tab is chosen, so the
  * content change reads as a consequence of the tap. Reduced motion: instant. */
 export function TabPanel({ idBase, id, value, children, className = "" }: { idBase: string; id: string; value: string; children: React.ReactNode; className?: string }) {
   const reduced = useReducedMotion();
@@ -119,9 +119,9 @@ export function TabPanel({ idBase, id, value, children, className = "" }: { idBa
       aria-labelledby={`${idBase}-tab-${id}`}
       tabIndex={0}
       className={`focus-visible:outline-offset-4 ${className}`}
-      initial={reduced ? false : { opacity: 0, y: 8 }}
+      initial={reduced ? false : { opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.24, ease: EASE }}
+      transition={{ duration: MOTION.panel, ease: EASE }}
     >
       {children}
     </motion.div>

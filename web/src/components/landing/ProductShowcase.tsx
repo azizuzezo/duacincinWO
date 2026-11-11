@@ -20,7 +20,7 @@ import { useEffect, useRef, useState } from "react";
 import { WORLD_LIST } from "@/components/landing/scenes";
 import { ButtonLink } from "@/components/ui/Button";
 import { LaptopFrame, PhoneFrame } from "@/components/ui/DeviceFrame";
-import { EASE, useReducedMotion } from "@/lib/motion";
+import { dissolve, useReducedMotion } from "@/lib/motion";
 
 type Chapter = { phoneBar?: string; id: string; kicker: string; title: string; line: string; laptop: string; phone: string; laptopAlt: string; phoneAlt: string; scene: number };
 
@@ -91,10 +91,7 @@ function Screen({ src, alt, sizes }: { src: string; alt: string; sizes: string }
       <motion.div
         key={src}
         className="absolute inset-0"
-        initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 1.03 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: reduced ? 0.01 : 0.6, ease: EASE }}
+        {...dissolve(reduced, 0.5)}
       >
         <Image src={src} alt={alt} fill sizes={sizes} className="object-cover object-top" />
       </motion.div>
@@ -118,10 +115,7 @@ function Painting({ scene, className = "" }: { scene: number; className?: string
       <motion.div
         key={s.key}
         className={`absolute inset-0 ${className}`}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: reduced ? 0.01 : 1.2, ease: EASE }}
+        {...dissolve(reduced, 0.9)}
       >
         <Image src={`${s.bg}-1400.webp`} alt="" fill sizes="100vw" className="object-cover opacity-55" style={{ objectPosition: s.focus }} />
       </motion.div>

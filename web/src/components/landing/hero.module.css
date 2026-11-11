@@ -33,9 +33,9 @@
   pointer-events: none;
 }
 
-/* Couple grounding: a warm floor shadow so the cutout stands in the scene. */
-.floor {
-  background: radial-gradient(closest-side, rgba(14, 10, 7, 0.75), rgba(14, 10, 7, 0));
+/* Warm light behind the gate (the gate itself carries its ground shadow). */
+.halo {
+  background: radial-gradient(closest-side, rgba(220, 187, 118, 0.26), rgba(220, 187, 118, 0.08) 55%, rgba(220, 187, 118, 0));
 }
 
 /* Scene progress ring on the active chip. */

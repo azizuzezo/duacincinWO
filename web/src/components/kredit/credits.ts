@@ -42,7 +42,7 @@ export const CREDIT_GROUPS: CreditGroup[] = [
   {
     id: "beranda",
     title: "Beranda, masuk dan daftar",
-    note: "Foto pasangan pengantin tampil utuh dalam bingkai lengkung, di depan lukisan atau foto daerahnya.",
+    note: "Foto pasangan pengantin tampil utuh di jendela gapura emas, di depan lukisan atau foto daerahnya.",
     items: [
       ...SCENES.map((s) => ({
         thumb: `${s.couple}-sm.webp`,
@@ -52,7 +52,7 @@ export const CREDIT_GROUPS: CreditGroup[] = [
         license: s.coupleCredit.license,
         licenseUrl: s.coupleCredit.licenseUrl,
         source: s.coupleCredit.source,
-        change: "Dipotong tegak 3:4 dan diperkecil",
+        change: "Dipotong tegak 3:4, diberi nada warna hangat dan vinyet tipis, diperkecil",
       })),
       world(WORLDS.java, "Lukisan pemandangan Jawa dengan Gunung Merbabu dan Merapi", "Diperkecil, diberi nada warna hangat di halaman"),
       world(WORLDS.sunda, "Lukisan sawah dan gunung di tanah Priangan", "Diperkecil, diberi nada warna hangat di halaman"),

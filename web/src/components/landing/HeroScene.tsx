@@ -27,7 +27,7 @@ import { EASE, SPRING_SOFT, useReducedMotion } from "@/lib/motion";
 
 import styles from "./hero.module.css";
 import { SCENES } from "./scenes";
-import { GoldArch } from "@/components/ornament/GoldArch";
+import { GoldArchFrame } from "@/components/ornament/GoldArch";
 
 const STEP_MS = 7000;
 const POPULAR = ["venue", "decor", "mua_attire", "photo_video"];
@@ -201,29 +201,29 @@ export function HeroScene() {
           </div>
         </motion.div>
 
-        {/* Layers 2 and 3: gold arch and the couple's photo in an arch window under it.
+        {/* Layers 2 and 3: a warm halo behind, and the gold gate with the couple's
+            photo in its window (one object, so the frame always hugs the photo).
             Below the copy on small screens, beside it from lg up. */}
-        <div aria-hidden className="pointer-events-none relative -mx-4 mt-4 [mask-image:linear-gradient(to_bottom,#000_82%,transparent)] h-[min(92vw,440px)] lg:absolute lg:inset-y-0 lg:left-auto lg:right-0 lg:mx-0 lg:mt-0 lg:h-auto lg:w-[48%]">
-          <motion.div className="absolute inset-x-0 bottom-0 flex h-[96%] justify-center lg:h-[84%]" style={dArch}>
-            <GoldArch className="h-full w-auto max-w-none opacity-90" />
+        <div aria-hidden className="pointer-events-none relative -mx-4 mt-10 h-[min(100vw,470px)] lg:absolute lg:inset-y-0 lg:left-auto lg:right-0 lg:mx-0 lg:mt-0 lg:h-auto lg:w-[48%]">
+          <motion.div className="absolute inset-x-0 bottom-0 flex h-full justify-center lg:bottom-16 lg:h-[86%]" style={dArch}>
+            <div className={`aspect-square h-full ${styles.halo}`} />
           </motion.div>
-          <div className={`absolute bottom-0 left-1/2 h-16 w-[70%] -translate-x-1/2 ${styles.floor}`} />
-          <motion.div className="absolute inset-x-0 bottom-0 flex h-[78%] justify-center lg:h-[64%]" style={{ x: dCouple.x, y: coupleY, translateY: dCouple.y, rotate: coupleRot }}>
-            <AnimatePresence initial={false} mode="popLayout">
-              <motion.div
-                key={scene.key}
-                className="h-full"
-                initial={reduced ? { opacity: 0 } : { opacity: 0, y: 40, filter: "blur(10px)" }}
-                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                exit={reduced ? { opacity: 0, transition: { duration: 0.15 } } : { opacity: 0, y: -10, filter: "blur(6px)", transition: { duration: 0.6, ease: EASE } }}
-                transition={{ duration: reduced ? 0.2 : 1.1, ease: EASE }}
-              >
-                {/* The whole photo in an arch window (no cutout, so no lost hair or wall patches). */}
-                <div className="relative aspect-[3/4] h-full overflow-hidden rounded-t-full border-2 border-[#e9cf94]/70 bg-dc-ink shadow-[0_30px_60px_rgba(0,0,0,0.55)]">
-                  <Image src={`${scene.couple}.webp`} alt="" fill priority={idx === 0} sizes="(min-width: 1024px) 26vw, 60vw" className="object-cover" />
-                </div>
-              </motion.div>
-            </AnimatePresence>
+          <motion.div className="absolute inset-x-0 bottom-2 flex h-[97%] justify-center lg:bottom-16 lg:h-[77%]" style={{ x: dCouple.x, y: coupleY, translateY: dCouple.y, rotate: coupleRot }}>
+            <GoldArchFrame className="h-full" shineKey={scene.key}>
+              <AnimatePresence initial={false} mode="popLayout">
+                <motion.div
+                  key={scene.key}
+                  className="absolute inset-0"
+                  initial={reduced ? { opacity: 0 } : { opacity: 0, y: 40, filter: "blur(10px)" }}
+                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                  exit={reduced ? { opacity: 0, transition: { duration: 0.15 } } : { opacity: 0, y: -10, filter: "blur(6px)", transition: { duration: 0.6, ease: EASE } }}
+                  transition={{ duration: reduced ? 0.2 : 1.1, ease: EASE }}
+                >
+                  {/* The whole photo (no cutout, so no lost hair or wall patches). */}
+                  <Image src={`${scene.couple}.webp`} alt="" fill priority={idx === 0} sizes="(min-width: 1024px) 26vw, 66vw" className="object-cover" />
+                </motion.div>
+              </AnimatePresence>
+            </GoldArchFrame>
           </motion.div>
           {/* Preload the next couple invisibly. */}
           <Image src={`${SCENES[next].couple}.webp`} alt="" width={825} height={1100} sizes="(min-width: 1024px) 26vw, 60vw" className="invisible absolute h-px w-px" />
