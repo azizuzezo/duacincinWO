@@ -8,9 +8,9 @@ import { ButtonLink } from "@/components/ui/Button";
 export function CTABanner() {
   return (
     <section aria-labelledby="penutup-judul" className="dc-on-dark relative isolate overflow-hidden bg-dc-ink">
-      <Image src="/stock/couple-walk.webp" alt="" fill sizes="100vw" className="-z-20 object-cover object-center" />
+      <Image src="/photos/momen/melayu-istana-1400.webp" alt="" fill sizes="100vw" className="-z-20 object-cover object-[50%_35%]" />
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(21,17,13,0.6),rgba(21,17,13,0.85))]" aria-hidden />
-      <Reveal className="dc-container py-28 text-center sm:py-36 lg:py-44">
+      <Reveal className="dc-container py-24 text-center sm:py-28 lg:py-36">
         <h2 id="penutup-judul" className="mx-auto max-w-4xl font-heading text-[clamp(2.6rem,6.6vw,5.6rem)] font-medium leading-[1] text-[#fbf6ec]">
           Mulai dari anggaran, <span className="dc-script-light text-[1.15em]">bukan tebakan</span>.
         </h2>

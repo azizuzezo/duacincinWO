@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -28,6 +27,7 @@ import {
   spentForBudgetCategory,
   type BudgetCategoryKey,
 } from "@/lib/budget";
+import { GoldArch } from "@/components/ornament/GoldArch";
 
 export default function BudgetPlannerPage() {
   return (
@@ -559,11 +559,11 @@ function CategoryRow({
   );
 }
 
-/** Floral table cutout (owner's photo) at the right edge of the hero card, large screens only. */
+/** Gold arch ornament at the right edge of the hero card, large screens only. */
 function ArchArt() {
   return (
     <div aria-hidden className="pointer-events-none absolute -bottom-2 right-0 hidden w-[34%] max-w-[380px] lg:block">
-      <Image src="/scene/arch2-sm.webp" alt="" width={724} height={500} sizes="380px" className="h-auto w-full object-contain" />
+      <GoldArch className="h-auto w-full opacity-30" />
     </div>
   );
 }

@@ -4,15 +4,15 @@ import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { PinterestImageCard } from "@/components/PinterestImageCard";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { apiGet, ApiError, type InspirationItem } from "@/lib/api";
 import { DURATION, EASE, motionSafe, useReducedMotion } from "@/lib/motion";
 
-import { ADAT, adatOf, matchesQuery, vendorCategory } from "./adat";
+import { ADAT, adatOf, CATEGORY_THUMB, matchesQuery, vendorCategory } from "./adat";
 import { Lightbox } from "./Lightbox";
+import { MoodCard, moodRatio } from "./MoodCard";
 
 const PINTEREST_BOARD_URL = "https://id.pinterest.com/2cincinid/inspirasi-nikah-indonesia-venue-decor-mua-artis/";
 
@@ -43,6 +43,10 @@ function readParams() {
 
 const CHIP =
   "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-[background-color,border-color,color] duration-300";
+const storyClass = (on: boolean) =>
+  `group relative flex min-w-[76px] shrink-0 flex-col items-center gap-1.5 rounded-xl px-1.5 py-1.5 transition-colors duration-300 active:scale-[0.97] ${on ? "text-dc-ink" : "text-dc-text-2 hover:text-dc-ink"}`;
+const ringClass = (on: boolean) =>
+  `block h-16 w-16 rounded-full p-[3px] transition-[background-color,box-shadow] duration-300 ${on ? "bg-[conic-gradient(from_200deg,#c39c52,#f3dc9f,#8a682b,#c39c52)] shadow-gold" : "bg-dc-line-strong"}`;
 const chipClass = (on: boolean) =>
   `${CHIP} ${on ? "border-dc-ink bg-dc-ink text-dc-on-dark" : "border-dc-line-strong bg-dc-white text-dc-ink hover:border-dc-ink"}`;
 
@@ -129,30 +133,47 @@ export function InspirationGallery() {
       </h2>
 
       {!loading && !error && items.length > 0 && (
-        <div className="z-30 border-b md:sticky md:top-[72px] border-dc-line bg-dc-cream/95 backdrop-blur-sm">
+        <div className="z-30 border-b lg:sticky lg:top-[72px] border-dc-line bg-dc-cream/95 backdrop-blur-sm">
           <div className="dc-container flex flex-col gap-3 py-3 lg:flex-row lg:items-start lg:gap-8">
-            <div className="-mx-4 flex min-w-0 flex-1 gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
-              <button type="button" aria-pressed={!adat && !kategori} onClick={() => { setAdat(""); setKategori(""); }} className={chipClass(!adat && !kategori)}>
-                Semua
-              </button>
-              {adatChips.length > 0 && (
-                <div role="group" aria-label="Saring menurut adat" className="flex shrink-0 gap-2 sm:flex-wrap">
-                  {adatChips.map((a) => (
-                    <button key={a.key} type="button" aria-pressed={adat === a.key} onClick={() => setAdat(adat === a.key ? "" : a.key)} className={`${chipClass(adat === a.key)} ${a.photo ? "pl-1.5" : ""}`}>
-                      {a.photo && (
+            <div className="min-w-0 flex-1">
+              {/* Adat as round photo stories: the couple's own look is the label. */}
+              <div role="group" aria-label="Saring menurut adat" className="-mx-4 flex gap-1 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:px-0">
+                <button type="button" aria-pressed={!adat && !kategori} onClick={() => { setAdat(""); setKategori(""); }} className={storyClass(!adat && !kategori)}>
+                  <span className={ringClass(!adat && !kategori)}>
+                    <span className="flex h-full w-full items-center justify-center rounded-full bg-dc-ink">
+                      <svg aria-hidden width="34" height="22" viewBox="0 0 34 22" fill="none" stroke="var(--dc-gold-antique)" strokeWidth="1.4">
+                        <circle cx="12" cy="11" r="9" />
+                        <circle cx="22" cy="11" r="9" />
+                      </svg>
+                    </span>
+                  </span>
+                  <span className="text-sm font-semibold">Semua</span>
+                </button>
+                {adatChips.map((a) => (
+                  <button key={a.key} type="button" aria-pressed={adat === a.key} onClick={() => setAdat(adat === a.key ? "" : a.key)} className={storyClass(adat === a.key)}>
+                    <span className={ringClass(adat === a.key)}>
+                      <span className="relative block h-full w-full overflow-hidden rounded-full bg-[radial-gradient(120%_90%_at_50%_100%,#ead7ae_0%,#f3ecdf_70%)]">
+                        {a.photo ? (
+                          <Image src={a.photo} alt="" fill sizes="64px" className="object-cover object-[50%_12%] transition-transform duration-500 ease-dc group-hover:scale-110 motion-reduce:transition-none" />
+                        ) : (
+                          <span className="flex h-full w-full items-center justify-center font-heading text-xl text-dc-clay">{a.label.slice(0, 1)}</span>
+                        )}
+                      </span>
+                    </span>
+                    <span className="text-sm font-semibold">{a.label}</span>
+                    <span className="sr-only">, {adatCounts.get(a.key)} foto</span>
+                  </button>
+                ))}
+              </div>
+              {catChips.length > 0 && (
+                <div role="group" aria-label="Saring menurut kategori vendor" className="-mx-4 mt-2 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
+                  {catChips.map((c) => (
+                    <button key={c.value} type="button" aria-pressed={kategori === c.value} onClick={() => setKategori(kategori === c.value ? "" : c.value)} className={`${chipClass(kategori === c.value)} pl-1.5`}>
+                      {CATEGORY_THUMB[c.value] && (
                         <span className="relative h-8 w-8 overflow-hidden rounded-full bg-dc-paper-3">
-                          <Image src={a.photo} alt="" fill sizes="32px" className="object-cover object-[50%_15%]" />
+                          <Image src={CATEGORY_THUMB[c.value]} alt="" fill sizes="32px" className="object-cover" />
                         </span>
                       )}
-                      {a.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {catChips.length > 0 && (
-                <div role="group" aria-label="Saring menurut kategori vendor" className="flex shrink-0 gap-2 sm:flex-wrap sm:border-l sm:border-dc-line-strong sm:pl-2">
-                  {catChips.map((c) => (
-                    <button key={c.value} type="button" aria-pressed={kategori === c.value} onClick={() => setKategori(kategori === c.value ? "" : c.value)} className={chipClass(kategori === c.value)}>
                       {c.label}
                     </button>
                   ))}
@@ -190,8 +211,8 @@ export function InspirationGallery() {
           <div role="status" aria-label="Memuat inspirasi" className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">
             {[0, 1, 2, 3].map((c) => (
               <div key={c} className={`flex flex-col gap-3 sm:gap-5 ${c >= 2 ? "hidden md:flex" : ""} ${c === 3 ? "md:hidden xl:flex" : ""}`}>
-                {[[78, 52], [55, 90], [96, 60]][c % 3].map((h, i) => (
-                  <div key={i} style={{ height: `${h * 3.2}px` }} className="dc-skeleton rounded-xl" />
+                {[0, 1, 2].map((r) => (
+                  <div key={r} style={{ aspectRatio: moodRatio(r * 4 + c) }} className="dc-skeleton rounded-2xl" />
                 ))}
               </div>
             ))}
@@ -226,9 +247,9 @@ export function InspirationGallery() {
         )}
 
         {!loading && !error && shown.length > 0 && (
-          <div className="flex items-start gap-3 sm:gap-5">
+          <div className="flex items-start gap-3 sm:gap-4 lg:gap-5">
             {columns.map((col, c) => (
-              <div key={c} className="flex min-w-0 flex-1 flex-col gap-3 sm:gap-5">
+              <div key={c} className="flex min-w-0 flex-1 flex-col gap-3 sm:gap-4 lg:gap-5">
                 {col.map(({ item, i }) => (
                   <motion.div
                     key={item.id}
@@ -237,12 +258,13 @@ export function InspirationGallery() {
                     initial="hidden"
                     animate="visible"
                   >
-                    <PinterestImageCard
-                      imageUrl={item.url}
+                    <MoodCard
+                      src={item.url}
                       pinUrl={item.source_url || PINTEREST_BOARD_URL}
                       alt={item.alt_text || item.caption || "Inspirasi pernikahan"}
                       caption={item.caption || undefined}
                       tags={adatOf(item).map((k) => ADAT.find((a) => a.key === k)!.label)}
+                      ratio={moodRatio(i)}
                       layoutId={reduced ? undefined : `insp-${item.id}`}
                       onOpen={() => {
                         setOpenedId(item.id);

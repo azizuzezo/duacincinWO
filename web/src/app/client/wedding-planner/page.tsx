@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -49,6 +48,7 @@ import {
   ProgressRing,
   todayKey,
 } from "./_parts";
+import { GoldArch } from "@/components/ornament/GoldArch";
 
 export default function WeddingPlannerPage() {
   return (
@@ -317,13 +317,7 @@ function WeddingPlannerContent({ user }: { user: CurrentUser }) {
                 aria-label="Ringkasan persiapan"
                 className="relative mb-8 overflow-hidden rounded-2xl border border-dc-line bg-dc-white p-6 shadow-soft sm:p-8"
               >
-                <Image
-                  src="/scene/arch1-sm.webp"
-                  alt=""
-                  width={269}
-                  height={250}
-                  className="pointer-events-none absolute -right-14 -top-10 hidden w-[220px] opacity-20 lg:block"
-                />
+                <GoldArch className="pointer-events-none absolute -right-14 -top-10 hidden h-auto w-[220px] opacity-20 lg:block" />
                 <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center lg:pr-28">
                   <ProgressRing
                     value={progressPct}

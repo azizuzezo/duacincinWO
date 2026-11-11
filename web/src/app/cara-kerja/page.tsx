@@ -4,7 +4,10 @@ import { PageHero } from "@/components/landing/PageHero";
 import { PublicShell } from "@/components/landing/PublicShell";
 import { Reveal } from "@/components/landing/Reveal";
 import { JourneyStory, type Stage } from "@/components/public/cara-kerja/JourneyStory";
+import { PhonePair } from "@/components/public/cara-kerja/PhonePair";
+import { PhoneFrame } from "@/components/public/cara-kerja/DeviceFrame";
 import { ButtonLink } from "@/components/ui/Button";
+import { FeatureIcon } from "@/components/ui/FeatureIcon";
 import { Rings } from "@/components/ui/Rings";
 
 export const metadata: Metadata = {
@@ -15,55 +18,63 @@ export const metadata: Metadata = {
 
 // PRD §8.11, one entry per stage, with where the client's money sits and the
 // booking status the client sees in the app (lib/api BOOKING_STATUS_LABEL).
+const SHOT = "/showcase/pages";
 const STAGES: Stage[] = [
   {
     station: 0,
     status: null,
     title: "Cari vendor atau minta rekomendasi",
-    body: "Jelajahi direktori sendiri, atau ceritakan kebutuhan dan anggaranmu ke wedding consultant DuaCincin. Konsultan bisa mengirim tautan profil vendor langsung ke chat.",
-    where: "Direktori vendor dan chat konsultan",
+    body: "Jelajahi direktori sendiri, atau ceritakan kebutuhanmu ke wedding consultant.",
+    where: "Direktori vendor",
+    screen: { src: `${SHOT}/k1-direktori.webp`, alt: "Layar direktori vendor DuaCincin: kartu Sanggar Rias Kencana dengan harga mulai dari dan rating" },
   },
   {
     station: 0,
     status: null,
     title: "Diskusi dengan vendor",
-    body: "Bahas paket, tanggal, dan harga lewat chat di dalam DuaCincin. Seluruh riwayat tersimpan sebagai rujukan kalau terjadi selisih paham.",
+    body: "Bahas paket, tanggal, dan harga lewat chat. Riwayatnya tersimpan sebagai rujukan.",
     where: "Pesan, langsung dengan vendor",
+    screen: { src: `${SHOT}/k2-chat.webp`, alt: "Layar chat dengan Pendopo Ageng Sriwedari yang menanyakan ketersediaan tanggal" },
   },
   {
     station: 0,
     status: "confirmed",
     title: "Ajukan booking",
-    body: "Tanggal, paket, dan harga hasil diskusi kamu ajukan ke vendor. Vendor mengonfirmasi, dan status booking berubah dari diajukan menjadi dikonfirmasi.",
+    body: "Ajukan tanggal dan paket hasil diskusi. Vendor mengonfirmasi.",
     where: "Booking, dari halaman vendor",
+    screen: { src: `${SHOT}/k3-vendor.webp`, alt: "Halaman vendor dengan pilihan tanggal, tombol ajukan booking, dan penjelasan escrow" },
   },
   {
     station: 1,
     status: "dp_paid",
     title: "Bayar DP",
-    body: "DP masuk ke akun penampung DuaCincin lewat Midtrans, belum ke rekening vendor. Tanggal vendor terkunci untukmu.",
+    body: "DP masuk ke akun penampung DuaCincin, belum ke vendor. Tanggalmu terkunci.",
     where: "Pembayaran di halaman booking",
+    screen: { src: `${SHOT}/k4-dp.webp`, alt: "Detail booking Sanggar Rias Kencana berstatus DP dibayar, menunggu pelunasan" },
   },
   {
     station: 1,
     status: "dp_paid",
     title: "Meeting dengan konsultan (opsional)",
-    body: "Kalau kamu butuh pendampingan, jadwalkan sesi dengan wedding consultant lewat kanal konsultasi yang sama, misalnya untuk meninjau ulang anggaran.",
+    body: "Butuh pendampingan? Jadwalkan sesi dengan wedding consultant.",
     where: "Konsultasi",
+    screen: { src: `${SHOT}/k5-konsultan.webp`, alt: "Layar konsultasi dengan tombol chat dan jadwalkan video call" },
   },
   {
     station: 1,
     status: "full_paid",
     title: "Pelunasan dan technical meeting",
-    body: "Kamu melunasi sisa pembayaran. Lalu kamu, vendor, dan konsultan (bila diminta) menyepakati rundown, denah, dan jadwal kru. Technical meeting wajib ada sebelum hari-H.",
+    body: "Lunasi sisanya, lalu sepakati rundown dan jadwal kru sebelum hari-H.",
     where: "Pembayaran dan wedding planner",
+    screen: { src: `${SHOT}/k6-lunas.webp`, alt: "Perjalanan booking yang sudah lunas dan menunggu technical meeting" },
   },
   {
     station: 2,
     status: "completed",
     title: "Hari-H selesai",
-    body: "Setelah kamu mengonfirmasi acara selesai, dana diteruskan ke vendor dikurangi komisi platform. Kalau ada masalah, kamu bisa mengajukan sengketa dan Admin menengahi.",
+    body: "Kamu konfirmasi acara selesai, lalu dana diteruskan ke vendor dikurangi komisi.",
     where: "Konfirmasi selesai di halaman booking",
+    screen: { src: `${SHOT}/k7-selesai.webp`, alt: "Booking berstatus selesai dengan ajakan menulis ulasan untuk vendor" },
   },
 ];
 
@@ -77,15 +88,20 @@ export default function CaraKerjaPage() {
   return (
     <PublicShell>
       <PageHero
-        image="/stock/couple-walk.webp"
-        focus="60% 50%"
+        image="/photos/momen/melayu-istana-1400.webp"
+        focus="50% 35%"
         eyebrow="Cara kerja"
         title={
           <>
             Dana baru pindah tangan <span className="dc-em-light">setelah acaramu selesai.</span>
           </>
         }
-        subtitle="Tujuh tahap dari chat pertama sampai hari-H. Di setiap tahap kamu bisa lihat di mana uangmu berada."
+        subtitle="Tujuh tahap dari chat pertama sampai hari-H, dengan layar aslinya."
+        aside={
+          <div className="hidden lg:block">
+            <PhonePair back={STAGES[0].screen} front={STAGES[3].screen} />
+          </div>
+        }
       >
         <ul className="mt-9 grid max-w-2xl animate-fade-up gap-2 sm:grid-cols-3">
           {JUMPS.map((j) => (
@@ -105,27 +121,49 @@ export default function CaraKerjaPage() {
       <JourneyStory stages={STAGES} />
 
       <section aria-labelledby="masalah-judul" className="bg-dc-cream">
-        <div className="dc-container grid gap-10 py-16 sm:py-24 lg:grid-cols-12 lg:gap-16">
+        <div className="dc-container grid items-center gap-10 py-16 sm:py-24 lg:grid-cols-12 lg:gap-16">
           <Reveal className="lg:col-span-5">
             <p className="dc-eyebrow">Kalau ada yang tidak beres</p>
             <h2 id="masalah-judul" className="mt-4 font-heading text-[clamp(2rem,3.6vw,3rem)] leading-[1.04] text-dc-ink">
               Riwayatnya tercatat, <span className="dc-em">ada yang menengahi.</span>
             </h2>
+            <ul className="mt-8 flex flex-col gap-5">
+              <li className="flex items-start gap-4">
+                <FeatureIcon>
+                  <path d="M12 3l8 4v5c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V7l8-4z" />
+                  <path d="M9 12l2 2 4-4" />
+                </FeatureIcon>
+                <p className="leading-relaxed text-dc-text-2">
+                  <span className="block font-semibold text-dc-ink">Sengketa dengan vendor</span>
+                  Ajukan sengketa. Riwayat chat dan booking jadi rujukan, Admin DuaCincin menengahi.
+                </p>
+              </li>
+              <li className="flex items-start gap-4">
+                <FeatureIcon>
+                  <rect x="3" y="6" width="18" height="12" rx="2" />
+                  <path d="M3 10h18M7 15h3" />
+                  <path d="M4 4l16 16" />
+                </FeatureIcon>
+                <p className="leading-relaxed text-dc-text-2">
+                  <span className="block font-semibold text-dc-ink">Bayar di luar DuaCincin</span>
+                  Transfer langsung ke vendor tidak dilindungi escrow. Chat mengingatkanmu sejak pesan pertama.
+                </p>
+              </li>
+            </ul>
           </Reveal>
-          <div className="grid gap-4 sm:grid-cols-2 lg:col-span-7">
-            <Reveal className="rounded-xl border border-dc-line bg-dc-white p-6 shadow-soft">
-              <h3 className="font-heading text-2xl text-dc-ink">Sengketa dengan vendor</h3>
-              <p className="mt-2 text-sm leading-relaxed text-dc-text-2">
-                Kamu bisa mengajukan sengketa. Riwayat chat dan booking menjadi rujukan, lalu Admin DuaCincin menengahi lewat antrean sengketa.
-              </p>
-            </Reveal>
-            <Reveal delay={0.08} className="rounded-xl border border-dc-line bg-dc-white p-6 shadow-soft sm:mt-10">
-              <h3 className="font-heading text-2xl text-dc-ink">Bayar di luar DuaCincin</h3>
-              <p className="mt-2 text-sm leading-relaxed text-dc-text-2">
-                Transfer langsung ke rekening vendor tidak dilindungi escrow dan tidak tercatat kalau terjadi masalah. Vendor juga terikat perjanjian yang melarangnya.
-              </p>
-            </Reveal>
-          </div>
+          <Reveal delay={0.08} className="lg:col-span-7">
+            <figure className="relative mx-auto max-w-md">
+              <PhoneFrame
+                src="/showcase/pages/k2-chat.webp"
+                alt="Chat dengan vendor di DuaCincin, dengan pengingat untuk menyimpan kesepakatan dan pembayaran di DuaCincin"
+                sizes="(min-width: 1024px) 420px, 80vw"
+                crop="390 / 420"
+                fade="from-dc-cream"
+                className="relative mx-auto w-[min(100%,380px)]"
+              />
+              <figcaption className="relative mt-10 text-center text-sm text-dc-text-2">Layar chat asli: pengingat ini tampil di setiap percakapan dengan vendor.</figcaption>
+            </figure>
+          </Reveal>
         </div>
       </section>
 

@@ -1,22 +1,25 @@
 "use client";
 
-// The seven real booking stages (PRD §8.11) told as one scroll. Left (desktop)
-// stays pinned: three money stations with one gold coin, the booking status
-// the client sees in the app, and a stage rail. Right: the stages. As a stage
-// reaches the middle of the screen it becomes active and the coin moves to
-// where the money is at that stage. On phones the pinned panel becomes a slim
-// sticky bar under the navbar.
+// The seven real booking stages (PRD §8.11) told as one scroll, with the real
+// app screen of each stage. Desktop: a pinned phone shows the screen of the
+// stage in the middle of the viewport, next to a money rail where one gold
+// coin sits where the client's money is. Phones: each stage carries its own
+// screen inline, and a slim sticky bar under the navbar keeps the money
+// position in view.
 //
-// Motion purpose: the coin is the message (it stays in escrow until the event
-// is done); the gold line fills with the reader's progress. Reduced motion:
-// the coin jumps, the line is static.
+// Motion purpose: the phone screen changes with the reader (the story is the
+// product), the coin travels between stations (the money only moves when the
+// event is done), the gold line fills with progress. Reduced motion: screens
+// cross-fade only, the coin jumps, the line is static.
 
-import { motion, useScroll, useSpring } from "framer-motion";
+import { AnimatePresence, motion, useScroll, useSpring } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 
 import { FundStatus } from "@/components/ui/FundStatus";
 import { BOOKING_STATUS_LABEL, type BookingStatus } from "@/lib/api";
-import { SPRING_SNAPPY, useReducedMotion } from "@/lib/motion";
+import { EASE, SPRING_SNAPPY, useReducedMotion } from "@/lib/motion";
+
+import { PhoneFrame } from "./DeviceFrame";
 
 type Station = 0 | 1 | 2;
 
@@ -28,12 +31,14 @@ export type Stage = {
   body: string;
   /** Where this happens in DuaCincin. */
   where: string;
+  /** Real screen of this stage (web/public/showcase/pages). */
+  screen: { src: string; alt: string };
 };
 
 const STATIONS = [
-  { label: "Masih di kamu", sub: "Belum ada dana yang berpindah" },
-  { label: "Ditahan escrow", sub: "Di akun penampung DuaCincin, vendor belum menerima" },
-  { label: "Diteruskan ke vendor", sub: "Setelah kamu konfirmasi acara selesai" },
+  { label: "Masih di kamu", sub: "Belum ada dana berpindah" },
+  { label: "Ditahan escrow", sub: "Vendor belum menerima" },
+  { label: "Diteruskan ke vendor", sub: "Setelah kamu konfirmasi" },
 ];
 
 const CHAPTER = ["Sebelum bayar", "Dana ditahan", "Setelah hari-H"];
@@ -49,35 +54,52 @@ function Coin({ id, reduced, small = false }: { id: string; reduced: boolean; sm
   );
 }
 
-function Vault({ stage, index, total, onJump, reduced }: { stage: Stage; index: number; total: number; onJump: (i: number) => void; reduced: boolean }) {
+/** Pinned desktop panel: the live phone and the money rail. */
+function Stagecraft({ stages, index, onJump, reduced }: { stages: Stage[]; index: number; onJump: (i: number) => void; reduced: boolean }) {
+  const stage = stages[index];
   return (
-    <div className="rounded-2xl border border-dc-line bg-dc-white p-6 shadow-soft xl:p-7">
-      <div className="flex items-baseline justify-between gap-4">
-        <p className="text-sm font-semibold text-dc-text-2">Posisi uangmu</p>
-        <p className="text-sm text-dc-text-3">
-          Tahap <span className="font-semibold text-dc-ink">{index + 1}</span> dari {total}
-        </p>
+    <div className="flex items-start gap-7 xl:gap-9">
+      <div className="relative w-[248px] shrink-0 xl:w-[270px]">
+        <div aria-hidden className="absolute -inset-x-16 -inset-y-10 -z-10 bg-[radial-gradient(closest-side,rgba(234,215,174,0.75),rgba(243,236,223,0.4)_60%,transparent)]" />
+        <div className="relative" style={{ aspectRatio: "404 / 858" }}>
+          <AnimatePresence initial={false}>
+            <motion.div
+              key={stage.screen.src}
+              className="absolute inset-0"
+              initial={reduced ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={reduced ? { opacity: 0 } : { opacity: 0, y: -16, scale: 0.98 }}
+              transition={{ duration: reduced ? 0.2 : 0.55, ease: EASE }}
+            >
+              <PhoneFrame src={stage.screen.src} alt={stage.screen.alt} sizes="270px" />
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
-      <ol className="relative mt-5 flex flex-col gap-5">
-        <span aria-hidden className="absolute bottom-5 left-[19px] top-5 w-px bg-[repeating-linear-gradient(180deg,var(--dc-line-strong)_0_6px,transparent_6px_12px)]" />
-        {STATIONS.map((s, i) => {
-          const here = i === stage.station;
-          return (
-            <li key={s.label} className="relative flex items-center gap-4" aria-current={here ? "step" : undefined}>
-              <span className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors duration-500 ${here ? "border-dc-gold bg-dc-cream" : "border-dc-line-strong bg-dc-white"}`}>
-                {here && <Coin id="journey-coin" reduced={reduced} />}
-              </span>
-              <span>
-                <span className={`block font-heading text-[1.45rem] leading-tight transition-colors ${here ? "text-dc-ink" : "text-dc-text-3"}`}>{s.label}</span>
-                <span className="block text-sm text-dc-text-3">{s.sub}</span>
-              </span>
-            </li>
-          );
-        })}
-      </ol>
-      <div className="mt-6 border-t border-dc-line pt-5">
-        <p className="text-xs font-semibold text-dc-text-3">Yang kamu lihat di aplikasi</p>
-        <div className="mt-2 min-h-[3.75rem]">
+
+      <div className="min-w-0 flex-1 pt-6">
+        <p className="text-sm text-dc-text-3">
+          Tahap <span className="font-heading text-2xl text-dc-ink">{index + 1}</span> dari {stages.length}
+        </p>
+        <p className="mt-1 text-sm font-semibold text-dc-text-2">Posisi uangmu</p>
+        <ol className="relative mt-4 flex flex-col gap-5">
+          <span aria-hidden className="absolute bottom-5 left-[19px] top-5 w-px bg-[repeating-linear-gradient(180deg,var(--dc-line-strong)_0_6px,transparent_6px_12px)]" />
+          {STATIONS.map((s, i) => {
+            const here = i === stage.station;
+            return (
+              <li key={s.label} className="relative flex items-center gap-3.5" aria-current={here ? "step" : undefined}>
+                <span className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors duration-500 ${here ? "border-dc-gold bg-dc-cream" : "border-dc-line-strong bg-dc-white"}`}>
+                  {here && <Coin id="journey-coin" reduced={reduced} />}
+                </span>
+                <span className="min-w-0">
+                  <span className={`block font-heading text-[1.3rem] leading-tight transition-colors duration-500 ${here ? "text-dc-ink" : "text-dc-text-3"}`}>{s.label}</span>
+                  <span className="block text-xs text-dc-text-3">{s.sub}</span>
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+        <div className="mt-6 min-h-[4.5rem] border-t border-dc-line pt-4">
           {stage.status ? (
             <>
               <p className="mb-2 text-sm font-semibold text-dc-ink">Booking: {BOOKING_STATUS_LABEL[stage.status]}</p>
@@ -87,27 +109,27 @@ function Vault({ stage, index, total, onJump, reduced }: { stage: Stage; index: 
             <p className="text-sm leading-relaxed text-dc-text-2">Belum ada booking. Kamu masih memilih dan berdiskusi.</p>
           )}
         </div>
+        <nav aria-label="Lompat ke tahap" className="mt-5 grid grid-cols-4 gap-1.5">
+          {stages.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onJump(i)}
+              aria-label={`Lompat ke tahap ${i + 1}`}
+              aria-current={i === index ? "step" : undefined}
+              className={`inline-flex h-11 items-center justify-center rounded-full border text-sm font-semibold tabular-nums transition-[background-color,border-color,color,transform] duration-300 active:scale-95 ${
+                i === index
+                  ? "border-dc-ink bg-dc-ink text-dc-on-dark"
+                  : i < index
+                    ? "border-dc-gold/60 bg-dc-cream text-dc-clay hover:border-dc-ink"
+                    : "border-dc-line-strong text-dc-text-3 hover:border-dc-ink hover:text-dc-ink"
+              }`}
+            >
+              {i + 1}
+            </button>
+          ))}
+        </nav>
       </div>
-      <nav aria-label="Lompat ke tahap" className="mt-5 flex flex-wrap gap-1.5">
-        {Array.from({ length: total }, (_, i) => (
-          <button
-            key={i}
-            type="button"
-            onClick={() => onJump(i)}
-            aria-label={`Lompat ke tahap ${i + 1}`}
-            aria-current={i === index ? "step" : undefined}
-            className={`inline-flex h-11 min-w-11 items-center justify-center rounded-full border text-sm font-semibold tabular-nums transition-colors duration-300 ${
-              i === index
-                ? "border-dc-ink bg-dc-ink text-dc-on-dark"
-                : i < index
-                  ? "border-dc-gold/60 bg-dc-cream text-dc-clay hover:border-dc-ink"
-                  : "border-dc-line-strong text-dc-text-3 hover:border-dc-ink hover:text-dc-ink"
-            }`}
-          >
-            {i + 1}
-          </button>
-        ))}
-      </nav>
     </div>
   );
 }
@@ -162,78 +184,89 @@ export function JourneyStory({ stages }: { stages: Stage[] }) {
         </div>
       </div>
 
-      <div className="dc-container grid gap-10 py-14 sm:py-20 lg:grid-cols-12 lg:gap-16 lg:py-28">
-        <div className="lg:col-span-5">
-          <div className="lg:sticky lg:top-24">
-            <p className="dc-eyebrow">Tujuh tahap pemesanan</p>
-            <h2 id="tahap-judul" className="mt-4 font-heading text-[clamp(2.2rem,4vw,3.4rem)] leading-[1.02] text-dc-ink">
-              Ikuti koin emasnya, <span className="dc-em">di situlah uangmu.</span>
-            </h2>
-            <p className="mt-4 max-w-md leading-relaxed text-dc-text-2">
-              Setiap tahap tercatat di DuaCincin. Uangmu tidak sampai ke rekening vendor sebelum kamu sendiri menyatakan acaranya selesai.
-            </p>
-            <div className="mt-8 hidden lg:block">
-              <Vault stage={stage} index={active} total={stages.length} onJump={jump} reduced={reduced} />
-            </div>
-          </div>
+      <div className="dc-container py-14 sm:py-20 lg:py-24">
+        <div className="max-w-2xl">
+          <p className="dc-eyebrow">Tujuh tahap, layar aslinya</p>
+          <h2 id="tahap-judul" className="mt-4 font-heading text-[clamp(2.2rem,4vw,3.4rem)] leading-[1.02] text-dc-ink">
+            Ikuti koin emasnya, <span className="dc-em">di situlah uangmu.</span>
+          </h2>
+          <p className="mt-4 max-w-lg leading-relaxed text-dc-text-2">Setiap tahap disertai layar aslinya, persis yang kamu lihat di DuaCincin.</p>
         </div>
 
-        <ol ref={listRef} className="relative lg:col-span-7">
-          <span aria-hidden className="absolute bottom-0 left-[1.35rem] top-0 hidden w-px bg-dc-line-strong sm:block" />
-          {!reduced && <motion.span aria-hidden style={{ scaleY: fill }} className="absolute bottom-0 left-[1.35rem] top-0 hidden w-px origin-top bg-dc-gold sm:block" />}
-          {stages.map((s, i) => {
-            const on = i === active;
-            const firstOfChapter = i === 0 || stages[i - 1].station !== s.station;
-            return (
-              <li key={s.title} className="relative">
-                {firstOfChapter && (
-                  <p className={`relative font-heading text-2xl italic text-dc-clay sm:pl-16 ${i === 0 ? "" : "pt-10"}`}>{CHAPTER[s.station]}</p>
-                )}
-                <article
-                  id={`tahap-${i + 1}`}
-                  ref={(el) => {
-                    refs.current[i] = el;
-                  }}
-                  data-i={i}
-                  tabIndex={-1}
-                  aria-labelledby={`tahap-${i + 1}-judul`}
-                  className="relative grid scroll-mt-40 gap-4 py-6 outline-none sm:grid-cols-[2.75rem_1fr] sm:gap-5 lg:py-8"
-                >
-                  <span
-                    aria-hidden
-                    className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full border font-heading text-xl tabular-nums transition-colors duration-500 ${
-                      on ? "border-dc-gold bg-dc-ink text-dc-gold-antique" : i < active ? "border-dc-gold bg-dc-cream text-dc-clay" : "border-dc-line-strong bg-dc-ivory text-dc-text-3"
-                    }`}
+        <div className="mt-10 grid gap-10 lg:mt-14 lg:grid-cols-12 lg:gap-14">
+          <div className="hidden lg:col-span-6 lg:block">
+            <div className="sticky top-24">
+              <Stagecraft stages={stages} index={active} onJump={jump} reduced={reduced} />
+            </div>
+          </div>
+
+          <ol ref={listRef} className="relative lg:col-span-6">
+            <span aria-hidden className="absolute bottom-0 left-[1.35rem] top-0 hidden w-px bg-dc-line-strong sm:block" />
+            <motion.span aria-hidden style={{ scaleY: fill }} className="absolute bottom-0 left-[1.35rem] top-0 hidden w-px origin-top bg-dc-gold motion-reduce:!hidden sm:block" />
+            {stages.map((s, i) => {
+              const on = i === active;
+              const firstOfChapter = i === 0 || stages[i - 1].station !== s.station;
+              return (
+                <li key={s.title} className="relative">
+                  {firstOfChapter && (
+                    <p className={`relative font-heading text-2xl italic text-dc-clay sm:pl-16 ${i === 0 ? "" : "pt-10"}`}>{CHAPTER[s.station]}</p>
+                  )}
+                  <article
+                    id={`tahap-${i + 1}`}
+                    ref={(el) => {
+                      refs.current[i] = el;
+                    }}
+                    data-i={i}
+                    tabIndex={-1}
+                    aria-labelledby={`tahap-${i + 1}-judul`}
+                    className="relative grid scroll-mt-40 gap-4 py-6 outline-none sm:grid-cols-[2.75rem_1fr] sm:gap-5 lg:min-h-[44vh] lg:content-center lg:py-10"
                   >
-                    {i + 1}
-                  </span>
-                  <div className={`rounded-xl border p-5 transition-[background-color,border-color,box-shadow] duration-500 sm:p-7 ${on ? "border-dc-line bg-dc-white shadow-lift" : "border-dc-line/60 bg-dc-white/40"}`}>
-                    <h3 id={`tahap-${i + 1}-judul`} className="font-heading text-[clamp(1.7rem,3vw,2.2rem)] leading-tight text-dc-ink">
-                      <span className="sr-only">Tahap {i + 1}: </span>
-                      {s.title}
-                    </h3>
-                    <p className="mt-2 max-w-xl leading-relaxed text-dc-text-2">{s.body}</p>
-                    <div className="mt-5 flex flex-col gap-3 border-t border-dc-line pt-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-                      {s.status ? (
-                        <FundStatus status={s.status} compact />
-                      ) : (
-                        <div className="flex items-start gap-2.5">
-                          <span className="mt-1.5 flex shrink-0 items-center gap-1" aria-hidden>
-                            {[0, 1, 2].map((d) => (
-                              <span key={d} className="h-2 w-2 rounded-full border border-dc-line-strong" />
-                            ))}
-                          </span>
-                          <p className="text-sm font-semibold text-dc-ink">Belum ada pembayaran</p>
+                    <span
+                      aria-hidden
+                      className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full border font-heading text-xl tabular-nums transition-[background-color,border-color,color,transform] duration-500 ${
+                        on ? "scale-110 border-dc-gold bg-dc-ink text-dc-gold-antique" : i < active ? "border-dc-gold bg-dc-cream text-dc-clay" : "border-dc-line-strong bg-dc-ivory text-dc-text-3"
+                      }`}
+                    >
+                      {i + 1}
+                    </span>
+                    <div
+                      className={`overflow-hidden rounded-2xl border transition-[background-color,border-color,box-shadow,opacity] duration-500 ${
+                        on ? "border-dc-line bg-dc-white shadow-lift" : "border-dc-line/70 bg-dc-white/50"
+                      }`}
+                    >
+                      <div className="p-5 sm:p-7">
+                        <h3 id={`tahap-${i + 1}-judul`} className="font-heading text-[clamp(1.7rem,3vw,2.3rem)] leading-tight text-dc-ink">
+                          <span className="sr-only">Tahap {i + 1}: </span>
+                          {s.title}
+                        </h3>
+                        <p className="mt-2 max-w-lg leading-relaxed text-dc-text-2">{s.body}</p>
+                        <div className="mt-5 flex flex-col gap-3 border-t border-dc-line pt-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+                          {s.status ? (
+                            <FundStatus status={s.status} compact />
+                          ) : (
+                            <div className="flex items-start gap-2.5">
+                              <span className="mt-1.5 flex shrink-0 items-center gap-1" aria-hidden>
+                                {[0, 1, 2].map((d) => (
+                                  <span key={d} className="h-2 w-2 rounded-full border border-dc-line-strong" />
+                                ))}
+                              </span>
+                              <p className="text-sm font-semibold text-dc-ink">Belum ada pembayaran</p>
+                            </div>
+                          )}
+                          <p className="text-sm text-dc-text-3 sm:max-w-[15rem] sm:text-right">{s.where}</p>
                         </div>
-                      )}
-                      <p className="text-sm text-dc-text-3 sm:max-w-[17rem] sm:text-right">{s.where}</p>
+                      </div>
+                      {/* Phones and tablets: the stage's own screen, top part. */}
+                      <div className="relative flex justify-center bg-[radial-gradient(90%_70%_at_50%_100%,#ead7ae_0%,#f3ecdf_55%,#faf6ef_100%)] px-6 pt-6 lg:hidden">
+                        <PhoneFrame src={s.screen.src} alt={s.screen.alt} sizes="260px" crop="390 / 560" fade="from-dc-cream" className="w-[min(72%,260px)]" />
+                      </div>
                     </div>
-                  </div>
-                </article>
-              </li>
-            );
-          })}
-        </ol>
+                  </article>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
       </div>
     </section>
   );

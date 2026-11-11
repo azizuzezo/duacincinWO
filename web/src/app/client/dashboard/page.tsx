@@ -8,7 +8,7 @@ import { GrowBar, ProgressRing } from "@/app/client/_motion";
 import { CountUp, FadeIn } from "@/components/ui/Motion";
 import { daysUntil, ErrorState, FOCUS, firstName, formatTanggal, H2, LINK, relativeDays, Skeleton } from "@/app/client/_ui";
 import { InvitationCard } from "@/components/invitation";
-import { SCENES } from "@/components/landing/scenes";
+import { WORLDS } from "@/components/landing/scenes";
 import { CLIENT_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
 import { Badge } from "@/components/ui/Badge";
@@ -61,7 +61,7 @@ function nextStep(booking: Booking | undefined, budget: BudgetPlan | null, hasAn
 
 // The header painting: bright Priangan rice fields, a warm Indonesian scene
 // instead of the old dark reception photo. Credit is shown under it.
-const SCENE = SCENES.find((s) => s.key === "sunda") ?? SCENES[0];
+const SCENE = WORLDS.sunda;
 
 export default function ClientDashboardPage() {
   return (
@@ -183,7 +183,7 @@ function ClientDashboardContent({ user }: { user: CurrentUser }) {
 
           <figure className="relative mx-auto hidden w-full max-w-[360px] md:block">
             <div className="relative aspect-[4/5] overflow-hidden rounded-t-full rounded-b-2xl border border-dc-line shadow-lift">
-              <Image src={`/scene/${SCENE.bg}-720.webp`} alt="Lukisan sawah dan gunung di tanah Priangan" fill sizes="360px" priority className="object-cover" />
+              <Image src={`${SCENE.bg}-720.webp`} alt="Lukisan sawah dan gunung di tanah Priangan" fill sizes="360px" priority className="object-cover" />
               <div aria-hidden className="pointer-events-none absolute inset-2 rounded-t-full rounded-b-xl border border-dc-white/70" />
             </div>
             {!loading && tasks.length > 0 && (

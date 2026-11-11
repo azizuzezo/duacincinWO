@@ -3,6 +3,8 @@ import Link from "next/link";
 
 import { PageHero } from "@/components/landing/PageHero";
 import { PublicShell } from "@/components/landing/PublicShell";
+import { Reveal } from "@/components/landing/Reveal";
+import { EscrowPanel } from "@/components/public/bantuan/EscrowPanel";
 import { HelpCenter, type Faq, type Topic } from "@/components/public/bantuan/HelpCenter";
 import { ButtonLink } from "@/components/ui/Button";
 
@@ -16,6 +18,9 @@ export const metadata: Metadata = {
 // TODO(konten): isi saat pemilik produk menetapkan kontak dukungan resmi WO.
 const SUPPORT_CHANNELS: { label: string; value: string; href: string }[] = [];
 
+// The questions couples ask first (ids are "<topic>-<index>").
+const POPULAR = ["pembayaran-0", "pembayaran-2", "booking-2", "vendor-1"];
+
 const faq = (q: string, text: string, a?: React.ReactNode): Faq => ({ q, text, a: a ?? text });
 
 // Every answer mirrors what the product does (PRD §8.5, §8.11, booking and
@@ -24,6 +29,15 @@ const TOPICS: Topic[] = [
   {
     key: "pembayaran",
     label: "Pembayaran dan escrow",
+    blurb: "DP, pelunasan, dan kapan uangmu sampai ke vendor.",
+    screen: "/showcase/pages/k4-dp.webp",
+    icon: (
+      <>
+        <rect x="3" y="6" width="18" height="13" rx="2" />
+        <path d="M3 10h18" />
+        <circle cx="16" cy="15" r="1.5" />
+      </>
+    ),
     items: [
       faq(
         "Kapan uangku sampai ke vendor?",
@@ -46,6 +60,14 @@ const TOPICS: Topic[] = [
   {
     key: "booking",
     label: "Vendor dan booking",
+    blurb: "Melihat vendor, chat, dan kalau terjadi sengketa.",
+    screen: "/showcase/pages/k2-chat.webp",
+    icon: (
+      <>
+        <path d="M4 5h16v11H9l-5 4V5z" />
+        <path d="M8 9h8M8 12h5" />
+      </>
+    ),
     items: [
       faq(
         "Apakah harus masuk untuk melihat vendor?",
@@ -68,6 +90,14 @@ const TOPICS: Topic[] = [
   {
     key: "konsultan",
     label: "Konsultan dan perencanaan",
+    blurb: "Wedding consultant dan isi wedding planner.",
+    screen: "/showcase/pages/k5-konsultan.webp",
+    icon: (
+      <>
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" />
+      </>
+    ),
     items: [
       faq(
         "Apa itu wedding consultant, dan apakah wajib?",
@@ -82,6 +112,14 @@ const TOPICS: Topic[] = [
   {
     key: "vendor",
     label: "Untuk vendor",
+    blurb: "Tampil di direktori, komisi, dan pencairan dana.",
+    screen: "/showcase/pages/v-dashboard-m.webp",
+    icon: (
+      <>
+        <path d="M4 10l8-6 8 6v10H4V10z" />
+        <path d="M10 20v-6h4v6" />
+      </>
+    ),
     items: [
       faq(
         "Bagaimana usaha saya bisa tampil di direktori?",
@@ -107,23 +145,23 @@ export default function BantuanPage() {
   return (
     <PublicShell>
       <PageHero
-        image="/stock/ballroom.webp"
+        image="/photos/kategori/venue-1400.webp"
         eyebrow="Pusat bantuan"
         title={
           <>
             Ada yang <span className="dc-em-light">belum jelas?</span>
           </>
         }
-        subtitle="Cari jawabannya di sini, soal pembayaran, booking, perencanaan, dan akun vendor."
+        subtitle="Soal pembayaran, booking, perencanaan, dan akun vendor."
       />
 
       <section className="bg-dc-ivory">
-        <div className="dc-container grid gap-12 py-12 sm:py-16 lg:grid-cols-12 lg:gap-16 lg:py-20">
-          <div className="min-w-0 lg:col-span-8">
-            <HelpCenter topics={TOPICS} />
-          </div>
-
-          <aside aria-labelledby="bantuan-lanjut" className="min-w-0 lg:col-span-4">
+        <div className="dc-container pb-16 sm:pb-20 lg:pb-24">
+          <HelpCenter
+            topics={TOPICS}
+            popular={POPULAR}
+            aside={
+              <aside aria-labelledby="bantuan-lanjut">
             <div className="lg:sticky lg:top-28">
               <div className="dc-on-dark relative overflow-hidden rounded-2xl bg-dc-ink p-6 text-dc-on-dark shadow-lift sm:p-7">
                 <p className="dc-eyebrow">Masih butuh bantuan?</p>
@@ -171,7 +209,17 @@ export default function BantuanPage() {
                 </div>
               </div>
             </div>
-          </aside>
+              </aside>
+            }
+          />
+        </div>
+      </section>
+
+      <section aria-labelledby="escrow-judul" className="bg-dc-cream">
+        <div className="dc-container py-16 sm:py-20 lg:py-24">
+          <Reveal>
+            <EscrowPanel />
+          </Reveal>
         </div>
       </section>
     </PublicShell>

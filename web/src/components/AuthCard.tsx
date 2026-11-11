@@ -2,7 +2,7 @@
 
 // Auth layout (login, register, forgot password). Same language as the home
 // hero and the invitation site's auth pages: the left panel is a wedding
-// world (licensed painting, real floral arch, real couple in adat attire) at
+// world (licensed painting or photo, gold arch, real couple in adat attire) at
 // three depths with pointer parallax, changing every ~7s. It stops while the
 // form has focus (never distracts typing), on hover, when the tab is hidden,
 // and never moves under reduced motion. The form side is calm ivory paper.
@@ -15,6 +15,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { SCENES } from "@/components/landing/scenes";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import { EASE, SPRING_SOFT, useReducedMotion } from "@/lib/motion";
+import { GoldArch } from "@/components/ornament/GoldArch";
 
 type Variant = "client" | "vendor" | "internal" | "unified" | "register";
 
@@ -114,7 +115,7 @@ function World({ variant, holdRef }: { variant: Variant; holdRef: React.RefObjec
         {SCENES.map((s, i) =>
           i === idx || i === next ? (
             <div key={s.key} className={`absolute inset-0 transition-opacity duration-[1400ms] ease-dc ${i === idx ? "opacity-100" : "opacity-0"}`}>
-              <Image src={`/scene/${s.bg}-1400.webp`} alt="" fill priority={i === 0} sizes="52vw" className="object-cover" style={{ objectPosition: s.focus }} />
+              <Image src={`${s.bg}-1400.webp`} alt="" fill priority={i === 0} sizes="52vw" className="object-cover" style={{ objectPosition: s.focus }} />
             </div>
           ) : null,
         )}
@@ -125,7 +126,7 @@ function World({ variant, holdRef }: { variant: Variant; holdRef: React.RefObjec
       />
       <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-[36%] top-[12%] -z-20 [mask-image:linear-gradient(to_bottom,#000_80%,transparent)]">
         <motion.div className="absolute inset-x-0 bottom-0 flex h-full justify-center" style={{ x: archX }}>
-          <Image src="/scene/arch1.webp" alt="" width={969} height={900} sizes="40vw" className="h-full w-auto max-w-none object-contain opacity-85 [filter:brightness(0.8)]" />
+          <GoldArch className="h-full w-auto max-w-none opacity-85" />
         </motion.div>
         <motion.div className="absolute inset-x-0 bottom-0 flex h-[80%] justify-center" style={{ x: coupleX, y: coupleY }}>
           <AnimatePresence initial={false} mode="popLayout">
@@ -137,7 +138,9 @@ function World({ variant, holdRef }: { variant: Variant; holdRef: React.RefObjec
               exit={{ opacity: 0, transition: { duration: reduced ? 0.15 : 0.5 } }}
               transition={{ duration: reduced ? 0.2 : 1, ease: EASE }}
             >
-              <Image src={`/scene/${scene.couple}.webp`} alt="" width={1200} height={1100} priority={idx === 0} sizes="40vw" className="h-full w-auto max-w-none object-contain drop-shadow-[0_30px_40px_rgba(0,0,0,0.5)]" />
+              <div className="relative aspect-[3/4] h-full overflow-hidden rounded-t-full border-2 border-[#e9cf94]/70 bg-dc-ink shadow-[0_30px_60px_rgba(0,0,0,0.55)]">
+                <Image src={`${scene.couple}.webp`} alt="" fill priority={idx === 0} sizes="24vw" className="object-cover" />
+              </div>
             </motion.div>
           </AnimatePresence>
         </motion.div>
@@ -177,7 +180,7 @@ function World({ variant, holdRef }: { variant: Variant; holdRef: React.RefObjec
             </svg>
           </button>
           <p className="text-xs text-[#fbf6ec]/75">
-            {scene.caption} · {scene.credit.kind}: {scene.credit.title}, {scene.credit.author} ({scene.credit.license})
+            {scene.caption} · Foto pengantin: {scene.coupleCredit.author} ({scene.coupleCredit.license}) · Latar: {scene.credit.title}, {scene.credit.author} ({scene.credit.license})
           </p>
         </div>
       </div>
@@ -204,7 +207,7 @@ export function AuthCard({ title, subtitle, variant = "client", children, footer
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Phones and tablets: a short painted header carries the brand. */}
         <div className="dc-on-dark relative isolate overflow-hidden bg-dc-ink px-5 pb-8 pt-6 lg:hidden">
-          <Image src={`/scene/${SCENES[0].bg}-720.webp`} alt="" fill priority sizes="100vw" className="-z-20 object-cover" style={{ objectPosition: SCENES[0].focus }} />
+          <Image src={`${SCENES[0].bg}-720.webp`} alt="" fill priority sizes="100vw" className="-z-20 object-cover" style={{ objectPosition: SCENES[0].focus }} />
           <div aria-hidden className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(14,10,7,0.85),rgba(14,10,7,0.7))]" />
           <Link href="/" aria-label="DuaCincin, ke beranda" className="inline-flex rounded-md py-1">
             <BrandLogo size={24} tone="light" />

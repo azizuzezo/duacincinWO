@@ -1,16 +1,13 @@
-# Foto stok placeholder
+# Foto stok lama (tidak dipakai situs)
 
-Sumber: Pexels (lisensi Pexels: gratis untuk penggunaan komersial, atribusi tidak wajib).
-Status: PLACEHOLDER sementara, bukan aset merek. Ganti dengan foto asli vendor/kurasi (PRD §8.7 mewajibkan foto nyata Indonesia).
+Situs tidak lagi memakai foto di folder ini. Semua gambar di halaman publik sekarang berasal dari
+`public/photos/` (Wikimedia Commons, kredit lengkap di halaman /kredit dan `src/components/kredit/credits.ts`).
 
-| Berkas | ID Pexels | Isi |
+Tiga berkas ini masih dipakai skrip `video-demo/capture*.mjs` sebagai foto portofolio contoh.
+Hapus setelah skrip itu dipindah ke `public/photos/`.
+
+| Berkas | Sumber | Lisensi |
 |---|---|---|
-| hero-reception.webp | 16120212 | resepsi gelap, bunga merah, lampu emas |
-| chandelier.webp | 16043728 | chandelier kristal di atas bunga putih |
-| ballroom.webp | 17022996 | ballroom dengan meja bundar |
-| stairs-flowers.webp | 17023110 | tangga berhias bunga dan lentera |
-| couple-studio.webp | 13470038 | pasangan berbusana putih |
-| photographer.webp | 17057198 | fotografer memotret pasangan |
-| couple-walk.webp | 18800370 | pasangan berjalan di koridor |
-
-Sumber halaman: https://www.pexels.com/photo/<ID>/
+| hero-reception.webp | Pexels 16120212 | Lisensi Pexels |
+| chandelier.webp | Pexels 16043728 | Lisensi Pexels |
+| couple-studio.webp | Pexels 13470038 | Lisensi Pexels |

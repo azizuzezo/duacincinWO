@@ -7,7 +7,7 @@ Dial publik: ENERGY 3 / RHYTHM 3 / MOTION 3 (hero), MOTION 2 di section lain. Di
 
 ## Aturan konten (jawaban pemilik, tetap berlaku)
 - Tanpa angka, testimoni, atau logo palsu. Angka hanya dari API nyata; kalau tidak ada, jangan tampil.
-- Aset nyata saja: `public/scene/*` (lukisan/foto berlisensi dari situs undangan + cutout pasangan, gapura, dan busana milik pemilik), `public/hero/adat/*`, `public/brand/*`, dan foto portofolio vendor dari API. `public/stock/*` adalah placeholder Pexels, hanya di tempat yang sudah memakainya (README di folder itu). Kredit lukisan/foto wajib tampil di dekat gambar (lihat `components/landing/scenes.ts`).
+- Aset nyata saja: `public/scene/*` (lukisan domain publik dan foto berlisensi dari situs undangan), `public/photos/*` (foto pernikahan Indonesia dari Wikimedia Commons: `pasangan/` foto pasangan hero dalam bingkai lengkung, tanpa cutout, `latar/`, `adat/`, `kategori/`, `momen/`), `public/brand/*`, dan foto portofolio vendor dari API. Setiap foto pihak ketiga wajib tercatat di `components/kredit/credits.ts` (tampil di /kredit); kredit lukisan/foto hero tetap tampil di dekat gambar (`components/landing/scenes.ts`). Gapura di hero adalah ornamen SVG (`components/ornament/GoldArch.tsx`). `public/stock/*` tidak dipakai situs lagi.
 - Tidak membuat avatar, logo, atau foto orang baru. Avatar = inisial.
 - Tanpa em dash di teks UI. Tanpa istilah teknis (server, API, slug, token) di UI.
 - Klaim escrow, konsultan, verifikasi vendor harus sama dengan perilaku produk (PRD §8.5, §8.11).

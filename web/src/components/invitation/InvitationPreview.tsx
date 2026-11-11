@@ -7,22 +7,21 @@ import { useState } from "react";
 import { SCENES, type Scene } from "@/components/landing/scenes";
 import { EASE, useReducedMotion } from "@/lib/motion";
 
-/** Asset paths for a scene: licensed painting/photo backdrop + the owner's couple cutout. */
+/** Asset path for a scene's couple photo (licensed, 3:4). */
 function sceneAssets(scene: Scene) {
-  return { bg: `/scene/${scene.bg}-720.webp`, couple: `/scene/${scene.couple}-sm.webp` };
+  return { couple: `${scene.couple}-sm.webp` };
 }
 
 /**
- * Arch window used by the preview and the compact card: the scene painting
- * behind the couple cutout, framed like the arch of a printed invitation.
+ * Arch window used by the preview and the compact card: the scene's couple
+ * photo, framed like the arch of a printed invitation.
  */
 export function ArchScene({ scene, className = "", sizes = "320px", priority = false }: { scene: Scene; className?: string; sizes?: string; priority?: boolean }) {
   const a = sceneAssets(scene);
   return (
     <div className={`relative overflow-hidden rounded-t-full ${className}`}>
-      <Image src={a.bg} alt="" fill sizes={sizes} priority={priority} className="object-cover" style={{ objectPosition: scene.focus }} />
+      <Image src={a.couple} alt={scene.coupleAlt} fill sizes={sizes} priority={priority} className="object-cover" />
       <span aria-hidden className="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-dc-ink/25" />
-      <Image src={a.couple} alt={scene.coupleAlt} fill sizes={sizes} className="object-contain object-bottom" />
     </div>
   );
 }
@@ -105,11 +104,11 @@ export function InvitationPreview({ bride, groom }: { bride: string; groom: stri
       <figcaption className="mt-3 text-center text-xs leading-relaxed text-dc-text-3">
         Contoh suasana. Tema lengkapnya kalian pilih di editor undangan.
         <br />
-        {scene.credit.kind}:{" "}
-        <a href={scene.credit.source} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-dc-ink">
-          {scene.credit.title}
-        </a>
-        , {scene.credit.author} ({scene.credit.license})
+        Foto pengantin:{" "}
+        <a href={scene.coupleCredit.source} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-dc-ink">
+          {scene.coupleCredit.author}
+        </a>{" "}
+        ({scene.coupleCredit.license})
       </figcaption>
     </figure>
   );

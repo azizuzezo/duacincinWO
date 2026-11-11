@@ -1,61 +1,59 @@
-import Image from "next/image";
+"use client";
 
+// The human side of DuaCincin, shown: a photo in an arch frame (the shape of
+// a wedding gapura) and, in front of it, the real consultation screen from the
+// client account (public/showcase/konsultasi-phone.webp), which itself lists
+// what the consultant does. Copy describes only what the consultation channel
+// does in the product.
+//
+// Motion purpose: the phone drifts against the photo on scroll (it is the
+// thing you hold, in front of the moment it serves). Reduced motion: still.
+import { motion, useScroll, useTransform } from "framer-motion";
+import Image from "next/image";
+import { useRef } from "react";
+
+import { PhoneFrame } from "@/components/landing/Devices";
 import { Reveal } from "@/components/landing/Reveal";
 import { ButtonLink } from "@/components/ui/Button";
+import { useReducedMotion } from "@/lib/motion";
 
-const DOES = [
-  "Mendengar kebutuhan, tanggal, dan anggaranmu lewat chat di akunmu.",
-  "Merekomendasikan vendor yang cocok dari direktori DuaCincin.",
-  "Menjadwalkan meeting lanjutan dan ikut technical meeting bila kamu minta.",
-];
-
-/** The one ink block of the home page: the human side of DuaCincin.
- * Photo in an arch frame (the shape of a wedding gapura). Copy describes only
- * what the consultation channel does in the product. */
 export function ConsultantBlock() {
+  const reduced = useReducedMotion();
+  const stage = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: stage, offset: ["start end", "end start"] });
+  const drift = useTransform(scrollYProgress, [0, 1], reduced ? [0, 0] : [0, -72]);
+
   return (
-    <section aria-labelledby="konsultan-judul" className="dc-on-dark relative isolate overflow-hidden bg-dc-ink text-dc-on-dark">
-      <div aria-hidden className="absolute -left-40 top-1/3 -z-10 h-[520px] w-[520px] rounded-full bg-[radial-gradient(closest-side,rgba(220,187,118,0.16),transparent)]" />
-      <div className="dc-container grid items-center gap-14 py-20 sm:py-28 lg:grid-cols-12 lg:gap-16 lg:py-36">
-        <Reveal className="lg:col-span-6">
-          <p className="dc-eyebrow">Wedding consultant</p>
-          <h2 id="konsultan-judul" className="mt-4 font-heading text-[clamp(2.4rem,4.8vw,4.2rem)] leading-[1.02]">
-            Belum tahu mulai dari mana? <span className="dc-em-light">Ngobrol dulu</span> dengan konsultan kami.
+    <section aria-labelledby="konsultan-judul" className="overflow-hidden bg-dc-cream">
+      <div className="dc-container py-20 text-center sm:py-28 lg:py-32">
+        <Reveal>
+          <p className="dc-eyebrow justify-center">Wedding consultant</p>
+          <h2 id="konsultan-judul" className="mx-auto mt-4 max-w-3xl font-heading text-[clamp(2.5rem,5.4vw,4.6rem)] leading-[1] text-dc-ink">
+            Bingung mulai dari mana? <span className="dc-em">Ngobrol dulu.</span>
           </h2>
-          <ul className="dc-stagger mt-8 flex flex-col gap-4">
-            {DOES.map((d) => (
-              <li key={d} className="flex gap-4 leading-relaxed text-dc-on-dark/85">
-                <svg aria-hidden viewBox="0 0 26 16" fill="none" className="mt-1.5 h-4 w-[26px] shrink-0 text-dc-gold-antique">
-                  <circle cx="9" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.4" />
-                  <circle cx="17" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.4" />
-                </svg>
-                {d}
-              </li>
-            ))}
-          </ul>
-          <div className="mt-10 flex flex-wrap gap-3">
-            <ButtonLink href="/register?role=client" variant="gold">
-              Buat akun dan mulai konsultasi
-            </ButtonLink>
-            <ButtonLink href="/cara-kerja" variant="ghostLight">
-              Baca cara kerjanya
-            </ButtonLink>
-          </div>
+          <p className="mx-auto mt-5 max-w-md leading-relaxed text-dc-text-2">Konsultan kami merekomendasikan vendor dari direktori DuaCincin, lewat chat di akunmu.</p>
         </Reveal>
-        <Reveal className="lg:col-span-6" delay={0.1}>
-          <div className="relative mx-auto aspect-[4/5] w-full max-w-[440px]">
-            <div aria-hidden className="absolute -inset-3 rounded-t-full border border-dc-gold/40" />
-            <div className="relative h-full overflow-hidden rounded-t-full bg-dc-ink-2">
-              <Image
-                src="/stock/couple-studio.webp"
-                alt="Pasangan pengantin berbusana putih duduk bersama"
-                fill
-                sizes="(min-width: 1024px) 440px, 90vw"
-                className="object-cover"
-              />
+
+        <div ref={stage} className="relative mx-auto mt-14 w-full max-w-[520px] pb-12 pr-[20%] text-left">
+          <div className="relative">
+            <div aria-hidden className="absolute -inset-3 rounded-t-full border border-dc-gold/50" />
+            <div className="relative aspect-[4/5] overflow-hidden rounded-t-full bg-dc-paper-3">
+              <Image src="/photos/momen/jember-tertawa-1400.webp" alt="Pasangan pengantin Jember Sari tertawa bersama, berkalung untaian melati" fill sizes="(min-width: 640px) 400px, 76vw" className="object-cover object-[50%_30%]" />
             </div>
           </div>
-        </Reveal>
+          <motion.div style={{ y: drift }} className="absolute bottom-0 right-0 w-[38%]">
+            <PhoneFrame src="/showcase/konsultasi-phone.webp" alt="Halaman konsultasi di akun client: chat dengan wedding consultant dan jadwal video call" sizes="(min-width: 640px) 230px, 44vw" />
+          </motion.div>
+        </div>
+
+        <div className="mt-10 flex flex-wrap justify-center gap-3">
+          <ButtonLink href="/register?role=client" variant="gold">
+            Mulai konsultasi
+          </ButtonLink>
+          <ButtonLink href="/cara-kerja" variant="ghost">
+            Baca cara kerjanya
+          </ButtonLink>
+        </div>
       </div>
     </section>
   );

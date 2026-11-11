@@ -125,9 +125,10 @@ export function FadeIn({
       </Reveal>
     );
   }
-  if (reduced) return <div className={className}>{children}</div>;
+  // Same element and initial state on server and client (no hydration mismatch);
+  // reduced motion only makes the transition instant, so content is never left hidden.
   return (
-    <motion.div className={className} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0, transition: { duration: 0.36, ease: EASE, delay } }}>
+    <motion.div className={className} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0, transition: reduced ? { duration: 0 } : { duration: 0.36, ease: EASE, delay } }}>
       {children}
     </motion.div>
   );

@@ -39,7 +39,9 @@ type Config struct {
 	// shared with the invitation app (same WO_LINK_SECRET there) and is
 	// server-only: never sent to the browser or logged.
 	InvitationBaseURL string
-	WOLinkSecret      string
+	// AllowedOrigins: browser origins allowed by CORS (CORS_ALLOWED_ORIGINS, comma separated).
+	AllowedOrigins []string
+	WOLinkSecret   string
 
 	// GoogleClientID is the Google OAuth web client ID used to check the
 	// audience of "Masuk dengan Google" ID tokens (internal/googleauth).
@@ -60,6 +62,7 @@ func Load() (*Config, error) {
 		AppEnv:             getEnv("APP_ENV", "development"),
 		JWTSecret:          os.Getenv("JWT_SECRET"),
 		OTPHMACSecret:      os.Getenv("OTP_HMAC_SECRET"),
+		AllowedOrigins:     allowedOrigins(os.Getenv("CORS_ALLOWED_ORIGINS")),
 		ResendAPIKey:       os.Getenv("RESEND_API_KEY"),
 		ResendFromEmail:    getEnv("RESEND_FROM_EMAIL", "DuaCincin <onboarding@resend.dev>"),
 		PublicAssetBaseURL: os.Getenv("PUBLIC_ASSET_BASE_URL"),
@@ -118,4 +121,24 @@ func getEnv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+// allowedOrigins returns the CORS allow-list: the comma-separated CORS_ALLOWED_ORIGINS
+// when set, otherwise local dev plus the production WO domains.
+func allowedOrigins(raw string) []string {
+	if strings.TrimSpace(raw) == "" {
+		return []string{
+			"http://localhost:3000",
+			"https://duacincin.id",
+			"https://www.duacincin.id",
+			"https://duacincin-wo.vercel.app",
+		}
+	}
+	var out []string
+	for _, o := range strings.Split(raw, ",") {
+		if o = strings.TrimRight(strings.TrimSpace(o), "/"); o != "" {
+			out = append(out, o)
+		}
+	}
+	return out
 }

@@ -32,7 +32,9 @@ export function DonutChart({
     const id = requestAnimationFrame(() => setDrawn(true));
     return () => cancelAnimationFrame(id);
   }, []);
-  const show = drawn || !!reduced;
+  // Server and first client render are identical (empty arcs); the effect above
+  // fills them right after mount. Reduced motion only removes the transition.
+  const show = drawn;
   const total = segments.reduce((sum, s) => sum + s.value, 0);
   const radius = size / 2 - 12;
   const circumference = 2 * Math.PI * radius;
@@ -55,7 +57,7 @@ export function DonutChart({
       strokeDashoffset={-offsets[i]}
       strokeLinecap="butt"
       transform={`rotate(-90 ${size / 2} ${size / 2})`}
-      style={{ transition: reduced ? undefined : `stroke-dasharray 0.4s cubic-bezier(0.16,1,0.3,1) ${i * 0.05}s` }}
+      style={{ transition: reduced ? "none" : `stroke-dasharray 0.4s cubic-bezier(0.16,1,0.3,1) ${i * 0.05}s` }}
     />
   ));
 

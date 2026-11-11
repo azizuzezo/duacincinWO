@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { Footer } from "@/components/landing/Footer";
@@ -6,6 +5,7 @@ import { Navbar } from "@/components/landing/Navbar";
 import { Button } from "@/components/ui/Button";
 import { Rings } from "@/components/ui/Rings";
 import { VENDOR_CATEGORIES } from "@/lib/api";
+import { GoldArch } from "@/components/ornament/GoldArch";
 
 export const metadata = { title: "Halaman tidak ditemukan" };
 
@@ -15,7 +15,7 @@ const PAGES = [
   { href: "/bantuan", label: "Pusat bantuan", sub: "Jawaban pertanyaan umum" },
 ];
 
-// PRD §10.6: a 404 that helps. The one visual is the owner's floral gate
+// PRD §10.6: a 404 that helps. The one visual is the gold wedding arch
 // cutout: a gate that is ready, with no page behind it. One primary action:
 // search vendors (same form fields as the home hero, so /vendors reads them).
 export default function NotFound() {
@@ -62,7 +62,7 @@ export default function NotFound() {
           <div className="relative mx-auto w-full max-w-sm lg:col-span-5" aria-hidden>
             <div className="absolute inset-x-6 bottom-6 top-10 rounded-t-full bg-[radial-gradient(120%_80%_at_50%_100%,#ead7ae_0%,#f3ecdf_60%,#faf6ef_100%)]" />
             <Rings className="absolute left-1/2 top-[46%] w-40 -translate-x-1/2 -translate-y-1/2 text-dc-gold" stroke="currentColor" strokeWidth={0.8} />
-            <Image src="/scene/arch1.webp" alt="" width={969} height={900} sizes="(min-width: 1024px) 384px, 80vw" className="relative w-full" priority />
+            <GoldArch className="relative h-auto w-full" />
             <p className="relative mt-2 text-center font-heading text-5xl leading-none text-dc-text-3">404</p>
           </div>
         </div>

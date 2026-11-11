@@ -1,10 +1,10 @@
 "use client";
 
 // Home hero: the first screen becomes a wedding world. A licensed painting or
-// photo of the region (graded warm like a film still), a real floral arch, and
+// photo of the region (graded warm like a film still), a gold arch, and
 // a real couple in that region's wedding attire, at three depths. The search
-// bar is the main door. Every ~7s the world changes (Jawa, Sunda, Minang,
-// Internasional), so "vendor untuk setiap adat" is shown, not claimed.
+// bar is the main door. Every ~7s the world changes (Jawa, Sunda, Batak Karo,
+// Melayu), so "vendor untuk setiap adat" is shown, not claimed.
 //
 // Motion purpose (antislop R-19, ui-ux-pro-max "motion-meaning"): crossfade =
 // a new world; ken burns = film still; pointer/scroll parallax across three
@@ -25,6 +25,7 @@ import { EASE, SPRING_SOFT, useReducedMotion } from "@/lib/motion";
 
 import styles from "./hero.module.css";
 import { SCENES } from "./scenes";
+import { GoldArch } from "@/components/ornament/GoldArch";
 
 const STEP_MS = 7000;
 const POPULAR = ["venue", "decor", "mua_attire", "photo_video"];
@@ -118,7 +119,7 @@ export function HeroScene() {
           i === idx || i === next ? (
             <div key={s.key} className={`absolute inset-0 transition-opacity duration-[1400ms] ease-dc ${i === idx ? "opacity-100" : "opacity-0"}`}>
               <Image
-                src={`/scene/${s.bg}-1400.webp`}
+                src={`${s.bg}-1400.webp`}
                 alt=""
                 fill
                 priority={i === 0}
@@ -197,11 +198,11 @@ export function HeroScene() {
           </div>
         </motion.div>
 
-        {/* Layers 2 and 3: floral arch and the couple standing under it.
+        {/* Layers 2 and 3: gold arch and the couple's photo in an arch window under it.
             Below the copy on small screens, beside it from lg up. */}
         <div aria-hidden className="pointer-events-none relative -mx-4 mt-4 [mask-image:linear-gradient(to_bottom,#000_82%,transparent)] h-[min(92vw,440px)] lg:absolute lg:inset-y-0 lg:left-auto lg:right-0 lg:mx-0 lg:mt-0 lg:h-auto lg:w-[48%]">
           <motion.div className="absolute inset-x-0 bottom-0 flex h-[96%] justify-center lg:h-[84%]" style={dArch}>
-            <Image src="/scene/arch1.webp" alt="" width={969} height={900} sizes="(min-width: 1024px) 50vw, 90vw" className="h-full w-auto max-w-none object-contain opacity-90 [filter:brightness(0.82)_saturate(0.9)]" />
+            <GoldArch className="h-full w-auto max-w-none opacity-90" />
           </motion.div>
           <div className={`absolute bottom-0 left-1/2 h-16 w-[70%] -translate-x-1/2 ${styles.floor}`} />
           <motion.div className="absolute inset-x-0 bottom-0 flex h-[78%] justify-center lg:h-[64%]" style={{ x: dCouple.x, y: coupleY, translateY: dCouple.y, rotate: coupleRot }}>
@@ -214,27 +215,22 @@ export function HeroScene() {
                 exit={reduced ? { opacity: 0, transition: { duration: 0.15 } } : { opacity: 0, y: -10, filter: "blur(6px)", transition: { duration: 0.6, ease: EASE } }}
                 transition={{ duration: reduced ? 0.2 : 1.1, ease: EASE }}
               >
-                <Image
-                  src={`/scene/${scene.couple}.webp`}
-                  alt=""
-                  width={1200}
-                  height={1100}
-                  priority={idx === 0}
-                  sizes="(min-width: 1024px) 45vw, 80vw"
-                  className="h-full w-auto max-w-none object-contain drop-shadow-[0_30px_40px_rgba(0,0,0,0.5)]"
-                />
+                {/* The whole photo in an arch window (no cutout, so no lost hair or wall patches). */}
+                <div className="relative aspect-[3/4] h-full overflow-hidden rounded-t-full border-2 border-[#e9cf94]/70 bg-dc-ink shadow-[0_30px_60px_rgba(0,0,0,0.55)]">
+                  <Image src={`${scene.couple}.webp`} alt="" fill priority={idx === 0} sizes="(min-width: 1024px) 26vw, 60vw" className="object-cover" />
+                </div>
               </motion.div>
             </AnimatePresence>
           </motion.div>
           {/* Preload the next couple invisibly. */}
-          <Image src={`/scene/${SCENES[next].couple}.webp`} alt="" width={1200} height={1100} sizes="(min-width: 1024px) 45vw, 80vw" className="invisible absolute h-px w-px" />
+          <Image src={`${SCENES[next].couple}.webp`} alt="" width={825} height={1100} sizes="(min-width: 1024px) 26vw, 60vw" className="invisible absolute h-px w-px" />
         </div>
       </div>
 
       {/* Scene picker, caption and credit. */}
       <div className="relative z-10 pb-5">
         <div className="dc-container flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2 lg:shrink-0">
             <div role="group" aria-label="Pilih adat" className="-my-1 flex min-w-0 gap-1.5 overflow-x-auto py-1 [scrollbar-width:none]">
               {SCENES.map((s, i) => {
                 const on = i === idx;
@@ -281,7 +277,13 @@ export function HeroScene() {
           <p className="self-start rounded-md text-xs leading-relaxed text-[#fbf6ec]/85 max-lg:bg-dc-ink/75 max-lg:px-2.5 max-lg:py-1.5 lg:self-auto" aria-live={running ? "off" : "polite"}>
             <span className="font-semibold text-[#fbf6ec]">{scene.caption}</span>
             <span aria-hidden> · </span>
-            {scene.credit.kind}:{" "}
+            Foto pengantin:{" "}
+            <a href={scene.coupleCredit.source} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-white">
+              {scene.coupleCredit.author}
+            </a>{" "}
+            ({scene.coupleCredit.license})
+            <span aria-hidden> · </span>
+            Latar {scene.credit.kind.toLowerCase()}:{" "}
             <a href={scene.credit.source} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-white">
               {scene.credit.title}
             </a>

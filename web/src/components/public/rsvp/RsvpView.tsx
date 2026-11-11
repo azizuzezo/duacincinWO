@@ -1,7 +1,6 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 
@@ -13,6 +12,7 @@ import { apiGet, apiPost, ApiError, type RSVPInfo } from "@/lib/api";
 import { EASE, useReducedMotion } from "@/lib/motion";
 
 import { daysUntil, downloadIcs, googleCalendarUrl, parseEventDate } from "./calendar";
+import { GoldArch } from "@/components/ornament/GoldArch";
 
 type Status = "attending" | "not_attending";
 const MAX_PARTY = 10;
@@ -168,7 +168,7 @@ export function RsvpView({ token }: { token: string }) {
     <Shell>
       <header className="text-center">
         <div className="relative mx-auto w-48 sm:w-56">
-          <Image src="/scene/arch1.webp" alt="" width={538} height={500} priority sizes="224px" className="relative w-full" />
+          <GoldArch className="relative h-auto w-full" />
         </div>
         <p className="dc-eyebrow mt-4 justify-center">Undangan {lead ? lead.toLowerCase() : "pernikahan"}</p>
         <h1 className="mt-3">

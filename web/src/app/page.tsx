@@ -1,31 +1,39 @@
-import { AntiCircumvention } from "@/components/landing/AntiCircumvention";
 import { BudgetDemo } from "@/components/landing/BudgetDemo";
-import { CategoryIndex } from "@/components/landing/CategoryIndex";
+import { CategoryMosaic } from "@/components/landing/CategoryMosaic";
 import { ConsultantBlock } from "@/components/landing/ConsultantBlock";
 import { CTABanner } from "@/components/landing/CTABanner";
-import { EscrowStory } from "@/components/landing/EscrowStory";
+import { EscrowCoin } from "@/components/landing/EscrowCoin";
+import { FeaturedVendors } from "@/components/landing/FeaturedVendors";
 import { Footer } from "@/components/landing/Footer";
 import { HeroScene } from "@/components/landing/HeroScene";
+import { InspirationTeaser } from "@/components/landing/InspirationTeaser";
+import { InvitationLink } from "@/components/landing/InvitationLink";
 import { Navbar } from "@/components/landing/Navbar";
-import { Planner } from "@/components/landing/Planner";
+import { ProductShowcase } from "@/components/landing/ProductShowcase";
 import { VendorRecruit } from "@/components/landing/VendorRecruit";
 
-// Narrative order: search (the door) -> what you can find -> how your money is
-// safe -> a human to ask -> tools after booking -> why it stays in-platform ->
-// vendors -> close. Rhythm alternates scene, paper, cream, ink, paper, white,
-// cream, paper, photo so no two neighbours share a composition.
+// Narrative: search (the door) -> what you can find (categories as photos,
+// real vendors) -> the app itself, screen by screen -> where your money is ->
+// the invitation that fills itself from your plan -> try the budget ->
+// ideas to save -> a human to ask -> vendors join -> close.
+// Show, don't tell: every section below the hero carries real imagery, real
+// API data or real captures of the product. Backgrounds alternate scene,
+// paper, cream, white, cream, ink (the one ink block), paper, white, cream,
+// paper, photo, so no two neighbours share a ground.
 export default function Page() {
   return (
     <>
       <Navbar overlay />
       <main id="konten" className="flex-1">
         <HeroScene />
-        <CategoryIndex />
-        <EscrowStory />
-        <ConsultantBlock />
-        <Planner />
+        <CategoryMosaic />
+        <FeaturedVendors />
+        <ProductShowcase />
+        <EscrowCoin />
+        <InvitationLink />
         <BudgetDemo />
-        <AntiCircumvention />
+        <InspirationTeaser />
+        <ConsultantBlock />
         <VendorRecruit />
         <CTABanner />
       </main>

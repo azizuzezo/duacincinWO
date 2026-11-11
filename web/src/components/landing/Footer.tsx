@@ -14,6 +14,7 @@ const HELP = [
   { href: "/bantuan", label: "Bantuan" },
   { href: "/legal/client-tos", label: "Ketentuan layanan client" },
   { href: "/legal/vendor-agreement", label: "Perjanjian kemitraan vendor" },
+  { href: "/kredit", label: "Kredit foto" },
 ];
 
 const LINK = "inline-flex min-h-11 items-center text-sm text-dc-on-dark/80 transition-colors hover:text-dc-gold-antique";

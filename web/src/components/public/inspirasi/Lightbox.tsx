@@ -1,8 +1,8 @@
 "use client";
 
-import { motion, type PanInfo } from "framer-motion";
+import { AnimatePresence, motion, type PanInfo } from "framer-motion";
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { PinterestMark } from "@/components/PinterestImageCard";
 import { buttonClasses } from "@/components/ui/Button";
@@ -45,6 +45,24 @@ export function Lightbox({
   const total = items.length;
   useFocusTrap(true, ref, onClose);
 
+  // Direction of the last move: the next photo slides in from the side the
+  // reader is heading to (spatial continuity), the old one leaves the other way.
+  const [prevIndex, setPrevIndex] = useState(index);
+  const [dir, setDir] = useState(0);
+  if (prevIndex !== index) {
+    const forward = (index - prevIndex + total) % total <= total / 2;
+    setDir(forward ? 1 : -1);
+    setPrevIndex(index);
+  }
+
+  // Warm the neighbours so a swipe never waits on the network.
+  useEffect(() => {
+    for (const n of [index - 1, index + 1]) {
+      const it = items[(n + total) % total];
+      if (it) new window.Image().src = it.url;
+    }
+  }, [index, items, total]);
+
   const prev = () => onMove((index - 1 + total) % total);
   const next = () => onMove((index + 1) % total);
 
@@ -78,35 +96,53 @@ export function Lightbox({
       transition={{ duration: reduced ? 0.01 : 0.3, ease: EASE }}
       className="dc-on-dark fixed inset-0 z-[80] flex flex-col bg-dc-ink text-dc-on-dark lg:flex-row"
     >
-      <div className="flex items-center justify-between gap-3 px-4 pt-3 lg:hidden">
+      {/* One close control for every size, first in the tab order so the
+          dialog opens with focus on it (a hidden duplicate cannot take focus). */}
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Tutup"
+        className="absolute right-3 top-2 z-10 inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full text-sm font-semibold text-dc-on-dark transition-colors hover:bg-dc-on-dark/10 lg:right-8 lg:top-7 lg:border lg:border-dc-on-dark/25 lg:px-4 lg:hover:border-dc-on-dark"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden className="lg:hidden">
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+        <span aria-hidden className="hidden lg:inline">
+          Tutup <span className="text-xs text-dc-on-dark/70">Esc</span>
+        </span>
+      </button>
+      <div className="flex min-h-14 items-center px-4 pt-3 lg:hidden">
         <p className="text-sm text-dc-on-dark/80" aria-live="polite">
           {index + 1} dari {total}
         </p>
-        <button
-          type="button"
-          onClick={onClose}
-          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-dc-on-dark hover:bg-dc-on-dark/10"
-          aria-label="Tutup"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
-            <path d="M6 6l12 12M18 6L6 18" />
-          </svg>
-        </button>
       </div>
-
-      <div className="relative flex min-h-0 flex-1 items-center justify-center px-4 py-3 lg:px-20 lg:py-10">
-        <motion.img
-          key={item.id}
-          layoutId={reduced || item.id !== sharedId ? undefined : `insp-${item.id}`}
-          src={item.url}
-          alt={item.alt_text || item.caption || "Inspirasi pernikahan"}
-          drag={reduced ? false : "x"}
-          dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.35}
-          onDragEnd={onDragEnd}
-          className="max-h-full max-w-full cursor-grab touch-pan-y select-none rounded-lg object-contain shadow-float active:cursor-grabbing"
-          draggable={false}
-        />
+      <div className="relative flex min-h-0 flex-1 items-center justify-center px-4 py-3 lg:px-20 lg:pb-28 lg:pt-10">
+        <div className="relative h-full w-full">
+          <AnimatePresence initial={false} custom={dir}>
+            <motion.img
+              key={item.id}
+              custom={dir}
+              layoutId={reduced || item.id !== sharedId ? undefined : `insp-${item.id}`}
+              src={item.url}
+              alt={item.alt_text || item.caption || "Inspirasi pernikahan"}
+              variants={{
+                enter: (d: number) => (reduced ? { opacity: 0 } : { opacity: 0, x: d * 90, scale: 0.98 }),
+                center: { opacity: 1, x: 0, scale: 1 },
+                exit: (d: number) => (reduced ? { opacity: 0 } : { opacity: 0, x: d * -90, scale: 0.98 }),
+              }}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: reduced ? 0.15 : 0.45, ease: EASE }}
+              drag={reduced ? false : "x"}
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.35}
+              onDragEnd={onDragEnd}
+              className="absolute inset-0 h-full w-full cursor-grab touch-pan-y select-none object-contain active:cursor-grabbing"
+              draggable={false}
+            />
+          </AnimatePresence>
+        </div>
         {total > 1 && (
           <>
             <button
@@ -129,20 +165,30 @@ export function Lightbox({
         )}
       </div>
 
+      {total > 1 && (
+        <nav aria-label="Pilih foto" className="hidden lg:absolute lg:bottom-5 lg:left-20 lg:right-[340px] lg:flex lg:justify-center">
+          <ul className="flex max-w-full gap-2 overflow-x-auto rounded-2xl bg-dc-ink-2/90 p-2 [scrollbar-width:none]">
+            {items.map((it, i) => (
+              <li key={it.id} className="shrink-0">
+                <button
+                  type="button"
+                  onClick={() => onMove(i)}
+                  aria-label={`Foto ${i + 1}`}
+                  aria-current={i === index ? "true" : undefined}
+                  className={`relative block h-12 w-12 overflow-hidden rounded-lg transition-[opacity,box-shadow,transform] duration-300 active:scale-95 ${i === index ? "opacity-100 ring-2 ring-dc-gold-antique" : "opacity-55 hover:opacity-100"}`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- remote pin thumbnails, same source as the gallery */}
+                  <img src={it.url} alt="" loading="lazy" className="h-full w-full object-cover" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
       <aside className="shrink-0 border-t border-dc-ink-3 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 lg:flex lg:w-[340px] lg:flex-col lg:border-l lg:border-t-0 lg:px-8 lg:py-8">
-        <div className="hidden items-center justify-between lg:flex">
-          <p className="text-sm text-dc-on-dark/80" aria-live="polite">
-            {index + 1} dari {total}
-          </p>
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-dc-on-dark/25 px-4 text-sm font-semibold text-dc-on-dark hover:border-dc-on-dark"
-          >
-            Tutup
-            <span className="text-xs text-dc-on-dark/70">Esc</span>
-          </button>
-        </div>
+        <p className="hidden min-h-11 items-center text-sm text-dc-on-dark/80 lg:flex" aria-live="polite">
+          {index + 1} dari {total}
+        </p>
         {(adat.length > 0 || cat) && (
           <p className="flex flex-wrap gap-1.5 lg:mt-10">
             {adat.map((a) => (
