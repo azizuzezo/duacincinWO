@@ -8,6 +8,7 @@ import { Button } from "@/components/Button";
 import { PasswordField } from "@/components/PasswordField";
 import { TextField } from "@/components/TextField";
 import { SuccessPop } from "@/components/ui/Motion";
+import { OtpInput } from "@/components/ui/OtpInput";
 import { apiPost, ApiError } from "@/lib/api";
 
 type Step = "request" | "verify" | "reset" | "done";
@@ -121,7 +122,7 @@ export default function ForgotPasswordPage() {
 
       {step === "verify" && (
         <form onSubmit={verifyOtp} className="flex flex-col gap-4">
-          <TextField label="Kode OTP 6 digit" autoComplete="one-time-code" value={code} onChange={setCode} />
+          <OtpInput label="Kode OTP 6 digit" value={code} onChange={setCode} invalid={!!error} autoFocus />
           {error && <p role="alert" className="text-sm text-dc-danger">
             {error}
           </p>}

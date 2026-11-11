@@ -113,7 +113,7 @@ function ClientConsultationContent({ user }: { user: CurrentUser }) {
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
         {/* The one ink block of the page: who the consultant is and the two ways to reach them. */}
         <section aria-labelledby="konsultan-judul" className="dc-on-dark relative isolate animate-fade-up overflow-hidden rounded-2xl bg-dc-ink text-dc-on-dark">
-          <div aria-hidden className="absolute -right-24 -top-24 -z-10 h-80 w-80 rounded-full bg-[radial-gradient(closest-side,rgba(220,187,118,0.24),transparent)]" />
+          <div aria-hidden className="absolute -right-24 -top-24 -z-10 h-80 w-80 rounded-full bg-[radial-gradient(closest-side,color-mix(in_srgb,var(--dc-gold-antique)_24%,transparent),transparent)]" />
           <div className="grid items-end gap-6 p-6 sm:p-10 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-10">
             <div className="pb-2">
               <p className="dc-eyebrow">Wedding Consultant</p>

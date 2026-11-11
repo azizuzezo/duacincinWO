@@ -8,7 +8,7 @@ export type BarDatum = { label: string; value: number };
 
 /** Custom SVG bar chart, no chart library needed. Bars are proportional
  * <rect>s inside a viewBox, sized against the largest value in data. */
-export function BarChart({ data, height = 160, color = "#a17d36" }: { data: BarDatum[]; height?: number; color?: string }) {
+export function BarChart({ data, height = 160, color = "var(--dc-chart-2)" }: { data: BarDatum[]; height?: number; color?: string }) {
   // Bars grow from the baseline once on mount (and ease to new values later).
   const reduced = useReducedMotion();
   const [grown, setGrown] = useState(false);

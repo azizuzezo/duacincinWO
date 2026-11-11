@@ -19,7 +19,7 @@ export function GlowPanel({
     <div className={`dc-on-dark relative isolate overflow-hidden rounded-xl bg-dc-ink p-6 text-dc-on-dark sm:p-8 ${className}`}>
       <div
         aria-hidden
-        className="absolute -right-24 -top-24 -z-10 h-72 w-72 rounded-full bg-[radial-gradient(closest-side,rgba(220,187,118,0.28),transparent)]"
+        className="absolute -right-24 -top-24 -z-10 h-72 w-72 rounded-full bg-[radial-gradient(closest-side,color-mix(in_srgb,var(--dc-gold-antique)_28%,transparent),transparent)]"
       />
       {title && <h3 className="font-heading text-[1.9rem] leading-tight text-dc-on-dark">{title}</h3>}
       {subtitle && <p className="mt-2 max-w-xl text-sm leading-relaxed text-dc-on-dark/80">{subtitle}</p>}

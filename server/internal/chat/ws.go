@@ -43,7 +43,8 @@ func newUpgrader(cfg *config.Config) websocket.Upgrader {
 }
 
 // ServeWS upgrades an authenticated, authorized participant's connection so
-// they receive message.new / read.updated events for one conversation in
+// they receive message.new, read.updated, receipts.updated and
+// conversation.updated events for one conversation in
 // real time. Clients don't send anything over this socket in this scope:
 // sending messages and marking read both stay REST endpoints (SendMessage,
 // MarkRead) so they get the same validation/response handling either way.

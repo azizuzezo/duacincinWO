@@ -104,7 +104,7 @@ function AdminDashboardContent({ user }: { user: CurrentUser }) {
         eyebrow={greeting && firstName ? `${greeting}, ${firstName}` : undefined}
         title={
           <>
-            Antrian <span className="dc-em-light">kerja</span>
+            Antrian <span className="dc-em">kerja</span>
           </>
         }
         subtitle={
@@ -125,7 +125,7 @@ function AdminDashboardContent({ user }: { user: CurrentUser }) {
 
       <div className="mx-auto max-w-6xl px-4 pb-12 sm:px-6">
         {/* One list in fixed urgency order (money in dispute first). The first queue
-            with work is the focal row: gold rule, "Paling mendesak", and the banner CTA. */}
+            with work is the focal row: champagne wash, "Paling mendesak", and the banner CTA. */}
         <section aria-labelledby="antrian-title" className="relative -mt-10 overflow-hidden rounded-xl border border-dc-line bg-dc-white shadow-soft sm:-mt-12">
           <h2 id="antrian-title" className="sr-only">
             Antrian kerja
@@ -153,8 +153,7 @@ function AdminDashboardContent({ user }: { user: CurrentUser }) {
                   const n = queues[q.key];
                   const isFocus = focus?.key === q.key;
                   return (
-                    <MotionItem key={q.key} className="relative">
-                      {isFocus && <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-dc-gold" />}
+                    <MotionItem key={q.key} className={`relative ${isFocus ? "bg-dc-gold-wash/60" : ""}`}>
                       <Link
                         href={q.href}
                         className="group grid min-h-20 grid-cols-[2.75rem_1fr_auto] items-center gap-x-4 gap-y-1 px-5 py-5 transition-colors hover:bg-dc-ivory active:bg-dc-cream focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-dc-gold sm:grid-cols-[4.5rem_1fr_auto] sm:px-7"
@@ -165,7 +164,7 @@ function AdminDashboardContent({ user }: { user: CurrentUser }) {
                         <span className="min-w-0">
                           <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
                             <span className={`font-heading text-2xl leading-tight ${n > 0 ? "text-dc-ink" : "text-dc-text-2"}`}>{q.title}</span>
-                            {isFocus && <Badge tone="gold">Paling mendesak</Badge>}
+                            {isFocus && <Badge tone="warning">Paling mendesak</Badge>}
                           </span>
                           <span className="mt-0.5 block text-sm leading-relaxed text-dc-text-2">{n > 0 ? q.why : "Tidak ada yang menunggu."}</span>
                         </span>
@@ -258,7 +257,7 @@ function AdminDashboardContent({ user }: { user: CurrentUser }) {
                         {i < recent.length - 1 && <span aria-hidden className="absolute bottom-0 left-[4.5px] top-9 w-px bg-dc-line" />}
                         <span aria-hidden className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full border-2 border-dc-gold bg-dc-white" />
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium text-dc-ink">{ACTION_LABEL[e.action] ?? e.action}</p>
+                          <p className="font-medium text-dc-ink">{ACTION_LABEL[e.action] ?? "Perubahan oleh admin"}</p>
                           {detail.length > 0 && <p className="mt-0.5 break-words text-sm text-dc-text-2">{detail.join(" · ")}</p>}
                         </div>
                         <time dateTime={e.created_at} className="shrink-0 text-sm text-dc-text-3">

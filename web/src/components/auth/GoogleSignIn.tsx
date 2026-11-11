@@ -86,9 +86,11 @@ type Props = {
   text?: GsiButtonText;
   /** Register page: the Client ToS checkbox in the form is already ticked. */
   acceptTerms?: boolean;
+  /** Which account a new Google email becomes. Existing accounts keep their role. */
+  role?: "client" | "vendor";
 };
 
-export function GoogleSignIn({ text = "signin_with", acceptTerms = false }: Props) {
+export function GoogleSignIn({ text = "signin_with", acceptTerms = false, role = "client" }: Props) {
   const router = useRouter();
   const box = useRef<HTMLDivElement>(null);
   const [gsi, setGsi] = useState<"loading" | "ready" | "error">("loading");
@@ -110,7 +112,7 @@ export function GoogleSignIn({ text = "signin_with", acceptTerms = false }: Prop
     try {
       const user = await apiPost<CurrentUser>("/api/v1/auth/google", {
         credential,
-        role: "client",
+        role,
         accept_terms: accept,
       });
       router.push(DASHBOARD_BY_ROLE[user.role]);
@@ -234,9 +236,16 @@ export function GoogleSignIn({ text = "signin_with", acceptTerms = false }: Prop
             ) : (
               "Email Google ini belum punya akun DuaCincin."
             )}{" "}
-            Kami buatkan akun calon pengantin setelah kamu menyetujui ketentuannya.
+            {role === "vendor"
+              ? "Kami buatkan akun vendor setelah kamu menyetujui perjanjiannya. Data usaha bisa dilengkapi sesudahnya."
+              : "Kami buatkan akun calon pengantin setelah kamu menyetujui ketentuannya."}
           </p>
-          <AgreementCheckbox checked={consent} onChange={setConsent} href="/legal/client-tos" label="Ketentuan Layanan Client" />
+          <AgreementCheckbox
+            checked={consent}
+            onChange={setConsent}
+            href={role === "vendor" ? "/legal/vendor-agreement" : "/legal/client-tos"}
+            label={role === "vendor" ? "Perjanjian Kemitraan Vendor DuaCincin" : "Ketentuan Layanan Client"}
+          />
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button type="button" variant="ghost" onClick={() => setPending(null)}>
               Batal
@@ -245,9 +254,6 @@ export function GoogleSignIn({ text = "signin_with", acceptTerms = false }: Prop
               Buat akun dengan Google
             </Button>
           </div>
-          <p className="text-xs leading-relaxed text-dc-text-2">
-            Vendor mendaftar lewat formulir vendor karena perlu data usaha.
-          </p>
         </div>
       )}
 

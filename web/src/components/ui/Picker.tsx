@@ -521,7 +521,7 @@ function PickerRow({
       {/* Gold check: the deep end of the brand gold gradient keeps 3:1 on ivory. */}
       <span
         aria-hidden
-        className={`flex size-5 shrink-0 items-center justify-center rounded-full bg-linear-135 from-[#c39c52] to-[#94702c] text-[#fffdf9] transition-[transform,opacity] duration-200 ease-dc motion-reduce:transition-none ${
+        className={`flex size-5 shrink-0 items-center justify-center rounded-full bg-linear-135 from-dc-gold to-dc-clay text-dc-white transition-[transform,opacity] duration-200 ease-dc motion-reduce:transition-none ${
           selected ? "scale-100 opacity-100" : "scale-50 opacity-0"
         }`}
       >

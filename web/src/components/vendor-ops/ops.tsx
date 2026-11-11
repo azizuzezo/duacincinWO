@@ -111,7 +111,7 @@ export function DateLeaf({ value, tone = "light" }: { value: string; tone?: "lig
     <span
       aria-hidden
       className={`flex w-14 shrink-0 self-start flex-col items-center rounded-lg border py-1.5 leading-none ${
-        tone === "gold" ? "border-dc-gold/50 bg-dc-gold/10" : "border-dc-line bg-dc-ivory"
+        tone === "gold" ? "border-dc-gold/40 bg-dc-gold-wash" : "border-dc-line bg-dc-ivory"
       }`}
     >
       <span className="text-[11px] font-semibold text-dc-clay">{BULAN_PENDEK[d.getMonth()]}</span>
@@ -136,7 +136,7 @@ export function BookingRow({ booking: b, showFund = true }: { booking: Booking; 
       <DateLeaf value={b.event_date} tone={needsAnswer ? "gold" : "light"} />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <Badge tone={needsAnswer ? "gold" : BOOKING_STATUS_TONE[b.status]}>{VENDOR_STATUS[b.status]}</Badge>
+          <Badge tone={needsAnswer ? "warning" : b.status === "confirmed" ? "info" : BOOKING_STATUS_TONE[b.status]}>{VENDOR_STATUS[b.status]}</Badge>
           {countdown && <span className="text-xs font-medium text-dc-text-3">{countdown}</span>}
         </div>
         <p className="mt-1.5 break-words font-semibold leading-snug text-dc-ink">{b.package_description || "Booking"}</p>

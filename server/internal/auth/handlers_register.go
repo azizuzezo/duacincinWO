@@ -23,6 +23,9 @@ type registerRequest struct {
 	Password    string `json:"password"`
 	FullName    string `json:"full_name"`
 	AcceptTerms bool   `json:"accept_terms"`
+	// From RequestSignupOTP: the signed ticket and the code emailed with it.
+	SignupTicket string `json:"signup_ticket"`
+	OTPCode      string `json:"otp_code"`
 }
 
 // Register returns a handler that creates a user with a fixed role
@@ -52,6 +55,11 @@ func Register(deps *Deps, role, agreementType string) http.HandlerFunc {
 		}
 		if !req.AcceptTerms {
 			httpx.Error(w, http.StatusBadRequest, "kamu harus menyetujui Perjanjian/Ketentuan Layanan untuk mendaftar")
+			return
+		}
+
+		if status, msg := checkSignupCode(r, deps, req.Email, req.SignupTicket, req.OTPCode); status != 0 {
+			httpx.Error(w, status, msg)
 			return
 		}
 

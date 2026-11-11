@@ -2,6 +2,7 @@ package whatsapp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -268,6 +269,9 @@ func (d *Deps) handleChatMessage(ctx context.Context, link *repository.WhatsAppL
 
 	flagged := chat.ContainsContactInfo(text)
 	msg, err := d.Chat.CreateMessage(ctx, conv.ID, *link.UserID, text, flagged, nil, nil, nil)
+	if errors.Is(err, repository.ErrConversationClosed) {
+		return "Sesi chat ini sudah ditutup, jadi pesanmu belum diteruskan. Buka kembali sesinya di duacincin.id, atau ketik 'menu' untuk memilih percakapan lain."
+	}
 	if err != nil {
 		return "Terjadi kesalahan, coba lagi."
 	}

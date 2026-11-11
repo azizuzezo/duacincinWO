@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { ConversationAvatar, ConversationList, describeConversation } from "@/components/ConversationList";
+import { ChatSessionButton } from "@/components/messages/ChatSession";
 import { Rings } from "@/components/ui/Rings";
 import type { Conversation } from "@/lib/api";
 
@@ -100,6 +101,7 @@ export function ThreadHeader({ conversation, userId }: { conversation?: Conversa
               {link.label}
             </Link>
           )}
+          <ChatSessionButton />
         </>
       ) : (
         <div className="flex flex-1 items-center gap-3 py-2" aria-hidden>

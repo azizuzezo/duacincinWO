@@ -160,6 +160,9 @@ export type Conversation = {
   vendor_id?: string;
   vendor_business_name?: string;
   client_name?: string;
+  /** Present only while the chat session is closed (see "Tutup sesi"). */
+  closed_at?: string;
+  closed_by?: string;
 };
 
 export type ReplyPreview = {
@@ -177,7 +180,13 @@ export type ChatMessage = {
   attachment_url?: string;
   attachment_type?: string;
   created_at: string;
+  /** Sender-side ticks: stored, reached the other side's app, opened by them. */
+  status?: MessageStatus;
+  delivered_at?: string;
+  read_at?: string;
 };
+
+export type MessageStatus = "sent" | "delivered" | "read";
 
 export type BudgetCategoryDTO = {
   category: string;
@@ -263,9 +272,13 @@ export const BOOKING_STATUS_LABEL: Record<BookingStatus, string> = {
   cancelled: "Dibatalkan",
 };
 
-export const BOOKING_STATUS_TONE: Record<BookingStatus, "neutral" | "gold" | "success" | "danger"> = {
-  requested: "neutral",
-  confirmed: "gold",
+/** Badge tone per status, from the client's point of view: info = waiting on
+ * the vendor, warning = the client's turn (pay DP), gold = money held in
+ * escrow, success = done, danger = cancelled. Vendor screens override
+ * requested (their turn) and confirmed (waiting on the client). */
+export const BOOKING_STATUS_TONE: Record<BookingStatus, "info" | "warning" | "gold" | "success" | "danger"> = {
+  requested: "info",
+  confirmed: "warning",
   dp_paid: "gold",
   full_paid: "gold",
   completed: "success",
@@ -382,4 +395,15 @@ export type ConversationReadEvent = {
 export type NewMessageEvent = {
   type: "message.new";
   message: ChatMessage;
+};
+
+export type ReceiptsEvent = {
+  type: "receipts.updated";
+  status: Exclude<MessageStatus, "sent">;
+  message_ids: string[];
+};
+
+export type ConversationUpdatedEvent = {
+  type: "conversation.updated";
+  conversation: Conversation;
 };

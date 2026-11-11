@@ -5,6 +5,7 @@ import { use, useEffect, useState } from "react";
 
 import { ChatThread } from "@/components/ChatThread";
 import { ConversationAvatar } from "@/components/ConversationList";
+import { ChatSessionButton } from "@/components/messages/ChatSession";
 import { ADMIN_NAV, CONSULTANT_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
 import { Button } from "@/components/ui/Button";
@@ -101,6 +102,7 @@ function ConsultationThreadContent({ id, user }: { id: string; user: CurrentUser
       <Button size="sm" variant="ghost" onClick={() => setPlanOpen(true)} className="lg:hidden">
         Usulkan jadwal
       </Button>
+      <ChatSessionButton />
     </div>
   );
 

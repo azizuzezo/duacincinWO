@@ -74,7 +74,8 @@ const (
 	msgUnavailable   = "masuk dengan Google belum tersedia, silakan masuk dengan email"
 	msgUnverified    = "akun Google tidak bisa diverifikasi, coba lagi"
 	msgTermsRequired = "email ini belum punya akun DuaCincin. Setujui Ketentuan Layanan Client untuk membuat akun"
-	msgVendorForm    = "pendaftaran vendor memakai formulir vendor, karena butuh data usaha"
+	msgVendorTerms   = "email ini belum punya akun DuaCincin. Setujui Perjanjian Kemitraan Vendor untuk membuat akun vendor"
+	msgBadRole       = "peran pendaftaran tidak dikenal"
 )
 
 type signInRequest struct {
@@ -85,10 +86,11 @@ type signInRequest struct {
 
 // SignIn verifies a Google ID token and signs the user in the same way the
 // password login does (same cookie, same JWT, same lock and sanction checks).
-// An email with no account becomes a new client account only after the
-// Client ToS is accepted, recorded like the normal client registration.
-// An existing account keeps its own role: Google never creates or upgrades
-// vendor, admin or consultant accounts.
+// An email with no account becomes a new client account (or a vendor
+// account when role is "vendor", from the vendor sign-up form) only after
+// the matching agreement is accepted, recorded like the normal
+// registration. An existing account keeps its own role: Google never
+// upgrades an account and never creates admin or consultant accounts.
 func SignIn(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req signInRequest
@@ -96,8 +98,12 @@ func SignIn(deps *Deps) http.HandlerFunc {
 			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
 			return
 		}
-		if req.Role != "" && req.Role != auth.RoleClient {
-			httpx.Error(w, http.StatusBadRequest, msgVendorForm)
+		role := req.Role
+		if role == "" {
+			role = auth.RoleClient
+		}
+		if role != auth.RoleClient && role != auth.RoleVendor {
+			httpx.Error(w, http.StatusBadRequest, msgBadRole)
 			return
 		}
 		if deps.Cfg.GoogleClientID == "" || deps.Verifier == nil {
@@ -134,7 +140,7 @@ func SignIn(deps *Deps) http.HandlerFunc {
 		case err == nil:
 			signInExisting(w, r, deps, user)
 		case errors.Is(err, repository.ErrNotFound):
-			createClient(w, r, deps, id, req.AcceptTerms, ip)
+			createAccount(w, r, deps, id, role, req.AcceptTerms, ip)
 		default:
 			httpx.Error(w, http.StatusInternalServerError, msgGeneric)
 		}
@@ -161,9 +167,13 @@ func signInExisting(w http.ResponseWriter, r *http.Request, deps *Deps, user *re
 	issueSession(w, deps, user, http.StatusOK)
 }
 
-func createClient(w http.ResponseWriter, r *http.Request, deps *Deps, id *Identity, acceptTerms bool, ip string) {
+func createAccount(w http.ResponseWriter, r *http.Request, deps *Deps, id *Identity, role string, acceptTerms bool, ip string) {
+	agreement, termsMsg := repository.AgreementTypeClientTOS, msgTermsRequired
+	if role == auth.RoleVendor {
+		agreement, termsMsg = repository.AgreementTypeVendorPartnership, msgVendorTerms
+	}
 	if !acceptTerms {
-		httpx.JSON(w, StatusTermsRequired, map[string]string{"error": msgTermsRequired, "code": "terms_required"})
+		httpx.JSON(w, StatusTermsRequired, map[string]string{"error": termsMsg, "code": "terms_required"})
 		return
 	}
 
@@ -189,7 +199,7 @@ func createClient(w http.ResponseWriter, r *http.Request, deps *Deps, id *Identi
 	if name == "" {
 		name = strings.Split(id.Email, "@")[0]
 	}
-	user, err := deps.Users.Create(r.Context(), id.Email, hash, auth.RoleClient, name)
+	user, err := deps.Users.Create(r.Context(), id.Email, hash, role, name)
 	if err != nil {
 		if errors.Is(err, repository.ErrDuplicateEmail) {
 			// Created by a parallel request a moment ago: sign in to it
@@ -204,7 +214,7 @@ func createClient(w http.ResponseWriter, r *http.Request, deps *Deps, id *Identi
 		return
 	}
 
-	if err := deps.Agreements.RecordAcceptance(r.Context(), user.ID, repository.AgreementTypeClientTOS); err != nil {
+	if err := deps.Agreements.RecordAcceptance(r.Context(), user.ID, agreement); err != nil {
 		httpx.Error(w, http.StatusInternalServerError, msgGeneric)
 		return
 	}

@@ -186,7 +186,7 @@ function AdminAuditLogContent({ user }: { user: CurrentUser }) {
                         <div className="min-w-0">
                           <p className="flex items-center gap-2 font-semibold text-dc-ink">
                             <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${t === "danger" ? "bg-dc-danger" : "bg-dc-gold"}`} />
-                            {ACTION_LABEL[e.action] ?? e.action}
+                            {ACTION_LABEL[e.action] ?? "Perubahan oleh admin"}
                           </p>
                           {detail.map((line) => (
                             <p key={line} className="mt-0.5 break-words text-sm text-dc-text-2">

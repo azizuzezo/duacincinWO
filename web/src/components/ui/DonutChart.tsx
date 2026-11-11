@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 
 import { useReducedMotion } from "@/lib/motion";
 
-// Brand series: ink, gold, then warm neutrals and two rare calm accents (rose,
-// sage) from the invitation palette. Each clears 3:1 against the card surface
-// (graphics threshold). Charts must also ship a text legend: color is never the only cue.
-const COLORS = ["#15110d", "#a17d36", "#7a5c24", "#b46a5c", "#4f6b5c", "#6b6157", "#8c7a5e"];
+// Brand series from the --dc-chart-* tokens (globals.css): espresso, gold,
+// terracotta, sage, dusk slate, mauve, taupe. Distinct in hue and lightness,
+// each >= 3:1 on the card surface. Charts must also ship a text legend: color is never the only cue.
+const COLORS = [1, 2, 3, 4, 5, 6, 7].map((n) => `var(--dc-chart-${n})`);
 
 export type DonutSegment = { label: string; value: number };
 
@@ -63,7 +63,7 @@ export function DonutChart({
 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`Diagram donat: ${segments.map((s) => `${s.label} ${total > 0 ? Math.round((s.value / total) * 100) : 0}%`).join(", ")}`}>
-      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#f3ecdf" strokeWidth={16} />
+      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--dc-cream)" strokeWidth={16} />
       {arcs}
     </svg>
   );

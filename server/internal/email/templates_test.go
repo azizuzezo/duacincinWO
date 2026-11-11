@@ -117,3 +117,21 @@ func TestAssetBase(t *testing.T) {
 		}
 	}
 }
+
+func TestRenderSignupOTPEmail(t *testing.T) {
+	subject, html, err := RenderSignupOTPEmail("https://www.duacincin.id/brand/duacincin-logo.webp", "482913")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(subject, "482913") || !strings.Contains(html, "pendaftaran") {
+		t.Fatalf("unexpected output: %q", subject)
+	}
+	for _, d := range []string{"4", "8", "2", "9", "1", "3"} {
+		if !strings.Contains(html, ">"+d+"<") {
+			t.Fatalf("digit %s missing", d)
+		}
+	}
+	if !strings.Contains(RenderSignupOTPText("482913"), "482913") {
+		t.Fatal("text part missing code")
+	}
+}

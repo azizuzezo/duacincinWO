@@ -9,7 +9,7 @@ import { useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttribu
  * Controls are 48px tall, 12px radius, warm card surface, gold focus ring.
  */
 export const controlClasses =
-  "w-full min-h-12 rounded-md border border-dc-line-strong bg-dc-white px-4 text-[0.95rem] text-dc-black transition-[border-color,box-shadow,background-color] duration-200 placeholder:text-dc-text-3 hover:border-dc-text-3 focus:border-dc-gold focus:shadow-[0_0_0_4px_rgba(184,146,74,0.18)] focus:outline-none disabled:cursor-not-allowed disabled:bg-dc-cream disabled:text-dc-text-3 aria-invalid:border-dc-danger aria-invalid:focus:shadow-[0_0_0_4px_rgba(163,54,42,0.15)]";
+  "w-full min-h-12 rounded-md border border-dc-line-strong bg-dc-white px-4 text-[0.95rem] text-dc-black transition-[border-color,box-shadow,background-color] duration-200 placeholder:text-dc-text-3 hover:border-dc-text-3 focus:border-dc-gold focus:shadow-[0_0_0_4px_color-mix(in_srgb,var(--dc-gold)_18%,transparent)] focus:outline-none disabled:cursor-not-allowed disabled:bg-dc-cream disabled:text-dc-text-3 aria-invalid:border-dc-danger aria-invalid:focus:shadow-[0_0_0_4px_color-mix(in_srgb,var(--dc-danger)_15%,transparent)]";
 
 type FieldShellProps = {
   label: ReactNode;

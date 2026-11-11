@@ -90,7 +90,7 @@ export function InvitationCard({ className = "" }: { className?: string }) {
     <Card className={`p-5 ${className}`}>
       <div className="flex items-start justify-between gap-3">
         <p className="dc-eyebrow">Undangan digital</p>
-        <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold leading-5 ${paid ? "bg-dc-gold/15 text-dc-clay" : "bg-dc-cream text-dc-text-2"}`}>
+        <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold leading-5 ${paid ? "bg-dc-gold-soft text-dc-clay" : "bg-dc-cream text-dc-text-2"}`}>
           {packageLabel(status.package_type)}
         </span>
       </div>

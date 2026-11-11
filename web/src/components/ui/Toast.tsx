@@ -13,7 +13,7 @@ const ToastContext = createContext<{ show: (message: string, tone?: ToastTone) =
 
 const TONE: Record<ToastTone, { box: string; mark: string }> = {
   neutral: { box: "bg-dc-ink text-dc-on-dark", mark: "bg-dc-gold-antique" },
-  success: { box: "bg-dc-ink text-dc-on-dark", mark: "bg-[#7fc49b]" },
+  success: { box: "bg-dc-ink text-dc-on-dark", mark: "bg-dc-success-light" },
   danger: { box: "bg-dc-danger text-white", mark: "bg-white" },
 };
 

@@ -181,7 +181,7 @@ function VendorBookingDetailContent({ id, user }: { id: string; user: CurrentUse
               <DateLeaf value={booking.event_date} tone={booking.status === "requested" ? "gold" : "light"} />
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge tone={booking.status === "requested" ? "gold" : BOOKING_STATUS_TONE[booking.status]}>{VENDOR_STATUS[booking.status]}</Badge>
+                  <Badge tone={booking.status === "requested" ? "warning" : booking.status === "confirmed" ? "info" : BOOKING_STATUS_TONE[booking.status]}>{VENDOR_STATUS[booking.status]}</Badge>
                   {booking.status !== "completed" && booking.status !== "cancelled" && (
                     <span className="text-sm font-medium text-dc-text-3">{countdownLabel(booking.event_date)}</span>
                   )}
@@ -331,7 +331,7 @@ function VendorBookingDetailContent({ id, user }: { id: string; user: CurrentUse
 
             {/* Mobile: the deciding buttons stay under the thumb, above the tab bar. */}
             {(booking.status === "requested" || canSchedule) && (
-              <div className="sticky bottom-[calc(3.6rem+env(safe-area-inset-bottom))] z-30 -mx-4 mt-8 border-t border-dc-line bg-dc-white/95 px-4 py-3 shadow-[0_-8px_24px_-16px_rgba(21,17,13,0.3)] md:hidden">
+              <div className="sticky bottom-[calc(3.6rem+env(safe-area-inset-bottom))] z-30 -mx-4 mt-8 border-t border-dc-line bg-dc-white/95 px-4 py-3 shadow-[0_-8px_24px_-16px_color-mix(in_srgb,var(--dc-ink)_30%,transparent)] md:hidden">
                 {booking.status === "requested" ? (
                   <div className="grid grid-cols-[1fr_2fr] gap-3">
                     <Button variant="ghost" onClick={() => setDeclineOpen(true)} disabled={busy !== null}>

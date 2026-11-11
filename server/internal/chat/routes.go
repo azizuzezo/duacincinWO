@@ -16,9 +16,13 @@ func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 		r.With(auth.RequireRole(auth.RoleClient)).Post("/consultation", StartConsultation(deps))
 
 		r.Get("/", ListConversations(deps))
+		r.Get("/{id}", GetConversation(deps))
 		r.Get("/{id}/messages", ListMessages(deps))
 		r.Post("/{id}/messages", SendMessage(deps))
 		r.Post("/{id}/attachments", UploadAttachment(deps))
 		r.Post("/{id}/read", MarkRead(deps))
+		r.Post("/{id}/delivered", MarkDeliveredNow(deps))
+		r.Post("/{id}/close", CloseSession(deps))
+		r.Post("/{id}/reopen", ReopenSession(deps))
 	})
 }

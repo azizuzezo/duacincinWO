@@ -236,7 +236,7 @@ export function BookingStepper({
                 )}
                 {step.optional && <span className="text-xs font-medium text-dc-text-3">(opsional)</span>}
                 {step.key === "tech" && state !== "done" && meetings?.some((m) => m.type === "technical_meeting") && (
-                  <span className="rounded-full bg-dc-gold/15 px-2 py-0.5 text-xs font-semibold text-dc-clay">Sudah dijadwalkan</span>
+                  <span className="rounded-full bg-dc-gold-soft px-2 py-0.5 text-xs font-semibold text-dc-clay">Sudah dijadwalkan</span>
                 )}
                 <span className="sr-only">
                   {state === "done" ? ", selesai" : state === "upcoming" ? ", belum" : state === "optional" ? ", bisa dilewati" : ""}

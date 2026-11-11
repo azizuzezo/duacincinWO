@@ -36,9 +36,40 @@
   /* Lines */
   --dc-line: #e6dccb;
   --dc-line-strong: #d3c4ab;
-  /* Semantic (status only, never decoration) */
+  /* Semantic (status only, never decoration). Text tone + soft fill pairs;
+     every text/soft pair is 5:1 or more (WCAG AA for small text). */
   --dc-success: #2f6a47;
+  --dc-success-soft: #e6efe6;
+  --dc-success-light: #7fc49b; /* success mark on ink (toasts) */
+  --dc-warning: #8a4b14; /* apricot: the user's own turn to act (distinct from gold = money held) */
+  --dc-warning-soft: #fae3cc;
   --dc-danger: #a3362a;
+  --dc-danger-strong: #8a2c22; /* danger button hover */
+  --dc-danger-soft: #f8e6e1;
+  --dc-info: #3f5869; /* muted slate: waiting on someone else, in progress */
+  --dc-info-soft: #e8edf0;
+
+  /* Dashboard surfaces (client, vendor, admin). Applied inside the app shell
+     by the .dc-app remap below: a calm paper canvas, near-white cards that
+     clearly sit above it, a neutral inset for nested groups, and a light
+     sidebar. Champagne wash = active nav / focal row, gold-soft = gold badge. */
+  --dc-canvas: #f5f0e8;
+  --dc-surface: #fffefb;
+  --dc-surface-2: #f4efe6;
+  --dc-sidebar: #fbf9f5;
+  --dc-gold-wash: #f6edda;
+  --dc-gold-soft: #f3e8d0;
+
+  /* Chart series: one harmonious warm set, distinct in hue AND lightness so
+     neighbouring segments separate. Each is >= 3:1 on the card surface
+     (graphics threshold); charts still ship a text legend. */
+  --dc-chart-1: #3a2f27; /* espresso */
+  --dc-chart-2: #b0873c; /* gold */
+  --dc-chart-3: #b0604a; /* terracotta */
+  --dc-chart-4: #5e7f68; /* sage */
+  --dc-chart-5: #5a6f84; /* dusk slate */
+  --dc-chart-6: #9a6a7c; /* mauve */
+  --dc-chart-7: #9c8b72; /* taupe */
 
   --background: var(--dc-ivory);
   --foreground: var(--dc-black);
@@ -68,6 +99,27 @@
   --color-dc-line-strong: var(--dc-line-strong);
   --color-dc-success: var(--dc-success);
   --color-dc-danger: var(--dc-danger);
+  --color-dc-success-soft: var(--dc-success-soft);
+  --color-dc-success-light: var(--dc-success-light);
+  --color-dc-warning: var(--dc-warning);
+  --color-dc-warning-soft: var(--dc-warning-soft);
+  --color-dc-danger-strong: var(--dc-danger-strong);
+  --color-dc-danger-soft: var(--dc-danger-soft);
+  --color-dc-info: var(--dc-info);
+  --color-dc-info-soft: var(--dc-info-soft);
+  --color-dc-canvas: var(--dc-canvas);
+  --color-dc-surface: var(--dc-surface);
+  --color-dc-surface-2: var(--dc-surface-2);
+  --color-dc-sidebar: var(--dc-sidebar);
+  --color-dc-gold-wash: var(--dc-gold-wash);
+  --color-dc-gold-soft: var(--dc-gold-soft);
+  --color-dc-chart-1: var(--dc-chart-1);
+  --color-dc-chart-2: var(--dc-chart-2);
+  --color-dc-chart-3: var(--dc-chart-3);
+  --color-dc-chart-4: var(--dc-chart-4);
+  --color-dc-chart-5: var(--dc-chart-5);
+  --color-dc-chart-6: var(--dc-chart-6);
+  --color-dc-chart-7: var(--dc-chart-7);
 
   /* Fonts (loaded with next/font in app/layout.tsx) */
   --font-heading: var(--font-display);
@@ -92,6 +144,20 @@
   --shadow-gold: 0 10px 30px -10px rgba(184, 146, 74, 0.6);
 
   --ease-dc: var(--dc-ease);
+}
+
+/* Dashboard palette. While an app shell (.dc-app, components/shell/Shell.tsx)
+   is on the page, the paper tokens resolve to the dashboard surfaces, so every
+   client, vendor and admin page (and their modals, sheets and toasts, which
+   portal to <body>) gets clear elevation steps without per-page overrides.
+   Public pages keep the marketing paper. */
+:root:has(.dc-app) {
+  --dc-ivory: var(--dc-canvas);
+  --dc-white: var(--dc-surface);
+  --dc-cream: var(--dc-surface-2);
+  --dc-paper-3: #e8e0d2;
+  --dc-line: #e7dfd2;
+  --dc-line-strong: #d5c8b3;
 }
 
 /* ── Base ─────────────────────────────────────────────────────────── */
@@ -437,3 +503,9 @@ input[type="range"] {
 .dc-stagger > :nth-child(6) { transition-delay: 350ms; }
 .dc-stagger > :nth-child(7) { transition-delay: 420ms; }
 .dc-stagger > :nth-child(n + 8) { transition-delay: 490ms; }
+
+@keyframes dc-otp-pop {
+  0% { transform: scale(0.88); }
+  60% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}

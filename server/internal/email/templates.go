@@ -172,6 +172,34 @@ func RenderPasswordResetOTPEmail(logoURL, code string) (subject, html string, er
 	return fmt.Sprintf("%s adalah kode kata sandi baru DuaCincin kamu", code), html, nil
 }
 
+// RenderSignupOTPEmail renders the branded OTP email that confirms the
+// email address when someone creates a DuaCincin account.
+func RenderSignupOTPEmail(logoURL, code string) (subject, html string, err error) {
+	html, err = render(logoURL, otpTemplateData{
+		DocTitle:   "Kode pendaftaran DuaCincin",
+		Preheader:  fmt.Sprintf("Kode kamu %s. Berlaku 10 menit untuk menyelesaikan pendaftaran.", code),
+		TitleLead:  "Satu langkah lagi untuk",
+		TitleEm:    "akun DuaCincin kamu",
+		Intro:      "Ketik kode ini di halaman pendaftaran untuk memastikan email ini milik kamu. Setelah itu akun langsung aktif.",
+		Code:       code,
+		Validity:   "Berlaku 10 menit, sekali pakai",
+		NextTitle:  "Setelah akun aktif",
+		NextBody:   "Cari vendor pernikahan, simpan yang kamu suka, dan mulai susun rencana hari besar kalian di satu tempat.",
+		IgnoreLine: "Tidak merasa mendaftar di DuaCincin? Abaikan saja email ini. Tanpa kode ini, tidak ada akun yang dibuat dengan email kamu.",
+	})
+	if err != nil {
+		return "", "", err
+	}
+	return fmt.Sprintf("%s adalah kode pendaftaran DuaCincin kamu", code), html, nil
+}
+
+// RenderSignupOTPText is the plain-text part sent next to RenderSignupOTPEmail.
+func RenderSignupOTPText(code string) string {
+	return fmt.Sprintf("Kode pendaftaran DuaCincin kamu: %s\n\n"+
+		"Kode ini berlaku 10 menit dan hanya bisa dipakai sekali. Jangan berikan kode ini kepada siapa pun, termasuk yang mengaku dari DuaCincin.\n\n"+
+		"Tidak merasa mendaftar di DuaCincin? Abaikan saja email ini. Tanpa kode ini, tidak ada akun yang dibuat dengan email kamu.\n", code)
+}
+
 // RenderPhoneLinkOTPEmail renders the branded OTP email sent when a user
 // links a WhatsApp number to their DuaCincin account (see internal/whatsapp).
 func RenderPhoneLinkOTPEmail(logoURL, code string) (subject, html string, err error) {

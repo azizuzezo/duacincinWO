@@ -16,6 +16,7 @@ const (
 // Mount registers every /auth/* route (PRD §8.2) onto r.
 func Mount(r chi.Router, deps *Deps) {
 	r.Route("/auth", func(r chi.Router) {
+		r.Post("/register/otp", RequestSignupOTP(deps))
 		r.Post("/client/register", Register(deps, RoleClient, repository.AgreementTypeClientTOS))
 		r.Post("/vendor/register", Register(deps, RoleVendor, repository.AgreementTypeVendorPartnership))
 

@@ -479,7 +479,7 @@ function MobileActionBar(props: PayProps) {
   const amount = b.status === "confirmed" ? b.dp_amount : b.status === "dp_paid" ? b.agreed_price - b.dp_amount : b.agreed_price;
   if (!label) return null;
   return (
-    <div data-action-bar className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-30 border-t border-dc-line bg-dc-white/95 px-4 py-3 shadow-[0_-10px_30px_-18px_rgba(21,17,13,0.35)] backdrop-blur-sm md:hidden">
+    <div data-action-bar className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-30 border-t border-dc-line bg-dc-white/95 px-4 py-3 shadow-[0_-10px_30px_-18px_color-mix(in_srgb,var(--dc-ink)_35%,transparent)] backdrop-blur-sm md:hidden">
       <div className="mx-auto flex max-w-xl items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs text-dc-text-3">{label}</p>

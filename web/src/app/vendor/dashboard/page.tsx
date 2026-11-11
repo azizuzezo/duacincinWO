@@ -170,7 +170,7 @@ function VendorDashboardContent({ user }: { user: CurrentUser }) {
         eyebrow={profile.business_name}
         title={
           <>
-            Hari <span className="dc-em-light">ini</span>
+            Hari <span className="dc-em">ini</span>
           </>
         }
         subtitle={todayLabel()}
@@ -343,7 +343,7 @@ function SectionHead({ id, title, count, href, linkLabel = "Lihat semua" }: { id
       <h2 id={id} className="flex items-baseline gap-2 font-heading text-[1.7rem] leading-tight text-dc-ink">
         {title}
         {count !== undefined && count > 0 && (
-          <span className="inline-flex min-w-7 items-center justify-center rounded-full bg-dc-gold/20 px-2 py-0.5 font-sans text-sm font-bold text-dc-clay tabular-nums">{count}</span>
+          <span className="inline-flex min-w-7 items-center justify-center rounded-full bg-dc-gold-soft px-2 py-0.5 font-sans text-sm font-bold text-dc-clay tabular-nums">{count}</span>
         )}
       </h2>
       {href && (

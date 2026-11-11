@@ -256,11 +256,43 @@ func TestUnknownRoleRefused(t *testing.T) {
 	}
 }
 
-func TestVendorRegistrationRefused(t *testing.T) {
+func TestNewUserBecomesVendorFromVendorForm(t *testing.T) {
 	e := newEnv(t)
 	rec := e.post(t, `{"credential":"good","role":"vendor","accept_terms":true}`)
-	if rec.Code != http.StatusBadRequest || len(e.users.created) != 0 {
+	if rec.Code != http.StatusCreated || len(e.users.created) != 1 {
 		t.Fatalf("status %d created %d", rec.Code, len(e.users.created))
+	}
+	if u := e.users.created[0]; u.Role != auth.RoleVendor {
+		t.Fatalf("role %q", u.Role)
+	}
+	if len(e.agree.recorded) != 1 || e.agree.recorded[0] != "u-new:"+repository.AgreementTypeVendorPartnership {
+		t.Fatalf("vendor agreement not recorded: %v", e.agree.recorded)
+	}
+}
+
+func TestVendorNeedsAgreement(t *testing.T) {
+	e := newEnv(t)
+	rec := e.post(t, `{"credential":"good","role":"vendor"}`)
+	if rec.Code != StatusTermsRequired || len(e.users.created) != 0 {
+		t.Fatalf("status %d created %d", rec.Code, len(e.users.created))
+	}
+}
+
+func TestExistingClientNotUpgradedToVendor(t *testing.T) {
+	e := newEnv(t, activeUser("u-1", "sari@example.com", auth.RoleClient))
+	rec := e.post(t, `{"credential":"good","role":"vendor","accept_terms":true}`)
+	if rec.Code != http.StatusOK || decode(t, rec)["role"] != auth.RoleClient || len(e.users.created) != 0 {
+		t.Fatalf("status %d", rec.Code)
+	}
+}
+
+func TestPrivilegedRoleRefused(t *testing.T) {
+	for _, role := range []string{auth.RoleAdmin, auth.RoleWeddingConsultant, "superuser"} {
+		e := newEnv(t)
+		rec := e.post(t, `{"credential":"good","role":"`+role+`","accept_terms":true}`)
+		if rec.Code != http.StatusBadRequest || len(e.users.created) != 0 {
+			t.Fatalf("%s: status %d created %d", role, rec.Code, len(e.users.created))
+		}
 	}
 }
 

@@ -79,3 +79,44 @@ func ParsePasswordResetTicket(secret, tokenString string) (*ResetClaims, error) 
 	}
 	return claims, nil
 }
+
+// SignupTicketTTL is how long a sign-up code (and the ticket carrying its
+// hash) stays valid.
+const SignupTicketTTL = 10 * time.Minute
+
+const signupScope = "signup"
+
+// SignupClaims carries the hashed sign-up code for one email address. The
+// ticket is returned to the browser after the code is emailed, and must be
+// sent back together with the code to create the account. Only the HMAC of
+// the code is inside, so holding the ticket alone does not reveal the code.
+type SignupClaims struct {
+	Email    string `json:"email"`
+	CodeHash string `json:"ch"`
+	Scope    string `json:"scope"`
+	jwt.RegisteredClaims
+}
+
+func IssueSignupTicket(secret, email, codeHash string) (string, error) {
+	claims := SignupClaims{
+		Email:    email,
+		CodeHash: codeHash,
+		Scope:    signupScope,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(SignupTicketTTL)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(secret))
+}
+
+func ParseSignupTicket(secret, tokenString string) (*SignupClaims, error) {
+	claims := &SignupClaims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
+		return []byte(secret), nil
+	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
+	if err != nil || !token.Valid || claims.Scope != signupScope {
+		return nil, ErrInvalidToken
+	}
+	return claims, nil
+}

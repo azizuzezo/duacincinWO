@@ -19,12 +19,12 @@ const BASE =
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary: "rounded-full bg-dc-ink text-dc-on-dark hover:bg-dc-ink-2 motion-safe:hover:-translate-y-0.5 hover:shadow-lift",
-  gold: "rounded-full bg-linear-135 from-[#e2c27f] via-[#c39c52] to-[#a17d36] text-[#1a140c] motion-safe:hover:-translate-y-0.5 hover:shadow-gold",
+  gold: "rounded-full bg-linear-135 from-dc-gold-antique to-dc-gold text-dc-ink shadow-[inset_0_1px_0_color-mix(in_srgb,white_35%,transparent)] motion-safe:hover:-translate-y-0.5 hover:shadow-gold",
   ghost: "rounded-full border border-dc-line-strong bg-transparent text-dc-ink hover:border-dc-ink hover:bg-dc-ink/[0.03]",
   ghostLight: "rounded-full border border-dc-on-dark/35 bg-dc-ink/25 text-dc-on-dark hover:border-dc-on-dark hover:bg-dc-on-dark/10",
   light: "rounded-full bg-dc-on-dark text-dc-ink hover:bg-dc-white motion-safe:hover:-translate-y-0.5 hover:shadow-lift",
   quiet: "rounded-md px-2! text-dc-clay underline-offset-4 hover:bg-dc-cream hover:underline",
-  danger: "rounded-full bg-dc-danger text-white hover:bg-[#8a2c22]",
+  danger: "rounded-full bg-dc-danger text-white hover:bg-dc-danger-strong",
 };
 
 const SIZES: Record<ButtonSize, string> = {
