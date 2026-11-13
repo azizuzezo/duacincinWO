@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
-import { AgreementNotice } from "@/components/AgreementCheckbox";
+import { AgreementCheckbox, AgreementNotice } from "@/components/AgreementCheckbox";
 import { AuthCard } from "@/components/AuthCard";
 import { AuthDivider, GoogleSignIn } from "@/components/auth/GoogleSignIn";
 import { Button } from "@/components/Button";
@@ -73,6 +73,8 @@ function RegisterContent() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // Vendors tick the partnership agreement; couples accept by signing up.
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   // Step 2: the email code. The ticket comes from /register/otp and goes
@@ -120,8 +122,7 @@ function RegisterContent() {
         email,
         password,
         full_name: name,
-        // Finishing signup is the acceptance (stated next to the buttons).
-        accept_terms: true,
+        accept_terms: role === "vendor" ? acceptTerms : true,
         signup_ticket: ticket,
         otp_code: otp,
       });
@@ -158,6 +159,7 @@ function RegisterContent() {
     setName("");
     setEmail("");
     setPassword("");
+    setAcceptTerms(false);
     setError(null);
   }
 
@@ -234,13 +236,11 @@ function RegisterContent() {
           >
             Ganti peran
           </button>
-          <AgreementNotice
-            href={ROLE_CONFIG[role].agreementHref}
-            label={ROLE_CONFIG[role].agreementLabel}
-            role={role === "vendor" ? "vendor" : "calon pengantin"}
-          />
+          {role === "client" && (
+            <AgreementNotice href={ROLE_CONFIG.client.agreementHref} label={ROLE_CONFIG.client.agreementLabel} role="calon pengantin" />
+          )}
           <div className="flex flex-col gap-5 empty:hidden">
-            <GoogleSignIn text="signup_with" acceptTerms role={role} />
+            <GoogleSignIn text="signup_with" acceptTerms={role === "vendor" ? acceptTerms : true} role={role} />
             <AuthDivider />
           </div>
           <TextField
@@ -258,10 +258,18 @@ function RegisterContent() {
             minLength={8}
             hint="Minimal 8 karakter."
           />
+          {role === "vendor" && (
+            <AgreementCheckbox
+              checked={acceptTerms}
+              onChange={setAcceptTerms}
+              href={ROLE_CONFIG.vendor.agreementHref}
+              label={ROLE_CONFIG.vendor.agreementLabel}
+            />
+          )}
           {error && <p role="alert" className="text-sm text-dc-danger">
             {error}
           </p>}
-          <Button type="submit" loading={loading}>
+          <Button type="submit" loading={loading} disabled={role === "vendor" && !acceptTerms}>
             Lanjut, kirim kode ke email
           </Button>
         </form>

@@ -43,7 +43,7 @@ const SECTIONS: LegalSection[] = [
     body: (
       <ol className={ol}>
         <li>
-          Dengan menyelesaikan pendaftaran akun vendor, Mitra Vendor menyatakan telah membaca, memahami, dan menyetujui seluruh isi Perjanjian ini.
+          Dengan mencentang pernyataan persetujuan dan menyelesaikan pendaftaran akun vendor, Mitra Vendor menyatakan telah membaca, memahami, dan menyetujui seluruh isi Perjanjian ini.
           Persetujuan tersebut merupakan kesepakatan yang sah dan mengikat sebagaimana dimaksud Pasal 1320 dan Pasal 1338 Kitab Undang-Undang Hukum
           Perdata.
         </li>
@@ -378,7 +378,7 @@ export default function VendorAgreementPage() {
     <LegalPage
       title="Perjanjian Kemitraan Vendor DuaCincin"
       current="/legal/vendor-agreement"
-      intro="Berlaku untuk setiap vendor yang mendaftar di DuaCincin. Dengan menyelesaikan pendaftaran akun vendor, kamu menyetujui perjanjian ini."
+      intro="Berlaku untuk setiap vendor yang mendaftar di DuaCincin. Saat mendaftar, kamu mencentang persetujuan atas perjanjian ini."
       sections={SECTIONS}
     />
   );

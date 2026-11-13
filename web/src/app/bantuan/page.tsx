@@ -123,9 +123,9 @@ const TOPICS: Topic[] = [
     items: [
       faq(
         "Bagaimana usaha saya bisa tampil di direktori?",
-        "Daftar sebagai vendor (dengan mendaftar, kamu menyetujui Perjanjian Kemitraan), lalu lengkapi profil, portofolio, dan paket. Profilmu muncul di direktori setelah Admin menyetujuinya.",
+        "Daftar sebagai vendor dan centang persetujuan Perjanjian Kemitraan, lalu lengkapi profil, portofolio, dan paket. Profilmu muncul di direktori setelah Admin menyetujuinya.",
         <>
-          Daftar sebagai vendor (dengan mendaftar, kamu menyetujui Perjanjian Kemitraan), lalu lengkapi profil, portofolio, dan paket. Profilmu muncul di direktori setelah Admin menyetujuinya.{" "}
+          Daftar sebagai vendor dan centang persetujuan Perjanjian Kemitraan, lalu lengkapi profil, portofolio, dan paket. Profilmu muncul di direktori setelah Admin menyetujuinya.{" "}
           <Link href="/untuk-vendor">Lihat cara bergabung</Link>.
         </>,
       ),

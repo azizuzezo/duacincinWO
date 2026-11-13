@@ -26,7 +26,7 @@ const SHOT = "/showcase/pages";
 const SIGNUP: JoinStep[] = [
   {
     title: "Buat akun vendor",
-    body: "Isi nama usaha, email, dan kata sandi. Dengan mendaftar, kamu menyetujui Perjanjian Kemitraan.",
+    body: "Isi nama usaha, email, dan kata sandi, lalu centang persetujuan Perjanjian Kemitraan.",
     result: "Satu formulir pendek",
     screen: { src: `${SHOT}/v-daftar.webp`, alt: "Formulir daftar sebagai vendor: nama usaha, email, kata sandi, dan persetujuan perjanjian", kind: "phone" },
   },
