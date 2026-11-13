@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Reveal } from "@/components/landing/Reveal";
 import { BrandLogo } from "@/components/ui/BrandLogo";
+import { COMPANY, COMPANY_PAGE } from "@/lib/company";
 
 const EXPLORE = [
   { href: "/vendors", label: "Cari vendor" },
@@ -15,6 +16,7 @@ const HELP = [
   { href: "/legal/client-tos", label: "Ketentuan layanan client" },
   { href: "/legal/vendor-agreement", label: "Perjanjian kemitraan vendor" },
   { href: "/kredit", label: "Kredit foto" },
+  { href: COMPANY_PAGE, label: "Informasi perusahaan" },
 ];
 
 const LINK = "inline-flex min-h-11 items-center text-sm text-dc-on-dark/80 transition-colors hover:text-dc-gold-antique";
@@ -74,7 +76,13 @@ export function Footer() {
           </nav>
         </div>
         <div className="mt-14 flex flex-col gap-3 border-t border-dc-ink-3 pt-6 text-xs text-dc-on-dark/70 sm:flex-row sm:items-center sm:justify-between">
-          <p>&copy; {new Date().getFullYear()} DuaCincin. Dibuat di Indonesia.</p>
+          <p>
+            &copy; {new Date().getFullYear()} DuaCincin, dikelola{" "}
+            <Link href={COMPANY_PAGE} className="underline decoration-dc-on-dark/40 underline-offset-4 transition-colors hover:text-dc-gold-antique hover:decoration-dc-gold-antique">
+              {COMPANY.name}
+            </Link>
+            . Dibuat di Indonesia.
+          </p>
           <div className="flex gap-x-6">
             <Link href="/login" className={LINK}>
               Masuk

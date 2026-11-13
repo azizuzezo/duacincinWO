@@ -2,12 +2,13 @@
 
 | | |
 |---|---|
-| **Versi** | 0.4 |
-| **Tanggal** | 2026-09-09 |
+| **Versi** | 0.5 |
+| **Tanggal** | 2026-11-13 |
 | **Status** | Seluruh Fase 0–7 (MVP) selesai diimplementasikan — menunggu review pemilik produk sebelum go-live nyata (lihat §12 untuk gap yang masih terbuka: review legal, kredensial Midtrans sungguhan, proteksi bot, dsb.) |
 | **Terkait** | [engineering.md](./engineering.md) — roadmap fase & log perubahan teknis |
 
 **Riwayat revisi:**
+- v0.5 (2026-11-13) — Badan hukum pengelola terisi: PT Karsa Loka Semesta (§11.1, §11.3, §12); data legalitas tampil di halaman publik `/perusahaan`.
 - v0.4 (2026-09-09) — Fase 7 (final) selesai: persetujuan legal jadi wajib & tercatat saat daftar (§8.6), sanksi akun (suspend/terminate) tersambung ke login, dispute otomatis dari chat ter-flag, komisi bisa dikonfigurasi per vendor, dashboard Admin. Seluruh 8 fase MVP di roadmap §13 kini selesai dibangun & diverifikasi (curl + Playwright browser sungguhan).
 - v0.3 (2026-09-09) — Menambahkan checklist UX/konten/SEO (§10.6–§10.9), memperluas persyaratan keamanan (§10.2) dengan item konkret (pemisahan kunci Supabase, RLS vs otorisasi di kode, IDOR, mass assignment, proteksi bot, batas biaya), dan draft Kebijakan Privasi (§11.3).
 - v0.2 (2026-09-09) — Menambahkan peran **Wedding Consultant** (staf internal DuaCincin) dan alur pemesanan end-to-end (§8.11), menyelaraskan milestone escrow (§8.5) dengan alur tersebut.
@@ -285,11 +286,11 @@ Prinsip yang sudah ditegakkan sejak Fase 1 (lihat engineering.md) dan **wajib te
 
 ## 11. Draft Perjanjian Kemitraan Vendor & Ketentuan Layanan
 
-> ⚠️ **Disclaimer penting:** Teks di bawah ini adalah **draft awal** untuk kebutuhan produk (ditampilkan di alur onboarding vendor/client), disusun berdasarkan pola umum perjanjian kemitraan marketplace. **Ini bukan nasihat hukum** dan **wajib direview serta disahkan oleh advokat/konsultan hukum** sebelum digunakan secara resmi mengikat pengguna nyata. Placeholder seperti `[Nama Badan Hukum]`, `[X%]`, `[Kota Domisili Hukum]` wajib diisi sebelum publish.
+> ⚠️ **Disclaimer penting:** Teks di bawah ini adalah **draft awal** untuk kebutuhan produk (ditampilkan di alur onboarding vendor/client), disusun berdasarkan pola umum perjanjian kemitraan marketplace. **Ini bukan nasihat hukum** dan **wajib direview serta disahkan oleh advokat/konsultan hukum** sebelum digunakan secara resmi mengikat pengguna nyata. Placeholder seperti `[X%]`, `[Kota Domisili Hukum]` wajib diisi sebelum publish. Badan hukum pengelola sudah terisi: PT Karsa Loka Semesta.
 
 ### 11.1 Perjanjian Kemitraan Vendor DuaCincin (Ringkasan Klausul)
 
-1. **Definisi** — "Platform" berarti aplikasi dan situs DuaCincin yang dioperasikan oleh `[Nama Badan Hukum, mis. PT DuaCincin Bahagia Indonesia]` ("DuaCincin"). "Mitra Vendor" berarti pihak penyedia jasa yang telah disetujui mendaftar di Platform. "Transaksi Difasilitasi" berarti setiap transaksi jasa pernikahan yang bermula dari pertemuan, diskusi, atau paparan (exposure) yang terjadi di Platform, baik disepakati di dalam maupun di luar Platform.
+1. **Definisi** — "Platform" berarti aplikasi dan situs DuaCincin yang dioperasikan oleh PT Karsa Loka Semesta ("DuaCincin"). "Mitra Vendor" berarti pihak penyedia jasa yang telah disetujui mendaftar di Platform. "Transaksi Difasilitasi" berarti setiap transaksi jasa pernikahan yang bermula dari pertemuan, diskusi, atau paparan (exposure) yang terjadi di Platform, baik disepakati di dalam maupun di luar Platform.
 
 2. **Kewajiban Mitra Vendor** — Mitra Vendor wajib memproses seluruh komunikasi awal, negosiasi, kesepakatan harga, dan pembayaran Transaksi Difasilitasi melalui fitur yang disediakan Platform (chat in-app, sistem booking, dan sistem pembayaran/escrow Platform).
 
@@ -339,7 +340,7 @@ Prinsip yang sudah ditegakkan sejak Fase 1 (lihat engineering.md) dan **wajib te
 - **Kapasitas tim Wedding Consultant:** alur §8.11 mengasumsikan ada tim manusia yang menjalankan peran ini sejak MVP — perlu dipastikan ketersediaannya (jumlah staf, jam operasional/SLA respons chat) sebelum go-live, karena ini bukan sesuatu yang bisa "dikerjakan lewat kode".
 - **Utang teknis Fase 1:** proteksi bot (Cloudflare Turnstile, §7/§8.2/§10.2) belum diimplementasikan di form daftar/lupa password yang sudah dibangun — perlu ditambahkan sebelum go-live, mengandalkan rate limiting saja untuk sementara.
 - **Tool analytics belum final:** §10.8 mensyaratkan analytics sejak hari pertama tapi tool-nya (Plausible/PostHog/GA4/lainnya) belum dipilih — pilihan ini juga menentukan isi §11.3 (data apa yang dibagi ke pihak ketiga).
-- **Kebijakan Privasi & UU PDP:** draft §11.3 masih kerangka, belum diisi detail final (nama badan hukum, kontak DPO) dan belum direview hukum — sama urgensinya dengan §11.1/§11.2 sebelum go-live nyata.
+- **Kebijakan Privasi & UU PDP:** draft §11.3 masih kerangka, belum diisi detail final (kontak DPO) dan belum direview hukum; nama badan hukum sudah ada (PT Karsa Loka Semesta, data legalitas di halaman `/perusahaan`) — sama urgensinya dengan §11.1/§11.2 sebelum go-live nyata.
 
 ---
 

@@ -38,6 +38,18 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 
 ## Changelog
 
+### 2026-11-13 — Informasi perusahaan: DuaCincin dikelola PT Karsa Loka Semesta
+- **Fase:** di luar roadmap (legal/konten), menutup sebagian gap §12 "nama badan hukum".
+- **Apa yang berubah:**
+  - Halaman publik baru `/perusahaan` ("Informasi perusahaan"): kalimat bahwa DuaCincin dioperasikan PT Karsa Loka Semesta, lalu daftar `dl` berisi nama perseroan, nomor sertifikat pendirian (AHU), NIB, dan NPWP perseroan. Memakai `PublicShell` dan header kertas yang sama dengan `/kredit`.
+  - Footer publik (dipakai landing dan semua halaman publik): baris hak cipta jadi "© {tahun} DuaCincin, dikelola PT Karsa Loka Semesta. Dibuat di Indonesia." dengan nama PT bertaut ke `/perusahaan`, plus tautan "Informasi perusahaan" di grup "Bantuan dan legal". NIB/NPWP/AHU sengaja tidak tampil di landing.
+  - `/perusahaan` masuk `sitemap.ts`. Tidak dibuat `opengraph-image` khusus karena halaman legal dan `/kredit` juga memakai gambar bawaan root.
+  - PRD v0.5: placeholder `[Nama Badan Hukum, mis. PT DuaCincin Bahagia Indonesia]` di §11.1 diganti PT Karsa Loka Semesta; catatan §11 dan §12 tentang nama badan hukum diperbarui.
+- **File/komponen utama:** `web/src/lib/company.ts` (baru, satu-satunya sumber data legal), `web/src/app/perusahaan/page.tsx` (baru), `web/src/components/landing/Footer.tsx`, `web/src/app/sitemap.ts`, `PRD.md`.
+- **Keputusan/asumsi:** Hanya empat data yang diberikan pemilik yang ditampilkan (tanpa alamat, direksi, modal, KBLI). Teks perjanjian vendor dan ketentuan client di aplikasi tidak menyebut badan hukum sama sekali (tidak ada placeholder di kode), jadi tidak diubah; kalau nama PT mau masuk ke klausul Definisi, itu perubahan teks perjanjian yang ikut versi persetujuan (`accept_terms`) dan perlu keputusan terpisah.
+- **Verifikasi:** `npm run lint` dan `tsc --noEmit` bersih, `npm run build` sukses (`/perusahaan` prerender statis). HTML hasil build dicek: `/perusahaan` memuat keempat data dengan judul "Informasi perusahaan | DuaCincin"; landing memuat baris footer di atas dan dua tautan ke `/perusahaan`, tanpa NIB/NPWP/AHU; sitemap memuat `/perusahaan`.
+- **Status:** Done
+
 ### 2026-09-10 — Vendor Dashboard bagian 1/4: Profil terpisah dari asumsi lama, ganti nama butuh approval, ubah password sendiri
 - **Fase:** 2 (Direktori Vendor). Permintaan pemilik produk untuk merombak Vendor Dashboard secara menyeluruh (Profile, Portofolio, Booking, Pesan) ditandai sebagai 4 pembangunan terpisah, bukan satu pekerjaan besar (Pesan/chat khususnya jauh lebih besar dari yang lain, chat saat ini murni REST + polling 4 detik, belum ada read receipt/reply/attachment sama sekali). Ini bagian pertama: Profil.
 - **Keputusan yang dikonfirmasi sebelum eksekusi**: sebelumnya SETIAP edit profil (termasuk cuma ubah harga atau deskripsi) mereset status vendor ke "pending" dan harus di-review ulang Admin. Sekarang hanya perubahan **Nama Vendor** yang butuh approval; kategori/kota/harga/deskripsi tersimpan langsung.
