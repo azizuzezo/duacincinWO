@@ -31,7 +31,7 @@ func RequestSignupOTP(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req signupOTPRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 		req.Email = strings.TrimSpace(strings.ToLower(req.Email))

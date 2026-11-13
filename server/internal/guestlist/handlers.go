@@ -91,7 +91,7 @@ func SubmitRSVP(deps *Deps) http.HandlerFunc {
 
 		var req submitRSVPRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 		req.Name = strings.TrimSpace(req.Name)
@@ -175,7 +175,7 @@ func CreateGuest(deps *Deps) http.HandlerFunc {
 
 		var req upsertGuestRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 		req.Name = strings.TrimSpace(req.Name)
@@ -210,7 +210,7 @@ func UpdateGuest(deps *Deps) http.HandlerFunc {
 
 		var req upsertGuestRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 		req.Name = strings.TrimSpace(req.Name)
@@ -298,7 +298,7 @@ func UpdateRSVPLink(deps *Deps) http.HandlerFunc {
 
 		var req updateRSVPLinkRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 
@@ -306,7 +306,7 @@ func UpdateRSVPLink(deps *Deps) http.HandlerFunc {
 		if req.EventDate != nil && *req.EventDate != "" {
 			parsed, err := time.Parse("2006-01-02", *req.EventDate)
 			if err != nil {
-				httpx.Error(w, http.StatusBadRequest, "event_date harus format YYYY-MM-DD")
+				httpx.Error(w, http.StatusBadRequest, "tanggal acara tidak valid")
 				return
 			}
 			eventDate = &parsed

@@ -30,7 +30,7 @@ type Station = 0 | 1 | 2;
 const STAGES: { station: Station; status: BookingStatus; short: string; title: string; body: string }[] = [
   { station: 0, status: "requested", short: "Ajukan", title: "Booking diajukan", body: "Tanggal dan paket hasil chat kamu ajukan. Belum ada uang yang berpindah." },
   { station: 0, status: "confirmed", short: "Disetujui", title: "Vendor mengonfirmasi", body: "Tinggal bayar DP untuk mengunci tanggal." },
-  { station: 1, status: "dp_paid", short: "Bayar DP", title: "DP masuk ke escrow", body: "Dibayar lewat Midtrans ke akun penampung DuaCincin, belum ke vendor." },
+  { station: 1, status: "dp_paid", short: "Bayar DP", title: "DP masuk ke escrow", body: "Dibayar ke akun penampung DuaCincin, belum ke vendor." },
   { station: 1, status: "full_paid", short: "Pelunasan", title: "Pelunasan tetap ditahan", body: "Sampai hari-H, uangmu tetap di escrow." },
   { station: 2, status: "completed", short: "Selesai", title: "Kamu konfirmasi, dana diteruskan", body: "Setelah acara selesai, dana diteruskan ke vendor, dikurangi komisi platform." },
 ];
@@ -221,7 +221,7 @@ export function EscrowCoin() {
                 <Flow
                   active={stage >= 2}
                   label={stage <= 1 ? "Belum ada transfer" : stage === 2 ? `DP 30% · ${rp(DP)}` : `Pelunasan · ${rp(REST)}`}
-                  meta={stage <= 1 ? "DP dibayar setelah vendor setuju" : "Lewat Midtrans, ke akun penampung"}
+                  meta={stage <= 1 ? "DP dibayar setelah vendor setuju" : "Masuk ke akun penampung DuaCincin"}
                 />
 
                 {/* The vault */}

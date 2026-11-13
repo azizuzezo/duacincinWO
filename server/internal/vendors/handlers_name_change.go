@@ -45,7 +45,7 @@ func RequestNameChange(deps *Deps) http.HandlerFunc {
 
 		var req requestNameChangeRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 		req.RequestedName = strings.TrimSpace(req.RequestedName)

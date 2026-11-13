@@ -25,7 +25,7 @@ func UploadPortfolio(deps *Deps) http.HandlerFunc {
 		}
 
 		if !deps.Storage.Configured() {
-			httpx.Error(w, http.StatusServiceUnavailable, "upload gambar belum tersedia")
+			httpx.Error(w, http.StatusServiceUnavailable, "unggah foto sedang tidak tersedia, coba lagi nanti")
 			return
 		}
 

@@ -121,7 +121,7 @@ func bulkApproveVendors(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req bulkApproveRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 
@@ -170,7 +170,7 @@ func setCommission(deps *Deps) http.HandlerFunc {
 		id := chi.URLParam(r, "id")
 		var req setCommissionRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 		if req.Rate != nil && (*req.Rate < 0 || *req.Rate > 1) {
@@ -315,7 +315,7 @@ func resolveDispute(deps *Deps) http.HandlerFunc {
 
 		var req resolveDisputeRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 
@@ -417,7 +417,7 @@ func resolveNameChange(deps *Deps) http.HandlerFunc {
 
 		var req resolveNameChangeRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 

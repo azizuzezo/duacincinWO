@@ -95,7 +95,7 @@ func SignIn(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req signInRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 		role := req.Role

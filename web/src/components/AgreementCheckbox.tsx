@@ -34,3 +34,22 @@ export function AgreementCheckbox({
     </label>
   );
 }
+
+/** Signup consent by action: shown before the signup buttons, so finishing
+ * registration is the acceptance (no checkbox). The server records the
+ * accepted version and time. */
+export function AgreementNotice({ href, label, role }: { href: string; label: string; role: string }) {
+  return (
+    <p className="rounded-md border border-dc-line bg-dc-white px-4 py-3 text-sm leading-relaxed text-dc-text-2">
+      Dengan mendaftar sebagai {role}, kamu menyatakan telah membaca dan menyetujui{" "}
+      <Link
+        href={href}
+        target="_blank"
+        className="font-semibold text-dc-ink underline decoration-dc-gold underline-offset-4 hover:text-dc-clay"
+      >
+        {label}
+      </Link>
+      .
+    </p>
+  );
+}

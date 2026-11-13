@@ -37,7 +37,7 @@ func Inbound(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req inboundRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil || req.Phone == "" || req.JID == "" {
-			httpx.Error(w, http.StatusBadRequest, "invalid body")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 

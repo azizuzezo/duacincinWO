@@ -8,11 +8,8 @@
 // Two forms share one drawing:
 // - <GoldArch>: the standalone ornament in the old 969 x 900 box, so every
 //   existing layout keeps its size (auth, 404, RSVP, vendor page, planner).
-// - <GoldArchFrame>: the gate with a 3:4 photo window cut into it. Children
-//   render inside the window (same semicircle as the gate's opening), so the
-//   photo and the gate read as one object. `shineKey` replays a single light
-//   sweep over the gold when it changes (a new couple steps in); it never
-//   loops and is off under prefers-reduced-motion.
+// - <GoldArchFrame>: a plain round-topped photo window with a gold hairline,
+//   used for the couple photos (hero, auth). No gate ornament around it.
 // Decorative only: aria-hidden.
 
 import type { CSSProperties, ReactNode } from "react";
@@ -76,7 +73,7 @@ function crest(g: Geo) {
   return { outline, inner, stem, tendrils, ring: { y: y0 - 30 * g.s, dx: 7 * g.s, r: 9 * g.s }, finial: { x: g.cx, y: y0 - 122 * g.s, r: 3.2 * g.s } };
 }
 
-function Gate({ g, id, W, H, shineKey, plate = false }: { g: Geo; id: string; W: number; H: number; shineKey?: string; plate?: boolean }) {
+function Gate({ g, id, W, H, shineKey }: { g: Geo; id: string; W: number; H: number; shineKey?: string }) {
   const { cx, r, apex, base, s } = g;
   const cy = apex + r;
   const ri = r - 1;
@@ -132,18 +129,8 @@ function Gate({ g, id, W, H, shineKey, plate = false }: { g: Geo; id: string; W:
       {/* Ground shadow, so the gate stands on the scene instead of floating. */}
       <ellipse cx={cx} cy={base + 18 * s} rx={r + 100 * s} ry={22 * s} fill={`url(#${id}-floor)`} />
 
-      {/* Dark lacquer backing (frame only): sits under the band, the shoulders
-          and the crest so the gold reads against any backdrop photo instead of
-          melting into warm walls and roofs. */}
-      {plate && (
-        <g fill="#120c07">
-          <path d={ringPath(g, r - 2 * s, r + 46 * s)} fillRule="evenodd" fillOpacity="0.86" />
-          <path d={c.outline} fillOpacity="0.92" />
-        </g>
-      )}
-
       {/* Kayon crest with the two rings at its heart. */}
-      <path d={c.outline} fill={metal} fillOpacity={plate ? 0.1 : 0.16} stroke={metal} strokeWidth={2.4 * s} strokeLinejoin="round" />
+      <path d={c.outline} fill={metal} fillOpacity="0.16" stroke={metal} strokeWidth={2.4 * s} strokeLinejoin="round" />
       <path d={c.inner} stroke={metal} strokeWidth={1.1 * s} opacity="0.75" />
       <path d={c.stem} stroke={metal} strokeWidth={1.4 * s} strokeLinecap="round" />
       <path d={c.tendrils} stroke={metal} strokeWidth={1.5 * s} strokeLinecap="round" />
@@ -176,8 +163,6 @@ function Gate({ g, id, W, H, shineKey, plate = false }: { g: Geo; id: string; W:
       <path d={archPath(g, r + 5 * s)} stroke="#fff3d1" strokeOpacity="0.55" strokeWidth={1 * s} />
       <path d={archPath(g, ro)} stroke="#5c431a" strokeOpacity="0.45" strokeWidth={1 * s} />
       <path d={archPath(g, r + 0.5 * s)} stroke="#140e09" strokeOpacity="0.65" strokeWidth={2.5 * s} />
-      {/* Ivory fillet between photo and gold (frame only), a crisp inner edge. */}
-      {plate && <path d={archPath(g, r + 2.2 * s)} stroke="#fbf1d6" strokeOpacity="0.9" strokeWidth={1.4 * s} />}
 
       {/* Carved capitals at the spring line and bases at the foot of each post. */}
       {imposts.map((im) => (
@@ -226,26 +211,18 @@ export function GoldArch({ className = "" }: { className?: string }) {
   );
 }
 
-const F_W = 580;
-const F_H = 724;
-const F_GEO: Geo = { cx: F_W / 2, r: 200, apex: 158, base: 158 + (400 * 4) / 3, s: 1 };
-const pct = (n: number, d: number) => `${(n / d) * 100}%`;
-
-/** Gold gate with a 3:4 arch window; children fill the window. Size it by height (h-full w-auto) or width. */
-export function GoldArchFrame({ className = "", children, shineKey }: { className?: string; children: ReactNode; shineKey?: string }) {
-  const g = F_GEO;
+/** Arch photo frame: the photo in a round-topped window with one gold
+ * hairline traced a little outside it and a soft shadow. No ornament, so the
+ * picture stays the subject. Children fill the window. Size it by height
+ * (h-full) or width. */
+export function GoldArchFrame({ className = "", children }: { className?: string; children: ReactNode }) {
   return (
-    <div className={`relative aspect-[580/724] ${className}`}>
-      <div
-        className={styles.window}
-        style={{ left: pct(g.cx - g.r, F_W), top: pct(g.apex, F_H), width: pct(2 * g.r, F_W), height: pct(g.base - g.apex, F_H) }}
-      >
+    <div className={`relative aspect-[3/4] p-[3.5%] ${className}`}>
+      <div aria-hidden className={styles.hairline} />
+      <div className={styles.window}>
         {children}
         <div className={styles.light} />
       </div>
-      <svg aria-hidden viewBox={`0 0 ${F_W} ${F_H}`} className={`pointer-events-none absolute inset-0 h-full w-full overflow-visible ${styles.gate}`} fill="none">
-        <Gate g={g} id="dc-gate-f" W={F_W} H={F_H} shineKey={shineKey} plate />
-      </svg>
     </div>
   );
 }

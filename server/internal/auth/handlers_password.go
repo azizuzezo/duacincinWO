@@ -31,7 +31,7 @@ func ForgotPassword(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req forgotPasswordRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 		req.Email = strings.TrimSpace(strings.ToLower(req.Email))
@@ -49,7 +49,7 @@ func ForgotPassword(deps *Deps) http.HandlerFunc {
 			return
 		}
 		if !emailOK || !ipOK {
-			httpx.Error(w, http.StatusTooManyRequests, "terlalu banyak permintaan OTP, coba lagi nanti")
+			httpx.Error(w, http.StatusTooManyRequests, "terlalu banyak permintaan kode, coba lagi nanti")
 			return
 		}
 
@@ -110,7 +110,7 @@ func VerifyOTP(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req verifyOTPRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 		req.Email = strings.TrimSpace(strings.ToLower(req.Email))
@@ -163,7 +163,7 @@ func ResetPassword(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req resetPasswordRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 		if len(req.NewPassword) < minPasswordLength {
@@ -211,7 +211,7 @@ func ChangePassword(deps *Deps) http.HandlerFunc {
 
 		var req changePasswordRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 		if len(req.NewPassword) < minPasswordLength {

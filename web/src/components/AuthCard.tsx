@@ -130,7 +130,7 @@ function World({ variant, holdRef }: { variant: Variant; holdRef: React.RefObjec
         </motion.div>
         <motion.div className="absolute inset-x-0 bottom-0 flex h-full justify-center" style={{ x: coupleX, y: coupleY }}>
           {/* Gold gate with the couple in its window: one object, same as the home hero. */}
-          <GoldArchFrame className="h-full" shineKey={scene.key}>
+          <GoldArchFrame className="h-full">
             <AnimatePresence initial={false} mode="popLayout">
               <motion.div
                 key={scene.key}

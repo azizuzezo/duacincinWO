@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
-import { AgreementCheckbox } from "@/components/AgreementCheckbox";
+import { AgreementNotice } from "@/components/AgreementCheckbox";
 import { AuthCard } from "@/components/AuthCard";
 import { AuthDivider, GoogleSignIn } from "@/components/auth/GoogleSignIn";
 import { Button } from "@/components/Button";
@@ -73,7 +73,6 @@ function RegisterContent() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [acceptTerms, setAcceptTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   // Step 2: the email code. The ticket comes from /register/otp and goes
@@ -121,7 +120,8 @@ function RegisterContent() {
         email,
         password,
         full_name: name,
-        accept_terms: acceptTerms,
+        // Finishing signup is the acceptance (stated next to the buttons).
+        accept_terms: true,
         signup_ticket: ticket,
         otp_code: otp,
       });
@@ -158,7 +158,6 @@ function RegisterContent() {
     setName("");
     setEmail("");
     setPassword("");
-    setAcceptTerms(false);
     setError(null);
   }
 
@@ -235,8 +234,13 @@ function RegisterContent() {
           >
             Ganti peran
           </button>
+          <AgreementNotice
+            href={ROLE_CONFIG[role].agreementHref}
+            label={ROLE_CONFIG[role].agreementLabel}
+            role={role === "vendor" ? "vendor" : "calon pengantin"}
+          />
           <div className="flex flex-col gap-5 empty:hidden">
-            <GoogleSignIn text="signup_with" acceptTerms={acceptTerms} role={role} />
+            <GoogleSignIn text="signup_with" acceptTerms role={role} />
             <AuthDivider />
           </div>
           <TextField
@@ -254,16 +258,10 @@ function RegisterContent() {
             minLength={8}
             hint="Minimal 8 karakter."
           />
-          <AgreementCheckbox
-            checked={acceptTerms}
-            onChange={setAcceptTerms}
-            href={ROLE_CONFIG[role].agreementHref}
-            label={ROLE_CONFIG[role].agreementLabel}
-          />
           {error && <p role="alert" className="text-sm text-dc-danger">
             {error}
           </p>}
-          <Button type="submit" loading={loading} disabled={!acceptTerms}>
+          <Button type="submit" loading={loading}>
             Lanjut, kirim kode ke email
           </Button>
         </form>

@@ -37,7 +37,7 @@ func UploadAttachment(deps *Deps) http.HandlerFunc {
 		}
 
 		if !deps.Storage.Configured() {
-			httpx.Error(w, http.StatusServiceUnavailable, "upload lampiran belum tersedia")
+			httpx.Error(w, http.StatusServiceUnavailable, "unggah lampiran sedang tidak tersedia, coba lagi nanti")
 			return
 		}
 

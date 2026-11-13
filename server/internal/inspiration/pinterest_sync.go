@@ -44,13 +44,13 @@ type syncPinterestResponse struct {
 func SyncPinterest(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !deps.Storage.Configured() {
-			httpx.Error(w, http.StatusServiceUnavailable, "upload gambar belum tersedia")
+			httpx.Error(w, http.StatusServiceUnavailable, "unggah foto sedang tidak tersedia, coba lagi nanti")
 			return
 		}
 
 		var req syncPinterestRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 		boardURL := strings.TrimSpace(req.BoardURL)
@@ -74,7 +74,7 @@ func SyncPinterest(deps *Deps) http.HandlerFunc {
 
 		candidates, err := expandIDRange(seedIDs)
 		if err != nil {
-			httpx.Error(w, http.StatusInternalServerError, "gagal memproses ID pin dari board")
+			httpx.Error(w, http.StatusInternalServerError, "gagal membaca foto dari board Pinterest")
 			return
 		}
 

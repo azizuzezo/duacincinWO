@@ -121,7 +121,7 @@ func applyPaidTransaction(deps *Deps, r *http.Request, tx *repository.Transactio
 func DevSimulatePayment(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if deps.Midtrans.Configured() {
-			httpx.Error(w, http.StatusForbidden, "simulasi hanya tersedia saat Midtrans belum dikonfigurasi")
+			httpx.Error(w, http.StatusForbidden, "pembayaran percobaan tidak tersedia")
 			return
 		}
 
@@ -136,7 +136,7 @@ func DevSimulatePayment(deps *Deps) http.HandlerFunc {
 			Type string `json:"type"`
 		}
 		if err := httpx.DecodeJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 
@@ -170,18 +170,18 @@ func MidtransWebhook(deps *Deps, serverKey string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 		if err != nil {
-			httpx.Error(w, http.StatusBadRequest, "invalid body")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 
 		var n midtransNotification
 		if err := json.Unmarshal(body, &n); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "invalid body")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 
 		if !payment.VerifySignature(n.OrderID, n.StatusCode, n.GrossAmount, serverKey, n.SignatureKey) {
-			httpx.Error(w, http.StatusUnauthorized, "invalid signature")
+			httpx.Error(w, http.StatusUnauthorized, "permintaan tidak sah")
 			return
 		}
 

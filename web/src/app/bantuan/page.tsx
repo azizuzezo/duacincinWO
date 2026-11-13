@@ -49,7 +49,7 @@ const TOPICS: Topic[] = [
       ),
       faq(
         "Berapa DP yang harus dibayar?",
-        "DP 30% dari harga yang kamu sepakati dengan vendor, dibayar lewat Midtrans setelah vendor mengonfirmasi booking. Sisanya kamu lunasi sebelum technical meeting. Keduanya ditahan escrow sampai acara selesai.",
+        "DP 30% dari harga yang kamu sepakati dengan vendor, dibayar lewat DuaCincin setelah vendor mengonfirmasi booking. Sisanya kamu lunasi sebelum technical meeting. Keduanya ditahan escrow sampai acara selesai.",
       ),
       faq(
         "Boleh bayar langsung ke rekening vendor?",
@@ -123,9 +123,9 @@ const TOPICS: Topic[] = [
     items: [
       faq(
         "Bagaimana usaha saya bisa tampil di direktori?",
-        "Daftar sebagai vendor dan setujui Perjanjian Kemitraan, lalu lengkapi profil, portofolio, dan paket. Profilmu muncul di direktori setelah Admin menyetujuinya.",
+        "Daftar sebagai vendor (dengan mendaftar, kamu menyetujui Perjanjian Kemitraan), lalu lengkapi profil, portofolio, dan paket. Profilmu muncul di direktori setelah Admin menyetujuinya.",
         <>
-          Daftar sebagai vendor dan setujui Perjanjian Kemitraan, lalu lengkapi profil, portofolio, dan paket. Profilmu muncul di direktori setelah Admin menyetujuinya.{" "}
+          Daftar sebagai vendor (dengan mendaftar, kamu menyetujui Perjanjian Kemitraan), lalu lengkapi profil, portofolio, dan paket. Profilmu muncul di direktori setelah Admin menyetujuinya.{" "}
           <Link href="/untuk-vendor">Lihat cara bergabung</Link>.
         </>,
       ),

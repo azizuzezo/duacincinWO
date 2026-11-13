@@ -157,7 +157,7 @@ function AdminDisputesContent({ user }: { user: CurrentUser }) {
           ) : disputes.length === 0 ? (
             <EmptyState
               title={isOpen ? "Tidak ada sengketa terbuka" : "Belum ada riwayat sengketa"}
-              body={isOpen ? "Laporan baru dari sistem atau client akan muncul di sini." : "Sengketa yang sudah kamu putuskan tercatat di sini."}
+              body={isOpen ? "Laporan baru, baik dari client maupun pesan yang ditandai otomatis, akan muncul di sini." : "Sengketa yang sudah kamu putuskan tercatat di sini."}
             />
           ) : (
             <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.3fr)]">
@@ -262,7 +262,7 @@ function CaseView({
           Bukti
         </h3>
         <div className="mt-2 rounded-lg border border-dc-line bg-dc-ivory p-4">
-          <p className="text-xs text-dc-text-3">{d.message_id ? "Catatan sistem atas pesan chat yang ditandai" : "Isi laporan"}</p>
+          <p className="text-xs text-dc-text-3">{d.message_id ? "Pesan chat yang ditandai otomatis" : "Isi laporan"}</p>
           <blockquote className="mt-1.5 border-l-2 border-dc-gold pl-3 font-heading text-xl italic leading-snug text-dc-ink">{d.reason}</blockquote>
           {d.message_id && (
             <p className="mt-3 text-sm leading-relaxed text-dc-text-2">

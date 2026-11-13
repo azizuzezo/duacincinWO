@@ -1,11 +1,24 @@
 /* GoldArch / GoldArchFrame (GoldArch.tsx). */
 
-/* The photo window: same semicircle as the gate's opening (radius = half the width). */
+/* The photo window of GoldArchFrame: a round top (radius = half the width). */
 .window {
-  position: absolute;
+  position: relative;
+  height: 100%;
+  width: 100%;
   overflow: hidden;
   border-radius: 9999px 9999px 0 0;
   background: #15110d;
+  box-shadow: 0 28px 60px -18px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(20, 14, 9, 0.35);
+}
+
+/* One gold line traced just outside the window. */
+.hairline {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px 9999px 0 0;
+  border: 1.5px solid rgba(226, 194, 127, 0.85);
+  border-bottom: 0;
+  pointer-events: none;
 }
 
 /* Light inside the window: warm light falling from the crown, a soft inner
@@ -17,15 +30,9 @@
   pointer-events: none;
   background:
     radial-gradient(120% 55% at 50% 0%, rgba(255, 226, 170, 0.2), rgba(255, 226, 170, 0) 62%),
-    linear-gradient(to top, rgba(20, 14, 9, 0.72) 0%, rgba(20, 14, 9, 0.28) 12%, rgba(20, 14, 9, 0) 26%);
-  box-shadow: inset 0 0 34px 6px rgba(20, 14, 9, 0.5);
+    linear-gradient(to top, rgba(20, 14, 9, 0.35) 0%, rgba(20, 14, 9, 0) 18%);
+  box-shadow: inset 0 0 24px 2px rgba(20, 14, 9, 0.3);
   border-radius: inherit;
-}
-
-/* Lift the gate off the backdrop: a tight dark contour round every gold
-   edge, then a soft cast shadow, so it never blends into the scene. */
-.gate {
-  filter: drop-shadow(0 0 1.2px rgba(14, 10, 7, 0.95)) drop-shadow(0 0 10px rgba(14, 10, 7, 0.6)) drop-shadow(0 22px 34px rgba(0, 0, 0, 0.5));
 }
 
 /* One light sweep over the gold when a new couple steps in. Never loops. */

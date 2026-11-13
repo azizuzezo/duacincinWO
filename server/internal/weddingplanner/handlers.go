@@ -119,12 +119,12 @@ func SetTaskDueDate(deps *Deps) http.HandlerFunc {
 
 		var req setDueDateRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 		dueDate, err := parseDueDate(req.DueDate)
 		if err != nil {
-			httpx.Error(w, http.StatusBadRequest, "due_date harus format YYYY-MM-DD")
+			httpx.Error(w, http.StatusBadRequest, "tanggal tenggat tidak valid")
 			return
 		}
 
@@ -157,7 +157,7 @@ func CreateTask(deps *Deps) http.HandlerFunc {
 
 		var req createTaskRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 		req.Title = strings.TrimSpace(req.Title)
@@ -168,7 +168,7 @@ func CreateTask(deps *Deps) http.HandlerFunc {
 		}
 		dueDate, err := parseDueDate(req.DueDate)
 		if err != nil {
-			httpx.Error(w, http.StatusBadRequest, "due_date harus format YYYY-MM-DD")
+			httpx.Error(w, http.StatusBadRequest, "tanggal tenggat tidak valid")
 			return
 		}
 

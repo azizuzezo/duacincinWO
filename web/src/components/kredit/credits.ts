@@ -72,7 +72,7 @@ export const CREDIT_GROUPS: CreditGroup[] = [
         author: "FORNIA, venue @pl.borobudur",
         license: "Hak cipta pemilik foto",
         source: "https://www.pinterest.com/pin/605452743702172932/",
-        change: "Diperkecil, diubah ke WebP",
+        change: "Diperkecil",
       },
       {
         thumb: "/photos/pinterest/rias-hijab-sm.webp",
@@ -81,7 +81,7 @@ export const CREDIT_GROUPS: CreditGroup[] = [
         author: "pemilik aslinya, via Pinterest",
         license: "Hak cipta pemilik foto",
         source: "https://www.pinterest.com/pin/605452743702173050/",
-        change: "Diperkecil, diubah ke WebP",
+        change: "Diperkecil",
       },
       {
         thumb: "/photos/pinterest/katering-jajanan-sm.webp",
@@ -90,7 +90,7 @@ export const CREDIT_GROUPS: CreditGroup[] = [
         author: "pemilik aslinya, via Pinterest",
         license: "Hak cipta pemilik foto",
         source: "https://www.pinterest.com/pin/605452743702173003/",
-        change: "Diperkecil, diubah ke WebP",
+        change: "Diperkecil",
       },
       {
         thumb: "/photos/pinterest/dekorasi-taman-sm.webp",
@@ -99,7 +99,7 @@ export const CREDIT_GROUPS: CreditGroup[] = [
         author: "pemilik aslinya, via Pinterest",
         license: "Hak cipta pemilik foto",
         source: "https://www.pinterest.com/pin/605452743702172898/",
-        change: "Diperkecil, diubah ke WebP",
+        change: "Diperkecil",
       },
       {
         thumb: "/photos/pinterest/foto-gapura-sm.webp",
@@ -108,7 +108,7 @@ export const CREDIT_GROUPS: CreditGroup[] = [
         author: "pemilik aslinya, via Pinterest",
         license: "Hak cipta pemilik foto",
         source: "https://www.pinterest.com/pin/605452743702172998/",
-        change: "Diperkecil, diubah ke WebP",
+        change: "Diperkecil",
       },
       {
         thumb: "/photos/pinterest/kirab-malam-sm.webp",
@@ -117,7 +117,7 @@ export const CREDIT_GROUPS: CreditGroup[] = [
         author: "foto @dinemaphoto, wedding design @yoantaway.project",
         license: "Hak cipta pemilik foto",
         source: "https://www.pinterest.com/pin/605452743702173055/",
-        change: "Diperkecil, diubah ke WebP",
+        change: "Diperkecil",
       },
       {
         thumb: "/photos/pinterest/suvenir-anggrek-sm.webp",
@@ -126,7 +126,7 @@ export const CREDIT_GROUPS: CreditGroup[] = [
         author: "pemilik aslinya, via Pinterest",
         license: "Hak cipta pemilik foto",
         source: "https://www.pinterest.com/pin/605452743702172967/",
-        change: "Diperkecil, diubah ke WebP",
+        change: "Diperkecil",
       },
       {
         thumb: "/photos/pinterest/konsultan-rias-sm.webp",
@@ -135,7 +135,7 @@ export const CREDIT_GROUPS: CreditGroup[] = [
         author: "MUA @dwikartika_makeup, foto @rimmpro_",
         license: "Hak cipta pemilik foto",
         source: "https://www.pinterest.com/pin/605452743702173046/",
-        change: "Diperkecil, diubah ke WebP",
+        change: "Diperkecil",
       },
       {
         thumb: "/photos/pinterest/pasangan-sofa-bunga-sm.webp",
@@ -144,7 +144,7 @@ export const CREDIT_GROUPS: CreditGroup[] = [
         author: "pemilik aslinya, via Pinterest",
         license: "Hak cipta pemilik foto",
         source: "https://www.pinterest.com/pin/605452743702172994/",
-        change: "Diperkecil, diubah ke WebP",
+        change: "Diperkecil",
       },
       {
         thumb: "/photos/pinterest/resepsi-taman-sm.webp",
@@ -153,7 +153,7 @@ export const CREDIT_GROUPS: CreditGroup[] = [
         author: "pemilik aslinya, via Pinterest",
         license: "Hak cipta pemilik foto",
         source: "https://www.pinterest.com/pin/605452743702172917/",
-        change: "Diperkecil, diubah ke WebP",
+        change: "Diperkecil",
       },
       {
         thumb: "/photos/pinterest/penutup-lilin-sm.webp",
@@ -162,7 +162,7 @@ export const CREDIT_GROUPS: CreditGroup[] = [
         author: "pemilik aslinya, via Pinterest",
         license: "Hak cipta pemilik foto",
         source: "https://www.pinterest.com/pin/605452743702173009/",
-        change: "Diperkecil, diubah ke WebP",
+        change: "Diperkecil",
       },
     ],
   },
@@ -178,7 +178,7 @@ export const CREDIT_GROUPS: CreditGroup[] = [
         author: "pemilik aslinya, via Pinterest",
         license: "Hak cipta pemilik foto",
         source: "https://www.pinterest.com/pin/605452743702172930/",
-        change: "Dipotong untuk membuang penanda geser di sudut, diperkecil, diubah ke WebP",
+        change: "Dipotong sedikit di tepi dan diperkecil",
       },
       {
         thumb: "/photos/pinterest/pendopo-kursi-tamu-sm.webp",
@@ -187,7 +187,7 @@ export const CREDIT_GROUPS: CreditGroup[] = [
         author: "pemilik aslinya, via Pinterest",
         license: "Hak cipta pemilik foto",
         source: "https://www.pinterest.com/pin/605452743702172906/",
-        change: "Diperkecil, diubah ke WebP",
+        change: "Diperkecil",
       },
       {
         thumb: "/photos/pinterest/pelaminan-kristal-sm.webp",
@@ -196,7 +196,7 @@ export const CREDIT_GROUPS: CreditGroup[] = [
         author: "pemilik aslinya, via Pinterest",
         license: "Hak cipta pemilik foto",
         source: "https://www.pinterest.com/pin/605452743702173034/",
-        change: "Diperkecil, diubah ke WebP",
+        change: "Diperkecil",
       },
       {
         thumb: "/photos/pinterest/pasangan-internasional-sm.webp",
@@ -205,7 +205,7 @@ export const CREDIT_GROUPS: CreditGroup[] = [
         author: "pemilik aslinya, via Pinterest",
         license: "Hak cipta pemilik foto",
         source: "https://www.pinterest.com/pin/605452743702172889/",
-        change: "Diperkecil, diubah ke WebP",
+        change: "Diperkecil",
       },
     ],
   },

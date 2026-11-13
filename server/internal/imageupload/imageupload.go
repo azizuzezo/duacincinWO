@@ -24,7 +24,7 @@ var AllowedTypes = map[string]string{
 func Read(w http.ResponseWriter, r *http.Request, formField string) (data []byte, contentType, ext string, ok bool) {
 	r.Body = http.MaxBytesReader(w, r.Body, MaxBytes+1<<20)
 	if err := r.ParseMultipartForm(MaxBytes); err != nil {
-		httpx.Error(w, http.StatusBadRequest, "file terlalu besar atau tidak valid (maks 5MB)")
+		httpx.Error(w, http.StatusBadRequest, "file terlalu besar atau bukan foto (maksimal 5 MB)")
 		return nil, "", "", false
 	}
 

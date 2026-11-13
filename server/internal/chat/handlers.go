@@ -319,7 +319,7 @@ func SendMessage(deps *Deps) http.HandlerFunc {
 
 		var req sendMessageRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 		req.Body = strings.TrimSpace(req.Body)
@@ -407,7 +407,7 @@ func MarkRead(deps *Deps) http.HandlerFunc {
 
 		var req markReadRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 

@@ -209,7 +209,7 @@ export function HeroScene() {
             <div className={`aspect-square h-full ${styles.halo}`} />
           </motion.div>
           <motion.div className="absolute inset-x-0 bottom-2 flex h-[97%] justify-center lg:bottom-16 lg:h-[77%]" style={{ x: dCouple.x, y: coupleY, translateY: dCouple.y, rotate: coupleRot }}>
-            <GoldArchFrame className="h-full" shineKey={scene.key}>
+            <GoldArchFrame className="h-full">
               <AnimatePresence initial={false} mode="popLayout">
                 <motion.div
                   key={scene.key}

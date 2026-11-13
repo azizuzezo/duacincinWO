@@ -75,14 +75,14 @@ export default function ForgotPasswordPage() {
         step === "request"
           ? "Reset password"
           : step === "verify"
-            ? "Masukkan kode OTP"
+            ? "Masukkan kode verifikasi"
             : step === "reset"
               ? "Buat password baru"
               : "Selesai"
       }
       subtitle={
         step === "request"
-          ? "Masukkan email akunmu, kami kirim kode OTP 6 digit."
+          ? "Masukkan email akunmu, kami kirim kode verifikasi 6 digit."
           : step === "verify"
             ? `Kode dikirim ke ${email}, berlaku 5 menit.`
             : step === "reset"
@@ -122,7 +122,7 @@ export default function ForgotPasswordPage() {
 
       {step === "verify" && (
         <form onSubmit={verifyOtp} className="flex flex-col gap-4">
-          <OtpInput label="Kode OTP 6 digit" value={code} onChange={setCode} invalid={!!error} autoFocus />
+          <OtpInput label="Kode verifikasi 6 digit" value={code} onChange={setCode} invalid={!!error} autoFocus />
           {error && <p role="alert" className="text-sm text-dc-danger">
             {error}
           </p>}

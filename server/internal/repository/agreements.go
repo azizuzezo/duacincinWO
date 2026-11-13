@@ -10,10 +10,11 @@ const (
 	AgreementTypeVendorPartnership = "vendor_partnership"
 	AgreementTypeClientTOS         = "client_tos"
 
-	// CurrentAgreementVersion tracks the draft in PRD §11 — bump this any
+	// CurrentAgreementVersion is the legal text in force (web/src/lib/legal.ts,
+	// LEGAL_VERSION 2.0, effective 14 November 2026). Bump this any
 	// time the legal text materially changes, so old acceptances stay
 	// attributable to the version the user actually saw.
-	CurrentAgreementVersion = "v1-2026-09-09"
+	CurrentAgreementVersion = "v2-2026-11-14"
 )
 
 type AgreementRepo struct {

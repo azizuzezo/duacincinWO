@@ -48,12 +48,12 @@ func CreateTechnicalMeeting(deps *Deps) http.HandlerFunc {
 
 		var req createMeetingRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 		scheduledAt, err := time.Parse(time.RFC3339, req.ScheduledAt)
 		if err != nil {
-			httpx.Error(w, http.StatusBadRequest, "scheduled_at harus format ISO 8601 (RFC3339)")
+			httpx.Error(w, http.StatusBadRequest, "jadwal tidak valid, pilih tanggal dan jam lagi")
 			return
 		}
 
@@ -104,12 +104,12 @@ func CreateConsultantMeeting(deps *Deps) http.HandlerFunc {
 
 		var req createMeetingRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 		scheduledAt, err := time.Parse(time.RFC3339, req.ScheduledAt)
 		if err != nil {
-			httpx.Error(w, http.StatusBadRequest, "scheduled_at harus format ISO 8601 (RFC3339)")
+			httpx.Error(w, http.StatusBadRequest, "jadwal tidak valid, pilih tanggal dan jam lagi")
 			return
 		}
 

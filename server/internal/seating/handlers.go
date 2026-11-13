@@ -98,7 +98,7 @@ func CreateTable(deps *Deps) http.HandlerFunc {
 
 		var req upsertTableRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 		req.Name = strings.TrimSpace(req.Name)
@@ -126,7 +126,7 @@ func UpdateTable(deps *Deps) http.HandlerFunc {
 
 		var req upsertTableRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 		req.Name = strings.TrimSpace(req.Name)
@@ -177,7 +177,7 @@ func AssignGuest(deps *Deps) http.HandlerFunc {
 
 		var req assignRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil || req.GuestID == "" || req.TableID == "" {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 

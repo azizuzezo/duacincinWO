@@ -52,7 +52,7 @@ func Create(deps *Deps) http.HandlerFunc {
 
 		var req createBookingRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "body permintaan tidak valid")
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
 
@@ -63,7 +63,7 @@ func Create(deps *Deps) http.HandlerFunc {
 
 		eventDate, err := time.Parse("2006-01-02", req.EventDate)
 		if err != nil {
-			httpx.Error(w, http.StatusBadRequest, "tanggal acara tidak valid (format YYYY-MM-DD)")
+			httpx.Error(w, http.StatusBadRequest, "tanggal acara tidak valid")
 			return
 		}
 

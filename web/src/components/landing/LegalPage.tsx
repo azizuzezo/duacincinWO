@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Footer } from "@/components/landing/Footer";
 import { Navbar } from "@/components/landing/Navbar";
 import { LegalToc } from "@/components/public/legal/LegalToc";
+import { COMPANY, COMPANY_PAGE } from "@/lib/company";
+import { LEGAL_EFFECTIVE, LEGAL_VERSION } from "@/lib/legal";
 
 export type LegalSection = { id: string; title: string; body: React.ReactNode };
 
@@ -37,10 +39,24 @@ export function LegalPage({
             <p className="dc-eyebrow">Dokumen legal</p>
             <h1 className="mt-4 max-w-3xl font-heading text-[clamp(2.4rem,5vw,4rem)] leading-[1.02] text-dc-ink">{title}</h1>
             {intro && <p className="mt-5 max-w-2xl text-lg leading-relaxed text-dc-text-2">{intro}</p>}
-            <p className="mt-6 flex max-w-2xl gap-3 rounded-lg border border-dc-gold/40 bg-dc-white px-4 py-3 text-sm leading-relaxed text-dc-ink">
-              <span aria-hidden className="mt-1 h-2 w-2 shrink-0 rounded-full bg-dc-gold" />
-              Draft awal untuk kebutuhan produk, bukan nasihat hukum. Wajib direview advokat sebelum mengikat pengguna nyata.
-            </p>
+            <dl className="mt-6 flex max-w-2xl flex-wrap gap-x-6 gap-y-2 text-sm text-dc-text-2">
+              <div className="flex gap-1.5">
+                <dt>Versi</dt>
+                <dd className="font-semibold text-dc-ink">{LEGAL_VERSION}</dd>
+              </div>
+              <div className="flex gap-1.5">
+                <dt>Berlaku sejak</dt>
+                <dd className="font-semibold text-dc-ink">{LEGAL_EFFECTIVE}</dd>
+              </div>
+              <div className="flex gap-1.5">
+                <dt>Penyelenggara</dt>
+                <dd className="font-semibold text-dc-ink">
+                  <Link href={COMPANY_PAGE} className="underline decoration-dc-gold/50 underline-offset-4 hover:text-dc-clay">
+                    {COMPANY.name}
+                  </Link>
+                </dd>
+              </div>
+            </dl>
           </div>
         </header>
 

@@ -95,7 +95,7 @@ func Categories(deps *Deps) http.HandlerFunc {
 func Upload(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !deps.Storage.Configured() {
-			httpx.Error(w, http.StatusServiceUnavailable, "upload gambar belum tersedia")
+			httpx.Error(w, http.StatusServiceUnavailable, "unggah foto sedang tidak tersedia, coba lagi nanti")
 			return
 		}
 
