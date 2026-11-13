@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 
 import { PublicShell } from "@/components/landing/PublicShell";
@@ -47,15 +46,6 @@ export default function PerusahaanPage() {
             </div>
           ))}
         </dl>
-
-        {/* Badge issued with the PSE registration; never shown larger than its native 629px. */}
-        <Image
-          src="/pse-lingkup-privat.webp"
-          width={629}
-          height={155}
-          alt={`Tanda terdaftar Penyelenggara Sistem Elektronik lingkup privat: ${COMPANY.pseSystem}, ${COMPANY.pseNumber}`}
-          className="mt-6 h-auto w-full max-w-[420px] rounded-xl"
-        />
 
         <p className="mt-8 max-w-2xl text-sm leading-relaxed text-dc-text-2">
           Aturan memakai DuaCincin ada di{" "}
