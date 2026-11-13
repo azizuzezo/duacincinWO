@@ -30,7 +30,7 @@ export function VendorRecruit() {
           so it covers the couple's clothes, never their faces. */}
       <div ref={stage} className="relative pb-[210px] sm:pb-[330px] lg:h-auto lg:pb-0">
         <div className="relative h-[340px] sm:h-[420px] lg:absolute lg:inset-0 lg:h-auto">
-          <Image src="/photos/kategori/foto-1400.webp" alt="Potret pengantin Bali bermahkota emas, hasil kerja fotografer pernikahan" fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover object-[50%_25%]" />
+          <Image src="/photos/pinterest/pasangan-sofa-bunga.webp" alt="Pasangan pengantin berbusana putih tersenyum di sofa, di depan dinding bunga merah, hasil kerja fotografer pernikahan" fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover object-[50%_62%]" />
         </div>
         <motion.div style={{ y: drift }} className="absolute bottom-0 right-[8%] w-[34%] max-w-[200px] lg:bottom-[8%] lg:right-[-9%] lg:w-[34%] lg:max-w-[230px]">
           <PhoneFrame src="/showcase/vendordash-phone.webp" alt="Halaman Hari ini di dashboard vendor: permintaan baru dan acara terdekat" sizes="230px" />

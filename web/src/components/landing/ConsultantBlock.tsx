@@ -38,7 +38,7 @@ export function ConsultantBlock() {
           <div className="relative">
             <div aria-hidden className="absolute -inset-3 rounded-t-full border border-dc-gold/50" />
             <div className="relative aspect-[4/5] overflow-hidden rounded-t-full bg-dc-paper-3">
-              <Image src="/photos/momen/sunda-lengkung-1000.webp" alt="Pasangan pengantin Sunda tersenyum, mempelai putri bermahkota siger" fill sizes="(min-width: 640px) 400px, 76vw" className="object-cover object-center" />
+              <Image src="/photos/pinterest/konsultan-rias.webp" alt="Penata rias menyiapkan pengantin berhijab putih sebelum akad" fill sizes="(min-width: 640px) 400px, 76vw" className="object-cover object-center" />
             </div>
           </div>
           <motion.div style={{ y: drift }} className="absolute bottom-0 right-0 w-[38%]">

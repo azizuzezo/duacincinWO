@@ -6,8 +6,8 @@
 // The vendor count appears only once the public directory has loaded and the
 // category really has vendors (antislop R-17), and counts up when seen.
 //
-// Pictures: real Indonesian wedding photos from Wikimedia Commons
-// (public/photos/kategori, credited on /kredit).
+// Pictures: modern wedding photos from the DuaCincin Pinterest board
+// (public/photos/pinterest, each linked to its pin on /kredit).
 //
 // Motion purpose: hover, focus or touch gives depth (photo zooms, tile lifts,
 // the arrow after "Lihat vendor" steps forward) which says "this opens"; the bento enters
@@ -28,13 +28,13 @@ const WIDE = "(min-width: 1024px) 50vw, 50vw";
 const SQUARE = "(min-width: 1024px) 25vw, 50vw";
 
 const PICS: Record<string, Pic> = {
-  venue: { src: "/photos/kategori/venue-1400.webp", alt: "Gedung resepsi pernikahan di Jakarta dengan lampu gantung dan lorong bunga menuju pelaminan", note: "Gedung, ballroom, taman, rumah adat", tile: "col-span-2 aspect-square sm:aspect-[16/10] lg:aspect-auto lg:row-span-2", sizes: BIG },
-  mua_attire: { src: "/photos/kategori/rias-1400.webp", alt: "Riasan pengantin putri Jember Pendalungan dengan mahkota emas dan untaian melati", note: "Rias, busana adat, gaun", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto", sizes: SQUARE },
-  catering: { src: "/photos/kategori/katering-1400.webp", alt: "Tumpeng nasi kuning dengan lauk pauk lengkap di atas daun pisang", note: "Prasmanan, gubukan, menu adat", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto", sizes: SQUARE },
-  decor: { src: "/photos/kategori/dekorasi-1400.webp", alt: "Pelaminan adat Minangkabau berukir emas dengan kursi pengantin merah", note: "Pelaminan, gapura, bunga, lampu", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto lg:col-span-2", sizes: WIDE },
-  photo_video: { src: "/photos/kategori/foto-1400.webp", alt: "Potret pengantin Bali bermahkota emas saat upacara pernikahan", note: "Foto, video, prewedding", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto lg:col-span-2", sizes: WIDE },
-  entertainment: { src: "/photos/kategori/hiburan-1400.webp", alt: "Pemain gamelan Jawa tampil di Yogyakarta", note: "Musik, MC, hiburan adat", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto", sizes: SQUARE },
-  invitation_souvenir: { src: "/photos/kategori/suvenir-1400.webp", alt: "Undangan pernikahan cetak berhias bunga mawar, dengan amplopnya", note: "Undangan cetak, suvenir", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto", sizes: SQUARE },
+  venue: { src: "/photos/pinterest/venue-joglo.webp", alt: "Joglo di perbukitan dekat Borobudur dengan lorong putih dan deretan kursi tamu untuk akad di taman", note: "Gedung, ballroom, taman, rumah adat", tile: "col-span-2 aspect-square sm:aspect-[16/10] lg:aspect-auto lg:row-span-2", sizes: BIG },
+  mua_attire: { src: "/photos/pinterest/rias-hijab.webp", alt: "Pengantin berhijab cokelat dengan mahkota bunga emas dan kebaya payet", note: "Rias, busana adat, gaun", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto", sizes: SQUARE },
+  catering: { src: "/photos/pinterest/katering-jajanan.webp", alt: "Meja jajanan tradisional di atas daun pisang dan nampan rotan", note: "Prasmanan, gubukan, menu adat", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto", sizes: SQUARE },
+  decor: { src: "/photos/pinterest/dekorasi-taman.webp", alt: "Panggung taman putih dengan bunga pastel, lorong putih, lilin tinggi dan lampu gantung", note: "Pelaminan, gapura, bunga, lampu", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto lg:col-span-2", sizes: WIDE },
+  photo_video: { src: "/photos/pinterest/foto-gapura.webp", alt: "Pasangan pengantin berpelukan di bawah gapura bunga matahari di taman perbukitan", note: "Foto, video, prewedding", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto lg:col-span-2", sizes: WIDE },
+  entertainment: { src: "/photos/pinterest/kirab-malam.webp", alt: "Kirab pengantin malam hari di antara tamu yang mengabadikan momen", note: "Musik, MC, hiburan adat", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto", sizes: SQUARE },
+  invitation_souvenir: { src: "/photos/pinterest/suvenir-anggrek.webp", alt: "Kotak suvenir satin emas berhias anggrek putih dan daun emas", note: "Undangan cetak, suvenir", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto", sizes: SQUARE },
 };
 
 // Desktop order fills the 4 x 3 grid exactly (venue 2x2, decor and photo 2x1).

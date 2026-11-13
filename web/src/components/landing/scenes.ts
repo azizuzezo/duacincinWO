@@ -1,12 +1,11 @@
 // Hero worlds: one Nusantara wedding per scene. Backdrops ("worlds") are
 // public-domain paintings and licensed photos (public/scene/<bg>-720|1400.webp
 // copied from invitation.duacincin.id, and public/photos/latar/). Couples are
-// real wedding photos from Wikimedia Commons taken at a pelaminan, palace or
-// warm backdrop (no plain white studio walls), shown whole in the window of the
-// gold gate (public/photos/pasangan/, 3:4 crops with headroom for the arch
-// curve, one shared warm grade and soft vignette). They
-// are not cut out: background removal ate hair and left wall patches, so the
-// full photo is framed instead. Every third-party picture is listed on /kredit
+// shown whole in the window of the gold gate (public/photos/pasangan/pin-*, 3:4
+// crops with headroom for the arch
+// curve). Couples are modern wedding photos from the DuaCincin Pinterest
+// board, cropped to 3:4 at their native size. They are not cut out: the full
+// photo is framed instead. Every third-party picture is listed on /kredit
 // (components/kredit/credits.ts).
 // `bg` and `couple` are base paths: append "-720.webp" / "-1400.webp" for the
 // backdrop and ".webp" / "-sm.webp" (3:4) for the couple.
@@ -17,7 +16,6 @@ export type Credit = { kind: string; title: string; author: string; license: str
 export type World = { key: string; bg: string; focus: string; credit: Credit };
 
 const BY_SA_4 = "https://creativecommons.org/licenses/by-sa/4.0";
-const BY_SA_3 = "https://creativecommons.org/licenses/by-sa/3.0";
 
 export const WORLDS = {
   java: {
@@ -109,69 +107,68 @@ export type Scene = World & {
   coupleCredit: Credit;
 };
 
+/** Hero couples come from the DuaCincin Pinterest board (see /kredit). */
+const PIN_LICENSE = "Hak cipta pemilik foto";
+
 export const SCENES: Scene[] = [
-  {
-    ...WORLDS.java,
-    key: "jawa",
-    label: "Jawa",
-    caption: "Pengantin adat Jawa",
-    couple: "/photos/pasangan/jawa",
-    coupleAlt: "Pasangan pengantin Jawa berbusana beludru hitam bersulam emas dengan untaian melati",
-    coupleCredit: {
-      kind: "Foto",
-      title: "Pengantin adat Jawa",
-      author: "Inul21",
-      license: "CC BY-SA 4.0",
-      licenseUrl: BY_SA_4,
-      source: "https://commons.wikimedia.org/wiki/File:Inul21.jpg",
-    },
-  },
   {
     ...WORLDS.minang,
     key: "minang",
     label: "Minang",
-    caption: "Pengantin adat Minangkabau",
-    couple: "/photos/pasangan/minang",
-    coupleAlt: "Pasangan pengantin Minangkabau berbusana merah bersulam emas di depan pelaminan",
+    caption: "Pengantin Minang bersuntiang emas",
+    couple: "/photos/pasangan/pin-minang",
+    coupleAlt: "Pengantin Minangkabau berhijab dengan suntiang emas dan riasan modern",
     coupleCredit: {
       kind: "Foto",
-      title: "Pakaian Penganti Adat Sumatra Barat",
-      author: "Rahmad Khairul",
-      license: "CC BY-SA 4.0",
-      licenseUrl: BY_SA_4,
-      source: "https://commons.wikimedia.org/wiki/File:Pakaian_Penganti_Adat_Sumatra_Barat.jpg",
+      title: "Pin pengantin Minang bersuntiang",
+      author: "pemilik aslinya, via Pinterest",
+      license: PIN_LICENSE,
+      source: "https://www.pinterest.com/pin/605452743702173048/",
     },
   },
   {
-    ...WORLDS.karo,
-    key: "karo",
-    label: "Batak",
-    caption: "Pengantin adat Batak Karo",
-    couple: "/photos/pasangan/karo",
-    coupleAlt: "Pasangan pengantin Batak Karo berselempang uis merah di depan pelaminan berhias bunga",
+    ...WORLDS.java,
+    key: "hijab",
+    label: "Modern",
+    caption: "Pengantin muslimah dengan mahkota bunga emas",
+    couple: "/photos/pasangan/pin-hijab",
+    coupleAlt: "Pengantin berhijab cokelat dengan mahkota bunga emas dan kebaya payet",
     coupleCredit: {
       kind: "Foto",
-      title: "Batak Karo Wedding",
-      author: "Picsplease",
-      license: "CC BY-SA 3.0",
-      licenseUrl: BY_SA_3,
-      source: "https://commons.wikimedia.org/wiki/File:Batak_Karo_Wedding.jpg",
+      title: "Pin rias pengantin berhijab",
+      author: "pemilik aslinya, via Pinterest",
+      license: PIN_LICENSE,
+      source: "https://www.pinterest.com/pin/605452743702173050/",
+    },
+  },
+  {
+    ...WORLDS.garden,
+    key: "akad",
+    label: "Akad",
+    caption: "Akad nikah serba putih di taman",
+    couple: "/photos/pasangan/pin-akad",
+    coupleAlt: "Pasangan pengantin serba putih saat akad di pelaminan bunga putih di taman",
+    coupleCredit: {
+      kind: "Foto",
+      title: "Pin akad di taman",
+      author: "pemilik aslinya, via Pinterest",
+      license: PIN_LICENSE,
+      source: "https://www.pinterest.com/pin/605452743702172901/",
     },
   },
   {
     ...WORLDS.maimun,
     key: "melayu",
     label: "Melayu",
-    caption: "Pengantin Melayu Deli di Istana Maimun",
-    couple: "/photos/pasangan/melayu",
-    coupleAlt: "Pasangan pengantin Melayu Deli berbusana merah keemasan di depan singgasana Istana Maimun",
+    caption: "Pengantin Melayu di gapura bunga",
+    couple: "/photos/pasangan/pin-melayu",
+    coupleAlt: "Pasangan pengantin Melayu berbusana putih berpelukan di bawah gapura bunga matahari",
     coupleCredit: {
       kind: "Foto",
-      title: "Pengantin Melayu Deli",
-      author: "Alberttito",
-      license: "CC BY-SA 4.0",
-      licenseUrl: BY_SA_4,
-      source: "https://commons.wikimedia.org/wiki/File:Pengantin_Melayu_Deli.jpg",
+      title: "Pin pasangan di gapura bunga",
+      author: "pemilik aslinya, via Pinterest",
+      license: PIN_LICENSE,
+      source: "https://www.pinterest.com/pin/605452743702172998/",
     },
   },
 ];
