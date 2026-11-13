@@ -83,16 +83,16 @@ const SHOWCASE: ShowcaseItem[] = [
   },
 ];
 
-// Category photos shared with the home mosaic and /kategori (Wikimedia
-// Commons, credited on /kredit).
+// Category photos shared with the home mosaic and /kategori (DuaCincin
+// Pinterest board, credited on /kredit).
 const CATEGORY_PHOTO: Record<string, { src: string; studio?: boolean; note: string }> = {
-  venue: { src: "/photos/kategori/venue-1400.webp", note: "Gedung, ballroom, taman" },
-  catering: { src: "/photos/kategori/katering-1400.webp", note: "Prasmanan, gubukan, menu adat" },
-  decor: { src: "/photos/kategori/dekorasi-1400.webp", note: "Pelaminan, gapura, bunga" },
-  mua_attire: { src: "/photos/kategori/rias-1400.webp", note: "Rias, busana adat, gaun" },
-  photo_video: { src: "/photos/kategori/foto-1400.webp", note: "Foto, video, prewedding" },
-  entertainment: { src: "/photos/kategori/hiburan-1400.webp", note: "Musik, MC, hiburan adat" },
-  invitation_souvenir: { src: "/photos/kategori/suvenir-1400.webp", note: "Undangan cetak, suvenir" },
+  venue: { src: "/photos/pinterest/venue-joglo.webp", note: "Gedung, ballroom, taman" },
+  catering: { src: "/photos/pinterest/katering-jajanan.webp", note: "Prasmanan, gubukan, menu adat" },
+  decor: { src: "/photos/pinterest/dekorasi-taman.webp", note: "Pelaminan, gapura, bunga" },
+  mua_attire: { src: "/photos/pinterest/rias-hijab.webp", note: "Rias, busana adat, gaun" },
+  photo_video: { src: "/photos/pinterest/foto-gapura.webp", note: "Foto, video, prewedding" },
+  entertainment: { src: "/photos/pinterest/kirab-malam.webp", note: "Musik, MC, hiburan adat" },
+  invitation_souvenir: { src: "/photos/pinterest/suvenir-anggrek.webp", note: "Undangan cetak, suvenir" },
 };
 
 const FACTS = [

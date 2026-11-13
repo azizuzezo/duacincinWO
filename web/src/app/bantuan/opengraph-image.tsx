@@ -12,6 +12,6 @@ export default function Image() {
       title: "Bantuan dan pertanyaan umum",
       line: "Jawaban soal escrow, booking, sengketa, dan akun vendor.",
     },
-    { src: "/photos/kategori/venue-1400.webp", focusX: 0.5 },
+    { src: "/photos/pinterest/pendopo-kursi-tamu.webp", focusX: 0.5 },
   );
 }

@@ -555,5 +555,8 @@ func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 		r.Post("/vendor-name-changes/{id}/resolve", resolveNameChange(deps))
 
 		r.Get("/audit-log", listAuditLog(deps))
+
+		r.Get("/staff", listStaff(deps))
+		r.Post("/staff", createStaff(deps))
 	})
 }

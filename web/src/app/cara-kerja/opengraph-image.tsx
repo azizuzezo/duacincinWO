@@ -12,6 +12,6 @@ export default function Image() {
       title: "Dari pilih vendor sampai hari-H",
       line: "Pembayaranmu ditahan escrow dan baru diteruskan ke vendor setelah acara selesai.",
     },
-    { src: "/photos/momen/sunda-lengkung-1000.webp", focusX: 0.5 },
+    { src: "/photos/pinterest/akad-joglo-lorong.webp", focusX: 0.5 },
   );
 }

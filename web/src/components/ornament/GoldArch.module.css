@@ -22,6 +22,12 @@
   border-radius: inherit;
 }
 
+/* Lift the gate off the backdrop: a tight dark contour round every gold
+   edge, then a soft cast shadow, so it never blends into the scene. */
+.gate {
+  filter: drop-shadow(0 0 1.2px rgba(14, 10, 7, 0.95)) drop-shadow(0 0 10px rgba(14, 10, 7, 0.6)) drop-shadow(0 22px 34px rgba(0, 0, 0, 0.5));
+}
+
 /* One light sweep over the gold when a new couple steps in. Never loops. */
 .shine {
   opacity: 0;

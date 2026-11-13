@@ -145,7 +145,7 @@ export default function BantuanPage() {
   return (
     <PublicShell>
       <PageHero
-        image="/photos/kategori/venue-1400.webp"
+        image="/photos/pinterest/pendopo-kursi-tamu.webp"
         eyebrow="Pusat bantuan"
         title={
           <>

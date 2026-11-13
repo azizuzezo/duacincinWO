@@ -12,6 +12,6 @@ export default function Image() {
       title: "Untuk vendor pernikahan",
       line: "Tampilkan portofolio, terima booking lewat chat, dan terima pembayaran setelah acara selesai.",
     },
-    { src: "/photos/kategori/foto-1400.webp", focusX: 0.5 },
+    { src: "/photos/pinterest/foto-gapura.webp", focusX: 0.5 },
   );
 }

@@ -59,8 +59,9 @@ export default function KreditPage() {
             Foto pernikahan asli, dengan nama <span className="dc-em">pemotretnya</span>.
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-relaxed text-dc-text-2">
-            Semua {total} gambar di bawah berasal dari Wikimedia Commons dengan lisensi terbuka atau domain publik. Klik judulnya
-            untuk membuka halaman sumber. Foto yang kami potong atau ubah tetap memakai lisensi yang sama.
+            Ada {total} gambar di bawah. Foto pengantin, vendor, dan suasana acara diambil dari board Pinterest resmi DuaCincin dan
+            tetap milik pemotretnya; latar beranda berasal dari Wikimedia Commons dengan lisensi terbuka atau domain publik. Klik
+            judulnya untuk membuka sumber aslinya.
           </p>
           <nav aria-label="Bagian" className="mt-8 flex flex-wrap gap-2">
             {CREDIT_GROUPS.map((g) => (

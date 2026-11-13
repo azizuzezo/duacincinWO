@@ -100,6 +100,7 @@ export const ACTION_LABEL: Record<string, string> = {
   "disbursement.mark_disbursed": "Menandai dana sudah dicairkan",
   "dispute.resolve": "Memutuskan sengketa",
   "vendor_name_change.resolve": "Memproses ganti nama vendor",
+  "staff.create": "Menambah anggota tim",
 };
 
 export const SANCTION_LABEL: Record<string, string> = {

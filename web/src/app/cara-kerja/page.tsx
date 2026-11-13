@@ -88,7 +88,7 @@ export default function CaraKerjaPage() {
   return (
     <PublicShell>
       <PageHero
-        image="/photos/momen/melayu-istana-1400.webp"
+        image="/photos/pinterest/akad-joglo-lorong.webp"
         focus="50% 35%"
         eyebrow="Cara kerja"
         title={

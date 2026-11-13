@@ -167,3 +167,41 @@ func isUniqueViolation(err error) bool {
 	}
 	return false
 }
+
+// StaffRoles are the internal (backoffice) roles: admin and wedding
+// consultant ("karyawan"). Only an admin can create either.
+var StaffRoles = []string{"admin", "wedding_consultant"}
+
+// ListStaff returns every admin and wedding consultant, newest first.
+func (r *UserRepo) ListStaff(ctx context.Context) ([]*User, error) {
+	rows, err := r.pool.Query(ctx, `
+		select id, email, password_hash, role, coalesce(full_name, ''), failed_login_attempts, locked_until, account_status, suspended_until, created_at
+		from users where role in ('admin', 'wedding_consultant')
+		order by created_at desc
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []*User
+	for rows.Next() {
+		u, err := scanUser(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, u)
+	}
+	return out, rows.Err()
+}
+
+// PromoteToStaff turns an existing account into a staff account with a new
+// password, role and name, clearing any login lock. Used by the bootstrap
+// CLI when the email is already registered.
+func (r *UserRepo) PromoteToStaff(ctx context.Context, id, role, passwordHash, fullName string) error {
+	_, err := r.pool.Exec(ctx, `
+		update users set role = $2, password_hash = $3, full_name = coalesce(nullif($4, ''), full_name),
+			failed_login_attempts = 0, locked_until = null, account_status = 'active', suspended_until = null, updated_at = now()
+		where id = $1
+	`, id, role, passwordHash, fullName)
+	return err
+}

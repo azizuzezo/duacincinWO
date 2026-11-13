@@ -76,7 +76,7 @@ function crest(g: Geo) {
   return { outline, inner, stem, tendrils, ring: { y: y0 - 30 * g.s, dx: 7 * g.s, r: 9 * g.s }, finial: { x: g.cx, y: y0 - 122 * g.s, r: 3.2 * g.s } };
 }
 
-function Gate({ g, id, W, H, shineKey }: { g: Geo; id: string; W: number; H: number; shineKey?: string }) {
+function Gate({ g, id, W, H, shineKey, plate = false }: { g: Geo; id: string; W: number; H: number; shineKey?: string; plate?: boolean }) {
   const { cx, r, apex, base, s } = g;
   const cy = apex + r;
   const ri = r - 1;
@@ -132,8 +132,18 @@ function Gate({ g, id, W, H, shineKey }: { g: Geo; id: string; W: number; H: num
       {/* Ground shadow, so the gate stands on the scene instead of floating. */}
       <ellipse cx={cx} cy={base + 18 * s} rx={r + 100 * s} ry={22 * s} fill={`url(#${id}-floor)`} />
 
+      {/* Dark lacquer backing (frame only): sits under the band, the shoulders
+          and the crest so the gold reads against any backdrop photo instead of
+          melting into warm walls and roofs. */}
+      {plate && (
+        <g fill="#120c07">
+          <path d={ringPath(g, r - 2 * s, r + 46 * s)} fillRule="evenodd" fillOpacity="0.86" />
+          <path d={c.outline} fillOpacity="0.92" />
+        </g>
+      )}
+
       {/* Kayon crest with the two rings at its heart. */}
-      <path d={c.outline} fill={metal} fillOpacity="0.16" stroke={metal} strokeWidth={2.4 * s} strokeLinejoin="round" />
+      <path d={c.outline} fill={metal} fillOpacity={plate ? 0.1 : 0.16} stroke={metal} strokeWidth={2.4 * s} strokeLinejoin="round" />
       <path d={c.inner} stroke={metal} strokeWidth={1.1 * s} opacity="0.75" />
       <path d={c.stem} stroke={metal} strokeWidth={1.4 * s} strokeLinecap="round" />
       <path d={c.tendrils} stroke={metal} strokeWidth={1.5 * s} strokeLinecap="round" />
@@ -166,6 +176,8 @@ function Gate({ g, id, W, H, shineKey }: { g: Geo; id: string; W: number; H: num
       <path d={archPath(g, r + 5 * s)} stroke="#fff3d1" strokeOpacity="0.55" strokeWidth={1 * s} />
       <path d={archPath(g, ro)} stroke="#5c431a" strokeOpacity="0.45" strokeWidth={1 * s} />
       <path d={archPath(g, r + 0.5 * s)} stroke="#140e09" strokeOpacity="0.65" strokeWidth={2.5 * s} />
+      {/* Ivory fillet between photo and gold (frame only), a crisp inner edge. */}
+      {plate && <path d={archPath(g, r + 2.2 * s)} stroke="#fbf1d6" strokeOpacity="0.9" strokeWidth={1.4 * s} />}
 
       {/* Carved capitals at the spring line and bases at the foot of each post. */}
       {imposts.map((im) => (
@@ -231,8 +243,8 @@ export function GoldArchFrame({ className = "", children, shineKey }: { classNam
         {children}
         <div className={styles.light} />
       </div>
-      <svg aria-hidden viewBox={`0 0 ${F_W} ${F_H}`} className="pointer-events-none absolute inset-0 h-full w-full overflow-visible" fill="none">
-        <Gate g={g} id="dc-gate-f" W={F_W} H={F_H} shineKey={shineKey} />
+      <svg aria-hidden viewBox={`0 0 ${F_W} ${F_H}`} className={`pointer-events-none absolute inset-0 h-full w-full overflow-visible ${styles.gate}`} fill="none">
+        <Gate g={g} id="dc-gate-f" W={F_W} H={F_H} shineKey={shineKey} plate />
       </svg>
     </div>
   );

@@ -31,7 +31,7 @@ const ARCH = { width: 456, height: 560, right: 76 };
 export type ArchPhoto = { src: string; focusX?: number };
 
 /** Default photo: Melayu Deli couple at Istana Maimun (credited on /kredit). */
-export const DEFAULT_PHOTO: ArchPhoto = { src: "/photos/momen/melayu-istana-1400.webp", focusX: 0.53 };
+export const DEFAULT_PHOTO: ArchPhoto = { src: "/photos/pinterest/pelaminan-kristal.webp", focusX: 0.5 };
 
 // ---------------------------------------------------------------- fonts
 

@@ -141,7 +141,7 @@ function ClientConsultationContent({ user }: { user: CurrentUser }) {
             <div className="relative mx-auto hidden aspect-[4/5] w-full max-w-[300px] sm:block lg:max-w-none">
               <div aria-hidden className="absolute inset-0 rounded-t-full border border-dc-gold-antique/40" />
               <div className="absolute inset-3 overflow-hidden rounded-t-full bg-dc-ink-2">
-                <Image src="/photos/adat/jawa-720.webp" alt="Pasangan pengantin berbusana adat Jember Sari, Jawa Timur" fill sizes="340px" className="object-cover object-top" />
+                <Image src="/photos/pasangan/pin-akad.webp" alt="Pasangan pengantin berbusana putih duduk di pelaminan bunga putih saat akad" fill sizes="340px" className="object-cover object-[50%_60%]" />
               </div>
             </div>
           </div>

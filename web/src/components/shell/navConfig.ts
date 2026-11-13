@@ -52,6 +52,7 @@ export const ADMIN_NAV: NavItem[] = [
   { tab: true, href: "/internal/admin/disbursements", group: "Uang dan sengketa", label: "Pencairan", icon: ICON.cash },
   { href: "/internal/consultations", group: "Layanan", label: "Konsultasi", icon: ICON.chat },
   { href: "/internal/admin/inspirasi", group: "Layanan", label: "Inspirasi", icon: ICON.image },
+  { href: "/internal/admin/tim", group: "Sistem", label: "Tim Internal", icon: ICON.users },
   { href: "/internal/admin/audit-log", group: "Sistem", label: "Audit Log", icon: ICON.checklist },
 ];
 

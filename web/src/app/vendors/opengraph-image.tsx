@@ -12,6 +12,6 @@ export default function Image() {
       title: "Direktori vendor pernikahan",
       line: "Bandingkan portofolio dan harga mulai dari, lalu ngobrol langsung dengan vendornya.",
     },
-    { src: "/photos/kategori/dekorasi-1400.webp", focusX: 0.5 },
+    { src: "/photos/pinterest/dekorasi-taman.webp", focusX: 0.5 },
   );
 }
