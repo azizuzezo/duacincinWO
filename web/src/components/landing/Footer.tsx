@@ -49,6 +49,9 @@ export function Footer() {
               </a>
               , satu keluarga dengan DuaCincin.
             </p>
+            <p className="mt-4 text-sm tabular-nums text-dc-on-dark/75">
+              No. TD PSE: <strong className="font-semibold text-dc-on-dark">{COMPANY.pseNumber}</strong>
+            </p>
           </Reveal>
           <nav aria-label="Jelajahi" className="lg:col-span-3">
             <p className="text-xs font-semibold text-dc-gold-antique">Jelajahi</p>

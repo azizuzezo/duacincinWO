@@ -38,6 +38,14 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 
 ## Changelog
 
+### 2026-11-13 — Tanda daftar PSE lingkup privat
+- **Fase:** di luar roadmap (legal/konten).
+- **Apa yang berubah:**
+  - `/perusahaan` menampilkan dua baris baru: tanda daftar PSE lingkup privat (031094.01/DJAI.PSE/11/2026) dan nama sistem elektronik terdaftar (DuaCincin), plus badge PSE di bawah daftar.
+  - Footer publik menampilkan "No. TD PSE: …" di bawah blok merek.
+- **File/komponen utama:** `web/src/lib/company.ts` (`pseNumber`, `pseSystem`), `web/src/app/perusahaan/page.tsx`, `web/src/components/landing/Footer.tsx`, `web/public/pse-lingkup-privat.webp` (baru).
+- **Keputusan/asumsi:** Badge diambil dari gambar yang diberikan pemilik (629×155) dan ditampilkan maksimal 420px, tidak pernah diperbesar.
+
 ### 2026-11-13 — Informasi perusahaan: DuaCincin dikelola PT Karsa Loka Semesta
 - **Fase:** di luar roadmap (legal/konten), menutup sebagian gap §12 "nama badan hukum".
 - **Apa yang berubah:**

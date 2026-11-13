@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
 import { PublicShell } from "@/components/landing/PublicShell";
@@ -6,7 +7,7 @@ import { COMPANY } from "@/lib/company";
 
 export const metadata: Metadata = {
   title: "Informasi perusahaan",
-  description: `DuaCincin dikelola ${COMPANY.name}. Nomor pengesahan, NIB, dan NPWP perseroan.`,
+  description: `DuaCincin dikelola ${COMPANY.name}. Nomor sertifikat pendirian, NIB, NPWP perseroan, dan tanda daftar PSE.`,
   alternates: { canonical: "/perusahaan" },
 };
 
@@ -17,6 +18,8 @@ const ROWS = [
   { label: "Nomor sertifikat pendirian", value: COMPANY.deedNumber },
   { label: "Nomor Induk Berusaha (NIB)", value: COMPANY.nib },
   { label: "NPWP perseroan", value: COMPANY.npwp },
+  { label: "Tanda daftar PSE lingkup privat", value: COMPANY.pseNumber },
+  { label: "Nama sistem elektronik terdaftar", value: COMPANY.pseSystem },
 ];
 
 export default function PerusahaanPage() {
@@ -44,6 +47,15 @@ export default function PerusahaanPage() {
             </div>
           ))}
         </dl>
+
+        {/* Badge issued with the PSE registration; never shown larger than its native 629px. */}
+        <Image
+          src="/pse-lingkup-privat.webp"
+          width={629}
+          height={155}
+          alt={`Tanda terdaftar Penyelenggara Sistem Elektronik lingkup privat: ${COMPANY.pseSystem}, ${COMPANY.pseNumber}`}
+          className="mt-6 h-auto w-full max-w-[420px] rounded-xl"
+        />
 
         <p className="mt-8 max-w-2xl text-sm leading-relaxed text-dc-text-2">
           Aturan memakai DuaCincin ada di{" "}
