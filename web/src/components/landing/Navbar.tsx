@@ -14,6 +14,7 @@ const NAV_LINKS = [
   { href: "/cara-kerja", label: "Cara kerja" },
   { href: "/inspirasi", label: "Inspirasi" },
   { href: "/untuk-vendor", label: "Untuk vendor" },
+  { href: "/tentang-kami", label: "Tentang kami" },
 ];
 
 /** Public header. `overlay`: transparent with light text over a full-bleed

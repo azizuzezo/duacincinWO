@@ -9,6 +9,7 @@ const EXPLORE = [
   { href: "/cara-kerja", label: "Cara kerja escrow" },
   { href: "/inspirasi", label: "Inspirasi" },
   { href: "/untuk-vendor", label: "Untuk vendor" },
+  { href: "/tentang-kami", label: "Tentang kami" },
 ];
 
 const HELP = [
@@ -16,7 +17,6 @@ const HELP = [
   { href: "/legal/client-tos", label: "Ketentuan layanan client" },
   { href: "/legal/vendor-agreement", label: "Perjanjian kemitraan vendor" },
   { href: "/kredit", label: "Kredit foto" },
-  { href: COMPANY_PAGE, label: "Informasi perusahaan" },
 ];
 
 const LINK = "inline-flex min-h-10 items-center text-[0.95rem] font-medium text-dc-on-dark/90 underline-offset-4 transition-colors hover:text-dc-gold-antique hover:underline";

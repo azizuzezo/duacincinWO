@@ -136,9 +136,9 @@ export function HeroScene() {
       </motion.div>
       <div aria-hidden className={`absolute inset-0 -z-30 ${styles.grade}`} />
       <div className="dc-container relative flex flex-1 flex-col pt-28 lg:justify-center lg:pb-10 lg:pt-28">
-        <motion.div className={`relative z-10 max-w-[640px] ${styles.copy}`} style={{ y: copyY }}>
+        <motion.div className={`relative z-10 max-w-[680px] ${styles.copy}`} style={{ y: copyY }}>
           <p className="dc-eyebrow is-light animate-fade-up">Marketplace vendor pernikahan</p>
-          <h1 id="hero-title" style={{ animationDelay: "90ms" }} className="animate-fade-up mt-5 font-heading text-[clamp(2.75rem,6vw,5.4rem)] font-medium leading-[0.98] tracking-[-0.02em] text-[#fbf6ec] [text-wrap:balance]">
+          <h1 id="hero-title" style={{ animationDelay: "90ms" }} className="animate-fade-up mt-5 font-heading text-[clamp(3rem,6.4vw,6.1rem)] font-medium leading-[0.98] tracking-[-0.02em] text-[#fbf6ec] [text-wrap:balance]">
             Hari bahagia kalian, disiapkan <span className="dc-script-light text-[1.18em]">tanpa was-was</span>.
           </h1>
           <p style={{ animationDelay: "180ms" }} className="animate-fade-up mt-6 max-w-[42ch] text-[1.05rem] leading-[1.75] text-[#fbf6ec]/85 sm:text-lg">

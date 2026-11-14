@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Great_Vibes, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
+import { RingsLoader } from "@/components/motion/RingsLoader";
+import { RouteCurtain } from "@/components/motion/RouteCurtain";
 import { ToastProvider } from "@/components/ui/Toast";
 import { OPEN_GRAPH_BASE, SITE_URL } from "@/lib/site";
 
@@ -52,9 +54,24 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="id"
+      // Next 16 no longer turns smooth scrolling off while navigating; without
+      // this, a new page animates its scroll-to-top and can land mid-page.
+      data-scroll-behavior="smooth"
+      // The intro script below may add "dc-no-intro" before hydration.
+      suppressHydrationWarning
       className={`${bodyFont.variable} ${displayFont.variable} ${scriptFont.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-dc-ivory text-dc-black">
+        {/* Intro: once per session, public pages only. Decided before paint. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var d=document.documentElement;if(/^\\/(client|vendor|internal)(\\/|$)/.test(location.pathname)||sessionStorage.getItem("dc-intro"))d.classList.add("dc-no-intro");else sessionStorage.setItem("dc-intro","1")}catch(e){document.documentElement.classList.add("dc-no-intro")}`,
+          }}
+        />
+        <div aria-hidden className="dc-intro">
+          <RingsLoader />
+        </div>
+        <RouteCurtain />
         <ToastProvider>{children}</ToastProvider>
       </body>
     </html>

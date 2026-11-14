@@ -32,7 +32,7 @@ const SECTIONS: LegalSection[] = [
           </li>
         </ol>
         <p className="mt-3">
-          Data lengkap perseroan dapat dilihat di halaman <Link href={COMPANY_PAGE}>Informasi perusahaan</Link>.
+          Data lengkap perseroan dapat dilihat di halaman <Link href={COMPANY_PAGE}>Tentang kami</Link>.
         </p>
       </>
     ),

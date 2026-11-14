@@ -572,3 +572,136 @@ input[type="range"] {
   60% { transform: scale(1.06); }
   100% { transform: scale(1); }
 }
+
+/* ── Marquee (AdatMarquee.tsx) ─────────────────────────────────────
+   The track holds its content twice and slides by half its width, so the
+   loop is seamless. Pauses while hovered; static under reduced motion. */
+.dc-marquee {
+  animation: dc-marquee 60s linear infinite;
+  will-change: transform;
+}
+.dc-marquee-reverse {
+  animation-direction: reverse;
+  animation-duration: 70s;
+}
+.dc-marquee-group:hover .dc-marquee {
+  animation-play-state: paused;
+}
+@keyframes dc-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dc-marquee { animation: none; }
+}
+
+/* ── Loader, intro and route curtain (components/motion) ───────────
+   Rings loader: faint full tracks + a bright arc orbiting each ring in
+   opposite directions. Intro: server-rendered overlay on the first page of
+   a session; the rings draw in, the wordmark rises, then the overlay wipes
+   upward (pure CSS, so it plays before hydration). Curtain: the same ivory
+   sheet between public pages (RouteCurtain.tsx sets data-phase). */
+.dc-loader circle {
+  fill: none;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+}
+.dc-loader-track {
+  stroke: var(--dc-line-strong);
+}
+.dc-loader-arc {
+  stroke: var(--dc-gold);
+  stroke-dasharray: 30 70;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: dc-orbit 1.3s linear infinite;
+}
+.dc-loader-arc-b {
+  stroke: var(--dc-clay);
+  animation-direction: reverse;
+}
+@keyframes dc-orbit {
+  to { transform: rotate(360deg); }
+}
+
+.dc-intro,
+.dc-curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  background: var(--dc-ivory);
+}
+
+/* Intro: draw (0 to 0.9s), hold, wipe up (1.25s to 2s). */
+.dc-intro {
+  animation: dc-wipe-up 750ms var(--dc-ease) 1250ms forwards;
+}
+.dc-intro .dc-loader-track {
+  stroke: var(--dc-gold);
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: dc-draw 900ms var(--dc-ease) forwards;
+}
+.dc-intro .dc-loader-track:nth-of-type(2) {
+  stroke: var(--dc-clay);
+  animation-delay: 160ms;
+}
+.dc-intro .dc-loader-arc {
+  display: none;
+}
+.dc-intro .dc-loader-word {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: dc-rise 700ms var(--dc-ease) 380ms forwards;
+}
+@keyframes dc-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes dc-rise {
+  to { opacity: 1; transform: none; }
+}
+@keyframes dc-wipe-up {
+  to { clip-path: inset(0 0 100% 0); visibility: hidden; }
+}
+/* Seen this session, or a dashboard: no intro (set by the inline script). */
+.dc-no-intro .dc-intro {
+  display: none;
+}
+
+/* Curtain between public pages. */
+.dc-curtain {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.dc-curtain[data-phase="cover"] {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 220ms var(--dc-ease-soft);
+}
+.dc-curtain[data-phase="reveal"] {
+  opacity: 1;
+  visibility: visible;
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path 700ms var(--dc-ease);
+}
+
+/* The new page's content rises in as the curtain lifts (app/template.tsx).
+   Only <main>, so the fixed navbar is never inside a transformed box. */
+.dc-route-in > main#konten,
+.dc-route-in main#konten {
+  animation: dc-route-rise 800ms var(--dc-ease) both;
+}
+@keyframes dc-route-rise {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dc-intro { display: none; }
+  .dc-loader-arc { animation: none; }
+  .dc-route-in main#konten { animation: none; }
+}

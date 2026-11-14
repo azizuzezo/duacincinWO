@@ -22,7 +22,7 @@ export function CTABanner() {
             Buat akun client
           </ButtonLink>
           <ButtonLink href="/vendors" variant="ghostLight" size="lg">
-            Lihat direktori vendor
+            Lihat semua vendor
           </ButtonLink>
         </div>
       </Reveal>

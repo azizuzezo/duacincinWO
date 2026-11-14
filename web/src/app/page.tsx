@@ -1,3 +1,4 @@
+import { AdatMarquee } from "@/components/landing/AdatMarquee";
 import { BudgetDemo } from "@/components/landing/BudgetDemo";
 import { CategoryMosaic } from "@/components/landing/CategoryMosaic";
 import { ConsultantBlock } from "@/components/landing/ConsultantBlock";
@@ -11,6 +12,7 @@ import { InvitationLink } from "@/components/landing/InvitationLink";
 import { Navbar } from "@/components/landing/Navbar";
 import { ProductShowcase } from "@/components/landing/ProductShowcase";
 import { VendorRecruit } from "@/components/landing/VendorRecruit";
+import { WhyDuaCincin } from "@/components/landing/WhyDuaCincin";
 
 // Narrative: search (the door) -> what you can find (categories as photos,
 // real vendors) -> the app itself, screen by screen -> where your money is ->
@@ -19,7 +21,9 @@ import { VendorRecruit } from "@/components/landing/VendorRecruit";
 // Show, don't tell: every section below the hero carries real imagery, real
 // API data or real captures of the product. Backgrounds alternate scene,
 // paper, cream, white, cream, ink (the one ink block), paper, white, cream,
-// paper, photo, so no two neighbours share a ground.
+// paper, photo, so no two neighbours share a ground. Investor-facing
+// additions: the adat type band (white), the usual way vs DuaCincin
+// (ivory + one ink panel) (founders live on /tentang-kami).
 export default function Page() {
   return (
     <>
@@ -27,6 +31,8 @@ export default function Page() {
       <main id="konten" className="flex-1">
         <HeroScene />
         <CategoryMosaic />
+        <AdatMarquee />
+        <WhyDuaCincin />
         <FeaturedVendors />
         <ProductShowcase />
         <EscrowCoin />

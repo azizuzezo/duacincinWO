@@ -31,7 +31,7 @@ export function ConsultantBlock() {
           <h2 id="konsultan-judul" className="mx-auto mt-4 max-w-3xl font-heading text-[clamp(2.5rem,5.4vw,4.6rem)] leading-[1] text-dc-ink">
             Bingung mulai dari mana? <span className="dc-em">Ngobrol dulu.</span>
           </h2>
-          <p className="mx-auto mt-5 max-w-md leading-relaxed text-dc-text-2">Konsultan kami merekomendasikan vendor dari direktori DuaCincin, lewat chat di akunmu.</p>
+          <p className="mx-auto mt-5 max-w-md leading-relaxed text-dc-text-2">Konsultan kami merekomendasikan vendor yang cocok di DuaCincin, lewat chat di akunmu.</p>
         </Reveal>
 
         <div ref={stage} className="relative mx-auto mt-14 w-full max-w-[520px] pb-12 pr-[20%] text-left">

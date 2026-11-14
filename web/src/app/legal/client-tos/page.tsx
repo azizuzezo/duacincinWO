@@ -23,7 +23,7 @@ const SECTIONS: LegalSection[] = [
         <li>
           DuaCincin diselenggarakan oleh <strong>{COMPANY.name}</strong>, pemegang NIB {COMPANY.nib} dan tanda daftar Penyelenggara Sistem
           Elektronik lingkup privat nomor {COMPANY.pseNumber} (&quot;DuaCincin&quot;). Data lengkap perseroan ada di halaman{" "}
-          <Link href={COMPANY_PAGE}>Informasi perusahaan</Link>.
+          <Link href={COMPANY_PAGE}>Tentang kami</Link>.
         </li>
         <li>
           Dengan membuat akun client, kamu menyatakan telah membaca, memahami, dan menyetujui Ketentuan Layanan ini. Persetujuan tersebut merupakan

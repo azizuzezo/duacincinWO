@@ -66,7 +66,7 @@ export function CategoryMosaic() {
         <Reveal className="mx-auto max-w-3xl text-center">
           <p className="dc-eyebrow justify-center">Tujuh kategori vendor</p>
           <h2 id="kategori-judul" className="mt-4 font-heading text-[clamp(2.5rem,5.4vw,4.8rem)] leading-[1] text-dc-ink">
-            Semua untuk hari-H, <span className="dc-em">satu direktori.</span>
+            Semua untuk hari-H, <span className="dc-em">di satu tempat.</span>
           </h2>
         </Reveal>
 
