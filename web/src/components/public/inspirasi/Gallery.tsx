@@ -264,6 +264,7 @@ export function InspirationGallery() {
                       alt={item.alt_text || item.caption || "Inspirasi pernikahan"}
                       caption={item.caption || undefined}
                       tags={adatOf(item).map((k) => ADAT.find((a) => a.key === k)!.label)}
+                      vendorCount={item.vendors?.length ?? 0}
                       ratio={moodRatio(i)}
                       layoutId={reduced ? undefined : `insp-${item.id}`}
                       onOpen={() => {

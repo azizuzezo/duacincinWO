@@ -21,6 +21,7 @@ export function MoodCard({
   alt,
   caption,
   tags,
+  vendorCount = 0,
   pinUrl,
   ratio,
   layoutId,
@@ -30,6 +31,9 @@ export function MoodCard({
   alt: string;
   caption?: string;
   tags: string[];
+  /** Vendors credited on this photo; shown as a small badge so the board
+   * hints which photos lead to real vendors before anyone opens them. */
+  vendorCount?: number;
   pinUrl: string;
   ratio: string;
   layoutId?: string;
@@ -81,6 +85,17 @@ export function MoodCard({
                 {t}
               </span>
             ))}
+          </span>
+        )}
+        {vendorCount > 0 && (
+          <span className="pointer-events-none absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-dc-white/95 py-1 pl-1.5 pr-2.5 text-xs font-semibold text-dc-ink shadow-soft transition-opacity duration-300 lg:group-hover:opacity-0">
+            <span aria-hidden className="flex h-5 w-5 items-center justify-center rounded-full bg-dc-ink">
+              <svg width="13" height="9" viewBox="0 0 34 22" fill="none" stroke="var(--dc-gold-antique)" strokeWidth="2.6">
+                <circle cx="12" cy="11" r="9" />
+                <circle cx="22" cy="11" r="9" />
+              </svg>
+            </span>
+            <span>{vendorCount} vendor</span>
           </span>
         )}
         {/* Caption rises over the photo on hover (desktop); phones read it in the lightbox. */}

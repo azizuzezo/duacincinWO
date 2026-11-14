@@ -19,6 +19,7 @@ func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 
 		r.Post("/", Upload(deps))
 		r.Delete("/{id}", Delete(deps))
+		r.Put("/{id}/vendors", SetVendors(deps))
 		r.Post("/sync-pinterest", SyncPinterest(deps))
 	})
 }

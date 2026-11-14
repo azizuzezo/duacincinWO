@@ -1,6 +1,7 @@
 // End-to-end API journey: real Go server + throwaway Postgres (see e2e/README.md).
 // Run via e2e/run.sh. It creates the data that e2e/ui.mjs later asserts on.
 import { execSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 const BASE = `http://localhost:${process.env.E2E_API_PORT ?? 8080}/api/v1`;
 const PG = process.env.E2E_PG_CONTAINER ?? "dc-e2e-pg";
 const results = []; let failed = 0;
@@ -19,7 +20,22 @@ const psql = (sql) => execSync(`docker exec ${PG} psql -U postgres -d duacincin 
 const stamp = Date.now();
 const vendor = new Client("vendor"), vendor2 = new Client("vendor2"), client = new Client("client"), admin = new Client("admin"), consultant = new Client("consultant");
 const PW = "KataSandi123";
-const reg = (who, kind, email, name) => who.call("POST", `/auth/${kind}/register`, { email, password: PW, full_name: name, accept_terms: true });
+// Sign-up needs an emailed code. Without RESEND_API_KEY the API logs it
+// instead ("[DEV] kode pendaftaran untuk <email>: <code>"), so read it there.
+const API_LOG = process.env.E2E_API_LOG;
+const signupCode = async (email) => {
+  for (let i = 0; i < 20; i++) {
+    const m = readFileSync(API_LOG, "utf8").match(new RegExp(`kode pendaftaran untuk ${email.replace(/[.+]/g, "\\$&")}: (\\d{6})`));
+    if (m) return m[1];
+    await new Promise((res) => setTimeout(res, 100));
+  }
+  throw new Error(`no sign-up code logged for ${email}`);
+};
+const reg = async (who, kind, email, name) => {
+  const otp = await who.call("POST", "/auth/register/otp", { email });
+  if (otp.status !== 200) return otp;
+  return who.call("POST", `/auth/${kind}/register`, { email, password: PW, full_name: name, accept_terms: true, signup_ticket: otp.data.signup_ticket, otp_code: await signupCode(email) });
+};
 
 // 1. registration + login for all roles
 let r = await reg(vendor, "vendor", `vendor${stamp}@test.local`, "Vendor Uji"); ok("vendor registers", r.status === 201 || r.status === 200, JSON.stringify(r));
@@ -110,6 +126,22 @@ r = await admin.call("GET", "/admin/disbursements/pending"); ok("disbursement qu
 r = await client.call("POST", "/conversations/consultation", {}); ok("client opens consultation", r.status < 300 && r.data?.id, JSON.stringify(r)); const cc = r.data;
 r = await consultant.call("GET", "/conversations"); ok("consultant sees consultation in inbox", r.status === 200 && r.data.some((c) => c.id === cc?.id), JSON.stringify(r.data));
 r = await vendor2.call("GET", `/conversations/${cc?.id}/messages`); ok("vendor cannot read consultation", r.status === 403 || r.status === 404, JSON.stringify(r));
+
+// 9. vendor tags on Inspirasi photos. Photos are seeded straight into the
+// database (Admin upload needs Supabase Storage, which e2e never touches).
+const photo = (f) => `http://localhost:3000/photos/pinterest/${f}.webp`;
+const tagged = psql(`insert into inspiration_items (category, storage_path, public_url, caption, alt_text) values ('Pinterest', 'e2e-a', '${photo("venue-joglo")}', 'Akad di pendopo joglo', 'Pendopo joglo dengan lorong bunga putih') returning id`).split("\n")[0];
+psql(`insert into inspiration_items (category, storage_path, public_url, caption, alt_text) values ('Pinterest', 'e2e-b', '${photo("dekorasi-taman")}', 'Dekorasi taman malam', 'Lilin dan lampu gantung di taman') returning id`);
+r = await new Client("anon").call("GET", "/inspiration"); ok("inspiration items carry an empty vendors list", r.status === 200 && r.data.length === 2 && r.data.every((i) => Array.isArray(i.vendors) && i.vendors.length === 0), JSON.stringify(r.data));
+r = await new Client("anon").call("PUT", `/admin/inspiration/${tagged}/vendors`, { vendor_ids: [vendorId] }); ok("anonymous cannot tag vendors (401)", r.status === 401, JSON.stringify(r));
+r = await vendor.call("PUT", `/admin/inspiration/${tagged}/vendors`, { vendor_ids: [vendorId] }); ok("vendor cannot tag itself on a photo (403)", r.status === 403, JSON.stringify(r));
+r = await admin.call("PUT", `/admin/inspiration/${tagged}/vendors`, { vendor_ids: [vendorId, vendor2Id] }); ok("pending vendor cannot be tagged (400)", r.status === 400, JSON.stringify(r));
+r = await admin.call("PUT", `/admin/inspiration/${tagged}/vendors`, { vendor_ids: ["bukan-uuid"] }); ok("malformed vendor id refused (400)", r.status === 400, JSON.stringify(r));
+r = await admin.call("PUT", `/admin/inspiration/${tagged}/vendors`, { vendor_ids: [vendorId, vendorId] }); ok("admin tags the approved vendor (duplicates collapse)", r.status === 200 && r.data?.vendors?.length === 1 && r.data.vendors[0].business_name === "Ballroom Uji", JSON.stringify(r));
+r = await new Client("anon").call("GET", "/inspiration"); const tg = r.data?.find((i) => i.id === tagged)?.vendors;
+ok("public gallery shows the tag with category and city", tg?.length === 1 && tg[0].id === vendorId && tg[0].category === "venue" && tg[0].city === "Jakarta", JSON.stringify(r.data));
+const audits = psql(`select count(*) from admin_audit_log where action = 'inspiration.set_vendors'`);
+ok("only the successful tagging is written to the audit log", audits === "1", audits);
 
 console.log(results.join("\n")); console.log(`\n${results.length - failed}/${results.length} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

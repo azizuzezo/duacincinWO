@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ADMIN_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
@@ -15,8 +15,23 @@ import { Skeleton, SkeletonGroup } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { MotionItem, MotionList } from "@/components/ui/Motion";
 import { WithUser } from "@/components/WithUser";
-import { apiDelete, apiGet, apiPost, apiPostForm, ApiError, type CurrentUser, type InspirationItem } from "@/lib/api";
+import {
+  apiDelete,
+  apiGet,
+  apiPost,
+  apiPostForm,
+  apiPut,
+  ApiError,
+  categoryLabel,
+  VENDOR_CATEGORIES,
+  type CurrentUser,
+  type DirectoryCard,
+  type InspirationItem,
+} from "@/lib/api";
 import { ConfirmDialog, ErrorBanner, PAGE } from "../../_ui";
+
+/** Same cap as the server (inspiration.MaxVendorTags). */
+const MAX_VENDOR_TAGS = 10;
 
 export default function AdminInspirasiPage() {
   return (
@@ -45,6 +60,14 @@ function AdminInspirasiContent({ user }: { user: CurrentUser }) {
 
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
+
+  const [tagTarget, setTagTarget] = useState<InspirationItem | null>(null);
+  const [vendors, setVendors] = useState<DirectoryCard[] | null>(null);
+  const [vendorsFailed, setVendorsFailed] = useState(false);
+  const [picked, setPicked] = useState<string[]>([]);
+  const [vendorQuery, setVendorQuery] = useState("");
+  const [tagSaving, setTagSaving] = useState(false);
+  const [tagError, setTagError] = useState<string | null>(null);
 
   const [deleteTarget, setDeleteTarget] = useState<InspirationItem | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -129,6 +152,62 @@ function AdminInspirasiContent({ user }: { user: CurrentUser }) {
       setDeleting(false);
     }
   }
+
+  function loadVendors() {
+    setVendorsFailed(false);
+    apiGet<DirectoryCard[]>("/api/v1/vendors")
+      .then((data) => setVendors(data ?? []))
+      .catch(() => setVendorsFailed(true));
+  }
+
+  function openTagger(item: InspirationItem) {
+    setTagTarget(item);
+    setPicked((item.vendors ?? []).map((v) => v.id));
+    setVendorQuery("");
+    setTagError(null);
+    if (vendors === null) loadVendors();
+  }
+
+  function togglePicked(id: string) {
+    setTagError(null);
+    setPicked((cur) => {
+      if (cur.includes(id)) return cur.filter((x) => x !== id);
+      if (cur.length >= MAX_VENDOR_TAGS) {
+        setTagError(`Maksimal ${MAX_VENDOR_TAGS} vendor per foto.`);
+        return cur;
+      }
+      return [...cur, id];
+    });
+  }
+
+  async function saveTags() {
+    if (!tagTarget) return;
+    setTagSaving(true);
+    setTagError(null);
+    try {
+      const updated = await apiPut<InspirationItem>(`/api/v1/admin/inspiration/${tagTarget.id}/vendors`, { vendor_ids: picked });
+      setItems((cur) => cur.map((it) => (it.id === updated.id ? { ...it, vendors: updated.vendors } : it)));
+      show(picked.length > 0 ? `${picked.length} vendor ditandai di foto ini.` : "Tanda vendor dihapus dari foto ini.", "success");
+      setTagTarget(null);
+    } catch (err) {
+      setTagError(err instanceof ApiError ? err.message : "Gagal menyimpan vendor.");
+    } finally {
+      setTagSaving(false);
+    }
+  }
+
+  // Vendors grouped by category, filtered by the search box. Already-picked
+  // vendors always stay visible so they can be unticked.
+  const vendorGroups = useMemo(() => {
+    const needle = vendorQuery.trim().toLowerCase();
+    const list = (vendors ?? []).filter(
+      (v) => !needle || picked.includes(v.id) || `${v.business_name} ${v.city} ${categoryLabel(v.category)}`.toLowerCase().includes(needle),
+    );
+    return VENDOR_CATEGORIES.map((c) => ({
+      ...c,
+      vendors: list.filter((v) => v.category === c.value).sort((a, b) => a.business_name.localeCompare(b.business_name, "id")),
+    })).filter((g) => g.vendors.length > 0);
+  }, [vendors, vendorQuery, picked]);
 
   async function handleSyncPinterest() {
     setSyncing(true);
@@ -241,6 +320,19 @@ function AdminInspirasiContent({ user }: { user: CurrentUser }) {
                       <p className="text-xs font-semibold text-dc-clay">{item.category}</p>
                       {item.caption && <p className="mt-0.5 line-clamp-2 text-sm text-dc-ink">{item.caption}</p>}
                       {item.source_credit && <p className="mt-1 truncate text-xs text-dc-text-3">{item.source_credit}</p>}
+                      {(item.vendors?.length ?? 0) > 0 && (
+                        <p className="mt-1.5 line-clamp-2 text-xs text-dc-text-2">
+                          <span className="font-semibold text-dc-ink">Vendor: </span>
+                          {item.vendors!.map((v) => v.business_name).join(", ")}
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => openTagger(item)}
+                        className="mt-2 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-dc-clay underline-offset-4 hover:text-dc-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold"
+                      >
+                        {(item.vendors?.length ?? 0) > 0 ? "Ubah vendor" : "Tandai vendor"}
+                      </button>
                     </figcaption>
                     <button
                       type="button"
@@ -314,6 +406,79 @@ function AdminInspirasiContent({ user }: { user: CurrentUser }) {
             </p>
           )}
         </form>
+      </Sheet>
+
+      <Sheet
+        open={!!tagTarget}
+        onClose={() => setTagTarget(null)}
+        title="Vendor di foto ini"
+        description="Tandai vendor yang mengerjakan pernikahan di foto ini. Nama mereka tampil di halaman Inspirasi dan tertaut ke profil vendor."
+        footer={
+          <Button block onClick={saveTags} loading={tagSaving} disabled={vendors === null && !vendorsFailed}>
+            Simpan {picked.length > 0 ? `${picked.length} vendor` : "tanpa vendor"}
+          </Button>
+        }
+      >
+        <div className="flex flex-col gap-4">
+          {tagTarget && (
+            <div className="flex items-center gap-3">
+              <div className="relative h-20 w-16 shrink-0 overflow-hidden rounded-md bg-dc-cream">
+                <Image src={tagTarget.url} alt="" fill sizes="64px" className="object-cover" unoptimized />
+              </div>
+              <p className="line-clamp-3 min-w-0 text-sm text-dc-ink">{tagTarget.caption || tagTarget.alt_text || tagTarget.category}</p>
+            </div>
+          )}
+          <Input
+            label="Cari vendor"
+            srLabel
+            type="search"
+            value={vendorQuery}
+            onChange={(e) => setVendorQuery(e.target.value)}
+            placeholder="Cari nama, kota, atau kategori"
+          />
+          <p className="text-xs text-dc-text-3" aria-live="polite">
+            {picked.length} dari maksimal {MAX_VENDOR_TAGS} vendor dipilih
+          </p>
+          {tagError && (
+            <p role="alert" className="text-sm font-medium text-dc-danger">
+              {tagError}
+            </p>
+          )}
+          {vendorsFailed ? (
+            <ErrorState title="Daftar vendor belum bisa dimuat" onRetry={loadVendors} />
+          ) : vendors === null ? (
+            <SkeletonGroup label="Memuat vendor" className="flex flex-col gap-2">
+              {[0, 1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-12 w-full rounded-md" />
+              ))}
+            </SkeletonGroup>
+          ) : vendors.length === 0 ? (
+            <EmptyState title="Belum ada vendor yang disetujui" body="Vendor baru bisa ditandai setelah pendaftarannya disetujui di menu Vendor Pending." />
+          ) : vendorGroups.length === 0 ? (
+            <EmptyState title="Vendor tidak ditemukan" body={`Tidak ada vendor yang cocok dengan "${vendorQuery}".`} />
+          ) : (
+            vendorGroups.map((g) => (
+              <fieldset key={g.value} className="flex flex-col gap-1">
+                <legend className="mb-1 text-xs font-semibold text-dc-clay">{g.label}</legend>
+                {g.vendors.map((v) => {
+                  const on = picked.includes(v.id);
+                  return (
+                    <label
+                      key={v.id}
+                      className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-md border px-3 py-2 transition-colors ${on ? "border-dc-gold bg-dc-gold-wash" : "border-dc-line bg-dc-white hover:border-dc-line-strong"}`}
+                    >
+                      <input type="checkbox" checked={on} onChange={() => togglePicked(v.id)} className="h-4 w-4 shrink-0 accent-[var(--dc-ink)]" />
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-semibold text-dc-ink">{v.business_name}</span>
+                        {v.city && <span className="block text-xs text-dc-text-3">{v.city}</span>}
+                      </span>
+                    </label>
+                  );
+                })}
+              </fieldset>
+            ))
+          )}
+        </div>
       </Sheet>
 
       <ConfirmDialog

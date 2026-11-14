@@ -134,6 +134,87 @@ func (r *InspirationRepo) DistinctCategories(ctx context.Context) ([]string, err
 	return categories, rows.Err()
 }
 
+// InspirationVendorTag is one vendor credited on an Inspirasi photo. Only
+// approved vendors are ever returned, so a vendor that is later suspended
+// or rejected quietly drops off every photo it was tagged on.
+type InspirationVendorTag struct {
+	VendorID     string
+	BusinessName string
+	Category     string
+	City         string
+}
+
+// VendorTagsByItem returns the approved vendors tagged on each of the given
+// items, keyed by inspiration item ID, in category then name order (one
+// query for the whole gallery, not one per photo).
+func (r *InspirationRepo) VendorTagsByItem(ctx context.Context, itemIDs []string) (map[string][]InspirationVendorTag, error) {
+	out := make(map[string][]InspirationVendorTag)
+	if len(itemIDs) == 0 {
+		return out, nil
+	}
+	rows, err := r.pool.Query(ctx, `
+		select t.inspiration_id, v.user_id, v.business_name, v.category::text, v.city
+		from inspiration_vendor_tags t
+		join vendor_profiles v on v.user_id = t.vendor_id
+		where t.inspiration_id = any($1::uuid[]) and v.status = 'approved'
+		order by v.category, v.business_name
+	`, itemIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var itemID string
+		var tag InspirationVendorTag
+		if err := rows.Scan(&itemID, &tag.VendorID, &tag.BusinessName, &tag.Category, &tag.City); err != nil {
+			return nil, err
+		}
+		out[itemID] = append(out[itemID], tag)
+	}
+	return out, rows.Err()
+}
+
+// ErrVendorNotApproved means one of the IDs passed to SetVendorTags is not
+// an approved vendor, so nothing was changed.
+var ErrVendorNotApproved = errors.New("vendor not approved")
+
+// SetVendorTags replaces the vendors tagged on one item with vendorIDs, in a
+// single transaction. Every ID must be an approved vendor; otherwise it
+// returns ErrVendorNotApproved and leaves the existing tags untouched.
+func (r *InspirationRepo) SetVendorTags(ctx context.Context, itemID string, vendorIDs []string) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck // no-op after Commit
+
+	if len(vendorIDs) > 0 {
+		var approved int
+		if err := tx.QueryRow(ctx, `
+			select count(*) from vendor_profiles where user_id = any($1::uuid[]) and status = 'approved'
+		`, vendorIDs).Scan(&approved); err != nil {
+			return err
+		}
+		if approved != len(vendorIDs) {
+			return ErrVendorNotApproved
+		}
+	}
+
+	if _, err := tx.Exec(ctx, `delete from inspiration_vendor_tags where inspiration_id = $1`, itemID); err != nil {
+		return err
+	}
+	if len(vendorIDs) > 0 {
+		if _, err := tx.Exec(ctx, `
+			insert into inspiration_vendor_tags (inspiration_id, vendor_id)
+			select $1, unnest($2::uuid[])
+		`, itemID, vendorIDs); err != nil {
+			return err
+		}
+	}
+	return tx.Commit(ctx)
+}
+
 func scanInspirationItem(row pgx.Row) (*InspirationItem, error) {
 	var it InspirationItem
 	if err := row.Scan(&it.ID, &it.Category, &it.StoragePath, &it.PublicURL, &it.AltText, &it.Caption, &it.SourceCredit, &it.ExternalRef, &it.CreatedAt); err != nil {

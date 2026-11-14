@@ -1,6 +1,7 @@
 package inspiration
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -37,6 +38,24 @@ type itemDTO struct {
 	Caption      string `json:"caption"`
 	SourceCredit string `json:"source_credit,omitempty"`
 	SourceURL    string `json:"source_url,omitempty"`
+	// Vendors who worked on the wedding in this photo (always an array, so
+	// the gallery never has to guard against null).
+	Vendors []vendorTagDTO `json:"vendors"`
+}
+
+type vendorTagDTO struct {
+	ID           string `json:"id"`
+	BusinessName string `json:"business_name"`
+	Category     string `json:"category"`
+	City         string `json:"city"`
+}
+
+func toVendorTagDTOs(tags []repository.InspirationVendorTag) []vendorTagDTO {
+	out := make([]vendorTagDTO, 0, len(tags))
+	for _, t := range tags {
+		out = append(out, vendorTagDTO{ID: t.VendorID, BusinessName: t.BusinessName, Category: t.Category, City: t.City})
+	}
+	return out
 }
 
 func toItemDTO(it *repository.InspirationItem) itemDTO {
@@ -47,6 +66,7 @@ func toItemDTO(it *repository.InspirationItem) itemDTO {
 		AltText:      it.AltText,
 		Caption:      it.Caption,
 		SourceCredit: it.SourceCredit,
+		Vendors:      []vendorTagDTO{},
 	}
 	if it.ExternalRef != nil {
 		if pinID, ok := strings.CutPrefix(*it.ExternalRef, "pinterest:"); ok {
@@ -69,9 +89,21 @@ func List(deps *Deps) http.HandlerFunc {
 			return
 		}
 
+		ids := make([]string, 0, len(items))
+		for _, it := range items {
+			ids = append(ids, it.ID)
+		}
+		tags, err := deps.Inspiration.VendorTagsByItem(r.Context(), ids)
+		if err != nil {
+			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
+			return
+		}
+
 		out := make([]itemDTO, 0, len(items))
 		for _, it := range items {
-			out = append(out, toItemDTO(&it))
+			dto := toItemDTO(&it)
+			dto.Vendors = toVendorTagDTOs(tags[it.ID])
+			out = append(out, dto)
 		}
 		httpx.JSON(w, http.StatusOK, out)
 	}
@@ -128,6 +160,77 @@ func Upload(deps *Deps) http.HandlerFunc {
 
 		logAction(deps, r, "inspiration.upload", "inspiration_item", item.ID, map[string]any{"category": category})
 		httpx.JSON(w, http.StatusCreated, toItemDTO(item))
+	}
+}
+
+// MaxVendorTags caps how many vendors one photo can credit: a wedding has
+// at most one vendor per category plus a few extras, and a longer list stops
+// being readable in the lightbox.
+const MaxVendorTags = 10
+
+type setVendorsRequest struct {
+	VendorIDs []string `json:"vendor_ids"`
+}
+
+// SetVendors replaces the vendors tagged on one photo (Admin only). Sending
+// an empty list removes every tag. Each ID must be an approved vendor.
+func SetVendors(deps *Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := chi.URLParam(r, "id")
+		if _, err := uuid.Parse(id); err != nil {
+			httpx.Error(w, http.StatusNotFound, "item tidak ditemukan")
+			return
+		}
+
+		var req setVendorsRequest
+		if err := httpx.DecodeJSON(w, r, &req); err != nil {
+			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
+			return
+		}
+
+		seen := make(map[string]bool, len(req.VendorIDs))
+		vendorIDs := make([]string, 0, len(req.VendorIDs))
+		for _, raw := range req.VendorIDs {
+			parsed, err := uuid.Parse(strings.TrimSpace(raw))
+			if err != nil {
+				httpx.Error(w, http.StatusBadRequest, "vendor tidak valid")
+				return
+			}
+			if v := parsed.String(); !seen[v] {
+				seen[v] = true
+				vendorIDs = append(vendorIDs, v)
+			}
+		}
+		if len(vendorIDs) > MaxVendorTags {
+			httpx.Error(w, http.StatusBadRequest, fmt.Sprintf("maksimal %d vendor per foto", MaxVendorTags))
+			return
+		}
+
+		item, err := deps.Inspiration.GetByID(r.Context(), id)
+		if err != nil {
+			httpx.Error(w, http.StatusNotFound, "item tidak ditemukan")
+			return
+		}
+
+		if err := deps.Inspiration.SetVendorTags(r.Context(), id, vendorIDs); err != nil {
+			if errors.Is(err, repository.ErrVendorNotApproved) {
+				httpx.Error(w, http.StatusBadRequest, "hanya vendor yang sudah disetujui yang bisa ditandai")
+				return
+			}
+			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
+			return
+		}
+
+		tags, err := deps.Inspiration.VendorTagsByItem(r.Context(), []string{id})
+		if err != nil {
+			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
+			return
+		}
+
+		logAction(deps, r, "inspiration.set_vendors", "inspiration_item", id, map[string]any{"vendor_ids": vendorIDs})
+		dto := toItemDTO(item)
+		dto.Vendors = toVendorTagDTOs(tags[id])
+		httpx.JSON(w, http.StatusOK, dto)
 	}
 }
 

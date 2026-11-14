@@ -74,6 +74,7 @@ PIDS+=($!)
 wait_for http://localhost:3000/ "web" || { tail -20 "$WORK/web.log"; exit 1; }
 
 echo; echo "== API journey"
+export E2E_API_LOG="$WORK/api.log"
 api_status=0; node "$ROOT/e2e/api.mjs" || api_status=$?
 echo; echo "== UI checks"
 ui_status=0; node "$ROOT/e2e/ui.mjs" || ui_status=$?

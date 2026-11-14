@@ -38,6 +38,21 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 
 ## Changelog
 
+### 2026-11-14 — Tag vendor di foto Inspirasi (pola Bridestory)
+- **Fase:** 4 (Galeri Inspirasi), lanjutan.
+- **Apa yang berubah:**
+  - Admin bisa menandai vendor yang mengerjakan pernikahan di sebuah foto Inspirasi (tombol "Tandai vendor" / "Ubah vendor" di `/internal/admin/inspirasi`, panel dengan pencarian, dikelompokkan per kategori, maksimal 10 vendor per foto).
+  - Galeri publik `/inspirasi`: foto yang punya tag menampilkan badge "N vendor"; lightbox menampilkan "Vendor di foto ini" (kategori, nama usaha, kota) yang menaut ke `/vendors/{id}`. Tombol umum "Cari vendor {kategori}" hanya muncul kalau foto belum punya tag.
+  - API: `GET /api/v1/inspiration` kini selalu menyertakan `vendors: []` per item (satu query untuk seluruh galeri). Endpoint baru `PUT /api/v1/admin/inspiration/{id}/vendors` (Admin saja, body `{vendor_ids: []}`, mengganti seluruh tag dalam satu transaksi, tercatat di `admin_audit_log` sebagai `inspiration.set_vendors`).
+  - Migrasi `000022_inspiration_vendor_tags`: tabel `inspiration_vendor_tags (inspiration_id, vendor_id)`, keduanya `on delete cascade`.
+  - e2e: registrasi di `e2e/api.mjs` sekarang memakai OTP pendaftaran (kode dibaca dari log API mode dev lewat `E2E_API_LOG` yang di-set `e2e/run.sh`). Sejak OTP pendaftaran ditambahkan, suite ini tidak bisa login sama sekali. Ditambah uji API (bagian 9) dan uji browser untuk tag vendor (desktop 1440 dan HP 390, plus panel admin).
+- **File/komponen utama:** `server/migrations/000022_*`, `server/internal/repository/inspiration.go` (`VendorTagsByItem`, `SetVendorTags`), `server/internal/inspiration/{handlers,routes}.go`, `web/src/lib/api.ts` (`InspirationVendor`), `web/src/components/public/inspirasi/{MoodCard,Gallery,Lightbox}.tsx`, `web/src/app/internal/admin/inspirasi/page.tsx`, `e2e/{run.sh,api.mjs,ui.mjs}`.
+- **Keputusan/asumsi:**
+  - Nama vendor tampil tanpa login, sesuai keputusan "vendor publik penuh" (2026-09-10). PRD §1, §4, dan §8.3 masih menulis vendor anonim sampai login dan perlu diselaraskan.
+  - Hanya vendor berstatus `approved` yang bisa ditandai dan yang ikut tampil; vendor yang kemudian ditolak otomatis hilang dari semua foto tanpa perlu menghapus tagnya.
+  - Yang menandai adalah tim kurasi (Admin), bukan vendor sendiri, supaya tag tidak dipakai untuk promosi diri.
+- **Status:** Done. e2e: semua uji API dan uji tag lolos. Uji lain yang masih gagal (rating di direktori, ulasan dan checklist di dashboard vendor, 5 temuan kontras di beranda dan wedding planner) berada di luar area perubahan ini.
+
 ### 2026-11-13 — Tanda daftar PSE lingkup privat
 - **Fase:** di luar roadmap (legal/konten).
 - **Apa yang berubah:**

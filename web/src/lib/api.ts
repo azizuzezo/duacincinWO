@@ -208,6 +208,15 @@ export type InspirationItem = {
   caption: string;
   source_credit?: string;
   source_url?: string;
+  /** Vendors who worked on the wedding in this photo, tagged by Admin. */
+  vendors?: InspirationVendor[];
+};
+
+export type InspirationVendor = {
+  id: string;
+  business_name: string;
+  category: string;
+  city: string;
 };
 
 export type PlannerTaskStatus = "todo" | "in_progress" | "done";

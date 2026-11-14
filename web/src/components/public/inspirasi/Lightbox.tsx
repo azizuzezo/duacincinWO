@@ -83,6 +83,7 @@ export function Lightbox({
   const adat = adatOf(item).map((k) => ADAT.find((a) => a.key === k)!.label);
   const cat = vendorCategory(item.category);
   const title = item.caption || item.alt_text || "Inspirasi pernikahan";
+  const vendors = item.vendors ?? [];
 
   return (
     <motion.div
@@ -200,8 +201,33 @@ export function Lightbox({
           </p>
         )}
         <p className="mt-3 line-clamp-3 font-heading text-2xl leading-snug text-dc-on-dark lg:mt-4 lg:line-clamp-none lg:text-[1.9rem]">{title}</p>
+        {vendors.length > 0 && (
+          <div className="mt-4 lg:mt-8">
+            <h3 className="text-sm font-semibold text-dc-on-dark/80">Vendor di foto ini</h3>
+            {/* Phones: one swipeable row so the photo keeps most of the screen. Desktop: a list in the side panel. */}
+            <ul className="-mx-5 mt-2 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0">
+              {vendors.map((v) => (
+                <li key={v.id} className="shrink-0">
+                  <Link
+                    href={`/vendors/${v.id}`}
+                    className="group/v flex min-h-11 items-center gap-3 rounded-xl border border-dc-on-dark/15 px-3 py-2 transition-colors hover:border-dc-gold-antique focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold-antique"
+                  >
+                    <span className="min-w-0">
+                      <span className="block text-xs font-semibold text-dc-gold-antique">{vendorCategory(v.category)?.label ?? v.category}</span>
+                      <span className="block max-w-[14rem] truncate text-sm font-semibold text-dc-on-dark lg:max-w-none">{v.business_name}</span>
+                      {v.city && <span className="block text-xs text-dc-on-dark/70">{v.city}</span>}
+                    </span>
+                    <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="ml-auto shrink-0 text-dc-on-dark/60 transition-transform duration-300 group-hover/v:translate-x-0.5 group-hover/v:text-dc-gold-antique">
+                      <path d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         <div className="mt-4 flex flex-wrap items-center gap-2 lg:mt-auto lg:flex-col lg:items-stretch">
-          {cat && (
+          {cat && vendors.length === 0 && (
             <Link href={`/vendors?category=${cat.value}`} className={buttonClasses({ variant: "light", size: "sm" })}>
               Cari vendor {cat.label}
             </Link>
