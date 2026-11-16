@@ -32,7 +32,6 @@ import {
   type VendorProfile,
 } from "@/lib/api";
 import { fadeUp, motionSafe, staggerList, useReducedMotion } from "@/lib/motion";
-import { findRegion } from "@/lib/wilayah";
 
 const STATUS_LABEL: Record<VendorProfile["status"], { text: string; tone: "gold" | "success" | "danger" }> = {
   pending: { text: "Sedang ditinjau tim DuaCincin", tone: "gold" },
@@ -65,7 +64,7 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
 
   const [businessName, setBusinessName] = useState("");
   const [category, setCategory] = useState(VENDOR_CATEGORIES[0].value);
-  const [city, setCity] = useState("");
+  const [cities, setCities] = useState<string[]>([]);
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
   const [description, setDescription] = useState("");
@@ -81,7 +80,7 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
     setProfile(p);
     setBusinessName(p.business_name);
     setCategory(p.category);
-    setCity(p.city);
+    setCities(p.cities ?? []);
     setPriceMin(p.price_min ? String(p.price_min) : "");
     setPriceMax(p.price_max ? String(p.price_max) : "");
     setDescription(p.description);
@@ -110,8 +109,8 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
   const dirty =
     profile !== undefined &&
     (profile === null
-      ? !!(businessName || city || priceMin || priceMax || description)
-      : city !== profile.city ||
+      ? !!(businessName || cities.length || priceMin || priceMax || description)
+      : cities.join("|") !== (profile.cities ?? []).join("|") ||
         category !== profile.category ||
         Number(priceMin || 0) !== profile.price_min ||
         Number(priceMax || 0) !== profile.price_max ||
@@ -120,8 +119,7 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
   function validate(): FieldErrors {
     const e: FieldErrors = {};
     if (!profile && !businessName.trim()) e.name = "Tulis nama usahamu, nama ini yang dilihat calon pengantin.";
-    if (!city.trim()) e.city = "Pilih kabupaten atau kota tempat usahamu berada.";
-    else if (!findRegion(city)) e.city = "Pilih kabupaten atau kota dari daftar.";
+    if (cities.length === 0) e.city = "Pilih minimal satu kabupaten atau kota tempat usahamu melayani.";
     const min = Number(priceMin || 0);
     const max = Number(priceMax || 0);
     if (min > 0 && !priceMax) e.priceMax = "Isi harga tertinggi. Kalau harganya tetap, samakan dengan harga mulai.";
@@ -150,7 +148,7 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
       const updated = await apiPut<VendorProfile>("/api/v1/vendor/profile", {
         business_name: profile?.business_name ?? businessName.trim(),
         category,
-        city: city.trim(),
+        cities,
         price_min: Number(priceMin) || 0,
         price_max: Number(priceMax) || 0,
         description,
@@ -169,14 +167,14 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
   const steps = useMemo(() => {
     const list: { label: string; done: boolean; href?: string }[] = [
       { label: "Nama usaha", done: !!(profile?.business_name || businessName.trim()) },
-      { label: "Kabupaten/kota", done: !!findRegion(city) },
+      { label: "Kabupaten/kota", done: cities.length > 0 },
       { label: "Harga mulai dari", done: Number(priceMin || 0) > 0 },
       { label: `Cerita usaha minimal ${STORY_GOAL} huruf`, done: [...description.trim()].length >= STORY_GOAL },
       { label: `Minimal ${PHOTO_GOAL} foto portofolio`, done: photos.length >= PHOTO_GOAL, href: "/vendor/portfolio" },
     ];
     if (packageCount !== null) list.push({ label: "Minimal 1 paket harga", done: packageCount > 0, href: "/vendor/paket" });
     return list;
-  }, [profile, businessName, city, priceMin, description, photos.length, packageCount]);
+  }, [profile, businessName, cities, priceMin, description, photos.length, packageCount]);
 
   const loading = profile === undefined && !loadError;
 
@@ -268,11 +266,22 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
                         </option>
                       ))}
                     </Select>
-                    <CityCombobox id="f-city" label="Kabupaten/kota" value={city} onChange={setCity} onBlur={blur("city")} error={errors.city} />
+                    <div className="sm:col-span-2">
+                      <CityCombobox
+                        id="f-city"
+                        label="Kabupaten/kota layanan"
+                        values={cities}
+                        onChange={setCities}
+                        onBlur={blur("city")}
+                        error={errors.city}
+                        legacy={profile && (profile.cities ?? []).length === 0 && cities.length === 0 ? profile.city : null}
+                        hint="Pilih semua kabupaten/kota yang kamu layani, misalnya Bandung dan Sumedang."
+                      />
+                    </div>
                   </div>
                 </FormSection>
 
-                <FormSection n={2} title="Kisaran harga" note="Harga mulai dari tampil di kartu direktori. Rincian per paket diatur di halaman Paket harga.">
+                <FormSection n={2} title="Kisaran harga" note="Isi hargamu sendiri. Calon pengantin melihatnya ditambah biaya layanan DuaCincin, dan kamu menerima hargamu utuh. Rincian per paket diatur di halaman Paket harga.">
                   <div className="grid gap-4 sm:grid-cols-2">
                     <RupiahInput id="f-pricemin" label="Harga mulai dari (Rp)" value={priceMin} onChange={setPriceMin} error={errors.priceMin} hint="Kosongkan bila harga dibahas lewat chat." />
                     <RupiahInput id="f-pricemax" label="Harga tertinggi (Rp)" value={priceMax} onChange={setPriceMax} onBlur={blur("priceMax")} error={errors.priceMax} />
@@ -352,7 +361,7 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
                         id: user.id,
                         business_name: profile?.business_name || businessName.trim() || "Nama usahamu",
                         category,
-                        city: city.trim() || "Kotamu",
+                        city: cities.join(", ") || "Kotamu",
                         price_min: Number(priceMin || 0),
                         price_max: Number(priceMax || 0),
                         sample_image: photos[0]?.url,

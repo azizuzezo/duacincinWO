@@ -24,6 +24,7 @@ import { Picker } from "@/components/ui/Picker";
 import { categoryOptions } from "@/components/vendor/directory/categoryOptions";
 import { VENDOR_CATEGORIES } from "@/lib/api";
 import { EASE, SPRING_SOFT, useReducedMotion } from "@/lib/motion";
+import { cityOptions } from "@/lib/wilayah";
 
 import styles from "./hero.module.css";
 import { SCENES } from "./scenes";
@@ -32,6 +33,7 @@ import { GoldArchFrame } from "@/components/ornament/GoldArch";
 const STEP_MS = 7000;
 const POPULAR = ["venue", "decor", "mua_attire", "photo_video"];
 const CATEGORY_OPTIONS = categoryOptions();
+const CITY_OPTIONS = cityOptions();
 
 function useDepth(sx: MotionValue<number>, sy: MotionValue<number>, f: number) {
   return { x: useTransform(sx, (v) => v * f), y: useTransform(sy, (v) => v * f) };
@@ -166,15 +168,18 @@ export function HeroScene() {
               sheetDescription="Pilih jenis vendor yang ingin kamu cari."
               className="flex min-h-14 w-full items-center rounded-xl px-4 py-2 text-left transition-colors hover:bg-dc-cream focus-visible:bg-dc-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dc-gold aria-expanded:bg-dc-cream sm:rounded-full sm:pl-6"
             />
-            <label className="flex flex-col justify-center rounded-xl px-4 py-2 transition-colors focus-within:bg-dc-cream focus-within:ring-2 focus-within:ring-dc-gold hover:bg-dc-cream sm:rounded-full sm:border-l sm:border-dc-line">
-              <span className="text-xs font-semibold text-dc-text-3">Kota atau nama vendor</span>
-              <input
-                name="q"
-                type="search"
-                placeholder="Contoh: Bandung"
-                className="min-h-8 bg-transparent text-[0.95rem] font-semibold text-dc-ink placeholder:font-medium placeholder:text-dc-text-3 focus:outline-none"
-              />
-            </label>
+            {/* Every kabupaten/kota with its province, searchable; hidden input "kota" is what /vendors reads. */}
+            <Picker
+              name="kota"
+              label="Kota"
+              showLabel
+              defaultValue=""
+              options={CITY_OPTIONS}
+              searchPlaceholder="Cari kota atau provinsi"
+              panelMinWidth={340}
+              sheetDescription="Semua kabupaten dan kota di Indonesia."
+              className="flex min-h-14 w-full items-center rounded-xl px-4 py-2 text-left transition-colors hover:bg-dc-cream focus-visible:bg-dc-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dc-gold aria-expanded:bg-dc-cream sm:rounded-full sm:border-l sm:border-dc-line"
+            />
             <button
               type="submit"
               className="mt-1 inline-flex min-h-14 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-linear-135 from-[#e2c27f] via-[#c39c52] to-[#a17d36] px-7 text-[0.95rem] font-bold text-[#1a140c] transition-[transform,box-shadow] duration-300 ease-dc hover:shadow-gold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-ink motion-safe:hover:-translate-y-0.5 sm:mt-0 sm:rounded-full"

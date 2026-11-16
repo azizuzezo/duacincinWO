@@ -1,4 +1,4 @@
-import type { DirectoryCard } from "@/lib/api";
+import { type DirectoryCard, vendorCities } from "@/lib/api";
 
 export type Sort = "default" | "rating" | "price_asc" | "price_desc";
 
@@ -30,7 +30,7 @@ export function applyFilters(cards: DirectoryCard[], f: Filters): DirectoryCard[
   const bucket = BUDGETS.find((b) => b.value === f.budget) ?? BUDGETS[0];
   let list = cards.filter(
     (c) =>
-      (!f.city || c.city === f.city) &&
+      (!f.city || vendorCities(c).includes(f.city)) &&
       (!q || `${c.business_name} ${c.city}`.toLowerCase().includes(q)) &&
       (!f.budget || (c.price_min >= bucket.min && c.price_min <= bucket.max)),
   );

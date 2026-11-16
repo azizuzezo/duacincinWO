@@ -27,6 +27,7 @@ import {
   type Review,
   type VendorPackage,
   type VendorProfile,
+  vendorCities,
 } from "@/lib/api";
 import { blurReveal, fadeUp, motionSafe, useReducedMotion } from "@/lib/motion";
 import { citySlug } from "@/lib/server-api";
@@ -249,18 +250,19 @@ export default function VendorDetailPage({ params }: PageProps<"/vendors/[id]">)
                       Terverifikasi DuaCincin
                     </Badge>
                   )}
-                  {profile.city && (
+                  {vendorCities(profile).map((city) => (
                     <Link
-                      href={`/kategori/${profile.category}/${citySlug(profile.city)}`}
+                      key={city}
+                      href={`/kategori/${profile.category}/${citySlug(city)}`}
                       className="inline-flex min-h-11 items-center gap-1.5 rounded-md px-1 text-sm text-dc-text-2 hover:text-dc-ink hover:underline focus-visible:outline-2 focus-visible:outline-dc-gold"
                     >
                       <svg aria-hidden width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7">
                         <path d="M10 18s6-5.2 6-10a6 6 0 1 0-12 0c0 4.8 6 10 6 10Z" />
                         <circle cx="10" cy="8" r="2.2" />
                       </svg>
-                      {profile.city}
+                      {city}
                     </Link>
-                  )}
+                  ))}
                 </div>
               </motion.header>
 

@@ -43,3 +43,51 @@ func Canonical(name string) (string, bool) {
 	c, ok := byLower[strings.ToLower(strings.TrimSpace(name))]
 	return c, ok
 }
+
+// MaxCities caps how many kabupaten/kota one vendor can list.
+const MaxCities = 10
+
+var splitter = strings.NewReplacer(",", " ", "/", " ", "&", " ", ";", " ", "+", " ", "|", " ")
+
+// Split turns a free-text location ("Bandung sumedang", "Kota Bandung,
+// Kab. Sumedang") into list entries, matching the longest names first.
+// ok is false when any word is left unmatched, so nothing is guessed.
+func Split(text string) (cities []string, ok bool) {
+	words := strings.Fields(strings.ToLower(splitter.Replace(text)))
+	seen := map[string]bool{}
+	for i := 0; i < len(words); {
+		w := words[i]
+		if w == "dan" || w == "-" {
+			i++
+			continue
+		}
+		prefix := ""
+		switch w {
+		case "kota":
+			i++
+		case "kab", "kab.", "kabupaten":
+			prefix, i = "kab. ", i+1
+		}
+		matched := false
+		for n := min(5, len(words)-i); n >= 1; n-- {
+			name := strings.Join(words[i:i+n], " ")
+			c, found := byLower[prefix+name]
+			if !found && prefix != "" {
+				c, found = byLower[name] // "Kabupaten Sumedang" is listed as "Sumedang"
+			}
+			if found {
+				if !seen[c] {
+					seen[c] = true
+					cities = append(cities, c)
+				}
+				i += n
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			return nil, false
+		}
+	}
+	return cities, len(cities) > 0
+}

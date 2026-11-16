@@ -1,11 +1,12 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { Picker } from "@/components/ui/Picker";
 import { Sheet } from "@/components/ui/Sheet";
 import { VENDOR_CATEGORIES } from "@/lib/api";
+import { cityOptions } from "@/lib/wilayah";
 
 import { categoryOptions } from "./categoryOptions";
 import { BUDGETS, SORTS, type Filters, type Sort } from "./filters";
@@ -39,6 +40,7 @@ const CATEGORY_OPTIONS = categoryOptions();
  * button that opens a bottom sheet with big tap targets; changes apply live
  * and the sheet footer shows how many vendors match. */
 export function DirectoryControls({ category, onCategory, filters, onChange, onReset, cities, resultCount, ready }: Props) {
+  const cityOpts = useMemo(() => cityOptions(cities), [cities]);
   const [sheetOpen, setSheetOpen] = useState(false);
   const searchId = useId();
   const activeCount = [category, filters.city, filters.budget, filters.sort !== "default" ? "s" : ""].filter(Boolean).length;
@@ -100,8 +102,10 @@ export function DirectoryControls({ category, onCategory, filters, onChange, onR
             showLabel
             value={filters.city}
             onChange={(v) => onChange({ city: v })}
-            options={[{ value: "", label: "Semua kota" }, ...cities.map((c) => ({ value: c, label: c }))]}
-            panelMinWidth={220}
+            options={cityOpts}
+            searchPlaceholder="Cari kota atau provinsi"
+            sheetDescription="Semua kabupaten dan kota di Indonesia."
+            panelMinWidth={320}
             {...SEG_PICKER}
           />
         </Segment>
@@ -170,13 +174,17 @@ export function DirectoryControls({ category, onCategory, filters, onChange, onR
             onPick={onCategory}
             options={[{ value: "", label: "Semua" }, ...VENDOR_CATEGORIES]}
           />
-          <ChoiceGroup
-            legend="Kota"
-            value={filters.city}
-            onPick={(v) => onChange({ city: v })}
-            options={[{ value: "", label: "Semua kota" }, ...cities.map((c) => ({ value: c, label: c }))]}
-            hint={cities.length === 0 ? "Pilihan kota muncul setelah daftar vendor termuat." : undefined}
-          />
+          <div className="flex flex-col gap-2.5">
+            <p className="text-sm font-semibold text-dc-ink">Kota</p>
+            <Picker
+              label="Kota"
+              value={filters.city}
+              onChange={(v) => onChange({ city: v })}
+              options={cityOpts}
+              searchPlaceholder="Cari kota atau provinsi"
+              sheetDescription="Semua kabupaten dan kota di Indonesia."
+            />
+          </div>
           <ChoiceGroup
             legend="Budget mulai dari"
             value={filters.budget}

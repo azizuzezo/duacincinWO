@@ -1,6 +1,9 @@
 package wilayah
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestList(t *testing.T) {
 	if len(provinces) != 38 {
@@ -16,5 +19,25 @@ func TestList(t *testing.T) {
 	}
 	if _, ok := Canonical("Bandung sumedang"); ok {
 		t.Error("free text must not pass")
+	}
+}
+
+func TestSplit(t *testing.T) {
+	for in, want := range map[string]string{
+		"Bandung sumedang":                 "Bandung|Sumedang",
+		"Kota Bandung, Kabupaten Sumedang": "Bandung|Sumedang",
+		"kab bandung / bandung barat":      "Kab. Bandung|Bandung Barat",
+		"Jakarta Selatan dan Depok":        "Jakarta Selatan|Depok",
+		"Yogyakarta":                       "Yogyakarta",
+	} {
+		got, ok := Split(in)
+		if !ok || strings.Join(got, "|") != want {
+			t.Errorf("Split(%q) = %v, %v; want %s", in, got, ok, want)
+		}
+	}
+	for _, in := range []string{"Jakarta", "Bandung kota kembang", ""} {
+		if got, ok := Split(in); ok {
+			t.Errorf("Split(%q) = %v, want no match", in, got)
+		}
 	}
 }

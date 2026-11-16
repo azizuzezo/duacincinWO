@@ -115,7 +115,10 @@ export type VendorProfile = {
   user_id: string;
   business_name: string;
   category: string;
+  /** Joined display form of `cities`, e.g. "Bandung, Sumedang". */
   city: string;
+  /** Kabupaten/kota served, from the national list (empty for an old free-text location). */
+  cities: string[];
   price_min: number;
   price_max: number;
   description: string;
@@ -141,11 +144,17 @@ export type Review = {
   created_at: string;
 };
 
+/** A vendor's kabupaten/kota as a list; an old free-text location counts as one. */
+export function vendorCities(v: { city: string; cities?: string[] }): string[] {
+  return v.cities && v.cities.length > 0 ? v.cities : v.city ? [v.city] : [];
+}
+
 export type DirectoryCard = {
   id: string;
   business_name: string;
   category: string;
   city: string;
+  cities?: string[];
   price_min: number;
   price_max: number;
   sample_image?: string;
@@ -245,8 +254,11 @@ export type Booking = {
   vendor_id: string;
   event_date: string;
   package_description: string;
+  /** What the couple pays, commission included. */
   agreed_price: number;
   dp_amount: number;
+  /** Vendor only: what the vendor receives (agreed price minus commission). */
+  vendor_amount?: number;
   status: BookingStatus;
 };
 

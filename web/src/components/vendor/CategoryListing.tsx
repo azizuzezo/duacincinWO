@@ -9,7 +9,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { artFor, CATEGORY_ART } from "@/components/vendor/directory/categoryArt";
 import { CategoryPicture } from "@/components/vendor/directory/CategoryPicture";
 import { VendorCard } from "@/components/vendor/VendorCard";
-import { categoryLabel, VENDOR_CATEGORIES, type DirectoryCard } from "@/lib/api";
+import { categoryLabel, VENDOR_CATEGORIES, type DirectoryCard, vendorCities } from "@/lib/api";
 import { citySlug } from "@/lib/server-api";
 import { SITE_URL as SITE } from "@/lib/site";
 
@@ -34,7 +34,7 @@ export function CategoryListing({
   const label = categoryLabel(category);
   const art = artFor(category);
   const counts = new Map<string, number>();
-  for (const c of cards) if (c.city) counts.set(c.city, (counts.get(c.city) ?? 0) + 1);
+  for (const c of cards) for (const city of vendorCities(c)) counts.set(city, (counts.get(city) ?? 0) + 1);
   const cities = Array.from(counts.keys()).sort();
   const where = cityName ? ` di ${cityName}` : "";
   const directoryHref = `/vendors?category=${category}`;

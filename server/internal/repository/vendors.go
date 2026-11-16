@@ -20,8 +20,12 @@ type VendorProfile struct {
 	Status          string
 	RejectionReason *string
 	CommissionRate  *float64
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
+	// Cities are the kabupaten/kota the vendor serves, from internal/wilayah;
+	// City is their joined display form. Empty for free-text profiles that
+	// could not be split.
+	Cities    []string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type PortfolioItem struct {
@@ -46,19 +50,20 @@ func NewVendorRepo(pool *pgxpool.Pool) *VendorRepo {
 // subsequent saves. Unlike before, an edit no longer resets status to
 // pending — only the vendor's initial Admin approval and business_name
 // changes (see vendor_name_change_requests) go through review now.
-func (r *VendorRepo) UpsertProfile(ctx context.Context, userID, businessName, category, city string, priceMin, priceMax int64, description string) (*VendorProfile, error) {
+func (r *VendorRepo) UpsertProfile(ctx context.Context, userID, businessName, category string, cities []string, priceMin, priceMax int64, description string) (*VendorProfile, error) {
 	row := r.pool.QueryRow(ctx, `
-		insert into vendor_profiles (user_id, business_name, category, city, price_min, price_max, description)
-		values ($1, $2, $3, $4, $5, $6, $7)
+		insert into vendor_profiles (user_id, business_name, category, cities, city, price_min, price_max, description)
+		values ($1, $2, $3, $4, array_to_string($4::text[], ', '), $5, $6, $7)
 		on conflict (user_id) do update set
 			category = excluded.category,
+			cities = excluded.cities,
 			city = excluded.city,
 			price_min = excluded.price_min,
 			price_max = excluded.price_max,
 			description = excluded.description,
 			updated_at = now()
-		returning user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at
-	`, userID, businessName, category, city, priceMin, priceMax, description)
+		returning user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at, cities
+	`, userID, businessName, category, cities, priceMin, priceMax, description)
 
 	return scanVendorProfile(row)
 }
@@ -74,7 +79,7 @@ func (r *VendorRepo) UpdateBusinessName(ctx context.Context, userID, businessNam
 
 func (r *VendorRepo) GetByUserID(ctx context.Context, userID string) (*VendorProfile, error) {
 	row := r.pool.QueryRow(ctx, `
-		select user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at
+		select user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at, cities
 		from vendor_profiles where user_id = $1
 	`, userID)
 	p, err := scanVendorProfile(row)
@@ -85,17 +90,20 @@ func (r *VendorRepo) GetByUserID(ctx context.Context, userID string) (*VendorPro
 }
 
 // ListApproved returns approved vendors, optionally filtered by
-// category/city/maxPrice (maxPrice=0 means no price filter).
+// category/city/maxPrice (maxPrice=0 means no price filter). maxPrice is a
+// couple's budget, so it is compared with the starting price they would pay
+// (vendor price plus commission). city matches any of the vendor's cities,
+// or the free-text city of a profile that has none.
 func (r *VendorRepo) ListApproved(ctx context.Context, category, city string, maxPrice int64) ([]VendorProfile, error) {
 	rows, err := r.pool.Query(ctx, `
-		select user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at
+		select user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at, cities
 		from vendor_profiles
 		where status = 'approved'
 		  and ($1 = '' or category = $1::vendor_category)
-		  and ($2 = '' or city ilike $2)
-		  and ($3 = 0 or price_min <= $3)
+		  and ($2 = '' or exists (select 1 from unnest(cities) c where lower(c) = lower($2)) or (cardinality(cities) = 0 and city ilike $2))
+		  and ($3 = 0 or round(price_min * (1 + coalesce(commission_rate, $4))) <= $3)
 		order by created_at desc
-	`, category, city, maxPrice)
+	`, category, city, maxPrice, DefaultCommissionRate)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +120,7 @@ func (r *VendorRepo) CountApproved(ctx context.Context) (int, error) {
 
 func (r *VendorRepo) ListPending(ctx context.Context) ([]VendorProfile, error) {
 	rows, err := r.pool.Query(ctx, `
-		select user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at
+		select user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at, cities
 		from vendor_profiles where status = 'pending' order by created_at asc
 	`)
 	if err != nil {
@@ -202,7 +210,7 @@ func scanVendorProfile(row pgx.Row) (*VendorProfile, error) {
 	var p VendorProfile
 	if err := row.Scan(
 		&p.UserID, &p.BusinessName, &p.Category, &p.City, &p.PriceMin, &p.PriceMax,
-		&p.Description, &p.Status, &p.RejectionReason, &p.CommissionRate, &p.CreatedAt, &p.UpdatedAt,
+		&p.Description, &p.Status, &p.RejectionReason, &p.CommissionRate, &p.CreatedAt, &p.UpdatedAt, &p.Cities,
 	); err != nil {
 		return nil, err
 	}
@@ -215,7 +223,7 @@ func collectVendorProfiles(rows pgx.Rows) ([]VendorProfile, error) {
 		var p VendorProfile
 		if err := rows.Scan(
 			&p.UserID, &p.BusinessName, &p.Category, &p.City, &p.PriceMin, &p.PriceMax,
-			&p.Description, &p.Status, &p.RejectionReason, &p.CommissionRate, &p.CreatedAt, &p.UpdatedAt,
+			&p.Description, &p.Status, &p.RejectionReason, &p.CommissionRate, &p.CreatedAt, &p.UpdatedAt, &p.Cities,
 		); err != nil {
 			return nil, err
 		}
@@ -288,4 +296,32 @@ func (r *VendorRepo) DeleteAccount(ctx context.Context, userID string) (*Deleted
 		return nil, err
 	}
 	return out, nil
+}
+
+// FreeTextCities lists profiles that still have only a free-text city, for
+// the startup backfill that splits them into list entries.
+func (r *VendorRepo) FreeTextCities(ctx context.Context) (map[string]string, error) {
+	rows, err := r.pool.Query(ctx, `select user_id, city from vendor_profiles where cardinality(cities) = 0 and city <> ''`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[string]string{}
+	for rows.Next() {
+		var id, city string
+		if err := rows.Scan(&id, &city); err != nil {
+			return nil, err
+		}
+		out[id] = city
+	}
+	return out, rows.Err()
+}
+
+// SetCities stores a profile's cities and their joined display form.
+func (r *VendorRepo) SetCities(ctx context.Context, userID string, cities []string) error {
+	_, err := r.pool.Exec(ctx, `
+		update vendor_profiles set cities = $2, city = array_to_string($2::text[], ', '), updated_at = now()
+		where user_id = $1
+	`, userID, cities)
+	return err
 }

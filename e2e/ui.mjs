@@ -9,14 +9,14 @@ const out = []; let failed = 0; const ok = (n, c, d = "") => { out.push(`${c ? "
   const s = await session();
   await s.go(`${WEB}/vendors`);
   const dir = await s.ev("document.querySelector('main').innerText");
-  ok("directory renders the real vendor from the database", dir.includes("Ballroom Uji") && dir.includes("35.000.000"), dir.slice(0, 200));
+  ok("directory renders the real vendor from the database", dir.includes("Ballroom Uji") && dir.includes("38.500.000"), dir.slice(0, 200));
   ok("directory card shows verified rating 5.0 (1 ulasan)", /5\.0\s*\(1 ulasan\)/.test(dir), dir.slice(0, 300));
   ok("pending vendor not shown", !dir.includes("Dekor Uji"));
   const vid = await s.ev("document.querySelector('main ul li a')?.getAttribute('href')");
   await s.shot("real-directory");
   await s.go(`${WEB}` + vid);
   const det = await s.ev("document.body.innerText");
-  ok("detail page: packages from real API", det.includes("Half Day Plus") && det.includes("Full Day") && det.includes("20.000.000"), det.slice(0, 200));
+  ok("detail page: packages from real API", det.includes("Half Day Plus") && det.includes("Full Day") && det.includes("22.000.000"), det.slice(0, 200));
   ok("detail page: review summary and comment", det.includes("5.0") && det.includes("Rapi dan tepat waktu.") && det.includes("menyelesaikan booking lewat DuaCincin"));
   await s.shot("real-detail");
   await s.go(`${WEB}/kategori/venue`);
@@ -84,7 +84,7 @@ for (const [w, h, label] of [[1440, 900, "desktop"], [390, 844, "mobile"]]) {
   const pk = await s.ev("document.body.innerText");
   ok("vendor packages page lists real packages", pk.includes("Half Day Plus") && pk.includes("Full Day"));
   await s.go(`${WEB}/vendor/payouts`);
-  ok("vendor payouts page shows net payout", (await s.ev("document.body.innerText")).includes("18.000.000"));
+  ok("vendor payouts page shows net payout", (await s.ev("document.body.innerText")).includes("20.000.000"));
   ok("no console errors (vendor)", s.errors.length === 0, JSON.stringify(s.errors.slice(0, 2)));
   s.close();
 }

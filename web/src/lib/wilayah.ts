@@ -39,3 +39,18 @@ export function searchRegions(query: string, limit = 60): Region[] {
   }
   return [...starts, ...contains, ...inProvince].slice(0, limit);
 }
+
+/**
+ * Choices for a city filter: "all", then cities that already have vendors
+ * (when known), then every other kabupaten/kota. The province rides along as
+ * the description, so searching "jawa barat" finds its cities.
+ */
+export function cityOptions(withVendors: string[] = [], allLabel = "Semua kota"): { value: string; label: string; description?: string }[] {
+  const listed = new Set(withVendors);
+  const head = withVendors
+    .slice()
+    .sort((a, b) => a.localeCompare(b, "id"))
+    .map((c) => ({ value: c, label: c, description: findRegion(c) ? `Ada vendor · ${findRegion(c)!.province}` : "Ada vendor" }));
+  const rest = REGIONS.filter((r) => !listed.has(r.city)).map((r) => ({ value: r.city, label: r.city, description: r.province }));
+  return [{ value: "", label: allLabel }, ...head, ...rest];
+}

@@ -1,9 +1,11 @@
 "use client";
-// Kabupaten/kota field: type to search the national list, pick one. The value
-// is always an entry of the list (never free text), so the directory groups
-// vendors under one spelling. WAI-ARIA combobox with a listbox popup: focus
-// stays in the input, arrows move the highlight (aria-activedescendant),
-// Enter picks, Escape closes and restores the picked value.
+// Kabupaten/kota field: type to search the national list and pick one or
+// more. Every value is an entry of the list (never free text), so the
+// directory groups vendors under one spelling. WAI-ARIA combobox with a
+// multi-select listbox: focus stays in the input, arrows move the highlight
+// (aria-activedescendant), Enter toggles, Backspace in an empty field removes
+// the last pick, Escape closes. Picks show as chips with their own remove
+// buttons.
 
 import { useId, useMemo, useRef, useState } from "react";
 
@@ -14,21 +16,26 @@ import { controlClasses } from "./Field";
 export function CityCombobox({
   id: idProp,
   label,
-  value,
+  values,
   onChange,
   onBlur,
   error,
   hint,
+  legacy,
+  max = 10,
   placeholder = "Ketik nama kabupaten atau kota",
 }: {
   id?: string;
   label: string;
-  /** The picked city ("" when none). A legacy free-text value shows as not picked yet. */
-  value: string;
-  onChange: (city: string) => void;
+  /** Picked cities, in the order they were chosen. */
+  values: string[];
+  onChange: (cities: string[]) => void;
   onBlur?: () => void;
   error?: string;
   hint?: string;
+  /** An older free-text location that still needs picking again. */
+  legacy?: string | null;
+  max?: number;
   placeholder?: string;
 }) {
   const auto = useId();
@@ -36,20 +43,21 @@ export function CityCombobox({
   const listId = `${id}-list`;
   const hintId = `${id}-hint`;
   const errorId = `${id}-error`;
-  const picked = findRegion(value);
 
-  const [query, setQuery] = useState<string | null>(null); // null = not typing, show the picked value
+  const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
-  const results = useMemo(() => searchRegions(query ?? ""), [query]);
-  const text = query ?? picked?.city ?? "";
+  const results = useMemo(() => searchRegions(query), [query]);
+  const full = values.length >= max;
 
-  function choose(city: string) {
-    onChange(city);
-    setQuery(null);
-    setOpen(false);
+  function toggle(city: string) {
+    if (values.includes(city)) onChange(values.filter((c) => c !== city));
+    else if (!full) onChange([...values, city]);
+    setQuery("");
+    setActive(0);
   }
 
   function move(next: number) {
@@ -69,15 +77,15 @@ export function CityCombobox({
     } else if (e.key === "Enter" && open) {
       e.preventDefault();
       const r = results[active];
-      if (r) choose(r.city);
+      if (r) toggle(r.city);
     } else if (e.key === "Escape" && open) {
       e.preventDefault();
-      setQuery(null);
       setOpen(false);
+    } else if (e.key === "Backspace" && query === "" && values.length > 0) {
+      onChange(values.slice(0, -1));
     }
   }
 
-  const legacy = value && !picked ? value : null;
   const describedBy = error ? errorId : hint || legacy ? hintId : undefined;
 
   return (
@@ -85,12 +93,40 @@ export function CityCombobox({
       <label htmlFor={id} className="text-sm font-semibold text-dc-ink">
         {label}
       </label>
+
+      {values.length > 0 && (
+        <ul className="flex flex-wrap gap-2" aria-label={`${label} terpilih`}>
+          {values.map((c) => (
+            <li key={c}>
+              <span className="inline-flex min-h-9 items-center gap-1 rounded-full border border-dc-line-strong bg-dc-cream py-1 pl-3.5 pr-1 text-sm font-semibold text-dc-ink">
+                {c}
+                <span className="font-normal text-dc-text-3">· {findRegion(c)?.province}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange(values.filter((x) => x !== c));
+                    inputRef.current?.focus();
+                  }}
+                  aria-label={`Hapus ${c}`}
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-dc-text-3 transition-colors hover:bg-dc-white hover:text-dc-ink focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-dc-gold"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                    <path d="M6 6l12 12M18 6 6 18" />
+                  </svg>
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
       <div className="relative">
         <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-dc-text-3">
           <circle cx="11" cy="11" r="7" />
           <path d="m20 20-3.5-3.5" />
         </svg>
         <input
+          ref={inputRef}
           id={id}
           role="combobox"
           aria-expanded={open}
@@ -101,8 +137,8 @@ export function CityCombobox({
           aria-describedby={describedBy}
           autoComplete="off"
           spellCheck={false}
-          value={text}
-          placeholder={placeholder}
+          value={query}
+          placeholder={full ? `Maksimal ${max} kabupaten/kota` : values.length ? "Tambah kabupaten atau kota lain" : placeholder}
           onChange={(e) => {
             setQuery(e.target.value);
             setActive(0);
@@ -112,23 +148,18 @@ export function CityCombobox({
           onClick={() => setOpen(true)}
           onKeyDown={onKeyDown}
           onBlur={() => {
-            // A typed name that matches an entry exactly counts as picked.
-            const exact = query !== null ? findRegion(query) : undefined;
-            if (exact) onChange(exact.city);
-            setQuery(null);
+            setQuery("");
             setOpen(false);
             onBlur?.();
           }}
           className={`${controlClasses} pl-11`}
         />
-        {picked && query === null && (
-          <span className="pointer-events-none absolute right-4 top-1/2 max-w-[45%] -translate-y-1/2 truncate text-sm text-dc-text-3">{picked.province}</span>
-        )}
         {open && (
           <ul
             ref={listRef}
             id={listId}
             role="listbox"
+            aria-multiselectable="true"
             aria-label={label}
             // Keep focus in the input while clicking a row.
             onMouseDown={(e) => e.preventDefault()}
@@ -137,24 +168,37 @@ export function CityCombobox({
             {results.length === 0 ? (
               <li className="px-4 py-3 text-sm text-dc-text-3">Tidak ada kabupaten atau kota dengan nama itu.</li>
             ) : (
-              results.map((r, i) => (
-                <li
-                  key={r.city}
-                  id={`${id}-opt-${i}`}
-                  role="option"
-                  aria-selected={r.city === picked?.city}
-                  onClick={() => choose(r.city)}
-                  onMouseMove={() => active !== i && setActive(i)}
-                  className={`flex min-h-11 cursor-pointer items-center justify-between gap-3 px-4 py-2 ${i === active ? "bg-dc-cream" : ""}`}
-                >
-                  <span className="font-semibold text-dc-ink">{r.city}</span>
-                  <span className="truncate text-right text-sm text-dc-text-3">{r.province}</span>
-                </li>
-              ))
+              results.map((r, i) => {
+                const on = values.includes(r.city);
+                const blocked = full && !on;
+                return (
+                  <li
+                    key={r.city}
+                    id={`${id}-opt-${i}`}
+                    role="option"
+                    aria-selected={on}
+                    aria-disabled={blocked || undefined}
+                    onClick={() => !blocked && toggle(r.city)}
+                    onMouseMove={() => active !== i && setActive(i)}
+                    className={`flex min-h-11 items-center gap-3 px-4 py-2 ${blocked ? "cursor-not-allowed opacity-50" : "cursor-pointer"} ${i === active ? "bg-dc-cream" : ""}`}
+                  >
+                    <span aria-hidden className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${on ? "border-dc-ink bg-dc-ink text-dc-on-dark" : "border-dc-line-strong"}`}>
+                      {on && (
+                        <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="m4.5 10.5 3.5 3.5 7.5-8" />
+                        </svg>
+                      )}
+                    </span>
+                    <span className="font-semibold text-dc-ink">{r.city}</span>
+                    <span className="ml-auto truncate text-right text-sm text-dc-text-3">{r.province}</span>
+                  </li>
+                );
+              })
             )}
           </ul>
         )}
       </div>
+
       {error ? (
         <p id={errorId} role="alert" className="text-xs font-medium text-dc-danger">
           {error}

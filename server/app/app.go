@@ -38,6 +38,7 @@ import (
 	"duacincin/server/internal/vendors"
 	"duacincin/server/internal/weddingplanner"
 	"duacincin/server/internal/whatsapp"
+	"duacincin/server/internal/wilayah"
 	"duacincin/server/migrations"
 )
 
@@ -106,6 +107,9 @@ func New(ctx context.Context, opts Options) (*App, error) {
 	}
 
 	vendorRepo := repository.NewVendorRepo(pool)
+	if opts.RunMigrations {
+		backfillVendorCities(ctx, vendorRepo)
+	}
 	vendorNameChangeRepo := repository.NewVendorNameChangeRepo(pool)
 	chatRepo := repository.NewChatRepo(pool)
 	userRepo := repository.NewUserRepo(pool)
@@ -174,4 +178,25 @@ func New(ctx context.Context, opts Options) (*App, error) {
 		Handler: httpserver.NewRouter(pool, cfg, deps),
 		Close:   pool.Close,
 	}, nil
+}
+
+// backfillVendorCities splits vendors' old free-text locations ("Bandung
+// sumedang") into kabupaten/kota entries when every word matches the list.
+// Idempotent and cheap: only profiles without cities are read. Anything it
+// cannot split is left for the vendor to pick again in the profile form.
+func backfillVendorCities(ctx context.Context, vendors *repository.VendorRepo) {
+	rows, err := vendors.FreeTextCities(ctx)
+	if err != nil {
+		log.Printf("warning: vendor cities backfill: %v", err)
+		return
+	}
+	for id, text := range rows {
+		cities, ok := wilayah.Split(text)
+		if !ok || len(cities) > wilayah.MaxCities {
+			continue
+		}
+		if err := vendors.SetCities(ctx, id, cities); err != nil {
+			log.Printf("warning: vendor cities backfill %s: %v", id, err)
+		}
+	}
 }

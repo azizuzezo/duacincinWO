@@ -7,18 +7,20 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"duacincin/server/internal/httpx"
+	"duacincin/server/internal/repository"
 )
 
 type directoryCardDTO struct {
-	ID            string  `json:"id"`
-	BusinessName  string  `json:"business_name"`
-	Category      string  `json:"category"`
-	City          string  `json:"city"`
-	PriceMin      int64   `json:"price_min"`
-	PriceMax      int64   `json:"price_max"`
-	SampleImage   string  `json:"sample_image,omitempty"`
-	AverageRating float64 `json:"average_rating"`
-	ReviewCount   int     `json:"review_count"`
+	ID            string   `json:"id"`
+	BusinessName  string   `json:"business_name"`
+	Category      string   `json:"category"`
+	City          string   `json:"city"`
+	Cities        []string `json:"cities"`
+	PriceMin      int64    `json:"price_min"`
+	PriceMax      int64    `json:"price_max"`
+	SampleImage   string   `json:"sample_image,omitempty"`
+	AverageRating float64  `json:"average_rating"`
+	ReviewCount   int      `json:"review_count"`
 }
 
 // Directory is the PUBLIC (no auth required) vendor listing. Vendor
@@ -54,7 +56,8 @@ func Directory(deps *Deps) http.HandlerFunc {
 
 		cards := make([]directoryCardDTO, 0, len(profiles))
 		for _, p := range profiles {
-			card := directoryCardDTO{ID: p.UserID, BusinessName: p.BusinessName, Category: p.Category, City: p.City, PriceMin: p.PriceMin, PriceMax: p.PriceMax}
+			rate := p.EffectiveCommissionRate()
+			card := directoryCardDTO{ID: p.UserID, BusinessName: p.BusinessName, Category: p.Category, City: p.City, Cities: nonNil(p.Cities), PriceMin: repository.CustomerPrice(p.PriceMin, rate), PriceMax: repository.CustomerPrice(p.PriceMax, rate)}
 			if items, err := deps.Vendors.ListPortfolio(r.Context(), p.UserID); err == nil && len(items) > 0 {
 				card.SampleImage = items[0].PublicURL
 			}
@@ -88,6 +91,9 @@ func VendorDetail(deps *Deps) http.HandlerFunc {
 		}
 
 		dto := toProfileDTO(profile)
+		// Couples see the price they pay: vendor price plus commission.
+		rate := profile.EffectiveCommissionRate()
+		dto.PriceMin, dto.PriceMax = repository.CustomerPrice(profile.PriceMin, rate), repository.CustomerPrice(profile.PriceMax, rate)
 		dto.Portfolio = toPortfolioDTOs(items)
 		if avg, count, err := deps.Reviews.GetAggregateForVendor(r.Context(), id); err == nil {
 			dto.AverageRating, dto.ReviewCount = avg, count

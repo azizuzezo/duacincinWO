@@ -75,6 +75,9 @@ type Props = {
   panelMinWidth?: number;
   /** One line under the sheet title on phones. */
   sheetDescription?: string;
+  /** Adds a search field above the list (for long lists such as every
+   * kabupaten/kota); matches label and description, case-insensitive. */
+  searchPlaceholder?: string;
 };
 
 const PHONE_QUERY = "(max-width: 639px)";
@@ -110,7 +113,7 @@ const popover: Variants = {
 const stop = (e: SyntheticEvent) => e.stopPropagation();
 
 export function Picker({
-  options,
+  options: allOptions,
   label,
   showLabel = false,
   value: valueProp,
@@ -125,7 +128,16 @@ export function Picker({
   valueClassName = "text-[0.95rem] font-semibold text-dc-ink",
   panelMinWidth = 0,
   sheetDescription,
+  searchPlaceholder,
 }: Props) {
+  const searchable = searchPlaceholder !== undefined;
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
+  // Every index below (active row, typeahead, commit) is into the visible list.
+  const options =
+    searchable && q ? allOptions.filter((o) => o.label.toLowerCase().includes(q) || (o.description ?? "").toLowerCase().includes(q)) : allOptions;
+  const searchRef = useRef<HTMLInputElement>(null);
+  const sheetSearchRef = useRef<HTMLInputElement>(null);
   const auto = useId();
   const baseId = idProp ?? `pk${auto.replace(/:/g, "")}`;
   const listId = `${baseId}-list`;
@@ -135,7 +147,7 @@ export function Picker({
   const controlled = valueProp !== undefined;
   const value = controlled ? valueProp : inner;
   const selectedIndex = options.findIndex((o) => o.value === value);
-  const selected = selectedIndex >= 0 ? options[selectedIndex] : undefined;
+  const selected = allOptions.find((o) => o.value === value);
 
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
@@ -145,7 +157,7 @@ export function Picker({
   const mounted = useMounted();
   const reduced = useReducedMotion();
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const panelRef = useRef<HTMLUListElement>(null);
+  const panelRef = useRef<HTMLElement | null>(null);
   const sheetListRef = useRef<HTMLUListElement>(null);
   const typed = useRef({ text: "", timer: 0 });
 
@@ -172,6 +184,7 @@ export function Picker({
 
   function openAt(index: number) {
     if (disabled) return;
+    setQuery("");
     setActive(enabled(index) ? index : enabled(selectedIndex) ? selectedIndex : firstEnabled());
     setOpen(true);
   }
@@ -217,6 +230,11 @@ export function Picker({
       } else if (k === "End") {
         e.preventDefault();
         openAt(lastEnabled());
+      } else if (printable && searchable) {
+        // Typing on the closed field starts a search with that letter.
+        openAt(selectedIndex);
+        setQuery(k);
+        e.preventDefault();
       } else if (printable) {
         openAt(typeahead(k));
       }
@@ -253,6 +271,7 @@ export function Picker({
         commit(active);
         break;
       case " ":
+        if (searchable) break; // a space is part of the search text
         e.preventDefault();
         if (typed.current.text) {
           const i = typeahead(k);
@@ -270,7 +289,7 @@ export function Picker({
         if (!phone) commit(active, false);
         break;
       default:
-        if (printable) {
+        if (printable && !searchable) {
           const i = typeahead(k);
           if (i >= 0) setActive(i);
         }
@@ -331,12 +350,50 @@ export function Picker({
   }, [popoverOpen, close]);
 
   // Phone: the Sheet's focus trap focuses its first control; move focus to
-  // the list right after so arrows and typeahead work at once.
+  // the list (or the search field) right after so keys work at once.
+  // Desktop with search: the search field takes focus from the trigger.
   useEffect(() => {
-    if (!open || !phone) return;
-    const f = requestAnimationFrame(() => sheetListRef.current?.focus({ preventScroll: true }));
+    if (!open) return;
+    if (!phone && !searchable) return;
+    const f = requestAnimationFrame(() => {
+      const target = phone ? (searchable ? sheetSearchRef.current : sheetListRef.current) : searchRef.current;
+      target?.focus({ preventScroll: true });
+    });
     return () => cancelAnimationFrame(f);
-  }, [open, phone]);
+  }, [open, phone, searchable]);
+
+  function onSearch(text: string) {
+    setQuery(text);
+    const t = text.trim().toLowerCase();
+    const next = t ? allOptions.filter((o) => o.label.toLowerCase().includes(t) || (o.description ?? "").toLowerCase().includes(t)) : allOptions;
+    setActive(next.findIndex((o) => !o.disabled));
+  }
+
+  const searchField = (big: boolean) => (
+    <div className={`relative ${big ? "mb-3" : "mb-1.5"}`}>
+      <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-dc-text-3">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-3.5-3.5" />
+      </svg>
+      <input
+        ref={big ? sheetSearchRef : searchRef}
+        type="search"
+        role="combobox"
+        aria-label={`Cari ${label.toLowerCase()}`}
+        aria-expanded={open}
+        aria-controls={listId}
+        aria-autocomplete="list"
+        aria-activedescendant={active >= 0 ? optId(active) : undefined}
+        autoComplete="off"
+        spellCheck={false}
+        value={query}
+        placeholder={searchPlaceholder}
+        onChange={(e) => onSearch(e.target.value)}
+        onKeyDown={onKeyDown}
+        className={`w-full rounded-xl border border-dc-line-strong bg-dc-white pl-10 pr-3 text-dc-ink placeholder:text-dc-text-3 focus:border-dc-gold focus:outline-none ${big ? "min-h-12 text-base" : "min-h-11 text-sm"}`}
+      />
+    </div>
+  );
 
   // Keep the highlighted row in view while moving with the keyboard.
   useEffect(() => {
@@ -414,10 +471,12 @@ export function Picker({
         createPortal(
           <div onPointerMove={stop} onTouchStart={stop} onTouchEnd={stop} onFocus={stop} onBlur={stop}>
             <AnimatePresence>
-              {popoverOpen && (
+              {popoverOpen && !searchable && (
                 <motion.ul
                   key="panel"
-                  ref={panelRef}
+                  ref={(el: HTMLUListElement | null) => {
+                    panelRef.current = el;
+                  }}
                   id={listId}
                   role="listbox"
                   aria-label={label}
@@ -444,8 +503,45 @@ export function Picker({
                   {rows(false)}
                 </motion.ul>
               )}
+              {popoverOpen && searchable && (
+                <motion.div
+                  key="panel-search"
+                  ref={(el: HTMLDivElement | null) => {
+                    panelRef.current = el;
+                  }}
+                  custom={pos?.placement === "above"}
+                  variants={motionSafe(reduced, popover)}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  style={{
+                    position: "fixed",
+                    left: pos?.left ?? 0,
+                    width: pos?.width,
+                    top: pos?.top,
+                    bottom: pos?.bottom,
+                    maxHeight: pos?.maxHeight ?? MAX_PANEL,
+                    visibility: pos ? "visible" : "hidden",
+                    transformOrigin: pos?.placement === "above" ? "50% 100%" : "50% 0%",
+                  }}
+                  className="z-[80] flex flex-col rounded-[18px] border border-dc-line bg-dc-white p-1.5 shadow-float"
+                >
+                  {searchField(false)}
+                  <ul
+                    id={listId}
+                    role="listbox"
+                    aria-label={label}
+                    // Clicking a row must not move focus off the search field.
+                    onMouseDown={(e) => e.preventDefault()}
+                    className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+                  >
+                    {options.length ? rows(false) : <li className="px-3 py-3 text-sm text-dc-text-3">Tidak ada yang cocok.</li>}
+                  </ul>
+                </motion.div>
+              )}
             </AnimatePresence>
             <Sheet open={open && phone} onClose={() => close()} title={label} description={sheetDescription}>
+              {searchable && searchField(true)}
               <ul
                 ref={sheetListRef}
                 id={listId}
@@ -456,7 +552,7 @@ export function Picker({
                 onKeyDown={onKeyDown}
                 className="-mx-2 flex flex-col gap-1 rounded-[18px] outline-none focus-visible:ring-2 focus-visible:ring-dc-gold"
               >
-                {rows(true)}
+                {options.length ? rows(true) : <li className="px-3 py-3 text-sm text-dc-text-3">Tidak ada yang cocok.</li>}
               </ul>
             </Sheet>
           </div>,

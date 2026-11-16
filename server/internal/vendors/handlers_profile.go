@@ -13,10 +13,13 @@ import (
 type upsertProfileRequest struct {
 	BusinessName string `json:"business_name"`
 	Category     string `json:"category"`
-	City         string `json:"city"`
-	PriceMin     int64  `json:"price_min"`
-	PriceMax     int64  `json:"price_max"`
-	Description  string `json:"description"`
+	// Cities: the kabupaten/kota served, from the national list. City (a
+	// single name) is still accepted from older clients.
+	Cities      []string `json:"cities"`
+	City        string   `json:"city"`
+	PriceMin    int64    `json:"price_min"`
+	PriceMax    int64    `json:"price_max"`
+	Description string   `json:"description"`
 }
 
 type profileDTO struct {
@@ -24,6 +27,7 @@ type profileDTO struct {
 	BusinessName      string         `json:"business_name"`
 	Category          string         `json:"category"`
 	City              string         `json:"city"`
+	Cities            []string       `json:"cities"`
 	PriceMin          int64          `json:"price_min"`
 	PriceMax          int64          `json:"price_max"`
 	Description       string         `json:"description"`
@@ -47,6 +51,7 @@ func toProfileDTO(p *repository.VendorProfile) profileDTO {
 		BusinessName:    p.BusinessName,
 		Category:        p.Category,
 		City:            p.City,
+		Cities:          nonNil(p.Cities),
 		PriceMin:        p.PriceMin,
 		PriceMax:        p.PriceMax,
 		Description:     p.Description,
@@ -93,25 +98,21 @@ func UpsertProfile(deps *Deps) http.HandlerFunc {
 			httpx.Error(w, http.StatusBadRequest, "kategori tidak valid")
 			return
 		}
-		if req.City == "" {
-			httpx.Error(w, http.StatusBadRequest, "kota wajib diisi")
+		if len(req.Cities) == 0 && req.City != "" {
+			req.Cities = []string{req.City}
+		}
+		cities, msg := normalizeCities(req.Cities)
+		if msg != "" {
+			httpx.Error(w, http.StatusBadRequest, msg)
 			return
 		}
-		// One kabupaten/kota from the national list, so the directory groups
-		// vendors by the same spelling ("Sumedang", never "sumedang kota").
-		city, ok := wilayah.Canonical(req.City)
-		if !ok {
-			httpx.Error(w, http.StatusBadRequest, "pilih kabupaten/kota dari daftar")
-			return
-		}
-		req.City = city
 		if req.PriceMin < 0 || req.PriceMax < req.PriceMin {
 			httpx.Error(w, http.StatusBadRequest, "rentang harga tidak valid")
 			return
 		}
 
 		profile, err := deps.Vendors.UpsertProfile(
-			r.Context(), claims.UserID, businessName, req.Category, req.City,
+			r.Context(), claims.UserID, businessName, req.Category, cities,
 			req.PriceMin, req.PriceMax, req.Description,
 		)
 		if err != nil {
@@ -121,6 +122,38 @@ func UpsertProfile(deps *Deps) http.HandlerFunc {
 
 		httpx.JSON(w, http.StatusOK, toProfileDTO(profile))
 	}
+}
+
+// normalizeCities checks each name against the national kabupaten/kota list
+// (so the directory groups vendors under one spelling), keeps the list's
+// spelling and drops repeats. A non-empty message means the input is refused.
+func normalizeCities(in []string) ([]string, string) {
+	out := make([]string, 0, len(in))
+	seen := map[string]bool{}
+	for _, name := range in {
+		c, ok := wilayah.Canonical(name)
+		if !ok {
+			return nil, "pilih kabupaten/kota dari daftar"
+		}
+		if !seen[c] {
+			seen[c] = true
+			out = append(out, c)
+		}
+	}
+	switch {
+	case len(out) == 0:
+		return nil, "kota wajib diisi"
+	case len(out) > wilayah.MaxCities:
+		return nil, "pilih paling banyak 10 kabupaten/kota"
+	}
+	return out, ""
+}
+
+func nonNil(s []string) []string {
+	if s == nil {
+		return []string{}
+	}
+	return s
 }
 
 // MyProfile returns the authenticated Vendor's own profile + portfolio,

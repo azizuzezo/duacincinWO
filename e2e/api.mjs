@@ -85,8 +85,22 @@ r = await client.call("GET", "/admin/vendors/pending"); ok("client forbidden fro
 r = await admin.call("POST", `/admin/vendors/${vendorId}/approve`, {}); ok("admin approves vendor", r.status < 300, JSON.stringify(r));
 r = await new Client("anon").call("GET", "/vendors?category=venue"); ok("approved vendor in directory (category filter)", r.data?.some((v) => v.id === vendorId), JSON.stringify(r.data));
 r = await new Client("anon").call("GET", "/vendors?category=venue&city=jakarta%20selatan"); ok("city filter is case-insensitive", r.data?.some((v) => v.id === vendorId), JSON.stringify(r.data));
+r = await vendor.call("PUT", "/vendor/profile", { category: "venue", cities: ["jakarta selatan", "Depok", "depok"], price_min: 35000000, price_max: 120000000, description: "Venue uji untuk E2E." });
+ok("vendor serves several kabupaten/kota (deduped, list spelling)", r.status === 200 && JSON.stringify(r.data?.cities) === JSON.stringify(["Jakarta Selatan", "Depok"]) && r.data?.city === "Jakarta Selatan, Depok", JSON.stringify(r.data));
+r = await vendor.call("PUT", "/vendor/profile", { category: "venue", cities: ["Bandung", "Bandung sumedang"], price_min: 35000000, price_max: 120000000, description: "x" }); ok("a free-text entry among cities is refused", r.status === 400, JSON.stringify(r));
+r = await vendor.call("PUT", "/vendor/profile", { category: "venue", cities: ["Bandung", "Sumedang", "Garut", "Bogor", "Depok", "Bekasi", "Cimahi", "Cianjur", "Subang", "Karawang", "Purwakarta"], price_min: 35000000, price_max: 120000000, description: "x" }); ok("more than 10 kabupaten/kota refused", r.status === 400, JSON.stringify(r));
+r = await new Client("anon").call("GET", "/vendors?category=venue&city=depok"); ok("directory finds the vendor under its second city", r.data?.some((v) => v.id === vendorId && v.cities?.includes("Depok")), JSON.stringify(r.data));
 r = await new Client("anon").call("GET", "/vendors?max_price=1000000"); ok("max_price filter excludes expensive vendor", !r.data?.some((v) => v.id === vendorId), JSON.stringify(r.data));
 r = await new Client("anon").call("GET", `/vendors/${vendorId}/packages`); ok("public packages visible after approval", r.status === 200 && r.data.length === 2 && r.data[0].name === "Half Day Plus", JSON.stringify(r));
+// Commission is added on top of the vendor's price for couples (default 10%).
+ok("public package price includes commission (20 jt -> 22 jt)", r.data?.[0]?.price === 22000000, JSON.stringify(r.data?.[0]));
+r = await vendor.call("GET", "/vendor/packages"); ok("vendor still sees its own package price", r.data?.find((p) => p.name === "Half Day Plus")?.price === 20000000, JSON.stringify(r.data));
+r = await new Client("anon").call("GET", "/vendors?category=venue"); const card = r.data?.find((v) => v.id === vendorId);
+ok("directory card shows the couple's price (35 jt -> 38,5 jt)", card?.price_min === 38500000 && card?.price_max === 132000000, JSON.stringify(card));
+r = await new Client("anon").call("GET", `/vendors/${vendorId}`); ok("vendor detail shows the couple's price", r.data?.price_min === 38500000, JSON.stringify(r.data));
+r = await vendor.call("GET", "/vendor/profile/me"); ok("vendor's own profile keeps its price", r.data?.price_min === 35000000, JSON.stringify(r.data));
+r = await new Client("anon").call("GET", "/vendors?max_price=38000000"); ok("budget filter compares the couple's price (38 jt excludes 38,5 jt)", !r.data?.some((v) => v.id === vendorId), JSON.stringify(r.data));
+r = await new Client("anon").call("GET", "/vendors?max_price=38500000"); ok("budget filter includes a vendor at the couple's price", r.data?.some((v) => v.id === vendorId), JSON.stringify(r.data));
 
 // 5. chat + contact-info filter
 r = await client.call("POST", `/conversations/vendor/${vendorId}`, {}); ok("client starts vendor chat", r.status < 300 && r.data?.id, JSON.stringify(r)); const conv = r.data;
@@ -96,12 +110,16 @@ r = await vendor.call("GET", `/conversations/${conv.id}/messages`); ok("vendor r
 r = await vendor2.call("GET", `/conversations/${conv.id}/messages`); ok("unrelated vendor cannot read thread", r.status === 403 || r.status === 404, JSON.stringify(r));
 
 // 6. booking lifecycle with simulated payments (Midtrans not configured)
-r = await client.call("POST", "/bookings", { vendor_id: vendorId, event_date: "2027-03-14", package_description: "Half Day Plus", agreed_price: 20000000 }); ok("client creates booking", r.status < 300 && r.data?.status === "requested", JSON.stringify(r)); const bk = r.data;
+r = await client.call("POST", "/bookings", { vendor_id: vendorId, event_date: "2027-03-14", package_description: "Half Day Plus", agreed_price: 22000000 }); ok("client creates booking", r.status < 300 && r.data?.status === "requested", JSON.stringify(r)); const bk = r.data;
+ok("client booking hides the vendor's share", bk?.vendor_amount === undefined, JSON.stringify(bk));
+r = await vendor.call("GET", `/bookings/${bk.id}`); ok("vendor sees it receives its own price (22 jt -> 20 jt)", r.data?.agreed_price === 22000000 && r.data?.vendor_amount === 20000000, JSON.stringify(r.data));
+r = await admin.call("PATCH", `/admin/vendors/${vendorId}/commission`, { rate: 0.2 }); ok("admin sets a 20% commission", r.status === 200, JSON.stringify(r));
+r = await new Client("anon").call("GET", `/vendors/${vendorId}/packages`); ok("new rate moves public prices at once (20 jt -> 24 jt)", r.data?.[0]?.price === 24000000, JSON.stringify(r.data?.[0]));
 r = await client.call("POST", `/bookings/${bk.id}/review`, { rating: 5, comment: "terlalu cepat" }); ok("review before completion refused (409)", r.status === 409, JSON.stringify(r));
 r = await vendor.call("POST", `/bookings/${bk.id}/confirm`, {}); ok("vendor confirms", r.status < 300, JSON.stringify(r));
 r = await client.call("POST", `/bookings/${bk.id}/pay/dp`, {}); ok("client starts DP payment (dev mode)", r.status < 300, JSON.stringify(r));
 r = await client.call("POST", `/bookings/${bk.id}/dev-simulate-payment`, { type: "dp" }); ok("simulate DP paid", r.status < 300, JSON.stringify(r));
-r = await client.call("GET", `/bookings/${bk.id}`); ok("status dp_paid, DP is 30%", r.data?.status === "dp_paid" && r.data?.dp_amount === 6000000, JSON.stringify(r.data));
+r = await client.call("GET", `/bookings/${bk.id}`); ok("status dp_paid, DP is 30%", r.data?.status === "dp_paid" && r.data?.dp_amount === 6600000, JSON.stringify(r.data));
 r = await client.call("POST", `/bookings/${bk.id}/pay/full`, {}); ok("client starts full payment", r.status < 300, JSON.stringify(r));
 r = await client.call("POST", `/bookings/${bk.id}/dev-simulate-payment`, { type: "full" }); ok("simulate full paid", r.status < 300, JSON.stringify(r));
 r = await client.call("GET", `/bookings/${bk.id}`); ok("status full_paid", r.data?.status === "full_paid", JSON.stringify(r.data));
@@ -121,7 +139,9 @@ r = await vendor.call("GET", "/notifications"); const note = r.data?.find((n) =>
 ok("vendor notified of review, link goes to dashboard", !!note && /\/vendor\/dashboard#ulasan-vendor/.test(note.link || ""), JSON.stringify(r.data));
 r = await admin.call("GET", "/admin/disbursements/pending"); ok("completed booking appears in pending disbursements", r.status === 200 && r.data.some((d) => d.booking_id === bk.id), JSON.stringify(r.data));
 r = await admin.call("GET", "/admin/dashboard"); ok("admin dashboard stats respond", r.status === 200 && typeof r.data?.active_vendors === "number", JSON.stringify(r));
-r = await vendor.call("GET", "/vendor/payouts"); ok("vendor sees payout with 10% default commission", r.status === 200 && r.data.some((d) => d.booking_id === bk.id && d.commission_amount === 2000000 && d.net_amount === 18000000), JSON.stringify(r.data));
+r = await vendor.call("GET", "/vendor/payouts"); ok("payout keeps the commission fixed at booking (rate changed to 20% since)", r.status === 200 && r.data.some((d) => d.booking_id === bk.id && d.gross_amount === 22000000 && d.commission_amount === 2000000 && d.net_amount === 20000000), JSON.stringify(r.data));
+// The 20% rate set after booking did not touch this deal: commission was fixed at booking time.
+r = await admin.call("PATCH", `/admin/vendors/${vendorId}/commission`, { rate: null }); ok("admin clears the override", r.status === 200, JSON.stringify(r));
 r = await admin.call("POST", `/admin/disbursements/${bk.id}/mark-disbursed`, {}); ok("admin marks disbursed", r.status < 300, JSON.stringify(r));
 r = await admin.call("GET", "/admin/disbursements/pending"); ok("disbursement queue clears", !r.data.some((d) => d.booking_id === bk.id), JSON.stringify(r.data));
 
@@ -142,7 +162,7 @@ r = await admin.call("PUT", `/admin/inspiration/${tagged}/vendors`, { vendor_ids
 r = await admin.call("PUT", `/admin/inspiration/${tagged}/vendors`, { vendor_ids: ["bukan-uuid"] }); ok("malformed vendor id refused (400)", r.status === 400, JSON.stringify(r));
 r = await admin.call("PUT", `/admin/inspiration/${tagged}/vendors`, { vendor_ids: [vendorId, vendorId] }); ok("admin tags the approved vendor (duplicates collapse)", r.status === 200 && r.data?.vendors?.length === 1 && r.data.vendors[0].business_name === "Ballroom Uji", JSON.stringify(r));
 r = await new Client("anon").call("GET", "/inspiration"); const tg = r.data?.find((i) => i.id === tagged)?.vendors;
-ok("public gallery shows the tag with category and city", tg?.length === 1 && tg[0].id === vendorId && tg[0].category === "venue" && tg[0].city === "Jakarta Selatan", JSON.stringify(r.data));
+ok("public gallery shows the tag with category and city", tg?.length === 1 && tg[0].id === vendorId && tg[0].category === "venue" && tg[0].city.includes("Jakarta Selatan"), JSON.stringify(r.data));
 const audits = psql(`select count(*) from admin_audit_log where action = 'inspiration.set_vendors'`);
 ok("only the successful tagging is written to the audit log", audits === "1", audits);
 

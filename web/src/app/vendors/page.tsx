@@ -18,7 +18,7 @@ import { CategoryPicture } from "@/components/vendor/directory/CategoryPicture";
 import { DirectoryControls } from "@/components/vendor/directory/DirectoryControls";
 import { applyFilters, BUDGETS, budgetLabel, EMPTY_FILTERS, SORTS, type Filters, type Sort } from "@/components/vendor/directory/filters";
 import { VendorCard } from "@/components/vendor/VendorCard";
-import { apiGet, ApiError, categoryLabel, VENDOR_CATEGORIES, type DirectoryCard } from "@/lib/api";
+import { apiGet, ApiError, categoryLabel, VENDOR_CATEGORIES, type DirectoryCard, vendorCities } from "@/lib/api";
 import { EASE, fadeUp, motionSafe, staggerList, useReducedMotion } from "@/lib/motion";
 
 // useSearchParams needs a Suspense boundary under the App Router.
@@ -101,7 +101,7 @@ function VendorDirectory() {
     selectCategory("");
   }
 
-  const cities = useMemo(() => Array.from(new Set(cards.map((c) => c.city).filter(Boolean))).sort(), [cards]);
+  const cities = useMemo(() => Array.from(new Set(cards.flatMap((c) => vendorCities(c)))).sort(), [cards]);
   const visible = useMemo(() => applyFilters(cards, filters), [cards, filters]);
   const ready = !loading && !error;
 
