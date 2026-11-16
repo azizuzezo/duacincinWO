@@ -2,10 +2,11 @@
 
 import { AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ADMIN_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -13,6 +14,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/Toast";
 import { WithUser } from "@/components/WithUser";
 import { apiGet, apiPost, ApiError, categoryLabel, type CurrentUser } from "@/lib/api";
+import { useLiveRefresh } from "@/lib/useLiveRefresh";
 import { ConfirmDialog, DangerGhostButton, ErrorBanner, Monogram, PAGE, QueueItem, ResultCount, RowsSkeleton, SearchField, SubNav } from "../../_ui";
 
 type PendingVendor = {
@@ -51,14 +53,26 @@ function AdminVendorsContent({ user }: { user: CurrentUser }) {
   const [bulkBusy, setBulkBusy] = useState(false);
   const { show } = useToast();
 
-  async function load() {
+  // Ids already on screen, to tell which rows a background refresh brought in.
+  const knownIds = useRef<Set<string> | null>(null);
+  const [fresh, setFresh] = useState<Set<string>>(new Set());
+
+  async function load({ background = false }: { background?: boolean } = {}) {
     try {
       const data = (await apiGet<PendingVendor[]>("/api/v1/admin/vendors/pending")) ?? [];
+      const arrived = knownIds.current ? data.filter((v) => !knownIds.current!.has(v.user_id)) : [];
+      knownIds.current = new Set(data.map((v) => v.user_id));
+      if (background && arrived.length > 0) {
+        setFresh((prev) => new Set([...prev, ...arrived.map((v) => v.user_id)]));
+        show(arrived.length === 1 ? `Vendor baru menunggu review: ${arrived[0].business_name}.` : `${arrived.length} vendor baru menunggu review.`);
+      }
       setVendors(data);
       // Drop selections for vendors that are no longer pending.
       setSelected((prev) => new Set([...prev].filter((id) => data.some((v) => v.user_id === id))));
       setLoadFailed(false);
     } catch (err) {
+      // A failed background refresh keeps the list on screen; the next tick retries.
+      if (background) return;
       setLoadFailed(true);
       setError(err instanceof ApiError ? err.message : "Gagal memuat daftar vendor.");
     } finally {
@@ -68,7 +82,15 @@ function AdminVendorsContent({ user }: { user: CurrentUser }) {
 
   useEffect(() => {
     queueMicrotask(load);
+    // Mount only; later refreshes come from useLiveRefresh below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // New sign-ups appear without a reload. Paused while an approve/reject is
+  // in flight so the list never jumps under the admin's hand.
+  useLiveRefresh(() => {
+    if (!busyId && !bulkBusy && !loadFailed) load({ background: true });
+  });
 
   async function handleApprove(v: PendingVendor) {
     setBusyId(v.user_id);
@@ -227,6 +249,11 @@ function AdminVendorsContent({ user }: { user: CurrentUser }) {
                           <div className="min-w-0 flex-1">
                             <h2 id={`v-${v.user_id}`} className="font-heading text-2xl leading-tight text-dc-ink">
                               {v.business_name}
+                              {fresh.has(v.user_id) && (
+                                <Badge tone="gold" className="ml-2 align-middle font-sans">
+                                  Baru
+                                </Badge>
+                              )}
                             </h2>
                             <p className="mt-1 text-sm text-dc-text-2">
                               {categoryLabel(v.category)} · {v.city}
