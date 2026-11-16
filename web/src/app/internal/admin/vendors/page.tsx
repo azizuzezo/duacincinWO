@@ -248,7 +248,9 @@ function AdminVendorsContent({ user }: { user: CurrentUser }) {
                           <Monogram name={v.business_name} />
                           <div className="min-w-0 flex-1">
                             <h2 id={`v-${v.user_id}`} className="font-heading text-2xl leading-tight text-dc-ink">
-                              {v.business_name}
+                              <Link href={`/internal/admin/vendors/${v.user_id}`} className="underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-dc-gold">
+                                {v.business_name}
+                              </Link>
                               {fresh.has(v.user_id) && (
                                 <Badge tone="gold" className="ml-2 align-middle font-sans">
                                   Baru

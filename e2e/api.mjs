@@ -98,6 +98,10 @@ r = await vendor.call("GET", "/vendor/packages"); ok("vendor still sees its own 
 r = await new Client("anon").call("GET", "/vendors?category=venue"); const card = r.data?.find((v) => v.id === vendorId);
 ok("directory card shows the couple's price (35 jt -> 38,5 jt)", card?.price_min === 38500000 && card?.price_max === 132000000, JSON.stringify(card));
 r = await new Client("anon").call("GET", `/vendors/${vendorId}`); ok("vendor detail shows the couple's price", r.data?.price_min === 38500000, JSON.stringify(r.data));
+r = await admin.call("GET", `/admin/vendors/${vendorId}`); const hp = r.data?.packages?.find((p) => p.name === "Half Day Plus");
+ok("admin vendor detail pairs vendor and website prices", r.status === 200 && r.data.price_min.vendor === 35000000 && r.data.price_min.website === 38500000 && hp?.price.vendor === 20000000 && hp?.price.website === 22000000 && r.data.commission_rate === 0.1 && r.data.email?.includes("@"), JSON.stringify(r.data));
+r = await client.call("GET", `/admin/vendors/${vendorId}`); ok("client cannot read admin vendor detail (403)", r.status === 403, JSON.stringify(r));
+r = await admin.call("GET", "/admin/vendors/bukan-uuid"); ok("admin vendor detail: malformed id is 404", r.status === 404, JSON.stringify(r));
 r = await vendor.call("GET", "/vendor/profile/me"); ok("vendor's own profile keeps its price", r.data?.price_min === 35000000, JSON.stringify(r.data));
 r = await new Client("anon").call("GET", "/vendors?max_price=38000000"); ok("budget filter compares the couple's price (38 jt excludes 38,5 jt)", !r.data?.some((v) => v.id === vendorId), JSON.stringify(r.data));
 r = await new Client("anon").call("GET", "/vendors?max_price=38500000"); ok("budget filter includes a vendor at the couple's price", r.data?.some((v) => v.id === vendorId), JSON.stringify(r.data));

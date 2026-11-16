@@ -585,6 +585,7 @@ func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 
 		r.Get("/vendors/pending", listPending(deps))
 		r.Get("/vendors/approved", listApproved(deps))
+		r.Get("/vendors/{id}", vendorDetail(deps))
 		r.Post("/vendors/{id}/approve", approveVendor(deps))
 		r.Post("/vendors/bulk-approve", bulkApproveVendors(deps))
 		r.Post("/vendors/{id}/reject", rejectVendor(deps))

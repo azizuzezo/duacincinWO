@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { ADMIN_NAV } from "@/components/shell/navConfig";
@@ -174,7 +175,9 @@ function ApprovedVendorsContent({ user }: { user: CurrentUser }) {
                       <div className="flex min-w-0 items-center gap-3">
                         <Monogram name={v.business_name} size="sm" />
                         <div className="min-w-0">
-                          <p className="truncate font-semibold text-dc-ink">{v.business_name}</p>
+                          <Link href={`/internal/admin/vendors/${v.user_id}`} className="block truncate font-semibold text-dc-ink underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-dc-gold">
+                            {v.business_name}
+                          </Link>
                           <p className="truncate text-sm text-dc-text-3">
                             <span className="md:hidden">{categoryLabel(v.category)} · </span>
                             {v.city}
