@@ -223,3 +223,69 @@ func collectVendorProfiles(rows pgx.Rows) ([]VendorProfile, error) {
 	}
 	return profiles, rows.Err()
 }
+
+// ErrVendorHasBookings blocks deleting a vendor whose bookings (and the
+// payments and disbursements hanging off them) must stay on record.
+var ErrVendorHasBookings = errors.New("vendor has bookings")
+
+// DeletedVendor is what DeleteAccount removed, for the audit trail and for
+// cleaning up the vendor's files in Storage afterwards.
+type DeletedVendor struct {
+	BusinessName     string
+	PortfolioPaths   []string
+	BookingsBlocking int
+}
+
+// DeleteAccount permanently removes a vendor's user account; the profile,
+// portfolio, packages, chats and disputes go with it through on delete
+// cascade. It refuses with ErrVendorHasBookings while any booking exists,
+// because deleting the user would cascade away clients' booking, payment and
+// disbursement records. The user row is locked first, so a booking created
+// concurrently either lands before the count (and blocks the delete) or
+// fails its foreign key after it.
+func (r *VendorRepo) DeleteAccount(ctx context.Context, userID string) (*DeletedVendor, error) {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck // no-op after commit
+
+	out := &DeletedVendor{}
+	err = tx.QueryRow(ctx, `
+		select vp.business_name
+		from users u join vendor_profiles vp on vp.user_id = u.id
+		where u.id = $1 and u.role = 'vendor'
+		for update of u
+	`, userID).Scan(&out.BusinessName)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.QueryRow(ctx, `select count(*) from bookings where vendor_id = $1`, userID).Scan(&out.BookingsBlocking); err != nil {
+		return nil, err
+	}
+	if out.BookingsBlocking > 0 {
+		return out, ErrVendorHasBookings
+	}
+
+	rows, err := tx.Query(ctx, `select storage_path from vendor_portfolio_items where vendor_id = $1`, userID)
+	if err != nil {
+		return nil, err
+	}
+	paths, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	if err != nil {
+		return nil, err
+	}
+	out.PortfolioPaths = paths
+
+	if _, err := tx.Exec(ctx, `delete from users where id = $1 and role = 'vendor'`, userID); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+	return out, nil
+}

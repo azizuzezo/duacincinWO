@@ -6,17 +6,21 @@ package admin
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 
 	"duacincin/server/internal/auth"
 	"duacincin/server/internal/config"
 	"duacincin/server/internal/httpx"
 	"duacincin/server/internal/repository"
+	"duacincin/server/internal/storage"
 )
 
 type Deps struct {
@@ -28,10 +32,15 @@ type Deps struct {
 	Bookings      *repository.BookingRepo
 	AuditLog      *repository.AuditLogRepo
 	Notifications *repository.NotificationRepo
+	// Storage and PortfolioBucket let a vendor deletion also remove the
+	// vendor's portfolio files. The bucket name is passed in because the
+	// vendors package imports this one.
+	Storage         *storage.Client
+	PortfolioBucket string
 }
 
-func NewDeps(vendors *repository.VendorRepo, nameChange *repository.VendorNameChangeRepo, disbursements *repository.DisbursementRepo, disputes *repository.DisputeRepo, users *repository.UserRepo, bookings *repository.BookingRepo, auditLog *repository.AuditLogRepo, notifications *repository.NotificationRepo) *Deps {
-	return &Deps{Vendors: vendors, NameChange: nameChange, Disbursements: disbursements, Disputes: disputes, Users: users, Bookings: bookings, AuditLog: auditLog, Notifications: notifications}
+func NewDeps(vendors *repository.VendorRepo, nameChange *repository.VendorNameChangeRepo, disbursements *repository.DisbursementRepo, disputes *repository.DisputeRepo, users *repository.UserRepo, bookings *repository.BookingRepo, auditLog *repository.AuditLogRepo, notifications *repository.NotificationRepo, storageClient *storage.Client, portfolioBucket string) *Deps {
+	return &Deps{Vendors: vendors, NameChange: nameChange, Disbursements: disbursements, Disputes: disputes, Users: users, Bookings: bookings, AuditLog: auditLog, Notifications: notifications, Storage: storageClient, PortfolioBucket: portfolioBucket}
 }
 
 // notify creates a persisted notification for userID. Best-effort: a
@@ -528,6 +537,44 @@ func listAuditLog(deps *Deps) http.HandlerFunc {
 	}
 }
 
+// deleteVendor permanently removes a vendor account (pending, rejected or
+// approved) together with its profile, portfolio, packages and chats. A
+// vendor with any booking is refused with 409: those records belong to the
+// clients too and are kept; the sanction ladder is the tool for those.
+func deleteVendor(deps *Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := chi.URLParam(r, "id")
+		if _, err := uuid.Parse(id); err != nil {
+			httpx.Error(w, http.StatusNotFound, "vendor tidak ditemukan")
+			return
+		}
+
+		deleted, err := deps.Vendors.DeleteAccount(r.Context(), id)
+		switch {
+		case errors.Is(err, repository.ErrNotFound):
+			httpx.Error(w, http.StatusNotFound, "vendor tidak ditemukan")
+			return
+		case errors.Is(err, repository.ErrVendorHasBookings):
+			httpx.Error(w, http.StatusConflict, fmt.Sprintf("%s punya %d booking, jadi tidak bisa dihapus. Riwayat booking dan pembayaran calon pengantin harus tetap tersimpan.", deleted.BusinessName, deleted.BookingsBlocking))
+			return
+		case err != nil:
+			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
+			return
+		}
+
+		if deps.Storage != nil && deps.Storage.Configured() {
+			for _, path := range deleted.PortfolioPaths {
+				if err := deps.Storage.Delete(r.Context(), deps.PortfolioBucket, path); err != nil {
+					log.Printf("delete vendor %s: portfolio file %s: %v", id, path, err)
+				}
+			}
+		}
+
+		logAction(deps, r, "vendor.delete", "vendor", id, map[string]any{"business_name": deleted.BusinessName})
+		httpx.JSON(w, http.StatusOK, map[string]string{"message": "vendor dihapus"})
+	}
+}
+
 // Mount registers /admin/* routes onto r, restricted to the admin role.
 func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 	r.Route("/admin", func(r chi.Router) {
@@ -542,6 +589,7 @@ func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 		r.Post("/vendors/bulk-approve", bulkApproveVendors(deps))
 		r.Post("/vendors/{id}/reject", rejectVendor(deps))
 		r.Patch("/vendors/{id}/commission", setCommission(deps))
+		r.Delete("/vendors/{id}", deleteVendor(deps))
 
 		r.Get("/disbursements/pending", listPendingDisbursements(deps))
 		r.Post("/disbursements/{bookingID}/mark-disbursed", markDisbursed(deps))

@@ -20,7 +20,7 @@ const PAGE_SIZE = 30;
 // raw action keys. Each group maps to one or more recorded actions.
 const GROUPS: { id: string; label: string; actions: string[] }[] = [
   { id: "semua", label: "Semua", actions: [] },
-  { id: "verifikasi", label: "Verifikasi vendor", actions: ["vendor.approve", "vendor.reject"] },
+  { id: "verifikasi", label: "Verifikasi vendor", actions: ["vendor.approve", "vendor.reject", "vendor.delete"] },
   { id: "komisi", label: "Komisi", actions: ["vendor.set_commission"] },
   { id: "pencairan", label: "Pencairan", actions: ["disbursement.mark_disbursed"] },
   { id: "sengketa", label: "Sengketa", actions: ["dispute.resolve"] },
@@ -38,7 +38,7 @@ const ROLE_LABEL: Record<string, string> = { admin: "Admin", wedding_consultant:
 
 /** Dot colour carries the outcome: red for rejections and sanctions, gold otherwise. */
 function tone(e: AuditLogEntry): "danger" | "gold" {
-  if (e.action === "vendor.reject") return "danger";
+  if (e.action === "vendor.reject" || e.action === "vendor.delete") return "danger";
   if (e.action === "dispute.resolve" && (e.metadata?.sanction === "suspend" || e.metadata?.sanction === "terminate")) return "danger";
   if (e.action === "vendor_name_change.resolve" && e.metadata?.status === "rejected") return "danger";
   return "gold";

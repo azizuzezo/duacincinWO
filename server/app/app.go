@@ -144,7 +144,7 @@ func New(ctx context.Context, opts Options) (*App, error) {
 			cfg,
 		),
 		Vendors:        vendors.NewDeps(vendorRepo, vendorNameChangeRepo, storageClient, reviewRepo, disbursementRepo),
-		Admin:          admin.NewDeps(vendorRepo, vendorNameChangeRepo, disbursementRepo, disputeRepo, userRepo, bookingRepo, auditLogRepo, notificationRepo),
+		Admin:          admin.NewDeps(vendorRepo, vendorNameChangeRepo, disbursementRepo, disputeRepo, userRepo, bookingRepo, auditLogRepo, notificationRepo, storageClient, vendors.PortfolioBucket),
 		Chat:           chatDeps,
 		Whatsapp:       whatsappDeps,
 		Budget:         budget.NewDeps(repository.NewBudgetRepo(pool)),

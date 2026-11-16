@@ -14,8 +14,8 @@ import { Sheet } from "@/components/ui/Sheet";
 import { useToast } from "@/components/ui/Toast";
 import { MotionItem, MotionList } from "@/components/ui/Motion";
 import { WithUser } from "@/components/WithUser";
-import { apiGet, apiPatch, ApiError, categoryLabel, type CurrentUser, type VendorSummary } from "@/lib/api";
-import { ErrorBanner, Monogram, PAGE, persen, ResultCount, RowsSkeleton, SearchField, SubNav } from "../../../_ui";
+import { apiDelete, apiGet, apiPatch, ApiError, categoryLabel, type CurrentUser, type VendorSummary } from "@/lib/api";
+import { ConfirmDialog, DangerGhostButton, ErrorBanner, Monogram, PAGE, persen, ResultCount, RowsSkeleton, SearchField, SubNav } from "../../../_ui";
 
 /** Platform default when a vendor has no override (PRD §8.10). */
 const DEFAULT_LABEL = "10%";
@@ -38,6 +38,9 @@ function ApprovedVendorsContent({ user }: { user: CurrentUser }) {
   const [draft, setDraft] = useState("");
   const [draftError, setDraftError] = useState<string | null>(null);
   const [saving, setSaving] = useState<"custom" | "default" | null>(null);
+  const [deleting, setDeleting] = useState<VendorSummary | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const { show } = useToast();
 
   function load() {
@@ -84,6 +87,29 @@ function ApprovedVendorsContent({ user }: { user: CurrentUser }) {
       setDraftError(err instanceof ApiError ? err.message : "Gagal menyimpan komisi.");
     } finally {
       setSaving(null);
+    }
+  }
+
+  function openDelete(v: VendorSummary) {
+    setDeleting(v);
+    setDeleteError(null);
+  }
+
+  async function confirmDelete() {
+    if (!deleting) return;
+    const target = deleting;
+    setDeleteBusy(true);
+    setDeleteError(null);
+    try {
+      await apiDelete(`/api/v1/admin/vendors/${target.user_id}`);
+      show(`${target.business_name} sudah dihapus.`, "success");
+      setVendors((prev) => prev.filter((x) => x.user_id !== target.user_id));
+      setDeleting(null);
+    } catch (err) {
+      // 409 carries the plain reason (the vendor still has bookings).
+      setDeleteError(err instanceof ApiError ? err.message : "Gagal menghapus vendor, coba lagi.");
+    } finally {
+      setDeleteBusy(false);
     }
   }
 
@@ -136,7 +162,7 @@ function ApprovedVendorsContent({ user }: { user: CurrentUser }) {
               <EmptyState title="Tidak ada yang cocok" body={`Tidak ada vendor aktif dengan nama atau kota "${search}".`} action={<Button variant="ghost" size="sm" onClick={() => setSearch("")}>Hapus pencarian</Button>} />
             ) : (
               <div className="overflow-hidden rounded-xl border border-dc-line bg-dc-white">
-                <div className="hidden grid-cols-[1fr_180px_150px_140px] gap-4 border-b border-dc-line bg-dc-cream px-5 py-3 text-sm font-semibold text-dc-text-2 md:grid" aria-hidden>
+                <div className="hidden grid-cols-[1fr_160px_120px_auto] gap-4 border-b border-dc-line bg-dc-cream px-5 py-3 text-sm font-semibold text-dc-text-2 md:grid" aria-hidden>
                   <span>Vendor</span>
                   <span>Kategori</span>
                   <span className="text-right">Komisi</span>
@@ -144,7 +170,7 @@ function ApprovedVendorsContent({ user }: { user: CurrentUser }) {
                 </div>
                 <MotionList className="divide-y divide-dc-line">
                   {shown.map((v) => (
-                    <MotionItem key={v.user_id} className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-3 px-5 py-4 md:grid-cols-[1fr_180px_150px_140px]">
+                    <MotionItem key={v.user_id} className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-3 px-5 py-4 md:grid-cols-[1fr_160px_120px_auto]">
                       <div className="flex min-w-0 items-center gap-3">
                         <Monogram name={v.business_name} size="sm" />
                         <div className="min-w-0">
@@ -160,10 +186,13 @@ function ApprovedVendorsContent({ user }: { user: CurrentUser }) {
                         <p className="font-semibold tabular-nums text-dc-ink">{v.commission_rate ? persen(v.commission_rate) : DEFAULT_LABEL}</p>
                         {v.commission_rate ? <Badge tone="gold">Khusus</Badge> : <p className="text-xs text-dc-text-3">bawaan</p>}
                       </div>
-                      <div className="col-span-2 md:col-span-1 md:text-right">
-                        <Button variant="ghost" size="sm" onClick={() => openEdit(v)} className="w-full md:w-auto" aria-label={`Atur komisi ${v.business_name}`}>
+                      <div className="col-span-2 flex gap-2 md:col-span-1 md:justify-end">
+                        <Button variant="ghost" size="sm" onClick={() => openEdit(v)} className="flex-1 md:flex-none" aria-label={`Atur komisi ${v.business_name}`}>
                           Atur komisi
                         </Button>
+                        <DangerGhostButton onClick={() => openDelete(v)} className="flex-1 md:flex-none" aria-label={`Hapus ${v.business_name}`}>
+                          Hapus
+                        </DangerGhostButton>
                       </div>
                     </MotionItem>
                   ))}
@@ -218,6 +247,20 @@ function ApprovedVendorsContent({ user }: { user: CurrentUser }) {
           />
         </form>
       </Sheet>
+      <ConfirmDialog
+        open={!!deleting}
+        onClose={() => {
+          if (!deleteBusy) setDeleting(null);
+        }}
+        onConfirm={confirmDelete}
+        title={`Hapus ${deleting?.business_name ?? "vendor"}?`}
+        consequence="Akun, profil, portofolio, paket harga, dan percakapan vendor ini dihapus permanen dan tidak bisa dikembalikan. Vendor yang sudah punya booking tidak bisa dihapus, karena riwayat booking dan pembayaran calon pengantin harus tetap tersimpan."
+        confirmLabel="Hapus permanen"
+        busy={deleteBusy}
+        typeToConfirm={deleting?.business_name}
+      >
+        {deleteError && <ErrorBanner message={deleteError} />}
+      </ConfirmDialog>
     </Shell>
   );
 }

@@ -97,6 +97,7 @@ export const ACTION_LABEL: Record<string, string> = {
   "vendor.approve": "Menyetujui vendor",
   "vendor.reject": "Menolak vendor",
   "vendor.set_commission": "Mengubah komisi vendor",
+  "vendor.delete": "Menghapus vendor",
   "disbursement.mark_disbursed": "Menandai dana sudah dicairkan",
   "dispute.resolve": "Memutuskan sengketa",
   "vendor_name_change.resolve": "Memproses ganti nama vendor",
@@ -117,6 +118,7 @@ export function auditDetail(action: string, meta?: Record<string, unknown>): str
   const str = (k: string) => (typeof meta[k] === "string" && (meta[k] as string).trim() ? (meta[k] as string).trim() : null);
   if (action === "vendor.approve" && meta.bulk === true) out.push("Disetujui bersama vendor lain");
   if (action === "vendor.reject" && str("reason"))out.push(`Alasan: ${str("reason")}`);
+  if (action === "vendor.delete" && str("business_name")) out.push(`Vendor: ${str("business_name")}`);
   if (action === "dispute.resolve" && str("sanction")) out.push(`Keputusan: ${SANCTION_LABEL[str("sanction")!] ?? str("sanction")}`);
   if (action === "vendor_name_change.resolve" && str("status")) out.push(str("status") === "approved" ? "Hasil: disetujui" : "Hasil: ditolak");
   if (action === "vendor.set_commission") {
