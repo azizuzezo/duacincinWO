@@ -28,3 +28,10 @@ whatsapp-bot/npm-debug.log*
 
 # Brainstorming visual companion (mockup scratch space)
 .superpowers/
+
+# Local skills and video work, kept out of the repo
+/.claude/
+/skills-lock.json
+/video-brand/
+/video-demo/
+/video-vendor-promo/
