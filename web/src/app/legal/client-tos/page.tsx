@@ -78,15 +78,19 @@ const SECTIONS: LegalSection[] = [
       <ol className={ol}>
         <li>
           Harga, tanggal, dan isi paket disepakati antara kamu dan vendor, lalu dicatat dalam booking. Booking berlaku setelah vendor
-          mengonfirmasinya.
+          mengonfirmasinya. Harga yang tercatat di booking adalah jumlah total yang kamu bayar.
         </li>
         <li>
           Setelah booking dikonfirmasi, kamu membayar uang muka (DP) sebesar 30% (tiga puluh persen) dari harga yang disepakati, lalu melunasi
           sisanya sebelum technical meeting. Rincian biaya ditampilkan sebelum kamu membayar.
         </li>
         <li>
-          Seluruh pembayaran disimpan di rekening penampung DuaCincin dan baru diteruskan ke vendor setelah kamu mengonfirmasi acara selesai.
-          Komisi DuaCincin dibayar oleh vendor dan tidak ditambahkan ke tagihanmu.
+          Harga vendor yang tampil di DuaCincin, termasuk harga paket, sudah termasuk biaya layanan DuaCincin. Tidak ada biaya tambahan di luar
+          harga yang tercatat di booking.
+        </li>
+        <li>
+          Seluruh pembayaran disimpan di rekening penampung DuaCincin. Setelah kamu mengonfirmasi acara selesai, bagian vendor diteruskan ke
+          vendor dan biaya layanan menjadi hak DuaCincin.
         </li>
         <li>
           Konfirmasi acara selesai hanya kamu berikan bila jasa telah dilaksanakan sesuai kesepakatan. Bila ada keberatan, ajukan sengketa sebelum

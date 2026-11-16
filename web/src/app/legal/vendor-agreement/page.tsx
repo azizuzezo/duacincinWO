@@ -82,7 +82,11 @@ const SECTIONS: LegalSection[] = [
           DuaCincin sampai diteruskan kepada Mitra Vendor atau dikembalikan kepada Client sesuai Perjanjian ini.
         </li>
         <li>
-          <strong>Komisi</strong>: imbalan jasa yang menjadi hak DuaCincin atas setiap Transaksi Difasilitasi yang selesai.
+          <strong>Harga Mitra Vendor</strong>: harga yang diisi Mitra Vendor di profil dan paket pada Platform, sebelum Komisi.
+        </li>
+        <li>
+          <strong>Komisi</strong>: imbalan jasa yang menjadi hak DuaCincin atas setiap Transaksi Difasilitasi yang selesai, yang ditambahkan di
+          atas Harga Mitra Vendor dan dibayar oleh Client.
         </li>
       </ol>
     ),
@@ -169,8 +173,9 @@ const SECTIONS: LegalSection[] = [
           Pembayaran Client disimpan sebagai Dana Titipan dan belum menjadi hak Mitra Vendor sampai acara selesai dan dikonfirmasi oleh Client.
         </li>
         <li>
-          Setelah Client mengonfirmasi acara selesai, DuaCincin meneruskan Dana Titipan ke rekening Mitra Vendor yang terdaftar, dikurangi Komisi,
-          dan mencatat rinciannya di halaman Pencairan.
+          Setelah Client mengonfirmasi acara selesai, DuaCincin meneruskan bagian Mitra Vendor, yaitu harga yang disepakati dalam booking
+          dikurangi Komisi yang tercatat pada booking tersebut, ke rekening Mitra Vendor yang terdaftar, dan mencatat rinciannya di halaman
+          Pencairan.
         </li>
         <li>
           Bila Client mengajukan keberatan sebelum mengonfirmasi, pencairan ditunda sampai keberatan diselesaikan menurut bagian Penyelesaian
@@ -185,10 +190,22 @@ const SECTIONS: LegalSection[] = [
     body: (
       <ol className={ol}>
         <li>
-          DuaCincin berhak atas Komisi sebesar 10% (sepuluh persen) dari nilai setiap Transaksi Difasilitasi yang selesai, kecuali tarif lain
-          disepakati secara tertulis dan tercantum di akun Mitra Vendor.
+          DuaCincin berhak atas Komisi sebesar 10% (sepuluh persen) dari Harga Mitra Vendor atas setiap Transaksi Difasilitasi yang selesai,
+          kecuali tarif lain disepakati secara tertulis dan tercantum di akun Mitra Vendor.
         </li>
-        <li>Komisi dipotong langsung dari Dana Titipan pada saat pencairan.</li>
+        <li>
+          Komisi ditambahkan di atas Harga Mitra Vendor pada harga yang ditampilkan kepada Client dan dibayar oleh Client sebagai bagian dari
+          harga yang disepakati. Komisi tidak dipotong dari Harga Mitra Vendor, sehingga Mitra Vendor menerima Harga Mitra Vendor secara utuh.
+        </li>
+        <li>
+          Harga yang disepakati dalam booking adalah harga yang dibayar Client, sudah termasuk Komisi. Besaran Komisi dan bagian Mitra Vendor
+          dicatat saat booking dibuat dan ditampilkan kepada Mitra Vendor sebelum Mitra Vendor mengonfirmasi booking. Mitra Vendor yang menyebut
+          harga kepada Client di luar paket bertanggung jawab memperhitungkan bahwa harga yang dibayar Client sudah termasuk Komisi.
+        </li>
+        <li>
+          Booking yang dibuat sebelum versi 2.1 Perjanjian ini berlaku tetap mengikuti ketentuan sebelumnya, yaitu Komisi dipotong dari Dana
+          Titipan pada saat pencairan.
+        </li>
         <li>
           Perubahan tarif Komisi diberitahukan sekurang-kurangnya 30 (tiga puluh) hari sebelum berlaku dan tidak berlaku bagi booking yang sudah
           dikonfirmasi sebelum tanggal perubahan.

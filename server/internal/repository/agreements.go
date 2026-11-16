@@ -11,10 +11,11 @@ const (
 	AgreementTypeClientTOS         = "client_tos"
 
 	// CurrentAgreementVersion is the legal text in force (web/src/lib/legal.ts,
-	// LEGAL_VERSION 2.0, effective 14 November 2026). Bump this any
+	// LEGAL_VERSION 2.1, effective 17 November 2026: commission added on
+	// top of the vendor's price and paid by the client). Bump this any
 	// time the legal text materially changes, so old acceptances stay
 	// attributable to the version the user actually saw.
-	CurrentAgreementVersion = "v2-2026-11-14"
+	CurrentAgreementVersion = "v2.1-2026-11-17"
 )
 
 type AgreementRepo struct {
