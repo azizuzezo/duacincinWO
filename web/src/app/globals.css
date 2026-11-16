@@ -693,7 +693,9 @@ input[type="range"] {
    Only <main>, so the fixed navbar is never inside a transformed box. */
 .dc-route-in > main#konten,
 .dc-route-in main#konten {
-  animation: dc-route-rise 800ms var(--dc-ease) both;
+  /* backwards, not both: a transform left applied after the entrance would
+     trap every position: fixed descendant inside <main>. */
+  animation: dc-route-rise 800ms var(--dc-ease) backwards;
 }
 @keyframes dc-route-rise {
   from { opacity: 0; transform: translateY(24px); }
