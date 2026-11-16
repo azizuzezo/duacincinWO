@@ -72,9 +72,12 @@ func ListVendorPackages(deps *Deps) http.HandlerFunc {
 			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
 			return
 		}
+		rate := profile.EffectiveCommissionRate()
 		out := make([]packageDTO, 0, len(pkgs))
 		for i := range pkgs {
-			out = append(out, toPackageDTO(&pkgs[i]))
+			dto := toPackageDTO(&pkgs[i])
+			dto.Price = repository.CustomerPrice(dto.Price, rate) // what the couple pays
+			out = append(out, dto)
 		}
 		httpx.JSON(w, http.StatusOK, out)
 	}

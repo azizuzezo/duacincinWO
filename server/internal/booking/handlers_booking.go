@@ -21,11 +21,14 @@ type bookingDTO struct {
 	PackageDescription string `json:"package_description"`
 	AgreedPrice        int64  `json:"agreed_price"`
 	DPAmount           int64  `json:"dp_amount"`
-	Status             string `json:"status"`
+	// VendorAmount is what the vendor receives (agreed price minus the
+	// commission added on top). Sent to the vendor only.
+	VendorAmount *int64 `json:"vendor_amount,omitempty"`
+	Status       string `json:"status"`
 }
 
-func toBookingDTO(b *repository.Booking) bookingDTO {
-	return bookingDTO{
+func toBookingDTO(b *repository.Booking, role string) bookingDTO {
+	dto := bookingDTO{
 		ID:                 b.ID,
 		ClientID:           b.ClientID,
 		VendorID:           b.VendorID,
@@ -35,6 +38,14 @@ func toBookingDTO(b *repository.Booking) bookingDTO {
 		DPAmount:           b.DPAmount,
 		Status:             b.Status,
 	}
+	if role == auth.RoleVendor {
+		amount := b.AgreedPrice
+		if b.CommissionAmount != nil {
+			amount -= *b.CommissionAmount
+		}
+		dto.VendorAmount = &amount
+	}
+	return dto
 }
 
 type createBookingRequest struct {
@@ -74,14 +85,17 @@ func Create(deps *Deps) http.HandlerFunc {
 		}
 
 		dpAmount := int64(math.Round(float64(req.AgreedPrice) * DPPercent))
+		// The agreed price is what the couple pays (public prices already
+		// include commission); the platform's share is fixed here.
+		commission := repository.CommissionInCustomerPrice(req.AgreedPrice, vendorProfile.EffectiveCommissionRate())
 
-		b, err := deps.Bookings.Create(r.Context(), claims.UserID, req.VendorID, eventDate, strings.TrimSpace(req.PackageDescription), req.AgreedPrice, dpAmount)
+		b, err := deps.Bookings.Create(r.Context(), claims.UserID, req.VendorID, eventDate, strings.TrimSpace(req.PackageDescription), req.AgreedPrice, dpAmount, commission)
 		if err != nil {
 			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
 			return
 		}
 
-		httpx.JSON(w, http.StatusCreated, toBookingDTO(b))
+		httpx.JSON(w, http.StatusCreated, toBookingDTO(b, claims.Role))
 	}
 }
 
@@ -106,7 +120,7 @@ func List(deps *Deps) http.HandlerFunc {
 
 		out := make([]bookingDTO, 0, len(bookings))
 		for _, b := range bookings {
-			out = append(out, toBookingDTO(&b))
+			out = append(out, toBookingDTO(&b, claims.Role))
 		}
 		httpx.JSON(w, http.StatusOK, out)
 	}
@@ -131,7 +145,8 @@ func Get(deps *Deps) http.HandlerFunc {
 			httpx.Error(w, http.StatusNotFound, "booking tidak ditemukan")
 			return
 		}
-		httpx.JSON(w, http.StatusOK, toBookingDTO(b))
+		claims, _ := auth.ClaimsFromContext(r.Context())
+		httpx.JSON(w, http.StatusOK, toBookingDTO(b, claims.Role))
 	}
 }
 
@@ -232,11 +247,18 @@ func Complete(deps *Deps) http.HandlerFunc {
 			return
 		}
 
-		commissionRate := CommissionRate
-		if vendorProfile, err := deps.Vendors.GetByUserID(r.Context(), b.VendorID); err == nil && vendorProfile.CommissionRate != nil {
-			commissionRate = *vendorProfile.CommissionRate
+		var commission int64
+		if b.CommissionAmount != nil {
+			// Commission was added on top at booking time.
+			commission = *b.CommissionAmount
+		} else {
+			// Older booking: commission is cut from the vendor's price.
+			commissionRate := repository.DefaultCommissionRate
+			if vendorProfile, err := deps.Vendors.GetByUserID(r.Context(), b.VendorID); err == nil {
+				commissionRate = vendorProfile.EffectiveCommissionRate()
+			}
+			commission = int64(math.Round(float64(b.AgreedPrice) * commissionRate))
 		}
-		commission := int64(math.Round(float64(b.AgreedPrice) * commissionRate))
 		net := b.AgreedPrice - commission
 		if err := deps.Disbursements.Create(r.Context(), b.ID, b.AgreedPrice, commission, net); err != nil {
 			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")

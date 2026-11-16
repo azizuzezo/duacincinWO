@@ -145,7 +145,7 @@ export function BookingRow({ booking: b, showFund = true }: { booking: Booking; 
           {formatTanggal(b.event_date, true)}
         </p>
         <div className="mt-3 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
-          <p className="text-lg font-bold tabular-nums text-dc-ink">{formatRupiah(b.agreed_price)}</p>
+          <p className="text-lg font-bold tabular-nums text-dc-ink">{formatRupiah(b.vendor_amount ?? b.agreed_price)}</p>
           {showFund && b.status !== "requested" && (
             <div className="min-w-0">
               <FundStatus status={b.status} compact />

@@ -13,13 +13,9 @@ import (
 	"duacincin/server/internal/repository"
 )
 
-// DPPercent and CommissionRate are MVP defaults — PRD §11 names 10% as the
-// default commission and leaves DP % unspecified; both become
-// Admin-configurable per vendor/category in Fase 7.
-const (
-	DPPercent      = 0.30
-	CommissionRate = 0.10
-)
+// DPPercent is the MVP down payment. The commission rate lives with the
+// vendor profile (repository.DefaultCommissionRate, Admin override per vendor).
+const DPPercent = 0.30
 
 type Deps struct {
 	Bookings      *repository.BookingRepo

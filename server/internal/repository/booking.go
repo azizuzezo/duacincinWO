@@ -26,9 +26,12 @@ type Booking struct {
 	PackageDescription string
 	AgreedPrice        int64
 	DPAmount           int64
-	Status             string
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
+	// CommissionAmount is the platform's share inside AgreedPrice, fixed at
+	// creation; nil for bookings made before commission was added on top.
+	CommissionAmount *int64
+	Status           string
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 }
 
 type BookingRepo struct {
@@ -39,18 +42,18 @@ func NewBookingRepo(pool *pgxpool.Pool) *BookingRepo {
 	return &BookingRepo{pool: pool}
 }
 
-func (r *BookingRepo) Create(ctx context.Context, clientID, vendorID string, eventDate time.Time, packageDescription string, agreedPrice, dpAmount int64) (*Booking, error) {
+func (r *BookingRepo) Create(ctx context.Context, clientID, vendorID string, eventDate time.Time, packageDescription string, agreedPrice, dpAmount, commissionAmount int64) (*Booking, error) {
 	row := r.pool.QueryRow(ctx, `
-		insert into bookings (client_id, vendor_id, event_date, package_description, agreed_price, dp_amount)
-		values ($1, $2, $3, $4, $5, $6)
-		returning id, client_id, vendor_id, event_date, package_description, agreed_price, dp_amount, status, created_at, updated_at
-	`, clientID, vendorID, eventDate, packageDescription, agreedPrice, dpAmount)
+		insert into bookings (client_id, vendor_id, event_date, package_description, agreed_price, dp_amount, commission_amount)
+		values ($1, $2, $3, $4, $5, $6, $7)
+		returning id, client_id, vendor_id, event_date, package_description, agreed_price, dp_amount, commission_amount, status, created_at, updated_at
+	`, clientID, vendorID, eventDate, packageDescription, agreedPrice, dpAmount, commissionAmount)
 	return scanBooking(row)
 }
 
 func (r *BookingRepo) GetByID(ctx context.Context, id string) (*Booking, error) {
 	row := r.pool.QueryRow(ctx, `
-		select id, client_id, vendor_id, event_date, package_description, agreed_price, dp_amount, status, created_at, updated_at
+		select id, client_id, vendor_id, event_date, package_description, agreed_price, dp_amount, commission_amount, status, created_at, updated_at
 		from bookings where id = $1
 	`, id)
 	b, err := scanBooking(row)
@@ -70,7 +73,7 @@ func (r *BookingRepo) ListForVendor(ctx context.Context, vendorID string) ([]Boo
 
 func (r *BookingRepo) list(ctx context.Context, column, id string) ([]Booking, error) {
 	rows, err := r.pool.Query(ctx, `
-		select id, client_id, vendor_id, event_date, package_description, agreed_price, dp_amount, status, created_at, updated_at
+		select id, client_id, vendor_id, event_date, package_description, agreed_price, dp_amount, commission_amount, status, created_at, updated_at
 		from bookings where `+column+` = $1 order by created_at desc
 	`, id)
 	if err != nil {
@@ -81,7 +84,7 @@ func (r *BookingRepo) list(ctx context.Context, column, id string) ([]Booking, e
 	var bookings []Booking
 	for rows.Next() {
 		var b Booking
-		if err := rows.Scan(&b.ID, &b.ClientID, &b.VendorID, &b.EventDate, &b.PackageDescription, &b.AgreedPrice, &b.DPAmount, &b.Status, &b.CreatedAt, &b.UpdatedAt); err != nil {
+		if err := rows.Scan(&b.ID, &b.ClientID, &b.VendorID, &b.EventDate, &b.PackageDescription, &b.AgreedPrice, &b.DPAmount, &b.CommissionAmount, &b.Status, &b.CreatedAt, &b.UpdatedAt); err != nil {
 			return nil, err
 		}
 		bookings = append(bookings, b)
@@ -147,7 +150,7 @@ func (r *BookingRepo) UpdateStatus(ctx context.Context, id, expectedStatus, newS
 
 func scanBooking(row pgx.Row) (*Booking, error) {
 	var b Booking
-	if err := row.Scan(&b.ID, &b.ClientID, &b.VendorID, &b.EventDate, &b.PackageDescription, &b.AgreedPrice, &b.DPAmount, &b.Status, &b.CreatedAt, &b.UpdatedAt); err != nil {
+	if err := row.Scan(&b.ID, &b.ClientID, &b.VendorID, &b.EventDate, &b.PackageDescription, &b.AgreedPrice, &b.DPAmount, &b.CommissionAmount, &b.Status, &b.CreatedAt, &b.UpdatedAt); err != nil {
 		return nil, err
 	}
 	return &b, nil

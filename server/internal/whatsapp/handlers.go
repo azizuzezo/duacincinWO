@@ -181,7 +181,8 @@ func (d *Deps) showVendorMenu(ctx context.Context, link *repository.WhatsAppLink
 
 	options := make([]menuOption, 0, len(vendorList))
 	for _, v := range vendorList {
-		label := fmt.Sprintf("%s (%s) — Rp%s–Rp%s", v.BusinessName, v.City, formatRupiah(v.PriceMin), formatRupiah(v.PriceMax))
+		rate := v.EffectiveCommissionRate()
+		label := fmt.Sprintf("%s (%s) — Rp%s–Rp%s", v.BusinessName, v.City, formatRupiah(repository.CustomerPrice(v.PriceMin, rate)), formatRupiah(repository.CustomerPrice(v.PriceMax, rate)))
 		options = append(options, menuOption{Label: label, Value: v.UserID})
 	}
 	if err := d.Links.SetPendingMenu(ctx, link.ID, pendingMenu{Kind: menuKindVendor, Options: options}); err != nil {

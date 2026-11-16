@@ -4,9 +4,11 @@ import { useId, useState } from "react";
 
 import { formatRupiah } from "@/lib/api";
 
-// Defaults confirmed in the code and PRD: DP 30% (server booking/deps.go
-// DPPercent), commission 10% unless Admin sets a different rate for the vendor
-// (CommissionRate, PRD §8.5). This is an illustration, not a quote.
+// Defaults confirmed in the code: DP 30% (server booking/deps.go DPPercent),
+// commission 10% unless Admin sets a different rate for the vendor
+// (repository.DefaultCommissionRate). Commission is added on top of the
+// vendor's price, so the vendor receives their price in full. This is an
+// illustration, not a quote.
 const DP = 0.3;
 const COMMISSION = 0.1;
 const MIN = 2_000_000;
@@ -14,15 +16,16 @@ const MAX = 150_000_000;
 const STEP = 500_000;
 
 /** Interactive example of where a vendor's money is: drag the package price
- * and see the DP and the rest held in escrow, then the transfer after the
- * client confirms the event, minus the default commission. */
+ * and see what the couple pays (price plus commission), the DP and the rest
+ * held in escrow, then the vendor's full price transferred after the event. */
 export function PayoutCalculator() {
   const id = useId();
   const [price, setPrice] = useState(25_000_000);
-  const dp = Math.round(price * DP);
-  const rest = price - dp;
-  const fee = Math.round(price * COMMISSION);
-  const net = price - fee;
+  const total = Math.round(price * (1 + COMMISSION));
+  const dp = Math.round(total * DP);
+  const rest = total - dp;
+  const fee = total - price;
+  const net = price;
   const progress = ((price - MIN) / (MAX - MIN)) * 100;
 
   const rows = [
@@ -34,7 +37,7 @@ export function PayoutCalculator() {
   return (
     <div className="rounded-2xl border border-dc-line bg-dc-white p-6 shadow-lift sm:p-8">
       <label htmlFor={id} className="text-sm font-semibold text-dc-text-2">
-        Contoh harga paket yang disepakati
+        Contoh harga paketmu
       </label>
       <p className="mt-1 font-heading text-[clamp(2.4rem,5vw,3.25rem)] leading-none text-dc-ink [font-variant-numeric:lining-nums_tabular-nums]" aria-live="polite">
         {formatRupiah(price)}
@@ -69,10 +72,10 @@ export function PayoutCalculator() {
         ))}
       </ol>
       <p className="border-t border-dc-line pt-4 text-sm text-dc-text-2">
-        Komisi platform {formatRupiah(fee)} dipotong saat pencairan.
+        Calon pengantin membayar {formatRupiah(total)}, sudah termasuk biaya layanan DuaCincin {formatRupiah(fee)}. Hargamu tidak dipotong.
       </p>
       <p className="mt-3 text-xs leading-relaxed text-dc-text-3">
-        Contoh dengan komisi standar 10%. Tarif komisi bisa diatur berbeda untuk vendor tertentu oleh Admin DuaCincin. Potongan setiap pencairan bisa kamu lihat di halaman Pencairan.
+        Contoh dengan komisi standar 10%. Tarif komisi bisa diatur berbeda untuk vendor tertentu oleh Admin DuaCincin. Rincian setiap pencairan bisa kamu lihat di halaman Pencairan.
       </p>
     </div>
   );

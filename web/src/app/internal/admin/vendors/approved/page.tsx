@@ -126,7 +126,7 @@ function ApprovedVendorsContent({ user }: { user: CurrentUser }) {
               Vendor <span className="dc-em">aktif</span>
             </>
           }
-          subtitle={`Semua vendor memakai komisi bawaan platform (${DEFAULT_LABEL}) kecuali kamu atur khusus di sini.`}
+          subtitle={`Komisi ditambahkan di atas harga vendor pada harga yang dilihat calon pengantin; vendor menerima harganya utuh. Bawaan ${DEFAULT_LABEL} kecuali kamu atur khusus di sini.`}
         />
         <SubNav
           label="Daftar vendor"
@@ -241,7 +241,7 @@ function ApprovedVendorsContent({ user }: { user: CurrentUser }) {
               setDraftError(null);
             }}
             placeholder={`Kosongkan untuk ${DEFAULT_LABEL}`}
-            hint="Dipotong saat booking vendor ini selesai dan masuk antrian pencairan. Kosongkan untuk memakai komisi bawaan."
+            hint="Langsung menaikkan harga vendor ini di direktori, profil, dan paket (contoh: Rp10.000.000 tampil Rp11.000.000 dengan 10%). Booking yang sudah dibuat tidak berubah. Kosongkan untuk memakai komisi bawaan."
             error={draftError ?? undefined}
             autoFocus
           />

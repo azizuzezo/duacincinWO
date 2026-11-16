@@ -72,7 +72,7 @@ const STAGES: Stage[] = [
     station: 2,
     status: "completed",
     title: "Hari-H selesai",
-    body: "Kamu konfirmasi acara selesai, lalu dana diteruskan ke vendor dikurangi komisi.",
+    body: "Kamu konfirmasi acara selesai, lalu dana diteruskan ke vendor.",
     where: "Konfirmasi selesai di halaman booking",
     screen: { src: `${SHOT}/k7-selesai.webp`, alt: "Booking berstatus selesai dengan ajakan menulis ulasan untuk vendor" },
   },

@@ -128,7 +128,7 @@ function VendorPackagesContent({ user }: { user: CurrentUser }) {
                   Paket yang mudah <span className="dc-em">dipilih</span>
                 </>
               }
-              subtitle="Tulis isi tiap paket dengan jelas supaya calon pengantin bisa membandingkan sebelum chat. Harga mulai dari di kartu direktori tetap diatur di halaman Profil."
+              subtitle="Tulis isi tiap paket dengan jelas supaya calon pengantin bisa membandingkan sebelum chat. Isi hargamu sendiri: calon pengantin melihatnya ditambah biaya layanan DuaCincin, dan kamu menerima hargamu utuh."
               action={
                 <div className="hidden items-center gap-4 md:flex">
                   <p className="text-sm tabular-nums text-dc-text-2">

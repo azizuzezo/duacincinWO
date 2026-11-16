@@ -75,7 +75,7 @@ const SHOWCASE: ShowcaseItem[] = [
   {
     id: "pencairan",
     title: "Pencairan",
-    body: "Dana yang ditahan escrow, yang siap ditransfer, dan riwayat lengkap dengan potongan komisinya.",
+    body: "Dana yang ditahan escrow, yang siap ditransfer, dan riwayat lengkap setiap pencairan.",
     src: `${SHOT}/v-pencairan.webp`,
     alt: "Halaman pencairan: dana ditahan escrow dan riwayat pencairan dengan harga booking dan komisi",
     address: "duacincin.id/vendor/payouts",
@@ -96,7 +96,7 @@ const CATEGORY_PHOTO: Record<string, { src: string; studio?: boolean; note: stri
 };
 
 const FACTS = [
-  { v: <CountUp to={10} suffix="%" />, k: "Komisi standar", d: "Dipotong saat pencairan, hanya dari transaksi yang berhasil." },
+  { v: <CountUp to={10} suffix="%" />, k: "Komisi standar", d: "Ditambahkan di atas hargamu, jadi kamu menerima harga paketmu utuh." },
   { v: <CountUp to={30} suffix="%" />, k: "DP dari client", d: "Ditahan escrow bersama pelunasannya." },
   { v: "Setelah acara", k: "Dana cair", d: "Begitu client mengonfirmasi acara selesai." },
 ];
@@ -167,7 +167,7 @@ export default function UntukVendorPage() {
               Uang client sudah aman <span className="dc-em">sebelum kamu mulai bekerja.</span>
             </h2>
             <p className="mt-5 max-w-md leading-relaxed text-dc-text-2">
-              DP dan pelunasan dibayar ke akun penampung DuaCincin. Setelah client mengonfirmasi acara selesai, dana diteruskan ke rekeningmu dikurangi komisi.
+              DP dan pelunasan dibayar ke akun penampung DuaCincin. Setelah client mengonfirmasi acara selesai, dana diteruskan ke rekeningmu sebesar harga yang kamu tetapkan.
             </p>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-dc-text-3">Geser harga paket untuk melihat contohnya.</p>
           </Reveal>

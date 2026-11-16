@@ -41,9 +41,9 @@ const TOPICS: Topic[] = [
     items: [
       faq(
         "Kapan uangku sampai ke vendor?",
-        "Hanya setelah kamu mengonfirmasi acara selesai. Sebelum itu, DP dan pelunasan ditahan di akun penampung DuaCincin. Setelah dikonfirmasi, dana diteruskan ke vendor dikurangi komisi platform.",
+        "Hanya setelah kamu mengonfirmasi acara selesai. Sebelum itu, DP dan pelunasan ditahan di akun penampung DuaCincin. Setelah dikonfirmasi, dana diteruskan ke vendor.",
         <>
-          Hanya setelah kamu mengonfirmasi acara selesai. Sebelum itu, DP dan pelunasan ditahan di akun penampung DuaCincin. Setelah dikonfirmasi, dana diteruskan ke vendor dikurangi komisi platform.{" "}
+          Hanya setelah kamu mengonfirmasi acara selesai. Sebelum itu, DP dan pelunasan ditahan di akun penampung DuaCincin. Setelah dikonfirmasi, dana diteruskan ke vendor.{" "}
           <Link href="/cara-kerja">Lihat ketujuh tahapnya</Link>.
         </>,
       ),
@@ -131,11 +131,11 @@ const TOPICS: Topic[] = [
       ),
       faq(
         "Berapa komisi DuaCincin?",
-        "Komisi standar 10% dari setiap transaksi yang berhasil, dipotong saat dana diteruskan ke vendor. Admin bisa mengatur tarif yang berbeda untuk vendor tertentu.",
+        "Komisi standar 10%, ditambahkan di atas hargamu pada harga yang dilihat calon pengantin. Kamu menerima harga yang kamu tetapkan secara utuh. Admin bisa mengatur tarif yang berbeda untuk vendor tertentu.",
       ),
       faq(
         "Kapan dana dicairkan ke vendor?",
-        "Setelah client mengonfirmasi acaranya selesai. Dana DP dan pelunasan yang ditahan escrow diteruskan ke vendor dikurangi komisi, dan tercatat di halaman Pencairan.",
+        "Setelah client mengonfirmasi acaranya selesai. Dana DP dan pelunasan yang ditahan escrow diteruskan ke vendor sebesar harga yang ditetapkan vendor, dan tercatat di halaman Pencairan.",
       ),
     ],
   },

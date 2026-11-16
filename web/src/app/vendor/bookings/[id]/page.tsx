@@ -266,9 +266,21 @@ function VendorBookingDetailContent({ id, user }: { id: string; user: CurrentUse
                     <dt className="text-dc-text-2">Pelunasan</dt>
                     <dd className="font-semibold tabular-nums text-dc-ink">{formatRupiah(Math.max(0, booking.agreed_price - booking.dp_amount))}</dd>
                   </div>
+                  {booking.vendor_amount !== undefined && booking.vendor_amount !== booking.agreed_price && (
+                    <div className="flex justify-between gap-4 px-5 py-3.5 sm:px-6">
+                      <dt className="text-dc-text-2">Biaya layanan DuaCincin</dt>
+                      <dd className="font-semibold tabular-nums text-dc-text-2">{formatRupiah(booking.agreed_price - booking.vendor_amount)}</dd>
+                    </div>
+                  )}
+                  {booking.vendor_amount !== undefined && (
+                    <div className="flex justify-between gap-4 bg-dc-cream/40 px-5 py-3.5 sm:px-6">
+                      <dt className="font-semibold text-dc-ink">Kamu terima</dt>
+                      <dd className="font-semibold tabular-nums text-dc-ink">{formatRupiah(booking.vendor_amount)}</dd>
+                    </div>
+                  )}
                 </dl>
                 <p className="rounded-b-xl border-t border-dc-line bg-dc-cream/60 px-5 py-3.5 text-xs leading-relaxed text-dc-text-2 sm:px-6">
-                  Client membayar lewat DuaCincin. Dana ditahan escrow dan diteruskan ke kamu (dikurangi komisi) setelah client menandai acara selesai.
+                  Client membayar lewat DuaCincin. Dana ditahan escrow, lalu bagianmu diteruskan ke rekeningmu setelah client menandai acara selesai.
                 </p>
               </Card>
             </section>

@@ -277,7 +277,7 @@ export function BookingSheet({
           placeholder="Contoh: 18.500.000"
           value={price > 0 ? price.toLocaleString("id-ID") : ""}
           onChange={(e) => setAgreedPrice(e.target.value.replace(/\D/g, "").replace(/^0+/, ""))}
-          hint="Isi harga yang sudah kamu sepakati dengan vendor di chat."
+          hint="Isi harga yang sudah kamu sepakati di chat. Harga di DuaCincin sudah termasuk biaya layanan."
         />
 
         <div className="rounded-xl bg-dc-cream p-4">
