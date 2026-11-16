@@ -51,8 +51,11 @@ r = await admin.call("GET", "/auth/me"); ok("admin /me has role admin", r.data?.
 const vendorId = (await vendor.call("GET", "/auth/me")).data.id, vendor2Id = (await vendor2.call("GET", "/auth/me")).data.id;
 
 // 2. vendor profile
-r = await vendor.call("PUT", "/vendor/profile", { business_name: "Ballroom Uji", category: "venue", city: "Jakarta", price_min: 35000000, price_max: 120000000, description: "Venue uji untuk E2E." });
+r = await vendor.call("PUT", "/vendor/profile", { business_name: "Ballroom Uji", category: "venue", city: "jakarta selatan", price_min: 35000000, price_max: 120000000, description: "Venue uji untuk E2E." });
 ok("vendor creates profile", r.status === 200 && r.data?.status === "pending", JSON.stringify(r));
+ok("city is stored with the list's spelling", r.data?.city === "Jakarta Selatan", JSON.stringify(r.data));
+r = await vendor.call("PUT", "/vendor/profile", { business_name: "Ballroom Uji", category: "venue", city: "Bandung sumedang", price_min: 35000000, price_max: 120000000, description: "Venue uji untuk E2E." });
+ok("free-text city outside the kabupaten/kota list is refused", r.status === 400, JSON.stringify(r.data));
 r = await vendor2.call("PUT", "/vendor/profile", { business_name: "Dekor Uji", category: "decor", city: "Bandung", price_min: 5000000, price_max: 20000000, description: "x" });
 ok("second vendor creates profile", r.status === 200, JSON.stringify(r));
 
@@ -81,7 +84,7 @@ r = await admin.call("GET", "/admin/vendors/pending"); ok("admin sees pending ve
 r = await client.call("GET", "/admin/vendors/pending"); ok("client forbidden from admin API (403)", r.status === 403, JSON.stringify(r));
 r = await admin.call("POST", `/admin/vendors/${vendorId}/approve`, {}); ok("admin approves vendor", r.status < 300, JSON.stringify(r));
 r = await new Client("anon").call("GET", "/vendors?category=venue"); ok("approved vendor in directory (category filter)", r.data?.some((v) => v.id === vendorId), JSON.stringify(r.data));
-r = await new Client("anon").call("GET", "/vendors?category=venue&city=jakarta"); ok("city filter is case-insensitive", r.data?.some((v) => v.id === vendorId), JSON.stringify(r.data));
+r = await new Client("anon").call("GET", "/vendors?category=venue&city=jakarta%20selatan"); ok("city filter is case-insensitive", r.data?.some((v) => v.id === vendorId), JSON.stringify(r.data));
 r = await new Client("anon").call("GET", "/vendors?max_price=1000000"); ok("max_price filter excludes expensive vendor", !r.data?.some((v) => v.id === vendorId), JSON.stringify(r.data));
 r = await new Client("anon").call("GET", `/vendors/${vendorId}/packages`); ok("public packages visible after approval", r.status === 200 && r.data.length === 2 && r.data[0].name === "Half Day Plus", JSON.stringify(r));
 
@@ -139,9 +142,23 @@ r = await admin.call("PUT", `/admin/inspiration/${tagged}/vendors`, { vendor_ids
 r = await admin.call("PUT", `/admin/inspiration/${tagged}/vendors`, { vendor_ids: ["bukan-uuid"] }); ok("malformed vendor id refused (400)", r.status === 400, JSON.stringify(r));
 r = await admin.call("PUT", `/admin/inspiration/${tagged}/vendors`, { vendor_ids: [vendorId, vendorId] }); ok("admin tags the approved vendor (duplicates collapse)", r.status === 200 && r.data?.vendors?.length === 1 && r.data.vendors[0].business_name === "Ballroom Uji", JSON.stringify(r));
 r = await new Client("anon").call("GET", "/inspiration"); const tg = r.data?.find((i) => i.id === tagged)?.vendors;
-ok("public gallery shows the tag with category and city", tg?.length === 1 && tg[0].id === vendorId && tg[0].category === "venue" && tg[0].city === "Jakarta", JSON.stringify(r.data));
+ok("public gallery shows the tag with category and city", tg?.length === 1 && tg[0].id === vendorId && tg[0].category === "venue" && tg[0].city === "Jakarta Selatan", JSON.stringify(r.data));
 const audits = psql(`select count(*) from admin_audit_log where action = 'inspiration.set_vendors'`);
 ok("only the successful tagging is written to the audit log", audits === "1", audits);
+
+// 10. admin deletes a vendor: refused while bookings exist, permanent
+// otherwise. vendor2 (still pending, no bookings) is the one deleted; the
+// browser checks after this file never log in as vendor2.
+r = await vendor.call("DELETE", `/admin/vendors/${vendor2Id}`); ok("vendor cannot delete vendors (403)", r.status === 403, JSON.stringify(r));
+r = await admin.call("DELETE", `/admin/vendors/${vendorId}`); ok("vendor with bookings cannot be deleted (409)", r.status === 409 && /booking/.test(r.data?.error ?? ""), JSON.stringify(r));
+ok("refused delete keeps the vendor", psql(`select count(*) from users where id = '${vendorId}'`) === "1");
+r = await admin.call("DELETE", `/admin/vendors/${vendor2Id}`); ok("admin deletes a vendor without bookings", r.status === 200, JSON.stringify(r));
+ok("deleted vendor's account and profile are gone", psql(`select count(*) from users where id = '${vendor2Id}'`) === "0" && psql(`select count(*) from vendor_profiles where user_id = '${vendor2Id}'`) === "0");
+r = await new Client("v2again").call("POST", "/auth/login", { email: emails.vendor2, password: PW }); ok("deleted vendor cannot log in", r.status === 401, JSON.stringify(r));
+r = await admin.call("DELETE", `/admin/vendors/${vendor2Id}`); ok("deleting again is 404", r.status === 404, JSON.stringify(r));
+r = await admin.call("DELETE", `/admin/vendors/${(await client.call("GET", "/auth/me")).data.id}`); ok("a client account cannot be deleted here (404)", r.status === 404, JSON.stringify(r));
+r = await admin.call("DELETE", "/admin/vendors/bukan-uuid"); ok("malformed id is 404", r.status === 404, JSON.stringify(r));
+ok("deletion is written to the audit log", psql(`select count(*) from admin_audit_log where action = 'vendor.delete' and target_id = '${vendor2Id}'`) === "1");
 
 console.log(results.join("\n")); console.log(`\n${results.length - failed}/${results.length} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

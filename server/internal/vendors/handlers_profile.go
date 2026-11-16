@@ -7,6 +7,7 @@ import (
 	"duacincin/server/internal/auth"
 	"duacincin/server/internal/httpx"
 	"duacincin/server/internal/repository"
+	"duacincin/server/internal/wilayah"
 )
 
 type upsertProfileRequest struct {
@@ -96,6 +97,14 @@ func UpsertProfile(deps *Deps) http.HandlerFunc {
 			httpx.Error(w, http.StatusBadRequest, "kota wajib diisi")
 			return
 		}
+		// One kabupaten/kota from the national list, so the directory groups
+		// vendors by the same spelling ("Sumedang", never "sumedang kota").
+		city, ok := wilayah.Canonical(req.City)
+		if !ok {
+			httpx.Error(w, http.StatusBadRequest, "pilih kabupaten/kota dari daftar")
+			return
+		}
+		req.City = city
 		if req.PriceMin < 0 || req.PriceMax < req.PriceMin {
 			httpx.Error(w, http.StatusBadRequest, "rentang harga tidak valid")
 			return

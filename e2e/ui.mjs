@@ -21,7 +21,7 @@ const out = []; let failed = 0; const ok = (n, c, d = "") => { out.push(`${c ? "
   await s.shot("real-detail");
   await s.go(`${WEB}/kategori/venue`);
   ok("SEO category page server-renders vendors", (await s.ev("document.body.innerText")).includes("Ballroom Uji"), (await s.ev("document.body.innerText")).slice(0,200));
-  await s.go(`${WEB}/kategori/venue/jakarta`);
+  await s.go(`${WEB}/kategori/venue/jakarta-selatan`);
   ok("SEO category+city page filters by city", (await s.ev("document.body.innerText")).includes("Ballroom Uji"));
   await s.go(`${WEB}/kategori/venue/bandung`);
   ok("SEO city with no vendors shows empty state", (await s.ev("document.body.innerText")).includes("Belum ada vendor Venue di Bandung"));
@@ -40,7 +40,7 @@ for (const [w, h, label] of [[1440, 900, "desktop"], [390, 844, "mobile"]]) {
   await s.ev("document.querySelector('button[aria-label^=\"Perbesar foto: Pendopo joglo\"]').click(); 1");
   await sleep(1200);
   const dlg = await s.ev("document.querySelector('[role=dialog]')?.innerText ?? ''");
-  ok(`inspirasi (${label}): lightbox lists the tagged vendor`, dlg.includes("Vendor di foto ini") && dlg.includes("Ballroom Uji") && dlg.includes("Jakarta") && dlg.includes("Venue"), dlg.slice(0, 300));
+  ok(`inspirasi (${label}): lightbox lists the tagged vendor`, dlg.includes("Vendor di foto ini") && dlg.includes("Ballroom Uji") && dlg.includes("Jakarta Selatan") && dlg.includes("Venue"), dlg.slice(0, 300));
   ok(`inspirasi (${label}): generic 'Cari vendor' button hidden when vendors are tagged`, !/Cari vendor/.test(dlg), dlg.slice(0, 300));
   const href = await s.ev("[...document.querySelectorAll('[role=dialog] a')].find(a=>a.innerText.includes('Ballroom Uji'))?.getAttribute('href')");
   ok(`inspirasi (${label}): vendor links to its public profile`, /^\/vendors\/[0-9a-f-]{36}$/.test(href ?? ""), href);

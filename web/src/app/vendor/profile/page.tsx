@@ -11,6 +11,7 @@ import { Shell } from "@/components/shell/Shell";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { CityCombobox } from "@/components/ui/CityCombobox";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Input, Select, Textarea } from "@/components/ui/Field";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -31,6 +32,7 @@ import {
   type VendorProfile,
 } from "@/lib/api";
 import { fadeUp, motionSafe, staggerList, useReducedMotion } from "@/lib/motion";
+import { findRegion } from "@/lib/wilayah";
 
 const STATUS_LABEL: Record<VendorProfile["status"], { text: string; tone: "gold" | "success" | "danger" }> = {
   pending: { text: "Sedang ditinjau tim DuaCincin", tone: "gold" },
@@ -118,7 +120,8 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
   function validate(): FieldErrors {
     const e: FieldErrors = {};
     if (!profile && !businessName.trim()) e.name = "Tulis nama usahamu, nama ini yang dilihat calon pengantin.";
-    if (!city.trim()) e.city = "Isi kota tempat usahamu berada.";
+    if (!city.trim()) e.city = "Pilih kabupaten atau kota tempat usahamu berada.";
+    else if (!findRegion(city)) e.city = "Pilih kabupaten atau kota dari daftar.";
     const min = Number(priceMin || 0);
     const max = Number(priceMax || 0);
     if (min > 0 && !priceMax) e.priceMax = "Isi harga tertinggi. Kalau harganya tetap, samakan dengan harga mulai.";
@@ -166,7 +169,7 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
   const steps = useMemo(() => {
     const list: { label: string; done: boolean; href?: string }[] = [
       { label: "Nama usaha", done: !!(profile?.business_name || businessName.trim()) },
-      { label: "Kota", done: !!city.trim() },
+      { label: "Kabupaten/kota", done: !!findRegion(city) },
       { label: "Harga mulai dari", done: Number(priceMin || 0) > 0 },
       { label: `Cerita usaha minimal ${STORY_GOAL} huruf`, done: [...description.trim()].length >= STORY_GOAL },
       { label: `Minimal ${PHOTO_GOAL} foto portofolio`, done: photos.length >= PHOTO_GOAL, href: "/vendor/portfolio" },
@@ -265,7 +268,7 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
                         </option>
                       ))}
                     </Select>
-                    <Input id="f-city" label="Kota" value={city} onChange={(e) => setCity(e.target.value)} onBlur={blur("city")} error={errors.city} placeholder="Contoh: Yogyakarta" autoComplete="address-level2" />
+                    <CityCombobox id="f-city" label="Kabupaten/kota" value={city} onChange={setCity} onBlur={blur("city")} error={errors.city} />
                   </div>
                 </FormSection>
 
