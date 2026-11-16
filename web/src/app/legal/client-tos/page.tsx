@@ -22,7 +22,7 @@ const SECTIONS: LegalSection[] = [
       <ol className={ol}>
         <li>
           DuaCincin diselenggarakan oleh <strong>{COMPANY.name}</strong>, pemegang NIB {COMPANY.nib} dan tanda daftar Penyelenggara Sistem
-          Elektronik lingkup privat nomor {COMPANY.pseNumber} (&quot;DuaCincin&quot;). Data lengkap perseroan ada di halaman{" "}
+          Elektronik lingkup privat nomor {COMPANY.pseNumber} (&quot;DuaCincin&quot;). Data lengkap perusahaan ada di halaman{" "}
           <Link href={COMPANY_PAGE}>Tentang kami</Link>.
         </li>
         <li>

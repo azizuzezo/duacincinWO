@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 const LEGAL = [
   { label: "Nomor sertifikat pendirian", value: COMPANY.deedNumber },
   { label: "Nomor Induk Berusaha (NIB)", value: COMPANY.nib },
-  { label: "NPWP perseroan", value: COMPANY.npwp },
+  { label: "NPWP perusahaan", value: COMPANY.npwp },
   { label: "Tanda daftar PSE lingkup privat", value: COMPANY.pseNumber },
 ];
 
@@ -57,7 +57,7 @@ export default function TentangKamiPage() {
               DuaCincin dikelola <span className="dc-em">{COMPANY.name}.</span>
             </h2>
             <p className="mt-5 max-w-md leading-relaxed text-dc-text-2">
-              Perseroan terbatas yang terdaftar di Indonesia, dan sistem {COMPANY.pseSystem} terdaftar sebagai penyelenggara sistem
+              Perusahaan yang terdaftar di Indonesia, dan sistem {COMPANY.pseSystem} terdaftar sebagai penyelenggara sistem
               elektronik lingkup privat.
             </p>
             <p className="mt-6 inline-flex items-center gap-2 rounded-full bg-dc-success-soft px-4 py-2 text-sm font-semibold text-dc-success">
@@ -69,7 +69,7 @@ export default function TentangKamiPage() {
           <Reveal>
             <dl className="dc-stagger grid gap-4 sm:grid-cols-2">
               <div className="rounded-xl bg-dc-ink p-6 text-dc-on-dark sm:col-span-2 sm:p-8">
-                <dt className="text-sm text-dc-on-dark/75">Nama perseroan</dt>
+                <dt className="text-sm text-dc-on-dark/75">Nama perusahaan</dt>
                 <dd className="mt-2 font-heading text-[clamp(1.8rem,3vw,2.4rem)] leading-tight text-dc-gold-antique">{COMPANY.name}</dd>
               </div>
               {LEGAL.map((r) => (

@@ -23,7 +23,7 @@ const SECTIONS: LegalSection[] = [
         <p>Perjanjian Kemitraan Vendor ini (&quot;Perjanjian&quot;) dibuat antara:</p>
         <ol className={ol}>
           <li>
-            <strong>{COMPANY.name}</strong>, perseroan terbatas yang didirikan menurut hukum Indonesia, pemegang NIB {COMPANY.nib} dan tanda
+            <strong>{COMPANY.name}</strong>, perusahaan yang didirikan menurut hukum Indonesia, pemegang NIB {COMPANY.nib} dan tanda
             daftar Penyelenggara Sistem Elektronik lingkup privat nomor {COMPANY.pseNumber}, yang menyelenggarakan DuaCincin
             (&quot;DuaCincin&quot;); dan
           </li>
@@ -32,7 +32,7 @@ const SECTIONS: LegalSection[] = [
           </li>
         </ol>
         <p className="mt-3">
-          Data lengkap perseroan dapat dilihat di halaman <Link href={COMPANY_PAGE}>Tentang kami</Link>.
+          Data lengkap perusahaan dapat dilihat di halaman <Link href={COMPANY_PAGE}>Tentang kami</Link>.
         </p>
       </>
     ),
