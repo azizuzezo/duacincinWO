@@ -8,9 +8,13 @@ import (
 )
 
 type AuditLogEntry struct {
-	ID         string
-	ActorID    string
-	ActorRole  string
+	ID        string
+	ActorID   string
+	ActorRole string
+	// ActorName and ActorEmail are who the actor is now (joined from users;
+	// actor_id cascades on delete, so the user always exists).
+	ActorName  string
+	ActorEmail string
 	Action     string
 	TargetType string
 	TargetID   string
@@ -38,8 +42,9 @@ func (r *AuditLogRepo) Create(ctx context.Context, actorID, actorRole, action, t
 
 func (r *AuditLogRepo) List(ctx context.Context, limit, offset int) ([]AuditLogEntry, error) {
 	rows, err := r.pool.Query(ctx, `
-		select id, actor_id, actor_role, action, target_type, target_id, metadata, created_at
-		from admin_audit_log order by created_at desc limit $1 offset $2
+		select l.id, l.actor_id, l.actor_role, u.full_name, u.email, l.action, l.target_type, l.target_id, l.metadata, l.created_at
+		from admin_audit_log l join users u on u.id = l.actor_id
+		order by l.created_at desc limit $1 offset $2
 	`, limit, offset)
 	if err != nil {
 		return nil, err
@@ -49,7 +54,7 @@ func (r *AuditLogRepo) List(ctx context.Context, limit, offset int) ([]AuditLogE
 	var out []AuditLogEntry
 	for rows.Next() {
 		var e AuditLogEntry
-		if err := rows.Scan(&e.ID, &e.ActorID, &e.ActorRole, &e.Action, &e.TargetType, &e.TargetID, &e.Metadata, &e.CreatedAt); err != nil {
+		if err := rows.Scan(&e.ID, &e.ActorID, &e.ActorRole, &e.ActorName, &e.ActorEmail, &e.Action, &e.TargetType, &e.TargetID, &e.Metadata, &e.CreatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, e)

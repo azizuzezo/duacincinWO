@@ -36,6 +36,12 @@ const TARGET_LABEL: Record<string, string> = {
 
 const ROLE_LABEL: Record<string, string> = { admin: "Admin", wedding_consultant: "Konsultan" };
 
+/** "Nama (Admin)", or "Kamu" for the viewer's own actions. */
+function actorLabel(e: AuditLogEntry, viewerId: string): string {
+  if (e.actor_id === viewerId) return "Kamu";
+  return e.actor_name || e.actor_email || "Anggota tim";
+}
+
 /** Dot colour carries the outcome: red for rejections and sanctions, gold otherwise. */
 function tone(e: AuditLogEntry): "danger" | "gold" {
   if (e.action === "vendor.reject" || e.action === "vendor.delete") return "danger";
@@ -195,10 +201,16 @@ function AdminAuditLogContent({ user }: { user: CurrentUser }) {
                           ))}
                           <p className="mt-1 text-xs text-dc-text-3">
                             {TARGET_LABEL[e.target_type] ?? e.target_type} <span className="tabular-nums">#{e.target_id.slice(0, 8)}</span>
-                            <span className="sm:hidden"> · oleh {ROLE_LABEL[e.actor_role] ?? e.actor_role}</span>
+                            <span className="sm:hidden">
+                              {" "}
+                              · oleh <span className="font-semibold text-dc-text-2">{actorLabel(e, user.id)}</span> ({ROLE_LABEL[e.actor_role] ?? e.actor_role})
+                            </span>
                           </p>
                         </div>
-                        <p className="hidden self-start rounded-full bg-dc-cream px-3 py-1 text-xs font-semibold text-dc-text-2 sm:block">{ROLE_LABEL[e.actor_role] ?? e.actor_role}</p>
+                        <div className="hidden max-w-56 self-start text-right sm:block" title={e.actor_email}>
+                          <p className="truncate text-sm font-semibold text-dc-ink">{actorLabel(e, user.id)}</p>
+                          <p className="text-xs text-dc-text-3">{ROLE_LABEL[e.actor_role] ?? e.actor_role}</p>
+                        </div>
                       </MotionItem>
                     );
                   })}

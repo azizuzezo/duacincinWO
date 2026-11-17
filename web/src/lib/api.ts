@@ -435,6 +435,9 @@ export type AuditLogEntry = {
   id: string;
   actor_id: string;
   actor_role: string;
+  /** Who did it: the staff member's current name and email. */
+  actor_name: string;
+  actor_email: string;
   action: string;
   target_type: string;
   target_id: string;

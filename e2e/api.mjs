@@ -238,6 +238,8 @@ r = await admin.call("DELETE", `/admin/vendors/${vendor2Id}`); ok("deleting agai
 r = await admin.call("DELETE", `/admin/vendors/${(await client.call("GET", "/auth/me")).data.id}`); ok("a client account cannot be deleted here (404)", r.status === 404, JSON.stringify(r));
 r = await admin.call("DELETE", "/admin/vendors/bukan-uuid"); ok("malformed id is 404", r.status === 404, JSON.stringify(r));
 ok("deletion is written to the audit log", psql(`select count(*) from admin_audit_log where action = 'vendor.delete' and target_id = '${vendor2Id}'`) === "1");
+r = await admin.call("GET", "/admin/audit-log"); const delEntry = r.data?.find((e) => e.action === "vendor.delete" && e.target_id === vendor2Id);
+ok("audit log names who did it", delEntry?.actor_name === "Admin Uji" && delEntry?.actor_email === emails.admin && delEntry?.actor_role === "admin", JSON.stringify(delEntry));
 
 console.log(results.join("\n")); console.log(`\n${results.length - failed}/${results.length} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

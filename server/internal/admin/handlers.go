@@ -496,6 +496,8 @@ type auditLogEntryDTO struct {
 	ID         string         `json:"id"`
 	ActorID    string         `json:"actor_id"`
 	ActorRole  string         `json:"actor_role"`
+	ActorName  string         `json:"actor_name"`
+	ActorEmail string         `json:"actor_email"`
 	Action     string         `json:"action"`
 	TargetType string         `json:"target_type"`
 	TargetID   string         `json:"target_id"`
@@ -529,7 +531,7 @@ func listAuditLog(deps *Deps) http.HandlerFunc {
 		out := make([]auditLogEntryDTO, 0, len(entries))
 		for _, e := range entries {
 			out = append(out, auditLogEntryDTO{
-				ID: e.ID, ActorID: e.ActorID, ActorRole: e.ActorRole, Action: e.Action,
+				ID: e.ID, ActorID: e.ActorID, ActorRole: e.ActorRole, ActorName: e.ActorName, ActorEmail: e.ActorEmail, Action: e.Action,
 				TargetType: e.TargetType, TargetID: e.TargetID, Metadata: e.Metadata,
 				CreatedAt: e.CreatedAt.Format(time.RFC3339),
 			})
