@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 
 	"duacincin/server/internal/auth"
+	"duacincin/server/internal/email"
 	"duacincin/server/internal/httpx"
 	"duacincin/server/internal/repository"
 	"duacincin/server/internal/security"
@@ -24,6 +25,9 @@ type conversationDTO struct {
 	VendorID           *string `json:"vendor_id,omitempty"`
 	VendorBusinessName *string `json:"vendor_business_name,omitempty"`
 	ClientName         *string `json:"client_name,omitempty"`
+	// AdminID/AdminName identify the admin of an admin_vendor thread.
+	AdminID   *string `json:"admin_id,omitempty"`
+	AdminName *string `json:"admin_name,omitempty"`
 	// ClosedAt/ClosedBy are present only while the session is closed.
 	ClosedAt *string `json:"closed_at,omitempty"`
 	ClosedBy *string `json:"closed_by,omitempty"`
@@ -40,7 +44,7 @@ func formatTime(t *time.Time) *string {
 }
 
 func toConversationDTO(c *repository.Conversation) conversationDTO {
-	dto := conversationDTO{ID: c.ID, Type: c.Type, ClientID: c.ClientID, VendorID: c.VendorID}
+	dto := conversationDTO{ID: c.ID, Type: c.Type, ClientID: c.ClientID, VendorID: c.VendorID, AdminID: c.AdminID}
 	if c.Closed() {
 		dto.ClosedAt = formatTime(c.ClosedAt)
 		dto.ClosedBy = c.ClosedBy
@@ -60,8 +64,15 @@ func enrichConversationDTO(deps *Deps, ctx context.Context, c *repository.Conver
 			dto.VendorBusinessName = &profile.BusinessName
 		}
 	}
-	if user, err := deps.Users.GetByID(ctx, c.ClientID); err == nil {
-		dto.ClientName = &user.FullName
+	if c.ClientID != "" {
+		if user, err := deps.Users.GetByID(ctx, c.ClientID); err == nil {
+			dto.ClientName = &user.FullName
+		}
+	}
+	if c.AdminID != nil {
+		if user, err := deps.Users.GetByID(ctx, *c.AdminID); err == nil {
+			dto.AdminName = &user.FullName
+		}
 	}
 	return dto
 }
@@ -165,9 +176,36 @@ func StartConsultation(deps *Deps) http.HandlerFunc {
 	}
 }
 
+// StartAdminVendorChat gets-or-creates the conversation between the calling
+// admin and a vendor. Any profile status: Admin may need to reach a vendor
+// that is still pending review. The vendor replies; it does not cold-start.
+func StartAdminVendorChat(deps *Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		claims, _ := auth.ClaimsFromContext(r.Context())
+		vendorID := chi.URLParam(r, "vendorID")
+		if _, err := uuid.Parse(vendorID); err != nil {
+			httpx.Error(w, http.StatusNotFound, "vendor tidak ditemukan")
+			return
+		}
+		if _, err := deps.Vendors.GetByUserID(r.Context(), vendorID); err != nil {
+			httpx.Error(w, http.StatusNotFound, "vendor tidak ditemukan")
+			return
+		}
+
+		conv, err := deps.Chat.GetOrCreateAdminVendorChat(r.Context(), claims.UserID, vendorID)
+		if err != nil {
+			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
+			return
+		}
+		httpx.JSON(w, http.StatusOK, enrichConversationDTO(deps, r.Context(), conv))
+	}
+}
+
 // ListConversations returns the authenticated user's conversations, scoped
-// by role: Client sees their own (both types), Vendor sees their vendor_chat
-// threads, Admin/Wedding Consultant see every consultation (shared inbox).
+// by role: Client sees their own (both types), Vendor sees its threads with
+// couples and with admins, Admin/Wedding Consultant see every consultation
+// (shared inbox) and an Admin also sees the vendor chats they started.
+// ?type= narrows the list to one conversation type.
 func ListConversations(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		claims, _ := auth.ClaimsFromContext(r.Context())
@@ -181,8 +219,15 @@ func ListConversations(deps *Deps) http.HandlerFunc {
 			convs, err = deps.Chat.ListForClient(r.Context(), claims.UserID)
 		case auth.RoleVendor:
 			convs, err = deps.Chat.ListForVendor(r.Context(), claims.UserID)
-		case auth.RoleAdmin, auth.RoleWeddingConsultant:
+		case auth.RoleWeddingConsultant:
 			convs, err = deps.Chat.ListConsultations(r.Context())
+		case auth.RoleAdmin:
+			convs, err = deps.Chat.ListConsultations(r.Context())
+			if err == nil {
+				var own []repository.Conversation
+				own, err = deps.Chat.ListForAdmin(r.Context(), claims.UserID)
+				convs = append(own, convs...)
+			}
 		}
 		if err != nil {
 			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
@@ -193,8 +238,12 @@ func ListConversations(deps *Deps) http.HandlerFunc {
 		// messages reached them: second grey tick for the senders.
 		markDelivered(deps, r.Context(), claims, nil)
 
+		only := r.URL.Query().Get("type")
 		out := make([]conversationDTO, 0, len(convs))
 		for _, c := range convs {
+			if only != "" && c.Type != only {
+				continue
+			}
 			out = append(out, enrichConversationDTO(deps, r.Context(), &c))
 		}
 		httpx.JSON(w, http.StatusOK, out)
@@ -204,10 +253,15 @@ func ListConversations(deps *Deps) http.HandlerFunc {
 // canAccess reports whether claims identifies a participant of conv, or a
 // staff member for a consultation thread (shared inbox model).
 func canAccess(claims *security.SessionClaims, conv *repository.Conversation) bool {
+	if conv.Type == repository.ConversationTypeAdminVendor {
+		// Exactly two people: the admin who started it and the vendor.
+		return (conv.AdminID != nil && claims.UserID == *conv.AdminID) ||
+			(conv.VendorID != nil && claims.UserID == *conv.VendorID)
+	}
 	if conv.Type == ConsultationType && (claims.Role == auth.RoleAdmin || claims.Role == auth.RoleWeddingConsultant) {
 		return true
 	}
-	if claims.UserID == conv.ClientID {
+	if conv.ClientID != "" && claims.UserID == conv.ClientID {
 		return true
 	}
 	if conv.VendorID != nil && claims.UserID == *conv.VendorID {
@@ -335,7 +389,9 @@ func SendMessage(deps *Deps) http.HandlerFunc {
 			}
 		}
 
-		flagged := ContainsContactInfo(req.Body)
+		// The contact filter guards the couple-vendor and consultation
+		// channels; Admin and a vendor may share contact details freely.
+		flagged := conv.Type != repository.ConversationTypeAdminVendor && ContainsContactInfo(req.Body)
 		message, err := deps.Chat.CreateMessage(r.Context(), conv.ID, claims.UserID, req.Body, flagged, req.ReplyToMessageID, req.AttachmentURL, req.AttachmentType)
 		if errors.Is(err, repository.ErrConversationClosed) {
 			httpx.Error(w, http.StatusConflict, msgSessionClosed)
@@ -349,13 +405,14 @@ func SendMessage(deps *Deps) http.HandlerFunc {
 		// Auto-open a dispute for Admin review (PRD §8.4/§8.6) — only for
 		// vendor_chat, since the sanction ladder in §11.1 applies to Vendors;
 		// consultation threads have no vendor to flag.
-		if flagged && conv.VendorID != nil {
+		if flagged && conv.Type == repository.ConversationTypeVendorChat && conv.VendorID != nil {
 			_ = deps.Disputes.Create(r.Context(), *conv.VendorID, &message.ID, "Pesan chat terdeteksi berisi kontak eksternal")
 		}
 
 		dto := toMessageDTOWithReply(deps, r.Context(), message)
 		deps.Hub.Broadcast(conv.ID, map[string]any{"type": "message.new", "message": dto})
 		notifyOtherParticipant(deps, r.Context(), conv, claims.UserID, req.Body)
+		emailRecipient(deps, conv, claims.UserID, message.ID)
 		if deps.Notifier != nil {
 			deps.Notifier.NotifyNewMessage(r.Context(), conv, claims.UserID, message)
 		}
@@ -364,29 +421,111 @@ func SendMessage(deps *Deps) http.HandlerFunc {
 	}
 }
 
-// notifyOtherParticipant creates a persisted notification for the vendor_chat
-// counterpart of senderID. Consultation threads are a shared staff inbox
-// (no single recipient), so those aren't notified this way.
-func notifyOtherParticipant(deps *Deps, ctx context.Context, conv *repository.Conversation, senderID, body string) {
-	if conv.Type != repository.ConversationTypeVendorChat || conv.VendorID == nil {
-		return
+// recipientOf returns the one person a message from senderID is for, and
+// the thread's path in that person's app. Consultation threads are a shared
+// staff inbox (no single recipient), so they return "".
+func recipientOf(conv *repository.Conversation, senderID string) (recipientID, link string) {
+	if conv.VendorID == nil {
+		return "", ""
 	}
-	recipientID := conv.ClientID
-	if senderID == conv.ClientID {
-		recipientID = *conv.VendorID
+	vendorLink := "/vendor/messages/" + conv.ID
+	switch conv.Type {
+	case repository.ConversationTypeVendorChat:
+		if senderID == conv.ClientID {
+			return *conv.VendorID, vendorLink
+		}
+		return conv.ClientID, "/client/messages/" + conv.ID
+	case repository.ConversationTypeAdminVendor:
+		if conv.AdminID == nil {
+			return "", ""
+		}
+		if senderID == *conv.AdminID {
+			return *conv.VendorID, vendorLink
+		}
+		return *conv.AdminID, "/internal/admin/pesan/" + conv.ID
+	}
+	return "", ""
+}
+
+// notifyOtherParticipant creates a persisted notification for the other
+// person in a vendor_chat or admin_vendor thread.
+func notifyOtherParticipant(deps *Deps, ctx context.Context, conv *repository.Conversation, senderID, body string) {
+	recipientID, link := recipientOf(conv, senderID)
+	if recipientID == "" {
+		return
 	}
 
 	preview := body
 	if len(preview) > 80 {
 		preview = preview[:80] + "…"
 	}
-	link := "/vendor/messages/" + conv.ID
-	if recipientID == conv.ClientID {
-		link = "/client/messages/" + conv.ID
-	}
 	if err := deps.Notifications.Create(ctx, recipientID, "chat.message", "Pesan baru", preview, &link); err != nil {
 		log.Printf("notification: %v", err)
 	}
+}
+
+// emailRecipient emails the other person of a vendor_chat or admin_vendor
+// thread that a message is waiting, at their registered address. One email
+// per unread stretch: if they already had an unread message in this thread,
+// they were emailed for it and this one is skipped. Runs in the background
+// so a slow mail provider never delays sending.
+func emailRecipient(deps *Deps, conv *repository.Conversation, senderID, messageID string) {
+	if deps.Mailer == nil || deps.Cfg == nil {
+		return
+	}
+	recipientID, link := recipientOf(conv, senderID)
+	if recipientID == "" {
+		return
+	}
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
+
+		if already, err := deps.Chat.HasUnreadFrom(ctx, conv.ID, recipientID, messageID); err != nil || already {
+			return
+		}
+		recipient, err := deps.Users.GetByID(ctx, recipientID)
+		if err != nil || recipient.Email == "" {
+			return
+		}
+		sender := senderDisplayName(deps, ctx, conv, senderID)
+
+		base := strings.TrimRight(deps.Cfg.PublicAssetBaseURL, "/")
+		if deps.Cfg.ResendAPIKey == "" {
+			log.Printf("[DEV] email pesan baru untuk %s dari %s: %s (RESEND_API_KEY belum diset)", recipient.Email, sender, link)
+			return
+		}
+		logoURL, threadURL := "", ""
+		if base != "" {
+			logoURL, threadURL = base+"/brand/duacincin-logo.webp", base+link
+		}
+		subject, html, err := email.RenderChatMessageEmail(logoURL, sender, link)
+		if err != nil {
+			log.Printf("chat email: render: %v", err)
+			return
+		}
+		if err := deps.Mailer.SendWithText(ctx, recipient.Email, subject, html, email.RenderChatMessageText(sender, threadURL)); err != nil {
+			log.Printf("chat email: send: %v", err)
+		}
+	}()
+}
+
+// senderDisplayName is how the email names the sender: the vendor's business
+// name, the couple's name, or "Tim DuaCincin" for an admin.
+func senderDisplayName(deps *Deps, ctx context.Context, conv *repository.Conversation, senderID string) string {
+	if conv.AdminID != nil && senderID == *conv.AdminID {
+		return "Tim DuaCincin"
+	}
+	if conv.VendorID != nil && senderID == *conv.VendorID {
+		if p, err := deps.Vendors.GetByUserID(ctx, senderID); err == nil && p.BusinessName != "" {
+			return p.BusinessName
+		}
+		return "Vendor"
+	}
+	if u, err := deps.Users.GetByID(ctx, senderID); err == nil && u.FullName != "" {
+		return u.FullName
+	}
+	return "Calon pengantin"
 }
 
 type markReadRequest struct {

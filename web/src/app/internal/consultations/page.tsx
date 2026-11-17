@@ -33,7 +33,7 @@ function ConsultationsInboxContent({ user }: { user: CurrentUser }) {
 
         <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
           <section aria-label="Daftar percakapan">
-            <ConversationList basePath="/internal/consultations" emptyLabel="Belum ada calon pengantin yang memulai konsultasi." currentUserId={user.id} />
+            <ConversationList basePath="/internal/consultations" type="consultation" emptyLabel="Belum ada calon pengantin yang memulai konsultasi." currentUserId={user.id} />
           </section>
 
           {/* Working notes for the consultant: what the couple sees on their side, so replies match it. */}

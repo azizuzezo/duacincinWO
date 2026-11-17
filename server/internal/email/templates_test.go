@@ -135,3 +135,30 @@ func TestRenderSignupOTPEmail(t *testing.T) {
 		t.Fatal("text part missing code")
 	}
 }
+
+func TestChatMessageEmail(t *testing.T) {
+	for _, logo := range []string{testLogo, ""} {
+		subject, html, err := RenderChatMessageEmail(logo, "Ballroom Uji", "/vendor/messages/abc")
+		if err != nil {
+			t.Fatalf("render (logo %q): %v", logo, err)
+		}
+		if subject != "Pesan baru dari Ballroom Uji" {
+			t.Errorf("subject = %q", subject)
+		}
+		if strings.Contains(html, "aria-label=\"Kode") || strings.Contains(html, "Jangan berikan kode") {
+			t.Errorf("chat email must not render the OTP code block")
+		}
+		if strings.Contains(html, "<no value>") || strings.Contains(html, "ZgotmplZ") || strings.Contains(html, "—") {
+			t.Errorf("html contains a template error marker or an em dash")
+		}
+		if logo != "" && !strings.Contains(html, `href="https://wo.example.test/vendor/messages/abc"`) {
+			t.Errorf("CTA should link to the thread on the public base")
+		}
+		if logo == "" && strings.Contains(html, "href=") {
+			t.Errorf("without a public base the email must not carry links")
+		}
+	}
+	if txt := RenderChatMessageText("Tim DuaCincin", "https://wo.example.test/vendor/messages/abc"); !strings.Contains(txt, "https://wo.example.test/vendor/messages/abc") {
+		t.Errorf("text part should carry the thread URL: %q", txt)
+	}
+}

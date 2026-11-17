@@ -194,11 +194,15 @@ export type DirectoryCard = {
 
 export type Conversation = {
   id: string;
-  type: "vendor_chat" | "consultation";
+  type: "vendor_chat" | "consultation" | "admin_vendor";
+  /** "" for admin_vendor (an admin talking with a vendor, no couple). */
   client_id: string;
   vendor_id?: string;
   vendor_business_name?: string;
   client_name?: string;
+  /** The admin of an admin_vendor thread. */
+  admin_id?: string;
+  admin_name?: string;
   /** Present only while the chat session is closed (see "Tutup sesi"). */
   closed_at?: string;
   closed_by?: string;

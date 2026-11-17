@@ -14,6 +14,7 @@ func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 
 		r.With(auth.RequireRole(auth.RoleClient)).Post("/vendor/{vendorID}", StartVendorChat(deps))
 		r.With(auth.RequireRole(auth.RoleClient)).Post("/consultation", StartConsultation(deps))
+		r.With(auth.RequireRole(auth.RoleAdmin)).Post("/admin-vendor/{vendorID}", StartAdminVendorChat(deps))
 
 		r.Get("/", ListConversations(deps))
 		r.Get("/{id}", GetConversation(deps))

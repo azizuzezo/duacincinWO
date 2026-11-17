@@ -13,6 +13,11 @@ import { apiGet, ApiError, type Conversation } from "@/lib/api";
 
 /** Display name and role line for a conversation, from the viewer's side. */
 export function describeConversation(c: Conversation, currentUserId: string): { name: string; role: string; consult: boolean } {
+  if (c.type === "admin_vendor") {
+    // The vendor sees the DuaCincin team (and which admin); the admin sees the vendor.
+    if (c.admin_id === currentUserId) return { name: c.vendor_business_name ?? "Vendor", role: "Vendor", consult: false };
+    return { name: "Tim DuaCincin", role: c.admin_name ? `Admin · ${c.admin_name}` : "Admin", consult: true };
+  }
   if (c.type === "consultation") {
     // The couple sees the DuaCincin team; staff see which couple it is.
     if (c.client_id === currentUserId) return { name: "Wedding Consultant", role: "Tim DuaCincin", consult: true };
@@ -54,6 +59,7 @@ export function ConversationList({
   activeId,
   onLoaded,
   bare = false,
+  type,
 }: {
   basePath: string;
   emptyLabel: string;
@@ -62,6 +68,8 @@ export function ConversationList({
   onLoaded?: (conversations: Conversation[]) => void;
   /** Drop the card surface when the page already provides one (two-pane inbox). */
   bare?: boolean;
+  /** Only this conversation type (an admin has consultations and vendor chats). */
+  type?: Conversation["type"];
 }) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +78,7 @@ export function ConversationList({
   function load() {
     setLoading(true);
     setError(null);
-    apiGet<Conversation[]>("/api/v1/conversations")
+    apiGet<Conversation[]>(`/api/v1/conversations${type ? `?type=${type}` : ""}`)
       .then((c) => {
         setConversations(c ?? []);
         onLoaded?.(c ?? []);

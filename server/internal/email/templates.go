@@ -51,6 +51,7 @@ var otpTemplate = template.Must(template.New("otp").Parse(`<!doctype html>
 {{.Intro}}
 </td></tr>
 
+{{if .Digits}}
 <tr><td align="center" style="padding:26px 24px 8px;">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="background:#FAF3E6;border:1px solid #E6D3AC;border-radius:18px;">
 <tr><td style="padding:18px 18px;">
@@ -67,6 +68,7 @@ var otpTemplate = template.Must(template.New("otp").Parse(`<!doctype html>
 <tr><td align="center" style="padding:20px 44px 6px;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:13px;line-height:1.7;color:#6B6157;">
 Jangan berikan kode ini kepada siapa pun, termasuk yang mengaku dari DuaCincin.
 </td></tr>
+{{end}}
 
 <tr><td style="padding:22px 36px 0;"><div style="height:1px;background:#E6DCCB;line-height:1px;font-size:0;">&nbsp;</div></td></tr>
 
@@ -235,4 +237,34 @@ func RenderPhoneLinkOTPText(code string) string {
 	return fmt.Sprintf("Kode untuk menghubungkan WhatsApp ke akun DuaCincin kamu: %s\n\n"+
 		"Balas chat WhatsApp DuaCincin dengan kode ini. Berlaku 5 menit dan hanya bisa dipakai sekali. Jangan berikan kode ini kepada siapa pun, termasuk yang mengaku dari DuaCincin.\n\n"+
 		"Tidak merasa menghubungkan WhatsApp? Abaikan saja email ini. Tanpa kode ini, nomor tersebut tidak bisa terhubung ke akun kamu.\n", code)
+}
+
+// RenderChatMessageEmail tells someone a new chat message is waiting, in the
+// same layout as the OTP emails minus the code. It never quotes the message:
+// the body may carry contact details the chat filter flags (PRD §8.6), and
+// the reply belongs in the app. ctaPath is the thread's path in the web app.
+func RenderChatMessageEmail(logoURL, senderName, ctaPath string) (subject, html string, err error) {
+	html, err = render(logoURL, otpTemplateData{
+		DocTitle:   "Pesan baru di DuaCincin",
+		Preheader:  senderName + " mengirim pesan baru untukmu di DuaCincin.",
+		TitleLead:  "Ada pesan baru",
+		TitleEm:    "dari " + senderName,
+		Intro:      senderName + " mengirim pesan untukmu di DuaCincin. Buka percakapannya untuk membaca dan membalas.",
+		NextTitle:  "Balas lewat DuaCincin",
+		NextBody:   "Semua percakapan tersimpan di DuaCincin, jadi kesepakatan dan pembayaran tetap terlindungi.",
+		CTALabel:   "Buka percakapan",
+		CTAURL:     ctaPath,
+		IgnoreLine: "Kamu menerima email ini karena ada pesan yang belum kamu baca. Kami tidak mengirim email lagi untuk percakapan ini sampai pesannya kamu baca.",
+	})
+	return "Pesan baru dari " + senderName, html, err
+}
+
+// RenderChatMessageText is the plain-text part sent next to
+// RenderChatMessageEmail. threadURL may be empty (no public base configured).
+func RenderChatMessageText(senderName, threadURL string) string {
+	open := "Buka DuaCincin untuk membaca dan membalas."
+	if threadURL != "" {
+		open = "Baca dan balas di sini: " + threadURL
+	}
+	return fmt.Sprintf("Ada pesan baru dari %s di DuaCincin.\n\n%s\n\nKamu menerima email ini karena ada pesan yang belum kamu baca. Kami tidak mengirim email lagi untuk percakapan ini sampai pesannya kamu baca.\n", senderName, open)
 }

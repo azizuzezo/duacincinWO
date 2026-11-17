@@ -1,17 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { ADMIN_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { WithUser } from "@/components/WithUser";
-import { apiGet, ApiError, formatRupiah, formatWhatsApp, categoriesLabel, type CurrentUser } from "@/lib/api";
+import { apiGet, apiPost, ApiError, type Conversation, formatRupiah, formatWhatsApp, categoriesLabel, type CurrentUser } from "@/lib/api";
 import { useLiveRefresh } from "@/lib/useLiveRefresh";
 import { Monogram, PAGE, persen, relatif, RowsSkeleton, tanggal } from "../../../_ui";
 
@@ -89,6 +90,19 @@ function Content({ user }: { user: CurrentUser }) {
   const { id } = useParams<{ id: string }>();
   const [vendor, setVendor] = useState<AdminVendorDetail | null>(null);
   const [error, setError] = useState<{ notFound: boolean; message: string } | null>(null);
+  const router = useRouter();
+  const [chatState, setChatState] = useState<{ opening: boolean; error?: string }>({ opening: false });
+
+  // Opens (or creates) this admin's chat with the vendor.
+  async function openChat() {
+    setChatState({ opening: true });
+    try {
+      const conv = await apiPost<Conversation>(`/api/v1/conversations/admin-vendor/${id}`, {});
+      router.push(`/internal/admin/pesan/${conv.id}`);
+    } catch (err) {
+      setChatState({ opening: false, error: err instanceof ApiError ? err.message : "Chat belum bisa dibuka. Coba lagi." });
+    }
+  }
 
   const load = useCallback(
     (background = false) =>
@@ -158,10 +172,18 @@ function Content({ user }: { user: CurrentUser }) {
                 <Badge tone="gold">WhatsApp belum diisi</Badge>
               )}
               <span className="text-sm text-dc-text-3">Profil diubah {relatif(vendor.profile_updated_at)}</span>
+              <Button size="sm" variant="ghost" className="ml-auto" loading={chatState.opening} onClick={openChat}>
+                Chat vendor
+              </Button>
               {vendor.status === "approved" && (
-                <Link href={`/vendors/${vendor.user_id}`} target="_blank" className="ml-auto inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-dc-clay underline underline-offset-4 hover:text-dc-ink">
+                <Link href={`/vendors/${vendor.user_id}`} target="_blank" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-dc-clay underline underline-offset-4 hover:text-dc-ink">
                   Lihat seperti calon pengantin
                 </Link>
+              )}
+              {chatState.error && (
+                <p role="alert" className="basis-full text-sm font-medium text-dc-danger">
+                  {chatState.error}
+                </p>
               )}
             </div>
 

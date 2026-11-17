@@ -12,13 +12,18 @@ import (
 const (
 	ConversationTypeVendorChat   = "vendor_chat"
 	ConversationTypeConsultation = "consultation"
+	// ConversationTypeAdminVendor is one admin talking with one vendor.
+	ConversationTypeAdminVendor = "admin_vendor"
 )
 
 type Conversation struct {
-	ID        string
-	Type      string
-	ClientID  string
-	VendorID  *string
+	ID   string
+	Type string
+	// ClientID is "" for admin_vendor (the only type without a client).
+	ClientID string
+	VendorID *string
+	// AdminID is set only for admin_vendor.
+	AdminID   *string
 	CreatedAt time.Time
 	// ClosedAt is set while the session is closed (see Close/Reopen);
 	// ClosedBy is who closed it (nil if that account was later deleted).
@@ -34,7 +39,7 @@ func (c *Conversation) Closed() bool { return c.ClosedAt != nil }
 // racing each other can never let a message slip in after the close.
 var ErrConversationClosed = errors.New("conversation closed")
 
-const conversationColumns = "id, type, client_id, vendor_id, created_at, closed_at, closed_by"
+const conversationColumns = "id, type, coalesce(client_id::text, ''), vendor_id, created_at, closed_at, closed_by, admin_id"
 
 type Message struct {
 	ID               string
@@ -90,6 +95,48 @@ func (r *ChatRepo) GetOrCreateConsultation(ctx context.Context, clientID string)
 	return scanConversation(row)
 }
 
+// GetOrCreateAdminVendorChat returns the (admin, vendor) conversation,
+// creating it the first time that admin contacts the vendor.
+func (r *ChatRepo) GetOrCreateAdminVendorChat(ctx context.Context, adminID, vendorID string) (*Conversation, error) {
+	row := r.pool.QueryRow(ctx, `
+		insert into conversations (type, admin_id, vendor_id)
+		values ('admin_vendor', $1, $2)
+		on conflict (admin_id, vendor_id) where type = 'admin_vendor'
+		do update set admin_id = excluded.admin_id
+		returning `+conversationColumns+`
+	`, adminID, vendorID)
+	return scanConversation(row)
+}
+
+// ListForAdmin returns the admin_vendor conversations adminID started.
+func (r *ChatRepo) ListForAdmin(ctx context.Context, adminID string) ([]Conversation, error) {
+	rows, err := r.pool.Query(ctx, `
+		select `+conversationColumns+` from conversations
+		where type = 'admin_vendor' and admin_id = $1 order by created_at desc
+	`, adminID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return collectConversations(rows)
+}
+
+// HasUnreadFrom reports whether recipientID already had an unread message
+// in conversationID sent before messageID. Used to send one email per unread
+// stretch instead of one per message. Only earlier messages count, so two
+// messages sent back to back can't each see the other and both skip.
+func (r *ChatRepo) HasUnreadFrom(ctx context.Context, conversationID, recipientID, messageID string) (bool, error) {
+	var exists bool
+	err := r.pool.QueryRow(ctx, `
+		select exists (
+			select 1 from messages
+			where conversation_id = $1 and sender_id <> $2 and id <> $3 and read_at is null
+			  and created_at < (select created_at from messages where id = $3)
+		)
+	`, conversationID, recipientID, messageID).Scan(&exists)
+	return exists, err
+}
+
 func (r *ChatRepo) GetByID(ctx context.Context, id string) (*Conversation, error) {
 	row := r.pool.QueryRow(ctx, `
 		select `+conversationColumns+` from conversations where id = $1
@@ -115,7 +162,8 @@ func (r *ChatRepo) ListForClient(ctx context.Context, clientID string) ([]Conver
 	return collectConversations(rows)
 }
 
-// ListForVendor returns every vendor_chat conversation belonging to vendorID.
+// ListForVendor returns every conversation the vendor takes part in: with
+// couples (vendor_chat) and with admins (admin_vendor).
 func (r *ChatRepo) ListForVendor(ctx context.Context, vendorID string) ([]Conversation, error) {
 	rows, err := r.pool.Query(ctx, `
 		select `+conversationColumns+` from conversations
@@ -243,7 +291,7 @@ func (r *ChatRepo) GetReadStatus(ctx context.Context, conversationID string) ([]
 
 func scanConversation(row pgx.Row) (*Conversation, error) {
 	var c Conversation
-	if err := row.Scan(&c.ID, &c.Type, &c.ClientID, &c.VendorID, &c.CreatedAt, &c.ClosedAt, &c.ClosedBy); err != nil {
+	if err := row.Scan(&c.ID, &c.Type, &c.ClientID, &c.VendorID, &c.CreatedAt, &c.ClosedAt, &c.ClosedBy, &c.AdminID); err != nil {
 		return nil, err
 	}
 	return &c, nil
@@ -253,7 +301,7 @@ func collectConversations(rows pgx.Rows) ([]Conversation, error) {
 	var conversations []Conversation
 	for rows.Next() {
 		var c Conversation
-		if err := rows.Scan(&c.ID, &c.Type, &c.ClientID, &c.VendorID, &c.CreatedAt, &c.ClosedAt, &c.ClosedBy); err != nil {
+		if err := rows.Scan(&c.ID, &c.Type, &c.ClientID, &c.VendorID, &c.CreatedAt, &c.ClosedAt, &c.ClosedBy, &c.AdminID); err != nil {
 			return nil, err
 		}
 		conversations = append(conversations, c)
@@ -266,7 +314,8 @@ func collectConversations(rows pgx.Rows) ([]Conversation, error) {
 // sent by the couple; for a vendor or the consultant team it is everything the
 // couple sent. So one staff member opening a consultation never flips another
 // staff member's ticks, and nobody can mark their own messages as read.
-const recipientSideSQL = `(case when c.client_id = $1 then m.sender_id <> c.client_id else m.sender_id = c.client_id end)`
+// admin_vendor has exactly two people, so it is whatever the viewer didn't send.
+const recipientSideSQL = `(case when c.type = 'admin_vendor' then m.sender_id <> $1 when c.client_id = $1 then m.sender_id <> c.client_id else m.sender_id = c.client_id end)`
 
 // ReceiptChange is one message whose delivered/read status just changed.
 type ReceiptChange struct {
@@ -287,7 +336,7 @@ func (r *ChatRepo) MarkDelivered(ctx context.Context, viewerID string, staff boo
 		where m.conversation_id = c.id
 		  and m.delivered_at is null
 		  and ($3::uuid is null or c.id = $3::uuid)
-		  and (c.client_id = $1 or c.vendor_id = $1 or ($2 and c.type = 'consultation'))
+		  and (c.client_id = $1 or c.vendor_id = $1 or c.admin_id = $1 or ($2 and c.type = 'consultation'))
 		  and `+recipientSideSQL+`
 		returning m.conversation_id, m.id
 	`, viewerID, staff, conversationID)

@@ -29,6 +29,8 @@ export function closerName(c: Conversation, currentUserId: string): string {
   const by = c.closed_by;
   if (!by) return "salah satu peserta";
   if (by === currentUserId) return "kamu";
+  // Two people only: whoever else closed it is the other side.
+  if (c.type === "admin_vendor") return describeConversation(c, currentUserId).name;
   const viewerIsClient = c.client_id === currentUserId;
   if (by === c.client_id || viewerIsClient) return describeConversation(c, currentUserId).name;
   // Staff looking at a consultation another staff member closed.

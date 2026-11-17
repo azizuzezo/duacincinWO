@@ -16,14 +16,14 @@ export default function VendorMessagesPage() {
               eyebrow="Pesan"
               title={
                 <>
-                  Pesan dari <span className="dc-em">client</span>
+                  Pesan dari <span className="dc-em">client</span> dan tim DuaCincin
                 </>
               }
               subtitle="Balas lewat chat ini supaya harga, tanggal, dan paket yang disepakati tercatat untuk kedua pihak."
             />
             <ConversationList
               basePath="/vendor/messages"
-              emptyLabel="Belum ada client yang menghubungi. Chat dari client muncul di sini begitu mereka membuka etalasemu."
+              emptyLabel="Belum ada client yang menghubungi. Chat dari client muncul di sini begitu mereka membuka etalasemu, begitu juga pesan dari tim DuaCincin."
               currentUserId={user.id}
             />
           </div>

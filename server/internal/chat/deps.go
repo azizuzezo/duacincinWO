@@ -1,5 +1,6 @@
-// Package chat implements in-app messaging between Client<->Vendor and
-// Client<->Wedding Consultant (PRD §8.4/§8.11) — deliberately the only
+// Package chat implements in-app messaging between Client<->Vendor,
+// Client<->Wedding Consultant (PRD §8.4/§8.11) and Admin<->Vendor —
+// deliberately the only
 // channel available, since exposing vendor contact info would defeat the
 // anti-circumvention model (PRD §1/§8.6).
 package chat
@@ -7,6 +8,8 @@ package chat
 import (
 	"context"
 
+	"duacincin/server/internal/config"
+	"duacincin/server/internal/email"
 	"duacincin/server/internal/repository"
 	"duacincin/server/internal/storage"
 )
@@ -32,6 +35,10 @@ type Deps struct {
 	// Notifier is optional (nil-safe) — set once the WhatsApp relay's Deps
 	// exist, since it's constructed after chat.Deps in main.go.
 	Notifier Notifier
+	// Mailer and Cfg send the "pesan baru" email (see emailRecipient).
+	// Optional: nil skips email.
+	Mailer *email.Client
+	Cfg    *config.Config
 }
 
 func NewDeps(chatRepo *repository.ChatRepo, vendors *repository.VendorRepo, disputes *repository.DisputeRepo, users *repository.UserRepo, hub *Hub, notifications *repository.NotificationRepo, storageClient *storage.Client) *Deps {

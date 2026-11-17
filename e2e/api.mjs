@@ -131,6 +131,43 @@ r = await client.call("POST", `/conversations/${conv.id}/messages`, { body: "WA 
 r = await vendor.call("GET", `/conversations/${conv.id}/messages`); ok("vendor reads thread (2 messages)", r.status === 200 && r.data.length >= 2, JSON.stringify(r));
 r = await vendor2.call("GET", `/conversations/${conv.id}/messages`); ok("unrelated vendor cannot read thread", r.status === 403 || r.status === 404, JSON.stringify(r));
 
+// Chat emails. Without RESEND_API_KEY the API logs them ("[DEV] email pesan
+// baru untuk <email> dari <sender>: <link>"); sending is in the background.
+const chatEmails = (email, link) => readFileSync(API_LOG, "utf8").split("\n").filter((l) => l.includes(`email pesan baru untuk ${email} `) && l.includes(`: ${link} (`)).length;
+const waitChatEmails = async (email, link, n) => { for (let i = 0; i < 30 && chatEmails(email, link) < n; i++) await new Promise((res) => setTimeout(res, 100)); await new Promise((res) => setTimeout(res, 300)); return chatEmails(email, link); };
+ok("vendor is emailed once for the couple's two unread messages", (await waitChatEmails(emails.vendor, `/vendor/messages/${conv.id}`, 1)) === 1, String(chatEmails(emails.vendor, `/vendor/messages/${conv.id}`)));
+r = await vendor.call("POST", `/conversations/${conv.id}/messages`, { body: "Tersedia, Kak." }); ok("vendor replies to the couple", r.status === 201, JSON.stringify(r));
+ok("couple is emailed when the vendor replies", (await waitChatEmails(emails.client, `/client/messages/${conv.id}`, 1)) === 1);
+
+// 5b. Admin <-> Vendor chat: one thread per (admin, vendor), only those two.
+r = await vendor.call("POST", `/conversations/admin-vendor/${vendorId}`, {}); ok("vendor cannot start an admin chat", r.status === 403, JSON.stringify(r));
+r = await client.call("POST", `/conversations/admin-vendor/${vendorId}`, {}); ok("client cannot start an admin chat", r.status === 403, JSON.stringify(r));
+r = await admin.call("POST", `/conversations/admin-vendor/${vendorId}`, {}); const av = r.data;
+ok("admin starts a chat with the vendor", r.status === 200 && av?.type === "admin_vendor" && av?.vendor_id === vendorId && !!av?.admin_id && av?.client_id === "", JSON.stringify(r));
+r = await admin.call("POST", `/conversations/admin-vendor/${vendorId}`, {}); ok("starting again reuses the thread", r.data?.id === av?.id, JSON.stringify(r));
+r = await admin.call("POST", `/conversations/admin-vendor/${vendor2Id}`, {}); ok("admin can reach a vendor still pending review", r.status === 200, JSON.stringify(r));
+r = await admin.call("POST", `/conversations/${av.id}/messages`, { body: "Halo, mohon konfirmasi nomor 081234567890 untuk verifikasi." }); ok("admin sends; contact details are not flagged in an admin chat", r.status === 201 && r.data?.flagged === false, JSON.stringify(r));
+r = await admin.call("POST", `/conversations/${av.id}/messages`, { body: "Terima kasih." }); ok("admin sends a second message", r.status === 201, JSON.stringify(r));
+ok("vendor is emailed once for the admin's two unread messages", (await waitChatEmails(emails.vendor, `/vendor/messages/${av.id}`, 1)) === 1, String(chatEmails(emails.vendor, `/vendor/messages/${av.id}`)));
+r = await vendor.call("GET", "/conversations"); const avRow = r.data?.find((c) => c.id === av.id);
+ok("vendor inbox lists the admin chat with the admin's name", avRow?.type === "admin_vendor" && avRow?.admin_name === "Admin Uji", JSON.stringify(avRow));
+r = await vendor.call("GET", "/notifications"); ok("vendor gets an in-app notification linking the admin chat", r.data?.some((n) => n.type === "chat.message" && n.link === `/vendor/messages/${av.id}`), JSON.stringify(r.data));
+r = await vendor.call("GET", `/conversations/${av.id}/messages`); const avMsgs = r.data;
+ok("vendor reads the admin chat", r.status === 200 && avMsgs?.length === 2, JSON.stringify(r));
+r = await vendor.call("POST", `/conversations/${av.id}/read`, { last_read_message_id: avMsgs?.[1]?.id }); ok("vendor marks the admin chat read", r.status < 300, JSON.stringify(r));
+r = await vendor.call("POST", `/conversations/${av.id}/messages`, { body: "Benar, itu nomor kami." }); ok("vendor replies to admin", r.status === 201, JSON.stringify(r));
+ok("admin is emailed when the vendor replies", (await waitChatEmails(emails.admin, `/internal/admin/pesan/${av.id}`, 1)) === 1);
+r = await admin.call("GET", "/notifications"); ok("admin gets an in-app notification linking the admin inbox", r.data?.some((n) => n.type === "chat.message" && n.link === `/internal/admin/pesan/${av.id}`), JSON.stringify(r.data));
+r = await admin.call("GET", `/conversations/${av.id}/messages`); ok("admin sees the vendor's reply and its own read receipts", r.data?.length === 3 && r.data[0].status === "read", JSON.stringify(r.data));
+r = await admin.call("POST", `/conversations/${av.id}/messages`, { body: "Siap, sudah kami catat." }); ok("admin writes again after the vendor read everything", r.status === 201, JSON.stringify(r));
+ok("vendor is emailed again for a new unread stretch", (await waitChatEmails(emails.vendor, `/vendor/messages/${av.id}`, 2)) === 2, String(chatEmails(emails.vendor, `/vendor/messages/${av.id}`)));
+r = await admin.call("GET", "/conversations?type=admin_vendor"); ok("admin inbox ?type=admin_vendor lists the vendor chats", r.data?.length === 2 && r.data.every((c) => c.type === "admin_vendor"), JSON.stringify(r.data));
+r = await admin.call("GET", "/conversations?type=consultation"); ok("consultation inbox leaves admin chats out", !r.data?.some((c) => c.type === "admin_vendor"), JSON.stringify(r.data));
+r = await consultant.call("GET", `/conversations/${av.id}/messages`); ok("consultant (staff) cannot read an admin chat", r.status === 404, JSON.stringify(r));
+r = await client.call("GET", `/conversations/${av.id}`); ok("client cannot read an admin chat", r.status === 404, JSON.stringify(r));
+r = await vendor2.call("POST", `/conversations/${av.id}/messages`, { body: "x" }); ok("another vendor cannot post in it", r.status === 404, JSON.stringify(r));
+ok("admin chat opens no dispute", psql(`select count(*) from disputes where message_id in (select id from messages where conversation_id='${av.id}')`) === "0");
+
 // 6. booking lifecycle with simulated payments (Midtrans not configured)
 r = await client.call("POST", "/bookings", { vendor_id: vendorId, event_date: "2027-03-14", package_description: "Half Day Plus", agreed_price: 22000000 }); ok("client creates booking", r.status < 300 && r.data?.status === "requested", JSON.stringify(r)); const bk = r.data;
 ok("client booking hides the vendor's share", bk?.vendor_amount === undefined, JSON.stringify(bk));

@@ -192,9 +192,17 @@ func (d *Deps) showVendorMenu(ctx context.Context, link *repository.WhatsAppLink
 }
 
 func (d *Deps) showConversationPicker(ctx context.Context, link *repository.WhatsAppLink, vendorUser *repository.User) string {
-	convs, err := d.Chat.ListForVendor(ctx, vendorUser.ID)
+	all, err := d.Chat.ListForVendor(ctx, vendorUser.ID)
 	if err != nil {
 		return "Terjadi kesalahan, coba lagi."
+	}
+	// Only chats with couples: the WhatsApp relay is for those, and a chat
+	// with Admin stays in the web app.
+	var convs []repository.Conversation
+	for _, c := range all {
+		if c.Type == repository.ConversationTypeVendorChat {
+			convs = append(convs, c)
+		}
 	}
 	if len(convs) == 0 {
 		_ = d.Links.SetPendingMenu(ctx, link.ID, nil)
