@@ -43,6 +43,7 @@ type adminVendorDetailDTO struct {
 	RejectionReason *string           `json:"rejection_reason,omitempty"`
 	OwnerName       string            `json:"owner_name"`
 	Email           string            `json:"email"`
+	WhatsAppNumber  string            `json:"whatsapp_number"`
 	AccountStatus   string            `json:"account_status"`
 	JoinedAt        string            `json:"joined_at"`
 	ProfileUpdated  string            `json:"profile_updated_at"`
@@ -94,7 +95,7 @@ func vendorDetail(deps *Deps) http.HandlerFunc {
 			UserID: profile.UserID, BusinessName: profile.BusinessName, Category: profile.Category, Categories: profile.Categories,
 			City: profile.City, Cities: profile.Cities, Description: profile.Description,
 			Status: profile.Status, RejectionReason: profile.RejectionReason,
-			OwnerName: user.FullName, Email: user.Email, AccountStatus: user.AccountStatus,
+			OwnerName: user.FullName, Email: user.Email, WhatsAppNumber: profile.WhatsAppNumber, AccountStatus: user.AccountStatus,
 			JoinedAt: user.CreatedAt.Format(time.RFC3339), ProfileUpdated: profile.UpdatedAt.Format(time.RFC3339),
 			CommissionRate: rate, CommissionIsSet: profile.CommissionRate != nil,
 			PriceMin: pair(profile.PriceMin, rate), PriceMax: pair(profile.PriceMax, rate),

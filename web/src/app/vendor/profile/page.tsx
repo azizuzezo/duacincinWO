@@ -27,6 +27,7 @@ import {
   apiPost,
   apiPut,
   ApiError,
+  formatWhatsApp,
   type CurrentUser,
   vendorCategoryList,
   type VendorPackage,
@@ -44,7 +45,18 @@ const STATUS_LABEL: Record<VendorProfile["status"], { text: string; tone: "gold"
 const STORY_GOAL = 120;
 const PHOTO_GOAL = 3;
 
-type FieldErrors = Partial<Record<"name" | "category" | "city" | "priceMin" | "priceMax", string>>;
+type FieldErrors = Partial<Record<"name" | "category" | "city" | "whatsapp" | "priceMin" | "priceMax", string>>;
+
+/** Same rule as the server (vendors.NormalizeWhatsApp): an Indonesian mobile
+ * number as digits starting with 628, or "" when it isn't one. */
+function normalizeWhatsApp(raw: string): string {
+  const t = raw.trim();
+  if (!/^\+?[\d\s().-]+$/.test(t)) return "";
+  let d = t.replace(/\D/g, "");
+  if (d.startsWith("0")) d = "62" + d.slice(1);
+  else if (d.startsWith("8")) d = "62" + d;
+  return /^628\d{7,11}$/.test(d) ? d : "";
+}
 
 export default function VendorProfilePage() {
   return (
@@ -66,6 +78,7 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
   const [businessName, setBusinessName] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
   const [cities, setCities] = useState<string[]>([]);
+  const [whatsapp, setWhatsapp] = useState("");
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
   const [description, setDescription] = useState("");
@@ -82,6 +95,7 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
     setBusinessName(p.business_name);
     setCategories(vendorCategoryList(p));
     setCities(p.cities ?? []);
+    setWhatsapp(p.whatsapp_number ? formatWhatsApp(p.whatsapp_number) : "");
     setPriceMin(p.price_min ? String(p.price_min) : "");
     setPriceMax(p.price_max ? String(p.price_max) : "");
     setDescription(p.description);
@@ -110,9 +124,10 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
   const dirty =
     profile !== undefined &&
     (profile === null
-      ? !!(businessName || categories.length || cities.length || priceMin || priceMax || description)
+      ? !!(businessName || categories.length || cities.length || whatsapp || priceMin || priceMax || description)
       : cities.join("|") !== (profile.cities ?? []).join("|") ||
         categories.join("|") !== vendorCategoryList(profile).join("|") ||
+        normalizeWhatsApp(whatsapp) !== (profile.whatsapp_number ?? "") ||
         Number(priceMin || 0) !== profile.price_min ||
         Number(priceMax || 0) !== profile.price_max ||
         description !== profile.description);
@@ -121,6 +136,8 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
     const e: FieldErrors = {};
     if (!profile && !businessName.trim()) e.name = "Tulis nama usahamu, nama ini yang dilihat calon pengantin.";
     if (categories.length === 0) e.category = "Pilih minimal satu kategori usaha.";
+    if (!whatsapp.trim()) e.whatsapp = "Isi nomor WhatsApp usahamu. Nomor ini hanya dilihat tim DuaCincin.";
+    else if (!normalizeWhatsApp(whatsapp)) e.whatsapp = "Nomor WhatsApp belum benar. Contoh: 0812 3456 7890.";
     if (cities.length === 0) e.city = "Pilih minimal satu kabupaten atau kota tempat usahamu melayani.";
     const min = Number(priceMin || 0);
     const max = Number(priceMax || 0);
@@ -151,6 +168,7 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
         business_name: profile?.business_name ?? businessName.trim(),
         categories,
         cities,
+        whatsapp_number: normalizeWhatsApp(whatsapp),
         price_min: Number(priceMin) || 0,
         price_max: Number(priceMax) || 0,
         description,
@@ -170,13 +188,14 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
     const list: { label: string; done: boolean; href?: string }[] = [
       { label: "Nama usaha", done: !!(profile?.business_name || businessName.trim()) },
       { label: "Kabupaten/kota", done: cities.length > 0 },
+      { label: "Nomor WhatsApp", done: !!normalizeWhatsApp(whatsapp) },
       { label: "Harga mulai dari", done: Number(priceMin || 0) > 0 },
       { label: `Cerita usaha minimal ${STORY_GOAL} huruf`, done: [...description.trim()].length >= STORY_GOAL },
       { label: `Minimal ${PHOTO_GOAL} foto portofolio`, done: photos.length >= PHOTO_GOAL, href: "/vendor/portfolio" },
     ];
     if (packageCount !== null) list.push({ label: "Minimal 1 paket harga", done: packageCount > 0, href: "/vendor/paket" });
     return list;
-  }, [profile, businessName, cities, priceMin, description, photos.length, packageCount]);
+  }, [profile, businessName, cities, whatsapp, priceMin, description, photos.length, packageCount]);
 
   const loading = profile === undefined && !loadError;
 
@@ -263,6 +282,21 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div id="f-category" className="sm:col-span-2">
                       <CategoryChips values={categories} onChange={setCategories} error={errors.category} />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <Input
+                        id="f-whatsapp"
+                        label="Nomor WhatsApp"
+                        type="tel"
+                        inputMode="tel"
+                        autoComplete="tel"
+                        value={whatsapp}
+                        onChange={(e) => setWhatsapp(e.target.value)}
+                        onBlur={blur("whatsapp")}
+                        error={errors.whatsapp}
+                        placeholder="0812 3456 7890"
+                        hint="Hanya untuk tim DuaCincin bila perlu verifikasi. Tidak pernah ditampilkan ke calon pengantin; semua percakapan dengan client tetap lewat chat DuaCincin."
+                      />
                     </div>
                     <div className="sm:col-span-2">
                       <CityCombobox

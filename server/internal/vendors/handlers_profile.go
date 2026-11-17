@@ -23,20 +23,25 @@ type upsertProfileRequest struct {
 	PriceMin    int64    `json:"price_min"`
 	PriceMax    int64    `json:"price_max"`
 	Description string   `json:"description"`
+	// WhatsAppNumber is required; left empty, the number already saved is kept.
+	WhatsAppNumber string `json:"whatsapp_number"`
 }
 
 type profileDTO struct {
-	UserID            string         `json:"user_id"`
-	BusinessName      string         `json:"business_name"`
-	Category          string         `json:"category"`
-	Categories        []string       `json:"categories"`
-	City              string         `json:"city"`
-	Cities            []string       `json:"cities"`
-	PriceMin          int64          `json:"price_min"`
-	PriceMax          int64          `json:"price_max"`
-	Description       string         `json:"description"`
-	Status            string         `json:"status"`
-	RejectionReason   *string        `json:"rejection_reason,omitempty"`
+	UserID          string   `json:"user_id"`
+	BusinessName    string   `json:"business_name"`
+	Category        string   `json:"category"`
+	Categories      []string `json:"categories"`
+	City            string   `json:"city"`
+	Cities          []string `json:"cities"`
+	PriceMin        int64    `json:"price_min"`
+	PriceMax        int64    `json:"price_max"`
+	Description     string   `json:"description"`
+	Status          string   `json:"status"`
+	RejectionReason *string  `json:"rejection_reason,omitempty"`
+	// WhatsAppNumber is only set on the vendor's own profile (ownProfileDTO),
+	// never on the public detail, which also uses toProfileDTO.
+	WhatsAppNumber    string         `json:"whatsapp_number,omitempty"`
 	Portfolio         []portfolioDTO `json:"portfolio,omitempty"`
 	PendingNameChange *nameChangeDTO `json:"pending_name_change,omitempty"`
 	AverageRating     float64        `json:"average_rating"`
@@ -65,6 +70,14 @@ func toProfileDTO(p *repository.VendorProfile) profileDTO {
 	}
 }
 
+// ownProfileDTO is the vendor's own view of its profile: the public fields
+// plus the private WhatsApp number.
+func ownProfileDTO(p *repository.VendorProfile) profileDTO {
+	dto := toProfileDTO(p)
+	dto.WhatsAppNumber = p.WhatsAppNumber
+	return dto
+}
+
 // UpsertProfile lets a Vendor create their profile on first save, or
 // update the editable fields afterward. business_name is only used on
 // first creation — once a profile exists, it can only change through an
@@ -88,9 +101,11 @@ func UpsertProfile(deps *Deps) http.HandlerFunc {
 		req.City = strings.TrimSpace(req.City)
 
 		businessName := req.BusinessName
+		savedWhatsApp := ""
 		existing, err := deps.Vendors.GetByUserID(r.Context(), claims.UserID)
 		if err == nil {
 			businessName = existing.BusinessName
+			savedWhatsApp = existing.WhatsAppNumber
 		} else if err != repository.ErrNotFound {
 			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
 			return
@@ -115,6 +130,19 @@ func UpsertProfile(deps *Deps) http.HandlerFunc {
 			httpx.Error(w, http.StatusBadRequest, msg)
 			return
 		}
+		whatsapp := savedWhatsApp
+		if strings.TrimSpace(req.WhatsAppNumber) != "" {
+			n, ok := NormalizeWhatsApp(req.WhatsAppNumber)
+			if !ok {
+				httpx.Error(w, http.StatusBadRequest, "nomor WhatsApp tidak valid, contoh: 0812 3456 7890")
+				return
+			}
+			whatsapp = n
+		}
+		if whatsapp == "" {
+			httpx.Error(w, http.StatusBadRequest, "nomor WhatsApp wajib diisi")
+			return
+		}
 		if req.PriceMin < 0 || req.PriceMax < req.PriceMin {
 			httpx.Error(w, http.StatusBadRequest, "rentang harga tidak valid")
 			return
@@ -122,15 +150,45 @@ func UpsertProfile(deps *Deps) http.HandlerFunc {
 
 		profile, err := deps.Vendors.UpsertProfile(
 			r.Context(), claims.UserID, businessName, categories, cities,
-			req.PriceMin, req.PriceMax, req.Description,
+			req.PriceMin, req.PriceMax, req.Description, whatsapp,
 		)
 		if err != nil {
 			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
 			return
 		}
 
-		httpx.JSON(w, http.StatusOK, toProfileDTO(profile))
+		httpx.JSON(w, http.StatusOK, ownProfileDTO(profile))
 	}
+}
+
+// NormalizeWhatsApp turns an Indonesian mobile number as people type it
+// ("0812-3456-7890", "+62 812 3456 7890", "812 3456 7890") into digits
+// starting with 628. Mobile numbers are 628 followed by 7 to 11 digits.
+func NormalizeWhatsApp(raw string) (string, bool) {
+	var b strings.Builder
+	for i, r := range strings.TrimSpace(raw) {
+		switch {
+		case r >= '0' && r <= '9':
+			b.WriteRune(r)
+		case r == '+' && i == 0, r == ' ', r == '-', r == '.', r == '(', r == ')':
+		default:
+			return "", false
+		}
+	}
+	d := b.String()
+	switch {
+	case strings.HasPrefix(d, "62"):
+	case strings.HasPrefix(d, "0"):
+		d = "62" + d[1:]
+	case strings.HasPrefix(d, "8"):
+		d = "62" + d
+	default:
+		return "", false
+	}
+	if !strings.HasPrefix(d, "628") || len(d) < 10 || len(d) > 14 {
+		return "", false
+	}
+	return d, true
 }
 
 // normalizeCategories checks each category, keeps the order given (the first
@@ -212,7 +270,7 @@ func MyProfile(deps *Deps) http.HandlerFunc {
 			return
 		}
 
-		dto := toProfileDTO(profile)
+		dto := ownProfileDTO(profile)
 		dto.Portfolio = toPortfolioDTOs(items)
 		if avg, count, err := deps.Reviews.GetAggregateForVendor(r.Context(), claims.UserID); err == nil {
 			dto.AverageRating, dto.ReviewCount = avg, count

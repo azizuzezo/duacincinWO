@@ -52,11 +52,16 @@ const vendorId = (await vendor.call("GET", "/auth/me")).data.id, vendor2Id = (aw
 
 // 2. vendor profile
 r = await vendor.call("PUT", "/vendor/profile", { business_name: "Ballroom Uji", category: "venue", city: "jakarta selatan", price_min: 35000000, price_max: 120000000, description: "Venue uji untuk E2E." });
+ok("profile without a WhatsApp number is refused", r.status === 400 && /WhatsApp/.test(r.data?.error ?? ""), JSON.stringify(r));
+r = await vendor.call("PUT", "/vendor/profile", { business_name: "Ballroom Uji", category: "venue", city: "jakarta selatan", price_min: 35000000, price_max: 120000000, description: "Venue uji untuk E2E.", whatsapp_number: "021 555 1234" });
+ok("landline is not accepted as WhatsApp", r.status === 400, JSON.stringify(r));
+r = await vendor.call("PUT", "/vendor/profile", { business_name: "Ballroom Uji", category: "venue", city: "jakarta selatan", price_min: 35000000, price_max: 120000000, description: "Venue uji untuk E2E.", whatsapp_number: "0812-3456-7890" });
 ok("vendor creates profile", r.status === 200 && r.data?.status === "pending", JSON.stringify(r));
 ok("city is stored with the list's spelling", r.data?.city === "Jakarta Selatan", JSON.stringify(r.data));
+ok("WhatsApp stored as 628... and returned to the vendor", r.data?.whatsapp_number === "6281234567890", JSON.stringify(r.data));
 r = await vendor.call("PUT", "/vendor/profile", { business_name: "Ballroom Uji", category: "venue", city: "Bandung sumedang", price_min: 35000000, price_max: 120000000, description: "Venue uji untuk E2E." });
 ok("free-text city outside the kabupaten/kota list is refused", r.status === 400, JSON.stringify(r.data));
-r = await vendor2.call("PUT", "/vendor/profile", { business_name: "Dekor Uji", category: "decor", city: "Bandung", price_min: 5000000, price_max: 20000000, description: "x" });
+r = await vendor2.call("PUT", "/vendor/profile", { business_name: "Dekor Uji", category: "decor", city: "Bandung", price_min: 5000000, price_max: 20000000, description: "x", whatsapp_number: "+62 813 1111 2222" });
 ok("second vendor creates profile", r.status === 200, JSON.stringify(r));
 
 // 3. packages: the new endpoints, against a real database
@@ -98,6 +103,11 @@ r = await new Client("anon").call("GET", "/vendors?category=mc"); ok("directory 
 r = await new Client("anon").call("GET", "/vendors?category=wedding_cake"); ok("new category is a valid filter", r.status === 200 && !r.data?.some((v) => v.id === vendorId), JSON.stringify(r));
 r = await vendor.call("PUT", "/vendor/profile", { ...multiCat, categories: ["venue", "pawang_hujan"] }); ok("unknown category refused", r.status === 400, JSON.stringify(r));
 r = await vendor.call("PUT", "/vendor/profile", { ...multiCat, categories: [] }); ok("at least one category required", r.status === 400, JSON.stringify(r));
+r = await vendor.call("GET", "/vendor/profile/me"); ok("saving without whatsapp_number keeps the saved number", r.data?.whatsapp_number === "6281234567890", JSON.stringify(r.data));
+// Guardrail: the WhatsApp number never leaves through a public endpoint.
+r = await new Client("anon").call("GET", "/vendors"); ok("directory never carries the WhatsApp number", r.status === 200 && !JSON.stringify(r.data).includes("whatsapp") && !JSON.stringify(r.data).includes("81234567890"), JSON.stringify(r.data));
+r = await new Client("anon").call("GET", `/vendors/${vendorId}`); ok("public vendor detail never carries the WhatsApp number", r.status === 200 && !JSON.stringify(r.data).includes("whatsapp") && !JSON.stringify(r.data).includes("81234567890"), JSON.stringify(r.data));
+r = await admin.call("GET", `/admin/vendors/${vendorId}`); ok("admin vendor detail shows the WhatsApp number", r.data?.whatsapp_number === "6281234567890", JSON.stringify(r.data));
 r = await new Client("anon").call("GET", "/vendors?max_price=1000000"); ok("max_price filter excludes expensive vendor", !r.data?.some((v) => v.id === vendorId), JSON.stringify(r.data));
 r = await new Client("anon").call("GET", `/vendors/${vendorId}/packages`); ok("public packages visible after approval", r.status === 200 && r.data.length === 2 && r.data[0].name === "Half Day Plus", JSON.stringify(r));
 // Commission is added on top of the vendor's price for couples (default 10%).

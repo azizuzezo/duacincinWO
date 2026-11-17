@@ -26,9 +26,11 @@ type VendorProfile struct {
 	// Cities are the kabupaten/kota the vendor serves, from internal/wilayah;
 	// City is their joined display form. Empty for free-text profiles that
 	// could not be split.
-	Cities    []string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	Cities []string
+	// WhatsAppNumber is private (vendor and Admin only), digits as 628...
+	WhatsAppNumber string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
 
 type PortfolioItem struct {
@@ -54,11 +56,12 @@ func NewVendorRepo(pool *pgxpool.Pool) *VendorRepo {
 // pending — only the vendor's initial Admin approval and business_name
 // changes (see vendor_name_change_requests) go through review now.
 // categories must be non-empty; its first entry becomes the main category.
-func (r *VendorRepo) UpsertProfile(ctx context.Context, userID, businessName string, categories, cities []string, priceMin, priceMax int64, description string) (*VendorProfile, error) {
+func (r *VendorRepo) UpsertProfile(ctx context.Context, userID, businessName string, categories, cities []string, priceMin, priceMax int64, description, whatsappNumber string) (*VendorProfile, error) {
 	row := r.pool.QueryRow(ctx, `
-		insert into vendor_profiles (user_id, business_name, category, categories, cities, city, price_min, price_max, description)
-		values ($1, $2, ($3::text[])[1]::vendor_category, $3::text[]::vendor_category[], $4, array_to_string($4::text[], ', '), $5, $6, $7)
+		insert into vendor_profiles (user_id, business_name, category, categories, cities, city, price_min, price_max, description, whatsapp_number)
+		values ($1, $2, ($3::text[])[1]::vendor_category, $3::text[]::vendor_category[], $4, array_to_string($4::text[], ', '), $5, $6, $7, $8)
 		on conflict (user_id) do update set
+			whatsapp_number = excluded.whatsapp_number,
 			category = excluded.category,
 			categories = excluded.categories,
 			cities = excluded.cities,
@@ -67,8 +70,8 @@ func (r *VendorRepo) UpsertProfile(ctx context.Context, userID, businessName str
 			price_max = excluded.price_max,
 			description = excluded.description,
 			updated_at = now()
-		returning user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at, cities, categories::text[]
-	`, userID, businessName, categories, cities, priceMin, priceMax, description)
+		returning user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at, cities, categories::text[], whatsapp_number
+	`, userID, businessName, categories, cities, priceMin, priceMax, description, whatsappNumber)
 
 	return scanVendorProfile(row)
 }
@@ -84,7 +87,7 @@ func (r *VendorRepo) UpdateBusinessName(ctx context.Context, userID, businessNam
 
 func (r *VendorRepo) GetByUserID(ctx context.Context, userID string) (*VendorProfile, error) {
 	row := r.pool.QueryRow(ctx, `
-		select user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at, cities, categories::text[]
+		select user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at, cities, categories::text[], whatsapp_number
 		from vendor_profiles where user_id = $1
 	`, userID)
 	p, err := scanVendorProfile(row)
@@ -102,7 +105,7 @@ func (r *VendorRepo) GetByUserID(ctx context.Context, userID string) (*VendorPro
 // or the free-text city of a profile that has none.
 func (r *VendorRepo) ListApproved(ctx context.Context, category, city string, maxPrice int64) ([]VendorProfile, error) {
 	rows, err := r.pool.Query(ctx, `
-		select user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at, cities, categories::text[]
+		select user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at, cities, categories::text[], whatsapp_number
 		from vendor_profiles
 		where status = 'approved'
 		  and ($1 = '' or $1::vendor_category = any(categories))
@@ -126,7 +129,7 @@ func (r *VendorRepo) CountApproved(ctx context.Context) (int, error) {
 
 func (r *VendorRepo) ListPending(ctx context.Context) ([]VendorProfile, error) {
 	rows, err := r.pool.Query(ctx, `
-		select user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at, cities, categories::text[]
+		select user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at, cities, categories::text[], whatsapp_number
 		from vendor_profiles where status = 'pending' order by created_at asc
 	`)
 	if err != nil {
@@ -216,7 +219,7 @@ func scanVendorProfile(row pgx.Row) (*VendorProfile, error) {
 	var p VendorProfile
 	if err := row.Scan(
 		&p.UserID, &p.BusinessName, &p.Category, &p.City, &p.PriceMin, &p.PriceMax,
-		&p.Description, &p.Status, &p.RejectionReason, &p.CommissionRate, &p.CreatedAt, &p.UpdatedAt, &p.Cities, &p.Categories,
+		&p.Description, &p.Status, &p.RejectionReason, &p.CommissionRate, &p.CreatedAt, &p.UpdatedAt, &p.Cities, &p.Categories, &p.WhatsAppNumber,
 	); err != nil {
 		return nil, err
 	}
@@ -229,7 +232,7 @@ func collectVendorProfiles(rows pgx.Rows) ([]VendorProfile, error) {
 		var p VendorProfile
 		if err := rows.Scan(
 			&p.UserID, &p.BusinessName, &p.Category, &p.City, &p.PriceMin, &p.PriceMax,
-			&p.Description, &p.Status, &p.RejectionReason, &p.CommissionRate, &p.CreatedAt, &p.UpdatedAt, &p.Cities, &p.Categories,
+			&p.Description, &p.Status, &p.RejectionReason, &p.CommissionRate, &p.CreatedAt, &p.UpdatedAt, &p.Cities, &p.Categories, &p.WhatsAppNumber,
 		); err != nil {
 			return nil, err
 		}

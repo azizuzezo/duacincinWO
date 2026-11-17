@@ -111,6 +111,13 @@ export function categoryLabel(value: string): string {
   return VENDOR_CATEGORIES.find((c) => c.value === value)?.label ?? value;
 }
 
+/** "6281234567890" -> "+62 812-3456-7890" for display. */
+export function formatWhatsApp(digits: string): string {
+  if (!digits.startsWith("62")) return digits;
+  const rest = digits.slice(2);
+  return `+62 ${rest.slice(0, 3)}-${rest.slice(3, 7)}-${rest.slice(7)}`.replace(/-$/, "");
+}
+
 export function formatRupiah(value: number): string {
   return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(
     value,
@@ -143,6 +150,8 @@ export type VendorProfile = {
   description: string;
   status: "pending" | "approved" | "rejected";
   rejection_reason?: string;
+  /** Private: only on the vendor's own profile (and Admin), never public. Digits, 628... */
+  whatsapp_number?: string;
   portfolio?: { id: string; url: string; alt_text: string }[];
   pending_name_change?: VendorNameChangeRequest;
   average_rating: number;

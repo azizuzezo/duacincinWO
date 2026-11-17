@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/Card";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { WithUser } from "@/components/WithUser";
-import { apiGet, ApiError, formatRupiah, categoriesLabel, type CurrentUser } from "@/lib/api";
+import { apiGet, ApiError, formatRupiah, formatWhatsApp, categoriesLabel, type CurrentUser } from "@/lib/api";
 import { useLiveRefresh } from "@/lib/useLiveRefresh";
 import { Monogram, PAGE, persen, relatif, RowsSkeleton, tanggal } from "../../../_ui";
 
@@ -29,6 +29,8 @@ type AdminVendorDetail = {
   rejection_reason?: string;
   owner_name: string;
   email: string;
+  /** Private contact for verification, digits 628...; empty for profiles saved before it was required. */
+  whatsapp_number: string;
   account_status: string;
   joined_at: string;
   profile_updated_at: string;
@@ -143,6 +145,18 @@ function Content({ user }: { user: CurrentUser }) {
               <Badge tone={vendor.commission_is_custom ? "gold" : "neutral"}>
                 Komisi {persen(vendor.commission_rate)} {vendor.commission_is_custom ? "(khusus)" : "(bawaan)"}
               </Badge>
+              {vendor.whatsapp_number ? (
+                <a
+                  href={`https://wa.me/${vendor.whatsapp_number}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-11 items-center text-sm font-semibold text-dc-clay underline underline-offset-4 hover:text-dc-ink"
+                >
+                  WhatsApp {formatWhatsApp(vendor.whatsapp_number)}
+                </a>
+              ) : (
+                <Badge tone="gold">WhatsApp belum diisi</Badge>
+              )}
               <span className="text-sm text-dc-text-3">Profil diubah {relatif(vendor.profile_updated_at)}</span>
               {vendor.status === "approved" && (
                 <Link href={`/vendors/${vendor.user_id}`} target="_blank" className="ml-auto inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-dc-clay underline underline-offset-4 hover:text-dc-ink">
