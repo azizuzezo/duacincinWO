@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/Card";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { WithUser } from "@/components/WithUser";
-import { apiGet, ApiError, categoryLabel, formatRupiah, type CurrentUser } from "@/lib/api";
+import { apiGet, ApiError, formatRupiah, categoriesLabel, type CurrentUser } from "@/lib/api";
 import { useLiveRefresh } from "@/lib/useLiveRefresh";
 import { Monogram, PAGE, persen, relatif, RowsSkeleton, tanggal } from "../../../_ui";
 
@@ -21,6 +21,7 @@ type AdminVendorDetail = {
   user_id: string;
   business_name: string;
   category: string;
+  categories?: string[];
   city: string;
   cities: string[];
   description: string;
@@ -130,7 +131,7 @@ function Content({ user }: { user: CurrentUser }) {
               <Monogram name={vendor.business_name} size="lg" />
               <div className="min-w-0 flex-1">
                 <PageHeader
-                  eyebrow={`${categoryLabel(vendor.category)} · ${vendor.cities.length ? vendor.cities.join(", ") : vendor.city || "Kota belum diisi"}`}
+                  eyebrow={`${categoriesLabel(vendor)} · ${vendor.cities.length ? vendor.cities.join(", ") : vendor.city || "Kota belum diisi"}`}
                   title={vendor.business_name}
                   subtitle={`${vendor.owner_name || "Pemilik"} · ${vendor.email} · bergabung ${tanggal(vendor.joined_at)}`}
                 />

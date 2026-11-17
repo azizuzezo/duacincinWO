@@ -14,6 +14,7 @@ type directoryCardDTO struct {
 	ID            string   `json:"id"`
 	BusinessName  string   `json:"business_name"`
 	Category      string   `json:"category"`
+	Categories    []string `json:"categories"`
 	City          string   `json:"city"`
 	Cities        []string `json:"cities"`
 	PriceMin      int64    `json:"price_min"`
@@ -57,7 +58,7 @@ func Directory(deps *Deps) http.HandlerFunc {
 		cards := make([]directoryCardDTO, 0, len(profiles))
 		for _, p := range profiles {
 			rate := p.EffectiveCommissionRate()
-			card := directoryCardDTO{ID: p.UserID, BusinessName: p.BusinessName, Category: p.Category, City: p.City, Cities: nonNil(p.Cities), PriceMin: repository.CustomerPrice(p.PriceMin, rate), PriceMax: repository.CustomerPrice(p.PriceMax, rate)}
+			card := directoryCardDTO{ID: p.UserID, BusinessName: p.BusinessName, Category: p.Category, Categories: nonNil(p.Categories), City: p.City, Cities: nonNil(p.Cities), PriceMin: repository.CustomerPrice(p.PriceMin, rate), PriceMax: repository.CustomerPrice(p.PriceMax, rate)}
 			if items, err := deps.Vendors.ListPortfolio(r.Context(), p.UserID); err == nil && len(items) > 0 {
 				card.SampleImage = items[0].PublicURL
 			}

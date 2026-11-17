@@ -35,6 +35,7 @@ type adminVendorDetailDTO struct {
 	UserID          string            `json:"user_id"`
 	BusinessName    string            `json:"business_name"`
 	Category        string            `json:"category"`
+	Categories      []string          `json:"categories"`
 	City            string            `json:"city"`
 	Cities          []string          `json:"cities"`
 	Description     string            `json:"description"`
@@ -90,7 +91,7 @@ func vendorDetail(deps *Deps) http.HandlerFunc {
 
 		rate := profile.EffectiveCommissionRate()
 		out := adminVendorDetailDTO{
-			UserID: profile.UserID, BusinessName: profile.BusinessName, Category: profile.Category,
+			UserID: profile.UserID, BusinessName: profile.BusinessName, Category: profile.Category, Categories: profile.Categories,
 			City: profile.City, Cities: profile.Cities, Description: profile.Description,
 			Status: profile.Status, RejectionReason: profile.RejectionReason,
 			OwnerName: user.FullName, Email: user.Email, AccountStatus: user.AccountStatus,

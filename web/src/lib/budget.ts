@@ -15,13 +15,13 @@ export const BUDGET_CATEGORIES: {
   defaultPercentage: number;
   vendorCategories?: string[];
 }[] = [
-  { key: "venue_catering", label: "Venue & Catering", defaultPercentage: 40, vendorCategories: ["venue", "catering"] },
+  { key: "venue_catering", label: "Venue & Catering", defaultPercentage: 40, vendorCategories: ["venue", "catering", "wedding_cake"] },
   { key: "decor", label: "Dekorasi", defaultPercentage: 15, vendorCategories: ["decor"] },
-  { key: "photo_video", label: "Foto & Video", defaultPercentage: 12, vendorCategories: ["photo_video"] },
+  { key: "photo_video", label: "Foto & Video", defaultPercentage: 12, vendorCategories: ["photo_video", "content_creator"] },
   { key: "mua_attire", label: "MUA & Attire", defaultPercentage: 10, vendorCategories: ["mua_attire"] },
-  { key: "entertainment", label: "Entertainment", defaultPercentage: 8, vendorCategories: ["entertainment"] },
-  { key: "invitation_souvenir", label: "Undangan & Souvenir", defaultPercentage: 5, vendorCategories: ["invitation_souvenir"] },
-  { key: "reserve", label: "Cadangan", defaultPercentage: 10 },
+  { key: "entertainment", label: "Entertainment", defaultPercentage: 8, vendorCategories: ["entertainment", "mc"] },
+  { key: "invitation_souvenir", label: "Undangan & Souvenir", defaultPercentage: 5, vendorCategories: ["invitation_souvenir", "hantaran"] },
+  { key: "reserve", label: "Cadangan", defaultPercentage: 10, vendorCategories: ["wedding_car"] },
 ];
 
 // Shared with the real Budget Planner (app/client/budget) and the landing

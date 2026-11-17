@@ -15,7 +15,7 @@ import { Sheet } from "@/components/ui/Sheet";
 import { useToast } from "@/components/ui/Toast";
 import { MotionItem, MotionList } from "@/components/ui/Motion";
 import { WithUser } from "@/components/WithUser";
-import { apiDelete, apiGet, apiPatch, ApiError, categoryLabel, type CurrentUser, type VendorSummary } from "@/lib/api";
+import { apiDelete, apiGet, apiPatch, ApiError, categoriesLabel, type CurrentUser, type VendorSummary } from "@/lib/api";
 import { ConfirmDialog, DangerGhostButton, ErrorBanner, Monogram, PAGE, persen, ResultCount, RowsSkeleton, SearchField, SubNav } from "../../../_ui";
 
 /** Platform default when a vendor has no override (PRD §8.10). */
@@ -179,12 +179,12 @@ function ApprovedVendorsContent({ user }: { user: CurrentUser }) {
                             {v.business_name}
                           </Link>
                           <p className="truncate text-sm text-dc-text-3">
-                            <span className="md:hidden">{categoryLabel(v.category)} · </span>
+                            <span className="md:hidden">{categoriesLabel(v)} · </span>
                             {v.city}
                           </p>
                         </div>
                       </div>
-                      <p className="hidden text-sm text-dc-text-2 md:block">{categoryLabel(v.category)}</p>
+                      <p className="hidden text-sm text-dc-text-2 md:block">{categoriesLabel(v)}</p>
                       <div className="text-right">
                         <p className="font-semibold tabular-nums text-dc-ink">{v.commission_rate ? persen(v.commission_rate) : DEFAULT_LABEL}</p>
                         {v.commission_rate ? <Badge tone="gold">Khusus</Badge> : <p className="text-xs text-dc-text-3">bawaan</p>}

@@ -10,9 +10,12 @@ import (
 )
 
 type VendorProfile struct {
-	UserID          string
-	BusinessName    string
-	Category        string
+	UserID       string
+	BusinessName string
+	// Category is the vendor's main category, always Categories[0].
+	Category string
+	// Categories are every kind of service the vendor offers.
+	Categories      []string
 	City            string
 	PriceMin        int64
 	PriceMax        int64
@@ -50,20 +53,22 @@ func NewVendorRepo(pool *pgxpool.Pool) *VendorRepo {
 // subsequent saves. Unlike before, an edit no longer resets status to
 // pending — only the vendor's initial Admin approval and business_name
 // changes (see vendor_name_change_requests) go through review now.
-func (r *VendorRepo) UpsertProfile(ctx context.Context, userID, businessName, category string, cities []string, priceMin, priceMax int64, description string) (*VendorProfile, error) {
+// categories must be non-empty; its first entry becomes the main category.
+func (r *VendorRepo) UpsertProfile(ctx context.Context, userID, businessName string, categories, cities []string, priceMin, priceMax int64, description string) (*VendorProfile, error) {
 	row := r.pool.QueryRow(ctx, `
-		insert into vendor_profiles (user_id, business_name, category, cities, city, price_min, price_max, description)
-		values ($1, $2, $3, $4, array_to_string($4::text[], ', '), $5, $6, $7)
+		insert into vendor_profiles (user_id, business_name, category, categories, cities, city, price_min, price_max, description)
+		values ($1, $2, ($3::text[])[1]::vendor_category, $3::text[]::vendor_category[], $4, array_to_string($4::text[], ', '), $5, $6, $7)
 		on conflict (user_id) do update set
 			category = excluded.category,
+			categories = excluded.categories,
 			cities = excluded.cities,
 			city = excluded.city,
 			price_min = excluded.price_min,
 			price_max = excluded.price_max,
 			description = excluded.description,
 			updated_at = now()
-		returning user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at, cities
-	`, userID, businessName, category, cities, priceMin, priceMax, description)
+		returning user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at, cities, categories::text[]
+	`, userID, businessName, categories, cities, priceMin, priceMax, description)
 
 	return scanVendorProfile(row)
 }
@@ -79,7 +84,7 @@ func (r *VendorRepo) UpdateBusinessName(ctx context.Context, userID, businessNam
 
 func (r *VendorRepo) GetByUserID(ctx context.Context, userID string) (*VendorProfile, error) {
 	row := r.pool.QueryRow(ctx, `
-		select user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at, cities
+		select user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at, cities, categories::text[]
 		from vendor_profiles where user_id = $1
 	`, userID)
 	p, err := scanVendorProfile(row)
@@ -90,16 +95,17 @@ func (r *VendorRepo) GetByUserID(ctx context.Context, userID string) (*VendorPro
 }
 
 // ListApproved returns approved vendors, optionally filtered by
-// category/city/maxPrice (maxPrice=0 means no price filter). maxPrice is a
+// category/city/maxPrice (maxPrice=0 means no price filter). category
+// matches any of the vendor's categories. maxPrice is a
 // couple's budget, so it is compared with the starting price they would pay
 // (vendor price plus commission). city matches any of the vendor's cities,
 // or the free-text city of a profile that has none.
 func (r *VendorRepo) ListApproved(ctx context.Context, category, city string, maxPrice int64) ([]VendorProfile, error) {
 	rows, err := r.pool.Query(ctx, `
-		select user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at, cities
+		select user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at, cities, categories::text[]
 		from vendor_profiles
 		where status = 'approved'
-		  and ($1 = '' or category = $1::vendor_category)
+		  and ($1 = '' or $1::vendor_category = any(categories))
 		  and ($2 = '' or exists (select 1 from unnest(cities) c where lower(c) = lower($2)) or (cardinality(cities) = 0 and city ilike $2))
 		  and ($3 = 0 or round(price_min * (1 + coalesce(commission_rate, $4))) <= $3)
 		order by created_at desc
@@ -120,7 +126,7 @@ func (r *VendorRepo) CountApproved(ctx context.Context) (int, error) {
 
 func (r *VendorRepo) ListPending(ctx context.Context) ([]VendorProfile, error) {
 	rows, err := r.pool.Query(ctx, `
-		select user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at, cities
+		select user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at, cities, categories::text[]
 		from vendor_profiles where status = 'pending' order by created_at asc
 	`)
 	if err != nil {
@@ -210,7 +216,7 @@ func scanVendorProfile(row pgx.Row) (*VendorProfile, error) {
 	var p VendorProfile
 	if err := row.Scan(
 		&p.UserID, &p.BusinessName, &p.Category, &p.City, &p.PriceMin, &p.PriceMax,
-		&p.Description, &p.Status, &p.RejectionReason, &p.CommissionRate, &p.CreatedAt, &p.UpdatedAt, &p.Cities,
+		&p.Description, &p.Status, &p.RejectionReason, &p.CommissionRate, &p.CreatedAt, &p.UpdatedAt, &p.Cities, &p.Categories,
 	); err != nil {
 		return nil, err
 	}
@@ -223,7 +229,7 @@ func collectVendorProfiles(rows pgx.Rows) ([]VendorProfile, error) {
 		var p VendorProfile
 		if err := rows.Scan(
 			&p.UserID, &p.BusinessName, &p.Category, &p.City, &p.PriceMin, &p.PriceMax,
-			&p.Description, &p.Status, &p.RejectionReason, &p.CommissionRate, &p.CreatedAt, &p.UpdatedAt, &p.Cities,
+			&p.Description, &p.Status, &p.RejectionReason, &p.CommissionRate, &p.CreatedAt, &p.UpdatedAt, &p.Cities, &p.Categories,
 		); err != nil {
 			return nil, err
 		}

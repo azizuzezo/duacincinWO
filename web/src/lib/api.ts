@@ -81,6 +81,7 @@ export type CurrentUser = {
   full_name: string;
 };
 
+/** Mirrors the server's vendor_category enum (vendors.ValidCategories). */
 export const VENDOR_CATEGORIES: { value: string; label: string }[] = [
   { value: "venue", label: "Venue" },
   { value: "catering", label: "Catering" },
@@ -89,7 +90,22 @@ export const VENDOR_CATEGORIES: { value: string; label: string }[] = [
   { value: "photo_video", label: "Foto & Video" },
   { value: "entertainment", label: "Entertainment" },
   { value: "invitation_souvenir", label: "Undangan & Souvenir" },
+  { value: "hantaran", label: "Hantaran & Seserahan" },
+  { value: "mc", label: "MC" },
+  { value: "content_creator", label: "Wedding Content Creator" },
+  { value: "wedding_car", label: "Mobil Pengantin" },
+  { value: "wedding_cake", label: "Kue Pengantin" },
 ];
+
+/** Every category a vendor offers, the main one first. Older responses only carry `category`. */
+export function vendorCategoryList(v: { category: string; categories?: string[] }): string[] {
+  return v.categories && v.categories.length > 0 ? v.categories : v.category ? [v.category] : [];
+}
+
+/** "Dekorasi, Hantaran & Seserahan": every category of a vendor as one line. */
+export function categoriesLabel(v: { category: string; categories?: string[] }): string {
+  return vendorCategoryList(v).map(categoryLabel).join(", ");
+}
 
 export function categoryLabel(value: string): string {
   return VENDOR_CATEGORIES.find((c) => c.value === value)?.label ?? value;
@@ -114,7 +130,10 @@ export type VendorNameChangeRequest = {
 export type VendorProfile = {
   user_id: string;
   business_name: string;
+  /** Main category, always categories[0]. */
   category: string;
+  /** Every category the vendor offers, main first. */
+  categories?: string[];
   /** Joined display form of `cities`, e.g. "Bandung, Sumedang". */
   city: string;
   /** Kabupaten/kota served, from the national list (empty for an old free-text location). */
@@ -152,7 +171,9 @@ export function vendorCities(v: { city: string; cities?: string[] }): string[] {
 export type DirectoryCard = {
   id: string;
   business_name: string;
+  /** Main category, always categories[0]. */
   category: string;
+  categories?: string[];
   city: string;
   cities?: string[];
   price_min: number;
@@ -381,6 +402,7 @@ export type VendorSummary = {
   user_id: string;
   business_name: string;
   category: string;
+  categories?: string[];
   city: string;
   status: string;
   commission_rate?: number;

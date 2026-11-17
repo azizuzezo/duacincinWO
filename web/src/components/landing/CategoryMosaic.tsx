@@ -19,7 +19,7 @@ import { useMemo } from "react";
 import { Counting } from "@/components/landing/Counting";
 import { Reveal } from "@/components/landing/Reveal";
 import { useDirectory } from "@/components/landing/useHomeData";
-import { VENDOR_CATEGORIES } from "@/lib/api";
+import { VENDOR_CATEGORIES, vendorCategoryList } from "@/lib/api";
 
 type Pic = { src: string; alt: string; studio?: boolean; note: string; tile: string; sizes: string };
 
@@ -33,7 +33,7 @@ const PICS: Record<string, Pic> = {
   catering: { src: "/photos/pinterest/katering-jajanan.webp", alt: "Meja jajanan tradisional di atas daun pisang dan nampan rotan", note: "Prasmanan, gubukan, menu adat", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto", sizes: SQUARE },
   decor: { src: "/photos/pinterest/dekorasi-taman.webp", alt: "Panggung taman putih dengan bunga pastel, lorong putih, lilin tinggi dan lampu gantung", note: "Pelaminan, gapura, bunga, lampu", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto lg:col-span-2", sizes: WIDE },
   photo_video: { src: "/photos/pinterest/foto-gapura.webp", alt: "Pasangan pengantin berpelukan di bawah gapura bunga matahari di taman perbukitan", note: "Foto, video, prewedding", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto lg:col-span-2", sizes: WIDE },
-  entertainment: { src: "/photos/pinterest/kirab-malam.webp", alt: "Kirab pengantin malam hari di antara tamu yang mengabadikan momen", note: "Musik, MC, hiburan adat", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto", sizes: SQUARE },
+  entertainment: { src: "/photos/pinterest/kirab-malam.webp", alt: "Kirab pengantin malam hari di antara tamu yang mengabadikan momen", note: "Musik, band, hiburan adat", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto", sizes: SQUARE },
   invitation_souvenir: { src: "/photos/pinterest/suvenir-anggrek.webp", alt: "Kotak suvenir satin emas berhias anggrek putih dan daun emas", note: "Undangan cetak, suvenir", tile: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto", sizes: SQUARE },
 };
 
@@ -56,7 +56,7 @@ export function CategoryMosaic() {
   const directory = useDirectory();
   const counts = useMemo(() => {
     const m: Record<string, number> = {};
-    if (directory.status === "ready") for (const c of directory.data ?? []) m[c.category] = (m[c.category] ?? 0) + 1;
+    if (directory.status === "ready") for (const c of directory.data ?? []) for (const cat of vendorCategoryList(c)) m[cat] = (m[cat] ?? 0) + 1;
     return m;
   }, [directory]);
 

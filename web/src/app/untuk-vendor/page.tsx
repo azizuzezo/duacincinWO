@@ -91,8 +91,13 @@ const CATEGORY_PHOTO: Record<string, { src: string; studio?: boolean; note: stri
   decor: { src: "/photos/pinterest/dekorasi-taman.webp", note: "Pelaminan, gapura, bunga" },
   mua_attire: { src: "/photos/pinterest/rias-hijab.webp", note: "Rias, busana adat, gaun" },
   photo_video: { src: "/photos/pinterest/foto-gapura.webp", note: "Foto, video, prewedding" },
-  entertainment: { src: "/photos/pinterest/kirab-malam.webp", note: "Musik, MC, hiburan adat" },
+  entertainment: { src: "/photos/pinterest/kirab-malam.webp", note: "Musik, band, hiburan adat" },
   invitation_souvenir: { src: "/photos/pinterest/suvenir-anggrek.webp", note: "Undangan cetak, suvenir" },
+  hantaran: { src: "/photos/pinterest/penutup-lilin.webp", note: "Seserahan, hantaran, mahar hias" },
+  mc: { src: "/photos/pinterest/pendopo-kursi-tamu.webp", note: "MC akad, resepsi, acara adat" },
+  content_creator: { src: "/photos/pinterest/pasangan-sofa-bunga.webp", note: "Konten Reels, TikTok, behind the scene" },
+  wedding_car: { src: "/photos/pinterest/kirab-malam.webp", note: "Mobil pengantin, sopir, hiasan" },
+  wedding_cake: { src: "/photos/pinterest/resepsi-taman.webp", note: "Kue pengantin, dessert table" },
 };
 
 const FACTS = [
@@ -201,19 +206,19 @@ export default function UntukVendorPage() {
           <Reveal className="max-w-2xl">
             <p className="dc-eyebrow">Kategori</p>
             <h2 id="kategori-judul" className="mt-4 font-heading text-[clamp(2rem,3.8vw,3.1rem)] leading-[1.04] text-dc-ink">
-              Tujuh kategori <span className="dc-em">yang dicari calon pengantin.</span>
+              Dua belas kategori <span className="dc-em">yang dicari calon pengantin.</span>
             </h2>
           </Reveal>
           <ul className="dc-stagger -mx-4 mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 md:grid-cols-3 lg:grid-cols-4">
             {VENDOR_CATEGORIES.map((c, i) => {
               const photo = CATEGORY_PHOTO[c.value];
               return (
-                <li key={c.value} className={`w-[72%] shrink-0 snap-start sm:w-auto ${i === 0 ? "lg:col-span-2 lg:row-span-2" : i >= 5 ? "lg:col-span-2" : ""}`}>
+                <li key={c.value} className={`w-[72%] shrink-0 snap-start sm:w-auto ${i === 0 ? "lg:col-span-2 lg:row-span-2" : i === 5 ? "lg:col-span-2" : ""}`}>
                   <Link
                     href={`/kategori/${c.value}`}
                     className="group relative block h-full overflow-hidden rounded-2xl border border-dc-line bg-dc-cream shadow-soft transition-shadow duration-500 hover:shadow-lift"
                   >
-                    <div className={`relative ${i === 0 ? "aspect-[4/5] lg:aspect-auto lg:h-full lg:min-h-[420px]" : i >= 5 ? "aspect-[4/5] lg:aspect-[2/1]" : "aspect-[4/5]"} ${photo?.studio ? "bg-[radial-gradient(120%_80%_at_50%_100%,#ead7ae_0%,#f3ecdf_60%,#faf6ef_100%)]" : ""}`}>
+                    <div className={`relative ${i === 0 ? "aspect-[4/5] lg:aspect-auto lg:h-full lg:min-h-[420px]" : i === 5 ? "aspect-[4/5] lg:aspect-[2/1]" : "aspect-[4/5]"} ${photo?.studio ? "bg-[radial-gradient(120%_80%_at_50%_100%,#ead7ae_0%,#f3ecdf_60%,#faf6ef_100%)]" : ""}`}>
                       {photo && (
                         <Image
                           src={photo.src}

@@ -13,7 +13,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/Toast";
 import { WithUser } from "@/components/WithUser";
-import { apiGet, apiPost, ApiError, categoryLabel, type CurrentUser } from "@/lib/api";
+import { apiGet, apiPost, ApiError, categoriesLabel, type CurrentUser } from "@/lib/api";
 import { useLiveRefresh } from "@/lib/useLiveRefresh";
 import { ConfirmDialog, DangerGhostButton, ErrorBanner, Monogram, PAGE, QueueItem, ResultCount, RowsSkeleton, SearchField, SubNav } from "../../_ui";
 
@@ -21,6 +21,7 @@ type PendingVendor = {
   user_id: string;
   business_name: string;
   category: string;
+  categories?: string[];
   city: string;
   status: string;
 };
@@ -258,7 +259,7 @@ function AdminVendorsContent({ user }: { user: CurrentUser }) {
                               )}
                             </h2>
                             <p className="mt-1 text-sm text-dc-text-2">
-                              {categoryLabel(v.category)} · {v.city}
+                              {categoriesLabel(v)} · {v.city}
                             </p>
                           </div>
                           <label className="-m-2 inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full hover:bg-dc-cream">

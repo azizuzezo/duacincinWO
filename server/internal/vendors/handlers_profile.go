@@ -12,7 +12,10 @@ import (
 
 type upsertProfileRequest struct {
 	BusinessName string `json:"business_name"`
-	Category     string `json:"category"`
+	// Categories: every kind of service offered, the main one first.
+	// Category (a single value) is still accepted from older clients.
+	Categories []string `json:"categories"`
+	Category   string   `json:"category"`
 	// Cities: the kabupaten/kota served, from the national list. City (a
 	// single name) is still accepted from older clients.
 	Cities      []string `json:"cities"`
@@ -26,6 +29,7 @@ type profileDTO struct {
 	UserID            string         `json:"user_id"`
 	BusinessName      string         `json:"business_name"`
 	Category          string         `json:"category"`
+	Categories        []string       `json:"categories"`
 	City              string         `json:"city"`
 	Cities            []string       `json:"cities"`
 	PriceMin          int64          `json:"price_min"`
@@ -50,6 +54,7 @@ func toProfileDTO(p *repository.VendorProfile) profileDTO {
 		UserID:          p.UserID,
 		BusinessName:    p.BusinessName,
 		Category:        p.Category,
+		Categories:      nonNil(p.Categories),
 		City:            p.City,
 		Cities:          nonNil(p.Cities),
 		PriceMin:        p.PriceMin,
@@ -94,8 +99,12 @@ func UpsertProfile(deps *Deps) http.HandlerFunc {
 			return
 		}
 
-		if !ValidCategories[req.Category] {
-			httpx.Error(w, http.StatusBadRequest, "kategori tidak valid")
+		if len(req.Categories) == 0 && req.Category != "" {
+			req.Categories = []string{req.Category}
+		}
+		categories, msg := normalizeCategories(req.Categories)
+		if msg != "" {
+			httpx.Error(w, http.StatusBadRequest, msg)
 			return
 		}
 		if len(req.Cities) == 0 && req.City != "" {
@@ -112,7 +121,7 @@ func UpsertProfile(deps *Deps) http.HandlerFunc {
 		}
 
 		profile, err := deps.Vendors.UpsertProfile(
-			r.Context(), claims.UserID, businessName, req.Category, cities,
+			r.Context(), claims.UserID, businessName, categories, cities,
 			req.PriceMin, req.PriceMax, req.Description,
 		)
 		if err != nil {
@@ -122,6 +131,27 @@ func UpsertProfile(deps *Deps) http.HandlerFunc {
 
 		httpx.JSON(w, http.StatusOK, toProfileDTO(profile))
 	}
+}
+
+// normalizeCategories checks each category, keeps the order given (the first
+// is the vendor's main category) and drops repeats.
+func normalizeCategories(in []string) ([]string, string) {
+	out := make([]string, 0, len(in))
+	seen := map[string]bool{}
+	for _, c := range in {
+		c = strings.TrimSpace(c)
+		if !ValidCategories[c] {
+			return nil, "kategori tidak valid"
+		}
+		if !seen[c] {
+			seen[c] = true
+			out = append(out, c)
+		}
+	}
+	if len(out) == 0 {
+		return nil, "pilih minimal satu kategori usaha"
+	}
+	return out, ""
 }
 
 // normalizeCities checks each name against the national kabupaten/kota list

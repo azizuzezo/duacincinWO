@@ -63,9 +63,9 @@ export const CATEGORY_ART: Record<string, CategoryArt> = {
   entertainment: {
     src: "/photos/pinterest/kirab-malam.webp",
     alt: "Kirab pengantin malam hari di antara tamu yang mengabadikan momen",
-    covers: "Musik, MC, hiburan adat",
+    covers: "Musik, band, hiburan adat",
     intro:
-      "Musik dan pembawa acara menjaga suasana tetap hidup. Dengarkan contoh penampilan bila vendor menyediakannya, dan bicarakan susunan lagu sesuai rundown acaramu.",
+      "Musik menjaga suasana tetap hidup. Dengarkan contoh penampilan bila vendor menyediakannya, dan bicarakan susunan lagu sesuai rundown acaramu.",
     ask: ["Berapa lama durasi tampil?", "Bisa membawakan lagu permintaan?", "Perlu daya listrik berapa di venue?"],
   },
   invitation_souvenir: {
@@ -75,6 +75,46 @@ export const CATEGORY_ART: Record<string, CategoryArt> = {
     intro:
       "Undangan adalah kesan pertama tamu, suvenir kesan terakhirnya. Bandingkan bahan dan harga mulai dari, lalu tanyakan waktu produksi agar sempat dibagikan.",
     ask: ["Berapa lama waktu produksi?", "Berapa jumlah pesanan minimal?", "Bisa minta contoh cetak dulu?"],
+  },
+  hantaran: {
+    src: "/photos/pinterest/penutup-lilin.webp",
+    alt: "Meja resepsi dengan lilin dan bunga",
+    covers: "Seserahan, hantaran, mahar hias",
+    intro:
+      "Hantaran dan seserahan dibawa ke keluarga pasangan, jadi tampilannya ikut dilihat banyak orang. Lihat contoh susunan di portofolio, lalu bicarakan isi dan jumlah wadahnya.",
+    ask: ["Isi seserahan dari kami atau disiapkan vendor?", "Berapa jumlah wadah dalam satu paket?", "Wadah dikembalikan atau boleh disimpan?"],
+  },
+  mc: {
+    src: "/photos/pinterest/pendopo-kursi-tamu.webp",
+    alt: "Pendopo beratap joglo dengan deretan kursi tamu di taman",
+    covers: "MC akad, resepsi, acara adat",
+    intro:
+      "MC menjaga acara berjalan sesuai rundown dan membuat tamu merasa disambut. Tanyakan pengalamannya dengan adat yang kamu pakai dan bahasa yang dipakai di panggung.",
+    ask: ["Bisa memandu prosesi adat kami?", "Bahasa apa saja yang dipakai?", "Ada pertemuan teknis sebelum hari-H?"],
+  },
+  content_creator: {
+    src: "/photos/pinterest/pasangan-sofa-bunga.webp",
+    alt: "Pasangan pengantin berbusana putih tersenyum di sofa, di depan dinding bunga merah",
+    covers: "Konten Reels, TikTok, behind the scene",
+    intro:
+      "Wedding content creator merekam momen dari dekat dengan ponsel dan mengunggahnya cepat, berbeda dari dokumentasi foto dan video. Lihat contoh kontennya, lalu pastikan kapan hasilnya diterima.",
+    ask: ["Berapa video yang diterima dan kapan?", "Diunggah ke akun kami atau akun vendor?", "Mulai dari sesi rias atau dari akad?"],
+  },
+  wedding_car: {
+    src: "/photos/pinterest/kirab-malam.webp",
+    alt: "Kirab pengantin malam hari di antara tamu yang mengabadikan momen",
+    covers: "Mobil pengantin, sopir, hiasan bunga",
+    intro:
+      "Mobil pengantin mengantar kalian di hari-H dan sering ikut tampil di foto. Pilih jenis mobilnya, lalu pastikan durasi sewa, sopir, dan hiasannya.",
+    ask: ["Sudah termasuk sopir dan bensin?", "Berapa jam durasi sewanya?", "Hiasan bunga termasuk paket?"],
+  },
+  wedding_cake: {
+    src: "/photos/pinterest/resepsi-taman.webp",
+    alt: "Resepsi di taman dengan meja tamu, bunga putih dan lampu gantung",
+    covers: "Kue pengantin, dessert table",
+    intro:
+      "Kue pengantin jadi pusat perhatian saat sesi potong kue. Lihat desain di portofolio, lalu tanyakan rasa, jumlah tingkat, dan cara kuenya dibawa ke venue.",
+    ask: ["Ada sesi cicip rasa?", "Tingkat atas kue asli atau dummy?", "Sudah termasuk pengantaran ke venue?"],
   },
 };
 

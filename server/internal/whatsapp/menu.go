@@ -76,7 +76,12 @@ func categoryOptions() []menuOption {
 		{Label: "Dekorasi", Value: "decor"},
 		{Label: "MUA & Busana", Value: "mua_attire"},
 		{Label: "Foto & Video", Value: "photo_video"},
-		{Label: "Hiburan", Value: "entertainment"},
+		{Label: "Hiburan & Musik", Value: "entertainment"},
 		{Label: "Undangan & Souvenir", Value: "invitation_souvenir"},
+		{Label: "Hantaran & Seserahan", Value: "hantaran"},
+		{Label: "MC", Value: "mc"},
+		{Label: "Wedding Content Creator", Value: "content_creator"},
+		{Label: "Mobil Pengantin", Value: "wedding_car"},
+		{Label: "Kue Pengantin", Value: "wedding_cake"},
 	}
 }

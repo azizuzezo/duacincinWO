@@ -1,4 +1,4 @@
-import { categoryLabel } from "@/lib/api";
+import { categoriesLabel } from "@/lib/api";
 import { OG_CONTENT_TYPE, OG_SIZE, renderBrandCard, renderCard } from "@/lib/og";
 import { fetchPublicVendor } from "@/lib/server-api";
 
@@ -17,7 +17,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   try {
     const v = await fetchPublicVendor(id);
     if (!v) return await renderBrandCard(CACHE);
-    const where = [categoryLabel(v.category), v.city].filter(Boolean).join(" · ");
+    const where = [categoriesLabel(v), v.city].filter(Boolean).join(" · ");
     // No photo yet: the card shows the logo in the arch (never someone else's photo).
     return await renderCard({ kind: "vendor", name: v.business_name, where }, v.portfolio?.[0]?.url ? { src: v.portfolio[0].url } : null, CACHE);
   } catch {

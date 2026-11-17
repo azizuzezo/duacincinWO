@@ -55,4 +55,9 @@ export const CATEGORY_THUMB: Record<string, string> = {
   photo_video: "/photos/pinterest/foto-gapura-sm.webp",
   entertainment: "/photos/pinterest/kirab-malam-sm.webp",
   invitation_souvenir: "/photos/pinterest/suvenir-anggrek-sm.webp",
+  hantaran: "/photos/pinterest/penutup-lilin-sm.webp",
+  mc: "/photos/pinterest/pendopo-kursi-tamu-sm.webp",
+  content_creator: "/photos/pinterest/pasangan-sofa-bunga-sm.webp",
+  wedding_car: "/photos/pinterest/kirab-malam-sm.webp",
+  wedding_cake: "/photos/pinterest/resepsi-taman-sm.webp",
 };

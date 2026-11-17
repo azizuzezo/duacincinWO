@@ -21,13 +21,14 @@ import {
   apiPost,
   ApiError,
   categoryLabel,
+  vendorCities,
+  categoriesLabel,
   type Booking,
   type Conversation,
   type CurrentUser,
   type Review,
   type VendorPackage,
   type VendorProfile,
-  vendorCities,
 } from "@/lib/api";
 import { blurReveal, fadeUp, motionSafe, useReducedMotion } from "@/lib/motion";
 import { citySlug } from "@/lib/server-api";
@@ -223,7 +224,7 @@ export default function VendorDetailPage({ params }: PageProps<"/vendors/[id]">)
               {/* Arrival: the name settles out of a light blur, the page's one entrance. */}
               <motion.header className="mt-2 sm:mt-4" variants={motionSafe(reduced, blurReveal)} initial="hidden" animate="visible">
                 <p className="dc-eyebrow">
-                  {categoryLabel(profile.category)}
+                  {categoriesLabel(profile)}
                   {profile.city ? ` di ${profile.city}` : ""}
                 </p>
                 <h1 className="font-heading mt-3 max-w-4xl break-words text-[2.6rem] leading-[1.02] text-dc-ink sm:text-6xl lg:text-7xl">{profile.business_name}</h1>

@@ -9,6 +9,8 @@ import (
 
 const PortfolioBucket = "portofolio-vendor"
 
+// ValidCategories mirrors the vendor_category enum (migrations 000002 and
+// 000025) and web/src/lib/api.ts VENDOR_CATEGORIES.
 var ValidCategories = map[string]bool{
 	"venue":               true,
 	"catering":            true,
@@ -17,6 +19,11 @@ var ValidCategories = map[string]bool{
 	"photo_video":         true,
 	"entertainment":       true,
 	"invitation_souvenir": true,
+	"hantaran":            true,
+	"mc":                  true,
+	"content_creator":     true,
+	"wedding_car":         true,
+	"wedding_cake":        true,
 }
 
 type Deps struct {

@@ -550,7 +550,8 @@ function CategoryRow({
         <div className="mt-2 flex flex-wrap gap-x-5">
           {meta.vendorCategories.map((vc) => (
             <Link key={vc} href={`/vendors?category=${vc}&max_price=${amount}`} className={LINK}>
-              {meta.vendorCategories!.length > 1 ? `Cari ${categoryLabel(vc).toLowerCase()}` : "Cari vendor"} sesuai rencana
+              {/* Reserve only covers wedding cars, so it names the category too. */}
+              {meta.vendorCategories!.length > 1 || meta.key === "reserve" ? `Cari ${searchName(vc)}` : "Cari vendor"} sesuai rencana
             </Link>
           ))}
         </div>
@@ -612,4 +613,10 @@ function compactRupiah(v: number): string {
   if (v >= 1e9) return `Rp${(v / 1e9).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M`;
   if (v >= 1e6) return `Rp${(v / 1e6).toLocaleString("id-ID", { maximumFractionDigits: 1 })} jt`;
   return formatRupiah(v);
+}
+
+/** "venue", "kue pengantin", but "MC" stays in capitals. */
+function searchName(vendorCategory: string): string {
+  const label = categoryLabel(vendorCategory);
+  return label === label.toUpperCase() ? label : label.toLowerCase();
 }

@@ -13,11 +13,12 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CityCombobox } from "@/components/ui/CityCombobox";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { Input, Select, Textarea } from "@/components/ui/Field";
+import { Input, Textarea } from "@/components/ui/Field";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Sheet } from "@/components/ui/Sheet";
 import { Skeleton, SkeletonGroup } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
+import { CategoryChips } from "@/components/vendor/CategoryChips";
 import { EtalaseTabs } from "@/components/vendor/EtalaseTabs";
 import { VendorCard } from "@/components/vendor/VendorCard";
 import { WithUser } from "@/components/WithUser";
@@ -26,8 +27,8 @@ import {
   apiPost,
   apiPut,
   ApiError,
-  VENDOR_CATEGORIES,
   type CurrentUser,
+  vendorCategoryList,
   type VendorPackage,
   type VendorProfile,
 } from "@/lib/api";
@@ -43,7 +44,7 @@ const STATUS_LABEL: Record<VendorProfile["status"], { text: string; tone: "gold"
 const STORY_GOAL = 120;
 const PHOTO_GOAL = 3;
 
-type FieldErrors = Partial<Record<"name" | "city" | "priceMin" | "priceMax", string>>;
+type FieldErrors = Partial<Record<"name" | "category" | "city" | "priceMin" | "priceMax", string>>;
 
 export default function VendorProfilePage() {
   return (
@@ -63,7 +64,7 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
   const [loadError, setLoadError] = useState(false);
 
   const [businessName, setBusinessName] = useState("");
-  const [category, setCategory] = useState(VENDOR_CATEGORIES[0].value);
+  const [categories, setCategories] = useState<string[]>([]);
   const [cities, setCities] = useState<string[]>([]);
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
@@ -79,7 +80,7 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
   function applyProfile(p: VendorProfile) {
     setProfile(p);
     setBusinessName(p.business_name);
-    setCategory(p.category);
+    setCategories(vendorCategoryList(p));
     setCities(p.cities ?? []);
     setPriceMin(p.price_min ? String(p.price_min) : "");
     setPriceMax(p.price_max ? String(p.price_max) : "");
@@ -109,9 +110,9 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
   const dirty =
     profile !== undefined &&
     (profile === null
-      ? !!(businessName || cities.length || priceMin || priceMax || description)
+      ? !!(businessName || categories.length || cities.length || priceMin || priceMax || description)
       : cities.join("|") !== (profile.cities ?? []).join("|") ||
-        category !== profile.category ||
+        categories.join("|") !== vendorCategoryList(profile).join("|") ||
         Number(priceMin || 0) !== profile.price_min ||
         Number(priceMax || 0) !== profile.price_max ||
         description !== profile.description);
@@ -119,6 +120,7 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
   function validate(): FieldErrors {
     const e: FieldErrors = {};
     if (!profile && !businessName.trim()) e.name = "Tulis nama usahamu, nama ini yang dilihat calon pengantin.";
+    if (categories.length === 0) e.category = "Pilih minimal satu kategori usaha.";
     if (cities.length === 0) e.city = "Pilih minimal satu kabupaten atau kota tempat usahamu melayani.";
     const min = Number(priceMin || 0);
     const max = Number(priceMax || 0);
@@ -147,7 +149,7 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
     try {
       const updated = await apiPut<VendorProfile>("/api/v1/vendor/profile", {
         business_name: profile?.business_name ?? businessName.trim(),
-        category,
+        categories,
         cities,
         price_min: Number(priceMin) || 0,
         price_max: Number(priceMax) || 0,
@@ -259,13 +261,9 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
                     />
                   )}
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <Select label="Kategori" value={category} onChange={(e) => setCategory(e.target.value)}>
-                      {VENDOR_CATEGORIES.map((c) => (
-                        <option key={c.value} value={c.value}>
-                          {c.label}
-                        </option>
-                      ))}
-                    </Select>
+                    <div id="f-category" className="sm:col-span-2">
+                      <CategoryChips values={categories} onChange={setCategories} error={errors.category} />
+                    </div>
                     <div className="sm:col-span-2">
                       <CityCombobox
                         id="f-city"
@@ -360,7 +358,8 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
                       card={{
                         id: user.id,
                         business_name: profile?.business_name || businessName.trim() || "Nama usahamu",
-                        category,
+                        category: categories[0] ?? "",
+                        categories,
                         city: cities.join(", ") || "Kotamu",
                         price_min: Number(priceMin || 0),
                         price_max: Number(priceMax || 0),

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { apiGet, categoryLabel, type VendorProfile } from "@/lib/api";
+import { apiGet, categoriesLabel, type VendorProfile } from "@/lib/api";
 
 export type VendorBrief = { name: string; category: string; city: string; photo?: string; photoAlt?: string };
 
@@ -17,7 +17,7 @@ function fetchVendor(id: string): Promise<VendorBrief | null> {
     p = apiGet<VendorProfile>(`/api/v1/vendors/${id}`)
       .then((v) => ({
         name: v.business_name,
-        category: categoryLabel(v.category),
+        category: categoriesLabel(v),
         city: v.city,
         photo: v.portfolio?.[0]?.url,
         photoAlt: v.portfolio?.[0]?.alt_text,

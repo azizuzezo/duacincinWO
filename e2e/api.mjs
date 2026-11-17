@@ -90,6 +90,14 @@ ok("vendor serves several kabupaten/kota (deduped, list spelling)", r.status ===
 r = await vendor.call("PUT", "/vendor/profile", { category: "venue", cities: ["Bandung", "Bandung sumedang"], price_min: 35000000, price_max: 120000000, description: "x" }); ok("a free-text entry among cities is refused", r.status === 400, JSON.stringify(r));
 r = await vendor.call("PUT", "/vendor/profile", { category: "venue", cities: ["Bandung", "Sumedang", "Garut", "Bogor", "Depok", "Bekasi", "Cimahi", "Cianjur", "Subang", "Karawang", "Purwakarta"], price_min: 35000000, price_max: 120000000, description: "x" }); ok("more than 10 kabupaten/kota refused", r.status === 400, JSON.stringify(r));
 r = await new Client("anon").call("GET", "/vendors?category=venue&city=depok"); ok("directory finds the vendor under its second city", r.data?.some((v) => v.id === vendorId && v.cities?.includes("Depok")), JSON.stringify(r.data));
+// Several categories per vendor: the first is the main one, the directory finds the vendor under each.
+const multiCat = { cities: ["Jakarta Selatan", "Depok"], price_min: 35000000, price_max: 120000000, description: "Venue uji untuk E2E." };
+r = await vendor.call("PUT", "/vendor/profile", { ...multiCat, categories: ["venue", "mc", "venue"] });
+ok("vendor offers several categories (deduped, main first)", r.status === 200 && r.data?.category === "venue" && JSON.stringify(r.data?.categories) === JSON.stringify(["venue", "mc"]), JSON.stringify(r.data));
+r = await new Client("anon").call("GET", "/vendors?category=mc"); ok("directory finds the vendor under its second category", r.data?.some((v) => v.id === vendorId && v.category === "venue" && v.categories?.includes("mc")), JSON.stringify(r.data));
+r = await new Client("anon").call("GET", "/vendors?category=wedding_cake"); ok("new category is a valid filter", r.status === 200 && !r.data?.some((v) => v.id === vendorId), JSON.stringify(r));
+r = await vendor.call("PUT", "/vendor/profile", { ...multiCat, categories: ["venue", "pawang_hujan"] }); ok("unknown category refused", r.status === 400, JSON.stringify(r));
+r = await vendor.call("PUT", "/vendor/profile", { ...multiCat, categories: [] }); ok("at least one category required", r.status === 400, JSON.stringify(r));
 r = await new Client("anon").call("GET", "/vendors?max_price=1000000"); ok("max_price filter excludes expensive vendor", !r.data?.some((v) => v.id === vendorId), JSON.stringify(r.data));
 r = await new Client("anon").call("GET", `/vendors/${vendorId}/packages`); ok("public packages visible after approval", r.status === 200 && r.data.length === 2 && r.data[0].name === "Half Day Plus", JSON.stringify(r));
 // Commission is added on top of the vendor's price for couples (default 10%).

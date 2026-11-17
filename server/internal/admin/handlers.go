@@ -71,6 +71,7 @@ type vendorSummaryDTO struct {
 	UserID         string   `json:"user_id"`
 	BusinessName   string   `json:"business_name"`
 	Category       string   `json:"category"`
+	Categories     []string `json:"categories"`
 	City           string   `json:"city"`
 	Status         string   `json:"status"`
 	CommissionRate *float64 `json:"commission_rate,omitempty"`
@@ -85,7 +86,7 @@ func listPending(deps *Deps) http.HandlerFunc {
 		}
 		out := make([]vendorSummaryDTO, 0, len(profiles))
 		for _, p := range profiles {
-			out = append(out, vendorSummaryDTO{UserID: p.UserID, BusinessName: p.BusinessName, Category: p.Category, City: p.City, Status: p.Status})
+			out = append(out, vendorSummaryDTO{UserID: p.UserID, BusinessName: p.BusinessName, Category: p.Category, Categories: p.Categories, City: p.City, Status: p.Status})
 		}
 		httpx.JSON(w, http.StatusOK, out)
 	}
@@ -101,7 +102,7 @@ func listApproved(deps *Deps) http.HandlerFunc {
 		}
 		out := make([]vendorSummaryDTO, 0, len(profiles))
 		for _, p := range profiles {
-			out = append(out, vendorSummaryDTO{UserID: p.UserID, BusinessName: p.BusinessName, Category: p.Category, City: p.City, Status: p.Status, CommissionRate: p.CommissionRate})
+			out = append(out, vendorSummaryDTO{UserID: p.UserID, BusinessName: p.BusinessName, Category: p.Category, Categories: p.Categories, City: p.City, Status: p.Status, CommissionRate: p.CommissionRate})
 		}
 		httpx.JSON(w, http.StatusOK, out)
 	}

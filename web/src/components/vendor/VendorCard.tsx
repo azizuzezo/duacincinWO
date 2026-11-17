@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { categoryLabel, formatRupiah, type DirectoryCard } from "@/lib/api";
+import { categoryLabel, formatRupiah, vendorCategoryList, type DirectoryCard } from "@/lib/api";
 
 const RATING = new Intl.NumberFormat("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
@@ -15,6 +15,8 @@ const RATING = new Intl.NumberFormat("id-ID", { minimumFractionDigits: 1, maximu
 export function VendorCard({ card, horizontal = false }: { card: DirectoryCard; horizontal?: boolean }) {
   const hasPrice = card.price_min > 0;
   const hasRating = card.review_count > 0;
+  // The chip names the main category; "+2" says the vendor also offers others (listed on the profile).
+  const extraCategories = vendorCategoryList(card).length - 1;
   return (
     <Link
       href={`/vendors/${card.id}`}
@@ -43,6 +45,7 @@ export function VendorCard({ card, horizontal = false }: { card: DirectoryCard; 
         )}
         <span className="absolute left-3 top-3 rounded-full bg-dc-ink/85 px-3 py-1 text-xs font-semibold text-dc-on-dark">
           {categoryLabel(card.category)}
+          {extraCategories > 0 && <span className="text-dc-on-dark/75"> +{extraCategories}</span>}
         </span>
         <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-dc-white px-2.5 py-1 text-xs font-semibold text-dc-ink shadow-soft">
           <svg aria-hidden width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-dc-clay">

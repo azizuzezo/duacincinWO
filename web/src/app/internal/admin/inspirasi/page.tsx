@@ -22,8 +22,8 @@ import {
   apiPostForm,
   apiPut,
   ApiError,
-  categoryLabel,
   VENDOR_CATEGORIES,
+  categoriesLabel,
   type CurrentUser,
   type DirectoryCard,
   type InspirationItem,
@@ -201,7 +201,7 @@ function AdminInspirasiContent({ user }: { user: CurrentUser }) {
   const vendorGroups = useMemo(() => {
     const needle = vendorQuery.trim().toLowerCase();
     const list = (vendors ?? []).filter(
-      (v) => !needle || picked.includes(v.id) || `${v.business_name} ${v.city} ${categoryLabel(v.category)}`.toLowerCase().includes(needle),
+      (v) => !needle || picked.includes(v.id) || `${v.business_name} ${v.city} ${categoriesLabel(v)}`.toLowerCase().includes(needle),
     );
     return VENDOR_CATEGORIES.map((c) => ({
       ...c,

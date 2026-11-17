@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { categoryLabel } from "@/lib/api";
+import { categoriesLabel } from "@/lib/api";
 import { fetchPublicVendor } from "@/lib/server-api";
 import { OPEN_GRAPH_BASE } from "@/lib/site";
 
@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: LayoutProps<"/vendors/[id]">)
   const { id } = await params;
   const v = await fetchPublicVendor(id);
   if (!v) return { title: "Profil Vendor" };
-  const where = [categoryLabel(v.category), v.city].filter(Boolean).join(" di ");
+  const where = [categoriesLabel(v), v.city].filter(Boolean).join(" di ");
   const title = where ? `${v.business_name}: ${where}` : v.business_name;
   const description = clip(v.description?.trim() || `${v.business_name}, vendor pernikahan terverifikasi di DuaCincin.`, 160);
   return {
