@@ -13,6 +13,29 @@ import { Navbar } from "@/components/landing/Navbar";
 import { ProductShowcase } from "@/components/landing/ProductShowcase";
 import { VendorRecruit } from "@/components/landing/VendorRecruit";
 import { WhyDuaCincin } from "@/components/landing/WhyDuaCincin";
+import { JsonLd, ORGANIZATION_LD } from "@/components/seo/JsonLd";
+import { SITE_URL } from "@/lib/site";
+
+// Who runs the site, and the vendor search as a sitelinks search box.
+const SITE_LD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    ORGANIZATION_LD,
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      name: "DuaCincin",
+      url: SITE_URL,
+      inLanguage: "id-ID",
+      publisher: { "@id": ORGANIZATION_LD["@id"] },
+      potentialAction: {
+        "@type": "SearchAction",
+        target: { "@type": "EntryPoint", urlTemplate: `${SITE_URL}/vendors?q={search_term_string}` },
+        "query-input": "required name=search_term_string",
+      },
+    },
+  ],
+};
 
 // Narrative: search (the door) -> what you can find (categories as photos,
 // real vendors) -> the app itself, screen by screen -> where your money is ->
@@ -29,6 +52,7 @@ export default function Page() {
     <>
       <Navbar overlay />
       <main id="konten" className="flex-1">
+        <JsonLd data={SITE_LD} />
         <HeroScene />
         <CategoryMosaic />
         <AdatMarquee />

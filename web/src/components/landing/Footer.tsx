@@ -8,6 +8,7 @@ const EXPLORE = [
   { href: "/vendors", label: "Cari vendor" },
   { href: "/cara-kerja", label: "Cara kerja escrow" },
   { href: "/inspirasi", label: "Inspirasi" },
+  { href: "/artikel", label: "Artikel pernikahan" },
   { href: "/untuk-vendor", label: "Untuk vendor" },
   { href: "/tentang-kami", label: "Tentang kami" },
 ];

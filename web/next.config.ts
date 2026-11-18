@@ -1,3 +1,4 @@
+import createMDX from "@next/mdx";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -11,4 +12,8 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Articles (/artikel) are MDX files in src/content/artikel, imported by the
+// article route; they are not routes themselves, so pageExtensions stays default.
+const withMDX = createMDX({});
+
+export default withMDX(nextConfig);

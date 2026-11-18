@@ -17,6 +17,18 @@ export async function fetchDirectory(category: string, city?: string): Promise<{
   }
 }
 
+/** Every approved vendor in the directory, for the sitemap. Cached for an
+ * hour; null on any failure so the sitemap still lists the static pages. */
+export async function fetchAllVendors(): Promise<DirectoryCard[] | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/v1/vendors`, { next: { revalidate: 3600 }, signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return null;
+    return ((await res.json()) as DirectoryCard[] | null) ?? [];
+  } catch {
+    return null;
+  }
+}
+
 /** Public vendor profile for server metadata and share images. Cached for 5
  * minutes, gives up after 5 seconds, and returns null on any failure so the
  * caller falls back to the generic DuaCincin preview. */
