@@ -10,14 +10,19 @@ const out = []; let failed = 0; const ok = (n, c, d = "") => { out.push(`${c ? "
   await s.go(`${WEB}/vendors`);
   const dir = await s.ev("document.querySelector('main').innerText");
   ok("directory renders the real vendor from the database", dir.includes("Ballroom Uji") && dir.includes("38.500.000"), dir.slice(0, 200));
-  ok("directory card shows verified rating 5.0 (1 ulasan)", /5\.0\s*\(1 ulasan\)/.test(dir), dir.slice(0, 300));
+  // Ratings use the Indonesian decimal comma ("5,0").
+  ok("directory card shows verified rating 5,0 (1 ulasan)", /5,0\s*\(1 ulasan\)/.test(dir), dir.slice(0, 300));
   ok("pending vendor not shown", !dir.includes("Dekor Uji"));
   const vid = await s.ev("document.querySelector('main ul li a')?.getAttribute('href')");
   await s.shot("real-directory");
   await s.go(`${WEB}` + vid);
   const det = await s.ev("document.body.innerText");
   ok("detail page: packages from real API", det.includes("Half Day Plus") && det.includes("Full Day") && det.includes("22.000.000"), det.slice(0, 200));
-  ok("detail page: review summary and comment", det.includes("5.0") && det.includes("Rapi dan tepat waktu.") && det.includes("menyelesaikan booking lewat DuaCincin"));
+  // Reviews sit in the "Ulasan" tab; hidden tab panels are not in innerText.
+  await s.ev("[...document.querySelectorAll('[role=tab]')].find(t=>t.innerText.startsWith('Ulasan'))?.click(); 1");
+  await sleep(1000);
+  const rev = await s.ev("document.body.innerText");
+  ok("detail page: review summary and comment (Ulasan tab)", rev.includes("5,0") && rev.includes("Rapi dan tepat waktu.") && rev.includes("menyelesaikan booking lewat DuaCincin"), rev.slice(0, 300));
   await s.shot("real-detail");
   await s.go(`${WEB}/kategori/venue`);
   ok("SEO category page server-renders vendors", (await s.ev("document.body.innerText")).includes("Ballroom Uji"), (await s.ev("document.body.innerText")).slice(0,200));
@@ -77,8 +82,8 @@ for (const [w, h, label] of [[1440, 900, "desktop"], [390, 844, "mobile"]]) {
   await s.go(`${WEB}/vendor/dashboard`);
   const body = await s.ev("document.body.innerText");
   ok("vendor dashboard shows 'Hari ini' with real business name", body.includes("Hari ini") && body.includes("Ballroom Uji"), body.slice(0, 200));
-  ok("vendor dashboard shows the review", body.includes("Ulasan dari client") && body.includes("Rapi dan tepat waktu."));
-  ok("vendor dashboard checklist: packages (2)", body.includes("Paket harga (2)"));
+  ok("vendor dashboard shows the review", body.includes("Ulasan terbaru") && body.includes("Rapi dan tepat waktu."), body.slice(0, 300));
+  ok("vendor dashboard checklist: packages (2)", /Paket harga\s*2 paket/.test(body), body.slice(0, 300));
   await s.shot("real-vendor-dashboard");
   await s.go(`${WEB}/vendor/paket`);
   const pk = await s.ev("document.body.innerText");
@@ -96,10 +101,12 @@ for (const [w, h, label] of [[1440, 900, "desktop"], [390, 844, "mobile"]]) {
   const body = await s.ev("document.body.innerText");
   ok("admin queue board renders", body.includes("Antrian kerja") && body.includes("Vendor menunggu verifikasi"), body.slice(0, 200));
   const rows = await s.ev("[...document.querySelectorAll('#antrian-title ~ ul li a')].map(a=>a.querySelector('span').textContent+'|'+a.querySelector('.font-heading').textContent)");
-  ok("queue counts match the database (1 pending vendor, 1 dispute from the flagged chat message, 0 disbursements)", JSON.stringify(rows) === JSON.stringify(["1|Sengketa terbuka", "0|Pencairan menunggu", "1|Vendor menunggu verifikasi", "0|Pengajuan ganti nama"]), JSON.stringify(rows));
+  // api.mjs deletes the second (pending) vendor when it tests vendor deletion, so no vendor is waiting.
+  ok("queue counts match the database (0 pending vendors, 1 dispute from the flagged chat message, 0 disbursements)", JSON.stringify(rows) === JSON.stringify(["1|Sengketa terbuka", "0|Pencairan menunggu", "0|Vendor menunggu verifikasi", "0|Pengajuan ganti nama"]), JSON.stringify(rows));
   await s.shot("real-admin-dashboard");
   await s.go(`${WEB}/internal/admin/vendors`);
-  ok("pending vendors table lists the second vendor", (await s.ev("document.body.innerText")).includes("Dekor Uji"));
+  const pend = await s.ev("document.querySelector('main').innerText");
+  ok("pending vendors page: deleted vendor gone, empty state shown", !pend.includes("Dekor Uji") && pend.includes("Tidak ada vendor yang menunggu"), pend.slice(0, 300));
   await s.go(`${WEB}/internal/admin/inspirasi`);
   const insp = await s.ev("document.querySelector('main').innerText");
   ok("admin inspirasi: tagged photo lists its vendor and offers 'Ubah vendor'", insp.includes("Vendor: Ballroom Uji") && insp.includes("Ubah vendor") && insp.includes("Tandai vendor"), insp.slice(0, 400));
