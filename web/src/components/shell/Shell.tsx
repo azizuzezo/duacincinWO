@@ -213,7 +213,8 @@ export function Shell({
       {/* The sidebar column stretches with the page (no gap under it on long
           pages or in full-page captures); the menu inside sticks to the viewport. */}
       <aside className="hidden w-[272px] shrink-0 border-r border-dc-line bg-dc-sidebar lg:block">
-        <div className="sticky top-0 flex h-dvh flex-col gap-5 p-4">
+        {/* z-30 so the notification panel, which overflows the sidebar, stays above the page content. */}
+        <div className="sticky top-0 z-30 flex h-dvh flex-col gap-5 p-4">
         <div className="flex items-center justify-between pl-2 pt-1">
           <Link href="/" aria-label="DuaCincin, ke beranda" className="inline-flex min-h-11 items-center rounded-md">
             <BrandLogo size={24} />

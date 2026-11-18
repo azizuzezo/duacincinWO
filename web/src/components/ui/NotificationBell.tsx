@@ -87,7 +87,12 @@ export function NotificationBell({ light = false }: { light?: boolean } = {}) {
       </button>
 
       {open && (
-        <div role="dialog" aria-label="Notifikasi" className="absolute right-0 z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-dc-line bg-dc-white text-left shadow-float">
+        // Mobile: the bell sits left of the avatar button in the top bar, so a
+        // panel anchored to the bell ran off the left edge; span the screen
+        // instead. Desktop: the bell is at the right edge of the 272px
+        // sidebar, so open rightwards over the content rather than leftwards
+        // off-screen.
+        <div role="dialog" aria-label="Notifikasi" className="fixed inset-x-4 top-[4.5rem] z-50 overflow-hidden rounded-xl border border-dc-line bg-dc-white text-left shadow-float lg:absolute lg:inset-x-auto lg:left-0 lg:top-full lg:mt-2 lg:w-80">
           <div className="flex items-center justify-between border-b border-dc-line px-4 py-3">
             <p className="font-heading text-xl font-semibold text-dc-ink">Notifikasi</p>
             {unread > 0 && (
