@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"duacincin/server/internal/repository"
 )
@@ -79,6 +80,11 @@ func (d *Deps) participantLabel(ctx context.Context, conv *repository.Conversati
 // process's /deliver endpoint. Best-effort: a delivery failure only logs,
 // since the message is already safely stored in the conversation either way.
 func (d *Deps) deliver(ctx context.Context, jid, text string) {
+	// Shared engine (dc-wa-engine through the invitation product's relay).
+	if d.Cfg.WARelayURL != "" {
+		d.deliverViaRelay(ctx, jid, text)
+		return
+	}
 	if d.Cfg.WhatsAppBotCallbackURL == "" {
 		log.Printf("whatsapp deliver: WHATSAPP_BOT_CALLBACK_URL not set, dropping message to %s", jid)
 		return
@@ -106,3 +112,30 @@ func (d *Deps) deliver(ctx context.Context, jid, text string) {
 		log.Printf("whatsapp deliver: bot returned status %d", resp.StatusCode)
 	}
 }
+
+// deliverViaRelay queues the message on the shared dc-wa-engine (the
+// invitation product's api/wa.js ?action=relay). Best-effort like the bot
+// path: the message is already stored in the conversation either way.
+func (d *Deps) deliverViaRelay(ctx context.Context, jid, text string) {
+	payload, err := json.Marshal(map[string]string{"jid": jid, "text": text})
+	if err != nil {
+		return
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, d.Cfg.WARelayURL, bytes.NewReader(payload))
+	if err != nil {
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Bot-Secret", d.Cfg.WhatsAppBotSecret)
+	resp, err := relayClient.Do(req)
+	if err != nil {
+		log.Printf("whatsapp relay: %v", err)
+		return
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		log.Printf("whatsapp relay: status %d", resp.StatusCode)
+	}
+}
+
+var relayClient = &http.Client{Timeout: 15 * time.Second}

@@ -38,6 +38,12 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 
 ## Changelog
 
+### 2026-11-19 — WhatsApp WO lewat dc-wa-engine bersama (nomor resmi undangan)
+- **Apa:** DuaCincin WO memakai mesin WhatsApp produk undangan (`undanganonline/services/wa-engine`, whatsmeow, jalan 24/7 di server Geminay) dan nomor resminya, menggantikan `whatsapp-bot/` (Baileys).
+- **Masuk:** mesin meneruskan setiap teks ke `POST /api/v1/whatsapp/inbound` (header `X-Bot-Secret`) dan mengirim `reply`. Karena nomornya dipakai bersama undangan, WO hanya menjawab pengirim yang sudah dikenal, atau pesan pertama berisi email akun / kata "DuaCincin"; balasan tamu undangan diabaikan tanpa dicatat (`wantsWO`, `WhatsAppLinkRepo.Exists`).
+- **Keluar:** `deliver` memanggil `api/wa.js?action=relay` milik undangan kalau `WA_RELAY_URL` diisi (tugas diantrikan tanpa ditunggu, jadi tidak gagal saat nomor sedang kirim undangan massal). Kosong = tetap lewat `whatsapp-bot/`.
+- **Env:** WO `WA_RELAY_URL`; undangan (Vercel) `WHATSAPP_BOT_SECRET`; mesin (Geminay) `WO_INBOUND_URL`, `WO_BOT_SECRET`. Nilai rahasia sama di ketiganya.
+
 ### 2026-11-19 — Kirana: kenalan, kartu vendor dengan portofolio, cadangan ke Wedding Consultant
 - **Kenalan:** pengunjung baru diminta nama panggilan dan umur (opsional, bisa dilewati) lewat form di dalam chat. Disimpan di `ai_chat_sessions` (migrasi `000030_ai_chat_profile`), endpoint `PUT /api/v1/ai/profile`, ikut dikirim di `GET /api/v1/ai/history`. Kirana menyapa "Halo Kak {nama}" di /kirana, landing, dan launcher, dan nama masuk ke prompt.
 - **Wedding Consultant:** kartu muncul otomatis hanya kalau vendor tidak ditemukan, atau lewat alat `hubungi_konsultan` yang hanya boleh dipanggil kalau pengguna jelas meminta konsultan/manusia. Kalau AI bermasalah (gateway error, timeout, limit, koneksi putus), di bawah pesan error selalu ada kartu konsultan gratis. /kirana saat AI mati menampilkan halaman "Kirana sedang istirahat" dengan tombol ke konsultan.

@@ -34,6 +34,10 @@ type Config struct {
 	// whatsapp-bot/ relay process in both directions (see internal/whatsapp).
 	WhatsAppBotSecret      string
 	WhatsAppBotCallbackURL string
+	// WARelayURL sends WhatsApp messages through the invitation product's
+	// shared engine (invitation's api/wa.js ?action=relay, authenticated with
+	// WhatsAppBotSecret). Set it to retire whatsapp-bot/; empty keeps the bot.
+	WARelayURL string
 
 	// DuaCincin Invitation link (internal/invitationlink). WOLinkSecret is
 	// shared with the invitation app (same WO_LINK_SECRET there) and is
@@ -94,6 +98,7 @@ func Load() (*Config, error) {
 
 		WhatsAppBotSecret:      os.Getenv("WHATSAPP_BOT_SECRET"),
 		WhatsAppBotCallbackURL: os.Getenv("WHATSAPP_BOT_CALLBACK_URL"),
+		WARelayURL:             strings.TrimSpace(os.Getenv("WA_RELAY_URL")),
 
 		InvitationBaseURL: strings.TrimRight(getEnv("INVITATION_BASE_URL", "https://invitation.duacincin.id"), "/"),
 		WOLinkSecret:      os.Getenv("WO_LINK_SECRET"),

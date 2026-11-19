@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -38,6 +39,20 @@ func Inbound(deps *Deps) http.HandlerFunc {
 		var req inboundRequest
 		if err := httpx.DecodeJSON(w, r, &req); err != nil || req.Phone == "" || req.JID == "" {
 			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
+			return
+		}
+
+		// The official number is shared with DuaCincin's invitation product:
+		// guests reply to invitations on it too. Someone WO does not know yet
+		// is only answered when they clearly talk to WO (send their account
+		// email or mention DuaCincin); anyone else gets no reply and no row.
+		known, err := deps.Links.Exists(r.Context(), req.Phone)
+		if err != nil {
+			httpx.Error(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+		if !known && !wantsWO(req.Text) {
+			httpx.JSON(w, http.StatusOK, inboundResponse{})
 			return
 		}
 
@@ -316,4 +331,13 @@ func messagePayload(m *repository.Message) map[string]any {
 		"flagged":    m.Flagged,
 		"created_at": m.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
+}
+
+var woTrigger = regexp.MustCompile(`(?i)\b(duacincin|dua cincin|duacincin\.id|hubungkan|tautkan|daftar wo)\b`)
+
+// wantsWO tells a first message meant for DuaCincin WO (an account email,
+// or naming DuaCincin) from an invitation guest's reply.
+func wantsWO(text string) bool {
+	t := strings.TrimSpace(text)
+	return looksLikeEmail(t) || woTrigger.MatchString(t)
 }

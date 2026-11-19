@@ -57,6 +57,15 @@ func (r *WhatsAppLinkRepo) GetOrCreate(ctx context.Context, phone, jid string) (
 	return scanWhatsAppLink(row)
 }
 
+// Exists reports whether this phone has ever started linking with WO.
+// The official number is shared with the invitation product, so an
+// unknown sender is not given a row until they clearly talk to WO.
+func (r *WhatsAppLinkRepo) Exists(ctx context.Context, phone string) (bool, error) {
+	var ok bool
+	err := r.pool.QueryRow(ctx, `select exists(select 1 from whatsapp_links where phone = $1)`, phone).Scan(&ok)
+	return ok, err
+}
+
 func (r *WhatsAppLinkRepo) GetByUserID(ctx context.Context, userID string) (*WhatsAppLink, error) {
 	row := r.pool.QueryRow(ctx, `select `+whatsAppLinkColumns+` from whatsapp_links where user_id = $1`, userID)
 	l, err := scanWhatsAppLink(row)
