@@ -229,11 +229,12 @@ func VerifyWhatsAppCode(d *Deps) http.HandlerFunc {
 		}
 
 		if user, err := d.Users.GetByID(ctx, claims.UserID); err == nil {
-			text := welcomeText(user, d.Cfg.WebBaseURL)
+			jid := v.Phone + "@s.whatsapp.net"
 			if hadNumber {
-				text = numberChangedText(user)
+				d.deliver(ctx, jid, numberChangedText(user))
+			} else {
+				d.deliverImage(ctx, jid, welcomeText(user, d.Cfg.WebBaseURL), welcomeImageURL(user, d.Cfg.WebBaseURL))
 			}
-			d.deliver(ctx, v.Phone+"@s.whatsapp.net", text)
 		}
 		st, _ := d.waStatus(ctx, claims.UserID)
 		httpx.JSON(w, http.StatusOK, st)
@@ -300,6 +301,15 @@ Atur rencana & budget: %s/client/dashboard
 Setiap ada pesan baru dari vendor, kami kabari di sini lengkap dengan link untuk membalasnya.
 
 _Nomor ini khusus notifikasi, pesan yang dikirim ke sini tidak dibalas._`, name, base, base)
+}
+
+// welcomeImageURL is the welcome card sent with welcomeText (web/public/wa).
+func welcomeImageURL(u *repository.User, webBase string) string {
+	kind := "client"
+	if u.Role == auth.RoleVendor {
+		kind = "vendor"
+	}
+	return strings.TrimRight(webBase, "/") + "/wa/welcome-" + kind + ".jpg"
 }
 
 // numberChangedText confirms a changed WhatsApp number.

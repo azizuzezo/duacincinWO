@@ -126,6 +126,18 @@ func (d *Deps) participantLabel(ctx context.Context, conv *repository.Conversati
 // deliver pushes an outbound WhatsApp message to the whatsapp-bot/
 // process's /deliver endpoint. Best-effort: a delivery failure only logs,
 // since the message is already safely stored in the conversation either way.
+// deliverImage is deliver with a picture (a public https URL) on top, the
+// text becoming its caption. Without the shared engine it sends the text.
+func (d *Deps) deliverImage(ctx context.Context, jid, text, imageURL string) {
+	if d.Cfg.WARelayURL == "" {
+		d.deliver(ctx, jid, text)
+		return
+	}
+	if err := d.relaySend(ctx, jid, text, imageURL); err != nil {
+		log.Printf("whatsapp relay: %v", err)
+	}
+}
+
 func (d *Deps) deliver(ctx context.Context, jid, text string) {
 	// Shared engine (dc-wa-engine through the invitation product's relay).
 	if d.Cfg.WARelayURL != "" {
@@ -169,7 +181,7 @@ func (d *Deps) deliver(ctx context.Context, jid, text string) {
 // Best-effort like the bot path: the message is already stored in the
 // conversation either way.
 func (d *Deps) deliverViaRelay(ctx context.Context, jid, text string) {
-	if err := d.relaySend(ctx, jid, text); err != nil {
+	if err := d.relaySend(ctx, jid, text, ""); err != nil {
 		log.Printf("whatsapp relay: %v", err)
 	}
 }
@@ -188,13 +200,19 @@ func (d *Deps) sendNow(ctx context.Context, phone, text string) error {
 		d.deliver(ctx, jid, text)
 		return nil
 	}
-	return d.relaySend(ctx, jid, text)
+	return d.relaySend(ctx, jid, text, "")
 }
 
 // relaySend posts one message to the invitation product's ?action=relay,
 // which queues it on dc-wa-engine for the official number.
-func (d *Deps) relaySend(ctx context.Context, jid, text string) error {
-	payload, err := json.Marshal(map[string]string{"jid": jid, "text": text})
+func (d *Deps) relaySend(ctx context.Context, jid, text, imageURL string) error {
+	body := map[string]string{"jid": jid, "text": text}
+	if imageURL != "" {
+		// The engine sends it as a WhatsApp image with text as the caption;
+		// an engine that predates images just sends the text.
+		body["image_url"] = imageURL
+	}
+	payload, err := json.Marshal(body)
 	if err != nil {
 		return err
 	}
