@@ -33,6 +33,8 @@ type Deps struct {
 	Reviews       *repository.ReviewRepo
 	Disbursements *repository.DisbursementRepo
 	Packages      *repository.PackageRepo
+	// WhatsApp, when set, makes a verified number win over the form value.
+	WhatsApp *repository.WhatsAppLinkRepo
 }
 
 func NewDeps(vendors *repository.VendorRepo, nameChange *repository.VendorNameChangeRepo, storageClient *storage.Client, reviews *repository.ReviewRepo, disbursements *repository.DisbursementRepo) *Deps {

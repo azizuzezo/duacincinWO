@@ -11,6 +11,7 @@ import { nextFromLocation } from "@/components/auth/redirect";
 import { Button } from "@/components/Button";
 import { PasswordField } from "@/components/PasswordField";
 import { TextField } from "@/components/TextField";
+import { Input } from "@/components/ui/Field";
 import { OtpInput } from "@/components/ui/OtpInput";
 import { apiPost, ApiError } from "@/lib/api";
 
@@ -73,6 +74,7 @@ function RegisterContent() {
   const [role, setRole] = useState<Role | null>(initialRole);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [password, setPassword] = useState("");
   // Vendors tick the partnership agreement; couples accept by signing up.
   const [acceptTerms, setAcceptTerms] = useState(false);
@@ -123,6 +125,7 @@ function RegisterContent() {
         email,
         password,
         full_name: name,
+        whatsapp,
         accept_terms: role === "vendor" ? acceptTerms : true,
         signup_ticket: ticket,
         otp_code: otp,
@@ -159,6 +162,7 @@ function RegisterContent() {
     setRole(null);
     setName("");
     setEmail("");
+    setWhatsapp("");
     setPassword("");
     setAcceptTerms(false);
     setError(null);
@@ -251,6 +255,21 @@ function RegisterContent() {
             onChange={setName}
           />
           <TextField label="Email" type="email" autoComplete="email" value={email} onChange={setEmail} />
+          <Input
+            label="Nomor WhatsApp"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            placeholder="0812 3456 7890"
+            value={whatsapp}
+            onChange={(e) => setWhatsapp(e.target.value)}
+            hint={
+              role === "vendor"
+                ? "Pesan dari calon pengantin diteruskan ke sini lewat WhatsApp resmi DuaCincin. Diverifikasi dengan kode setelah daftar."
+                : "Balasan vendor diteruskan ke sini lewat WhatsApp resmi DuaCincin. Diverifikasi dengan kode setelah daftar. Hanya admin yang bisa melihatnya."
+            }
+            required
+          />
           <PasswordField
             label="Password"
             autoComplete="new-password"

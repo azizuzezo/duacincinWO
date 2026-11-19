@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { FOCUS } from "@/app/client/_ui";
 import { PasswordSection } from "@/components/PasswordSection";
+import { WhatsAppNumberCard } from "@/components/wa/WhatsAppVerify";
 import { CLIENT_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
 import { Card } from "@/components/ui/Card";
@@ -78,6 +79,8 @@ function ClientAccountContent({ user }: { user: CurrentUser }) {
                 </div>
               </dl>
             </Card>
+
+            <WhatsAppNumberCard />
 
             <Card className="p-6 sm:p-8">
               <PasswordSection />

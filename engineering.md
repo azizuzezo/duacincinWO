@@ -38,6 +38,16 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 
 ## Changelog
 
+### 2026-11-19 — Nomor WhatsApp wajib & diverifikasi lewat kode WA
+
+- Klien dan vendor wajib punya nomor WhatsApp terverifikasi. Pendaftaran meminta nomornya (`whatsapp`, wajib); akun lama dan akun Google diminta lewat popup yang tidak bisa ditutup (`WhatsAppGate` di `WithUser`) sampai nomornya terverifikasi.
+- Verifikasi: `POST /whatsapp/me/code` mengirim kode 6 digit lewat nomor resmi (relay undangan), `POST /whatsapp/me/verify` memeriksanya (berlaku 10 menit, 5 kali salah, jeda kirim ulang 60 detik, 5 kode per jam). Tabel baru `whatsapp_verifications` (migrasi 000031) hanya menyimpan nomor yang sedang diverifikasi; `whatsapp_links` tetap sumber nomor yang sudah terverifikasi. Satu nomor hanya untuk satu akun.
+- Penautan email+OTP dari dalam WhatsApp dihapus. Inbound mengenali pengirim dari nomor terverifikasi; nomor tak dikenal yang menyebut DuaCincin mendapat petunjuk verifikasi (paling sering 1x per 6 jam), tamu undangan tetap tidak dibalas.
+- Nomor vendor di profil mengikuti nomor terverifikasi (diganti lewat "Ganti nomor", bukan diketik di form). Nomor klien hanya terlihat oleh pemiliknya dan admin.
+- Beranda admin: kartu WhatsApp (status nomor resmi lewat `?action=relay_status` di `api/wa.js` undangan, jumlah klien/vendor terverifikasi, tombol "Hubungkan ulang" ke panel admin undangan, tempat satu-satunya nomor resmi di-scan). Kalau relay menjawab 409 (nomor resmi terputus), semua admin dapat notifikasi, paling sering 1x per jam.
+- Pesan dari percakapan lain kini dikirim utuh dengan nama pengirim dan kode percakapan, bukan hanya "ada pesan baru".
+- Env baru (opsional): `WA_ADMIN_URL`, `WEB_BASE_URL`.
+
 ### 2026-11-19 — WhatsApp WO lewat dc-wa-engine bersama (nomor resmi undangan)
 - **Apa:** DuaCincin WO memakai mesin WhatsApp produk undangan (`undanganonline/services/wa-engine`, whatsmeow, jalan 24/7 di server Geminay) dan nomor resminya, menggantikan `whatsapp-bot/` (Baileys).
 - **Masuk:** mesin meneruskan setiap teks ke `POST /api/v1/whatsapp/inbound` (header `X-Bot-Secret`) dan mengirim `reply`. Karena nomornya dipakai bersama undangan, WO hanya menjawab pengirim yang sudah dikenal, atau pesan pertama berisi email akun / kata "DuaCincin"; balasan tamu undangan diabaikan tanpa dicatat (`wantsWO`, `WhatsAppLinkRepo.Exists`).

@@ -1,6 +1,7 @@
 package vendors
 
 import (
+	"duacincin/server/internal/waphone"
 	"net/http"
 	"strings"
 
@@ -139,6 +140,13 @@ func UpsertProfile(deps *Deps) http.HandlerFunc {
 			}
 			whatsapp = n
 		}
+		// The number verified over WhatsApp is the vendor's number; it is
+		// changed by verifying a new one, never by typing it on this form.
+		if deps.WhatsApp != nil {
+			if link, err := deps.WhatsApp.GetByUserID(r.Context(), claims.UserID); err == nil && link.LinkState == repository.WhatsAppLinkStateLinked {
+				whatsapp = link.Phone
+			}
+		}
 		if whatsapp == "" {
 			httpx.Error(w, http.StatusBadRequest, "nomor WhatsApp wajib diisi")
 			return
@@ -165,30 +173,7 @@ func UpsertProfile(deps *Deps) http.HandlerFunc {
 // ("0812-3456-7890", "+62 812 3456 7890", "812 3456 7890") into digits
 // starting with 628. Mobile numbers are 628 followed by 7 to 11 digits.
 func NormalizeWhatsApp(raw string) (string, bool) {
-	var b strings.Builder
-	for i, r := range strings.TrimSpace(raw) {
-		switch {
-		case r >= '0' && r <= '9':
-			b.WriteRune(r)
-		case r == '+' && i == 0, r == ' ', r == '-', r == '.', r == '(', r == ')':
-		default:
-			return "", false
-		}
-	}
-	d := b.String()
-	switch {
-	case strings.HasPrefix(d, "62"):
-	case strings.HasPrefix(d, "0"):
-		d = "62" + d[1:]
-	case strings.HasPrefix(d, "8"):
-		d = "62" + d
-	default:
-		return "", false
-	}
-	if !strings.HasPrefix(d, "628") || len(d) < 10 || len(d) > 14 {
-		return "", false
-	}
-	return d, true
+	return waphone.Normalize(raw)
 }
 
 // normalizeCategories checks each category, keeps the order given (the first

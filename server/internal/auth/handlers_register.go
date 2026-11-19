@@ -9,9 +9,13 @@ import (
 	"duacincin/server/internal/httpx"
 	"duacincin/server/internal/repository"
 	"duacincin/server/internal/security"
+	"duacincin/server/internal/waphone"
 )
 
 var emailRe = regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
+
+// noUser is a UUID no account has, for "taken by any account" checks.
+const noUser = "00000000-0000-0000-0000-000000000000"
 
 const (
 	registerRateLimitPerIPPerHour = 5
@@ -23,6 +27,8 @@ type registerRequest struct {
 	Password    string `json:"password"`
 	FullName    string `json:"full_name"`
 	AcceptTerms bool   `json:"accept_terms"`
+	// WhatsApp is required: chats are relayed there once it is verified.
+	WhatsApp string `json:"whatsapp"`
 	// From RequestSignupOTP: the signed ticket and the code emailed with it.
 	SignupTicket string `json:"signup_ticket"`
 	OTPCode      string `json:"otp_code"`
@@ -52,6 +58,21 @@ func Register(deps *Deps, role, agreementType string) http.HandlerFunc {
 		if len(req.Password) < minPasswordLength {
 			httpx.Error(w, http.StatusBadRequest, "password minimal 8 karakter")
 			return
+		}
+		whatsapp, ok := waphone.Normalize(req.WhatsApp)
+		if strings.TrimSpace(req.WhatsApp) == "" {
+			httpx.Error(w, http.StatusBadRequest, "nomor WhatsApp wajib diisi")
+			return
+		}
+		if !ok {
+			httpx.Error(w, http.StatusBadRequest, "nomor WhatsApp tidak valid, contoh: 0812 3456 7890")
+			return
+		}
+		if deps.WhatsApp != nil {
+			if taken, err := deps.WhatsApp.PhoneTakenByOther(r.Context(), whatsapp, noUser); err == nil && taken {
+				httpx.Error(w, http.StatusConflict, "nomor WhatsApp ini sudah dipakai akun DuaCincin lain")
+				return
+			}
 		}
 		if !req.AcceptTerms {
 			httpx.Error(w, http.StatusBadRequest, "kamu harus menyetujui Perjanjian/Ketentuan Layanan untuk mendaftar")
@@ -92,6 +113,11 @@ func Register(deps *Deps, role, agreementType string) http.HandlerFunc {
 		if err := deps.Agreements.RecordAcceptance(r.Context(), user.ID, agreementType); err != nil {
 			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
 			return
+		}
+
+		if deps.WhatsApp != nil {
+			// Best-effort: if this fails the account just asks for the number again.
+			_ = deps.WhatsApp.SetPendingPhone(r.Context(), user.ID, whatsapp)
 		}
 
 		token, err := security.IssueSessionToken(deps.Cfg.JWTSecret, user.ID, user.Role)

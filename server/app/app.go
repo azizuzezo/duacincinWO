@@ -135,22 +135,21 @@ func New(ctx context.Context, opts Options) (*App, error) {
 	// wired to the relay here so a new message sent from the web app also
 	// gets forwarded to WhatsApp when the other participant is linked.
 	chatDeps.Notifier = whatsappDeps
+	whatsappDeps.Notifications = notificationRepo
 	chatDeps.Mailer, chatDeps.Cfg = mailer, cfg
 
 	agreementRepo := repository.NewAgreementRepo(pool)
 	inspirationRepo := repository.NewInspirationRepo(pool)
 
+	authDeps := auth.NewDeps(userRepo, otpRepo, agreementRepo, limiter, mailer, cfg)
+	authDeps.WhatsApp = whatsappLinkRepo
+	vendorsDeps := vendors.NewDeps(vendorRepo, vendorNameChangeRepo, storageClient, reviewRepo, disbursementRepo)
+	vendorsDeps.WhatsApp = whatsappLinkRepo
+
 	deps := httpserver.Deps{
-		GoogleAuth: googleauth.NewDeps(userRepo, agreementRepo, limiter, cfg),
-		Auth: auth.NewDeps(
-			userRepo,
-			otpRepo,
-			agreementRepo,
-			limiter,
-			mailer,
-			cfg,
-		),
-		Vendors:        vendors.NewDeps(vendorRepo, vendorNameChangeRepo, storageClient, reviewRepo, disbursementRepo),
+		GoogleAuth:     googleauth.NewDeps(userRepo, agreementRepo, limiter, cfg),
+		Auth:           authDeps,
+		Vendors:        vendorsDeps,
 		Admin:          admin.NewDeps(vendorRepo, vendorNameChangeRepo, disbursementRepo, disputeRepo, userRepo, bookingRepo, auditLogRepo, notificationRepo, storageClient, vendors.PortfolioBucket),
 		Chat:           chatDeps,
 		Whatsapp:       whatsappDeps,

@@ -17,6 +17,9 @@ type Deps struct {
 	Limiter    *ratelimit.Limiter
 	Mailer     *email.Client
 	Cfg        *config.Config
+	// WhatsApp records the number typed at registration, to be verified
+	// by a WhatsApp code once signed in.
+	WhatsApp *repository.WhatsAppLinkRepo
 }
 
 func NewDeps(users *repository.UserRepo, otps *repository.OTPRepo, agreements *repository.AgreementRepo, limiter *ratelimit.Limiter, mailer *email.Client, cfg *config.Config) *Deps {

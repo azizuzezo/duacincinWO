@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"strings"
 	"time"
 
+	"duacincin/server/internal/auth"
 	"duacincin/server/internal/repository"
 )
 
@@ -57,7 +59,10 @@ func (d *Deps) RelayNewMessage(ctx context.Context, conv *repository.Conversatio
 		d.deliver(ctx, link.JID, fmt.Sprintf("Pesan baru dari %s lewat DuaCincin:\n%s", senderLabel, body))
 
 	default:
-		d.deliver(ctx, link.JID, "Ada pesan baru di percakapan lain. Ketik 'menu' untuk pindah.")
+		// Another thread is in focus: still show who wrote and what, so the
+		// recipient knows at once whose message it is, and how to answer it.
+		d.deliver(ctx, link.JID, fmt.Sprintf("*%s* · #%s\n%s\n\n_Untuk membalas %s, ketik 'menu' lalu pilih percakapannya._",
+			senderLabel, convCode(conv.ID), body, senderLabel))
 	}
 }
 
@@ -113,29 +118,90 @@ func (d *Deps) deliver(ctx context.Context, jid, text string) {
 	}
 }
 
-// deliverViaRelay queues the message on the shared dc-wa-engine (the
-// invitation product's api/wa.js ?action=relay). Best-effort like the bot
-// path: the message is already stored in the conversation either way.
+// deliverViaRelay queues the message on the shared dc-wa-engine.
+// Best-effort like the bot path: the message is already stored in the
+// conversation either way.
 func (d *Deps) deliverViaRelay(ctx context.Context, jid, text string) {
+	if err := d.relaySend(ctx, jid, text); err != nil {
+		log.Printf("whatsapp relay: %v", err)
+	}
+}
+
+// errOfficialDown: the official number is not linked to the engine.
+var errOfficialDown = errors.New("official WhatsApp number is disconnected")
+
+// sendNow sends text to phone (628...) and reports whether it was accepted,
+// for the cases where the caller must know (a verification code).
+func (d *Deps) sendNow(ctx context.Context, phone, text string) error {
+	jid := phone + "@s.whatsapp.net"
+	if d.Cfg.WARelayURL == "" {
+		if d.Cfg.WhatsAppBotCallbackURL == "" {
+			return errors.New("no WhatsApp transport configured")
+		}
+		d.deliver(ctx, jid, text)
+		return nil
+	}
+	return d.relaySend(ctx, jid, text)
+}
+
+// relaySend posts one message to the invitation product's ?action=relay,
+// which queues it on dc-wa-engine for the official number.
+func (d *Deps) relaySend(ctx context.Context, jid, text string) error {
 	payload, err := json.Marshal(map[string]string{"jid": jid, "text": text})
 	if err != nil {
-		return
+		return err
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, d.Cfg.WARelayURL, bytes.NewReader(payload))
 	if err != nil {
-		return
+		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Bot-Secret", d.Cfg.WhatsAppBotSecret)
 	resp, err := relayClient.Do(req)
 	if err != nil {
-		log.Printf("whatsapp relay: %v", err)
-		return
+		return err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusConflict {
+		d.alertOfficialDown(context.WithoutCancel(ctx))
+		return errOfficialDown
+	}
 	if resp.StatusCode >= 300 {
-		log.Printf("whatsapp relay: status %d", resp.StatusCode)
+		return fmt.Errorf("relay status %d", resp.StatusCode)
+	}
+	return nil
+}
+
+// alertOfficialDown tells every admin, at most once an hour, that the
+// official number dropped, so it is re-linked before people notice.
+func (d *Deps) alertOfficialDown(ctx context.Context) {
+	if d.Notifications == nil {
+		return
+	}
+	if ok, err := d.Limiter.Allow(ctx, "wa-official-down", "wa_official_down_alert", 1, time.Hour); err != nil || !ok {
+		return
+	}
+	staff, err := d.Users.ListStaff(ctx)
+	if err != nil {
+		return
+	}
+	link := "/internal/admin/dashboard"
+	for _, u := range staff {
+		if u.Role != auth.RoleAdmin {
+			continue
+		}
+		_ = d.Notifications.Create(ctx, u.ID, "whatsapp_down", "WhatsApp DuaCincin terputus",
+			"Nomor resmi tidak terhubung, jadi pesan chat dan kode verifikasi tidak terkirim ke WhatsApp. Hubungkan ulang dari beranda admin.", &link)
 	}
 }
 
 var relayClient = &http.Client{Timeout: 15 * time.Second}
+
+// convCode is a short, stable tag for a conversation shown in WhatsApp.
+func convCode(id string) string {
+	c := strings.ToUpper(strings.ReplaceAll(id, "-", ""))
+	if len(c) > 4 {
+		c = c[:4]
+	}
+	return c
+}

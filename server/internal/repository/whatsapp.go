@@ -66,6 +66,16 @@ func (r *WhatsAppLinkRepo) Exists(ctx context.Context, phone string) (bool, erro
 	return ok, err
 }
 
+// GetByPhone returns the row for phone, or ErrNotFound.
+func (r *WhatsAppLinkRepo) GetByPhone(ctx context.Context, phone string) (*WhatsAppLink, error) {
+	row := r.pool.QueryRow(ctx, `select `+whatsAppLinkColumns+` from whatsapp_links where phone = $1`, phone)
+	l, err := scanWhatsAppLink(row)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	return l, err
+}
+
 func (r *WhatsAppLinkRepo) GetByUserID(ctx context.Context, userID string) (*WhatsAppLink, error) {
 	row := r.pool.QueryRow(ctx, `select `+whatsAppLinkColumns+` from whatsapp_links where user_id = $1`, userID)
 	l, err := scanWhatsAppLink(row)

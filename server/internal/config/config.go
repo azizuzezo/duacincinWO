@@ -38,6 +38,11 @@ type Config struct {
 	// shared engine (invitation's api/wa.js ?action=relay, authenticated with
 	// WhatsAppBotSecret). Set it to retire whatsapp-bot/; empty keeps the bot.
 	WARelayURL string
+	// WebBaseURL is the public web app, used in links sent over WhatsApp.
+	WebBaseURL string
+	// WAAdminURL is where an admin re-links the official WhatsApp number
+	// (the invitation product's admin panel owns that session).
+	WAAdminURL string
 
 	// DuaCincin Invitation link (internal/invitationlink). WOLinkSecret is
 	// shared with the invitation app (same WO_LINK_SECRET there) and is
@@ -99,8 +104,10 @@ func Load() (*Config, error) {
 		WhatsAppBotSecret:      os.Getenv("WHATSAPP_BOT_SECRET"),
 		WhatsAppBotCallbackURL: os.Getenv("WHATSAPP_BOT_CALLBACK_URL"),
 		WARelayURL:             strings.TrimSpace(os.Getenv("WA_RELAY_URL")),
+		WebBaseURL:             strings.TrimRight(getEnv("WEB_BASE_URL", "https://duacincin.id"), "/"),
 
 		InvitationBaseURL: strings.TrimRight(getEnv("INVITATION_BASE_URL", "https://invitation.duacincin.id"), "/"),
+		WAAdminURL:        strings.TrimSpace(os.Getenv("WA_ADMIN_URL")),
 		WOLinkSecret:      os.Getenv("WO_LINK_SECRET"),
 
 		GoogleClientID: strings.TrimSpace(os.Getenv("GOOGLE_CLIENT_ID")),

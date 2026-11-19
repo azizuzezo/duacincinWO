@@ -26,6 +26,8 @@ type Deps struct {
 	Hub      *chat.Hub
 	Mailer   *email.Client
 	Cfg      *config.Config
+	// Notifications, when set, alerts admins if the official number drops.
+	Notifications *repository.NotificationRepo
 }
 
 func NewDeps(

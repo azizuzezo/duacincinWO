@@ -12,13 +12,9 @@ import (
 
 	"duacincin/server/internal/auth"
 	"duacincin/server/internal/chat"
-	"duacincin/server/internal/email"
 	"duacincin/server/internal/httpx"
 	"duacincin/server/internal/repository"
-	"duacincin/server/internal/security"
 )
-
-const linkOTPTTL = 5 * time.Minute
 
 type inboundRequest struct {
 	JID   string `json:"jid"`
@@ -30,10 +26,10 @@ type inboundResponse struct {
 	Reply string `json:"reply"`
 }
 
-// Inbound is the one webhook whatsapp-bot/ calls for every inbound
-// WhatsApp text message. It never has any WhatsApp-specific behavior of
-// its own beyond bookkeeping the link row — all decisions are made by
-// handleMessage's state machine.
+// Inbound is the one webhook the WhatsApp engine calls for every text that
+// reaches the official number. A number is recognised only once its owner
+// has verified it from their DuaCincin account (a code sent to this number);
+// there is no linking from inside WhatsApp any more.
 func Inbound(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req inboundRequest
@@ -41,110 +37,54 @@ func Inbound(deps *Deps) http.HandlerFunc {
 			httpx.Error(w, http.StatusBadRequest, "data yang dikirim tidak lengkap, coba lagi")
 			return
 		}
+		ctx := r.Context()
+		text := strings.TrimSpace(req.Text)
 
-		// The official number is shared with DuaCincin's invitation product:
-		// guests reply to invitations on it too. Someone WO does not know yet
-		// is only answered when they clearly talk to WO (send their account
-		// email or mention DuaCincin); anyone else gets no reply and no row.
-		known, err := deps.Links.Exists(r.Context(), req.Phone)
-		if err != nil {
+		link, err := deps.Links.GetByPhone(ctx, req.Phone)
+		if err != nil && !errors.Is(err, repository.ErrNotFound) {
 			httpx.Error(w, http.StatusInternalServerError, "internal error")
 			return
 		}
-		if !known && !wantsWO(req.Text) {
-			httpx.JSON(w, http.StatusOK, inboundResponse{})
+		if link == nil || link.LinkState != repository.WhatsAppLinkStateLinked || link.UserID == nil {
+			httpx.JSON(w, http.StatusOK, inboundResponse{Reply: deps.unknownSenderReply(ctx, req.Phone, text, link != nil)})
 			return
 		}
-
-		link, err := deps.Links.GetOrCreate(r.Context(), req.Phone, req.JID)
-		if err != nil {
-			httpx.Error(w, http.StatusInternalServerError, "internal error")
-			return
+		// Refresh the JID: WhatsApp's addressing for a number can change.
+		if link.JID != req.JID {
+			if fresh, err := deps.Links.GetOrCreate(ctx, req.Phone, req.JID); err == nil {
+				link = fresh
+			}
 		}
-
-		reply := deps.handleMessage(r.Context(), link, strings.TrimSpace(req.Text))
-		httpx.JSON(w, http.StatusOK, inboundResponse{Reply: reply})
+		httpx.JSON(w, http.StatusOK, inboundResponse{Reply: deps.handleMessage(ctx, link, text)})
 	}
+}
+
+// unknownSenderReply answers a number no account has verified. The official
+// number is shared with the invitation product, so invitation guests (who
+// never mention DuaCincin WO) get no reply at all; someone clearly trying
+// to reach WO is told how to verify, at most once every 6 hours.
+func (d *Deps) unknownSenderReply(ctx context.Context, phone, text string, seenBefore bool) string {
+	if !seenBefore && !wantsWO(text) {
+		return ""
+	}
+	if ok, err := d.Limiter.Allow(ctx, "wa-unknown:"+phone, "wa_unknown_reply", 1, 6*time.Hour); err != nil || !ok {
+		return ""
+	}
+	return fmt.Sprintf(`Halo! Nomor ini belum terhubung ke akun DuaCincin.
+
+Untuk chat dengan vendor atau klien lewat WhatsApp:
+1. Masuk ke %s
+2. Isi nomor WhatsApp ini saat diminta
+3. Masukkan kode verifikasi yang kami kirim ke sini
+
+Setelah terverifikasi, pesan akan diteruskan otomatis ke WhatsApp ini.`, webHost(d.Cfg.WebBaseURL))
 }
 
 func (d *Deps) handleMessage(ctx context.Context, link *repository.WhatsAppLink, text string) string {
-	// A pasted email always restarts the linking flow, even mid-OTP —
-	// simplest recovery path if the user fat-fingered the wrong address.
-	if link.LinkState != repository.WhatsAppLinkStateLinked && looksLikeEmail(text) {
-		return d.handleEmailStep(ctx, link, text)
-	}
-
-	if link.LinkState == repository.WhatsAppLinkStateLinked && strings.EqualFold(text, "menu") {
+	if strings.EqualFold(text, "menu") {
 		return d.showMainMenu(ctx, link)
 	}
-
-	switch link.LinkState {
-	case repository.WhatsAppLinkStateAwaitingOTP:
-		return d.handleOTPStep(ctx, link, text)
-	case repository.WhatsAppLinkStateLinked:
-		return d.handleLinked(ctx, link, text)
-	default: // awaiting_email
-		return d.handleEmailStep(ctx, link, text)
-	}
-}
-
-func (d *Deps) handleEmailStep(ctx context.Context, link *repository.WhatsAppLink, text string) string {
-	if !looksLikeEmail(text) {
-		return "Selamat datang di DuaCincin! Untuk menghubungkan WhatsApp ini ke akun kamu, balas pesan ini dengan alamat email akun DuaCincin kamu."
-	}
-	email := strings.ToLower(text)
-
-	ok, err := d.Limiter.Allow(ctx, "whatsapp-link:request:"+link.Phone, "whatsapp_link_request", 5, 15*time.Minute)
-	if err != nil || !ok {
-		return "Terlalu banyak percobaan, coba lagi dalam beberapa menit."
-	}
-
-	user, err := d.Users.GetByEmail(ctx, email)
-	if err != nil {
-		return "Email tidak ditemukan. Pastikan kamu sudah punya akun DuaCincin dengan email tersebut, lalu kirim lagi emailnya."
-	}
-
-	code, err := security.GenerateOTP()
-	if err != nil {
-		return "Terjadi kesalahan, coba lagi."
-	}
-	codeHash := security.HashOTP(d.Cfg.OTPHMACSecret, code)
-	if err := d.OTP.Create(ctx, user.ID, repository.PurposePhoneLink, codeHash, linkOTPTTL); err != nil {
-		return "Terjadi kesalahan, coba lagi."
-	}
-	d.sendLinkOTPEmail(ctx, user.Email, code)
-
-	if err := d.Links.SetAwaitingOTP(ctx, link.ID, email, user.ID); err != nil {
-		return "Terjadi kesalahan, coba lagi."
-	}
-	return "Kode OTP sudah dikirim ke email kamu. Balas pesan ini dengan kode 6 digit tersebut (berlaku 5 menit)."
-}
-
-func (d *Deps) handleOTPStep(ctx context.Context, link *repository.WhatsAppLink, text string) string {
-	if link.PendingOTPUserID == nil {
-		return d.handleEmailStep(ctx, link, text)
-	}
-
-	ok, err := d.Limiter.Allow(ctx, "whatsapp-link:verify:"+link.Phone, "whatsapp_link_verify", 10, 15*time.Minute)
-	if err != nil || !ok {
-		return "Terlalu banyak percobaan verifikasi, coba lagi nanti."
-	}
-
-	const invalidMsg = "Kode OTP salah atau sudah kedaluwarsa. Kirim ulang kodenya, atau balas dengan email untuk mulai ulang."
-
-	otp, err := d.OTP.GetLatestValid(ctx, *link.PendingOTPUserID, repository.PurposePhoneLink)
-	if err != nil || !security.VerifyOTP(d.Cfg.OTPHMACSecret, text, otp.CodeHash) {
-		return invalidMsg
-	}
-	_ = d.OTP.MarkConsumed(ctx, otp.ID)
-
-	if err := d.Links.CompleteLink(ctx, link.ID, *link.PendingOTPUserID); err != nil {
-		return "Terjadi kesalahan, coba lagi."
-	}
-	link.UserID = link.PendingOTPUserID
-	link.LinkState = repository.WhatsAppLinkStateLinked
-
-	return d.showMainMenu(ctx, link)
+	return d.handleLinked(ctx, link, text)
 }
 
 func (d *Deps) handleLinked(ctx context.Context, link *repository.WhatsAppLink, text string) string {
@@ -162,7 +102,7 @@ func (d *Deps) handleLinked(ctx context.Context, link *repository.WhatsAppLink, 
 // conversation to focus on.
 func (d *Deps) showMainMenu(ctx context.Context, link *repository.WhatsAppLink) string {
 	if link.UserID == nil {
-		return d.handleEmailStep(ctx, link, "")
+		return ""
 	}
 	user, err := d.Users.GetByID(ctx, *link.UserID)
 	if err != nil {
@@ -309,18 +249,6 @@ func (d *Deps) handleChatMessage(ctx context.Context, link *repository.WhatsAppL
 	// No extra reply text — the bot only echoes something back to the
 	// sender when there's an actual instruction/confirmation to give.
 	return ""
-}
-
-func (d *Deps) sendLinkOTPEmail(ctx context.Context, to, code string) {
-	logoURL := ""
-	if d.Cfg.PublicAssetBaseURL != "" {
-		logoURL = strings.TrimRight(d.Cfg.PublicAssetBaseURL, "/") + "/brand/duacincin-logo.webp"
-	}
-	subject, html, err := email.RenderPhoneLinkOTPEmail(logoURL, code)
-	if err != nil {
-		return
-	}
-	_ = d.Mailer.SendWithText(ctx, to, subject, html, email.RenderPhoneLinkOTPText(code))
 }
 
 func messagePayload(m *repository.Message) map[string]any {

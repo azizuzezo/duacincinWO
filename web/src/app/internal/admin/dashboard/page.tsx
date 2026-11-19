@@ -8,6 +8,7 @@ import { Shell } from "@/components/shell/Shell";
 import { ButtonLink } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { WhatsAppAdminCard } from "@/components/wa/WhatsAppAdminCard";
 import { DashboardBanner } from "@/components/ui/DashboardBanner";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Skeleton, SkeletonGroup } from "@/components/ui/Skeleton";
@@ -215,6 +216,9 @@ function AdminDashboardContent({ user }: { user: CurrentUser }) {
                 ))}
               </dl>
             </Card>
+            <div className="mt-10">
+              <WhatsAppAdminCard />
+            </div>
           </section>
 
           <section aria-labelledby="recent-title" className="min-w-0">

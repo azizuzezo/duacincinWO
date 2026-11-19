@@ -31,10 +31,21 @@ const signupCode = async (email) => {
   }
   throw new Error(`no sign-up code logged for ${email}`);
 };
-const reg = async (who, kind, email, name) => {
+// Every sign-up needs its own WhatsApp number (one number per account).
+let waSeq = 0;
+const nextWA = () => `0857${String(stamp).slice(-5)}${String(++waSeq).padStart(2, "0")}`;
+const reg = async (who, kind, email, name, whatsapp = nextWA()) => {
   const otp = await who.call("POST", "/auth/register/otp", { email });
   if (otp.status !== 200) return otp;
-  return who.call("POST", `/auth/${kind}/register`, { email, password: PW, full_name: name, accept_terms: true, signup_ticket: otp.data.signup_ticket, otp_code: await signupCode(email) });
+  return who.call("POST", `/auth/${kind}/register`, { email, password: PW, full_name: name, accept_terms: true, whatsapp, signup_ticket: otp.data.signup_ticket, otp_code: await signupCode(email) });
+};
+const waCode = async (phone) => {
+  for (let i = 0; i < 20; i++) {
+    const all = [...readFileSync(API_LOG, "utf8").matchAll(new RegExp(`kode WhatsApp untuk ${phone}: (\\d{6})`, "g"))];
+    if (all.length) return all[all.length - 1][1];
+    await new Promise((res) => setTimeout(res, 100));
+  }
+  throw new Error(`no WhatsApp code logged for ${phone}`);
 };
 
 // 1. registration + login for all roles
@@ -43,16 +54,50 @@ r = await reg(vendor2, "vendor", `vendor2${stamp}@test.local`, "Vendor Dua"); ok
 r = await reg(client, "client", `client${stamp}@test.local`, "Client Uji"); ok("client registers", r.status < 300, JSON.stringify(r));
 await reg(admin, "client", `admin${stamp}@test.local`, "Admin Uji"); await reg(consultant, "client", `cons${stamp}@test.local`, "Konsultan Uji");
 psql(`update users set role='admin' where email='admin${stamp}@test.local'`); psql(`update users set role='wedding_consultant' where email='cons${stamp}@test.local'`);
+
+// 1b. WhatsApp number: required at sign-up, proven by a code sent over WhatsApp
+{
+  const lone = new Client("lone");
+  const otp = await lone.call("POST", "/auth/register/otp", { email: `nowa${stamp}@test.local` });
+  const noWA = await lone.call("POST", "/auth/client/register", { email: `nowa${stamp}@test.local`, password: PW, full_name: "Tanpa WA", accept_terms: true, signup_ticket: otp.data?.signup_ticket, otp_code: await signupCode(`nowa${stamp}@test.local`) });
+  ok("sign-up without a WhatsApp number is refused", noWA.status === 400 && /WhatsApp/i.test(noWA.data?.error ?? ""), JSON.stringify(noWA));
+  let w = await client.call("GET", "/whatsapp/me");
+  const cPhone = w.data?.phone;
+  ok("new client has the sign-up number waiting for verification", w.status === 200 && w.data?.verified === false && /^62857\d+$/.test(cPhone ?? ""), JSON.stringify(w));
+  w = await client.call("POST", "/whatsapp/me/code", {});
+  ok("a code is sent to the sign-up number", w.status === 200 && w.data?.code_sent === true, JSON.stringify(w));
+  w = await client.call("POST", "/whatsapp/me/code", {});
+  ok("asking again within 60s is refused", w.status === 429, JSON.stringify(w));
+  w = await client.call("POST", "/whatsapp/me/verify", { code: "000000" === (await waCode(cPhone)) ? "111111" : "000000" });
+  ok("a wrong code is refused with attempts left", w.status === 400 && /sisa/.test(w.data?.error ?? ""), JSON.stringify(w));
+  w = await client.call("POST", "/whatsapp/me/verify", { code: await waCode(cPhone) });
+  ok("the right code verifies the number", w.status === 200 && w.data?.verified === true && w.data?.phone === cPhone, JSON.stringify(w));
+  w = await vendor2.call("POST", "/whatsapp/me/code", { phone: "0" + cPhone.slice(2) });
+  ok("another account cannot take a verified number", w.status === 409, JSON.stringify(w));
+  w = await vendor.call("POST", "/whatsapp/me/code", { phone: "0812-3456-7890" });
+  ok("vendor can verify a different number than the sign-up one", w.status === 200 && w.data?.phone === "6281234567890", JSON.stringify(w));
+  w = await vendor.call("POST", "/whatsapp/me/verify", { code: await waCode("6281234567890") });
+  ok("vendor verifies its number too", w.status === 200 && w.data?.verified === true, JSON.stringify(w));
+}
 const emails = { vendor: `vendor${stamp}@test.local`, vendor2: `vendor2${stamp}@test.local`, client: `client${stamp}@test.local`, admin: `admin${stamp}@test.local`, consultant: `cons${stamp}@test.local` };
 const who = { vendor, vendor2, client, admin, consultant };
 for (const [k, c] of Object.entries(who)) { r = await c.call("POST", "/auth/login", { email: emails[k], password: PW }); ok(`${k} logs in`, r.status === 200 && !!c.cookie, JSON.stringify(r)); }
+{
+  let w;
+  w = await admin.call("GET", "/whatsapp/me");
+  ok("admin has no WhatsApp verification to do", w.status === 403, JSON.stringify(w));
+  w = await admin.call("GET", "/whatsapp/admin/status");
+  ok("admin sees WhatsApp coverage", w.status === 200 && w.data?.clients_verified >= 1 && w.data?.vendors_verified >= 1 && w.data?.official === "not_configured", JSON.stringify(w));
+  w = await client.call("GET", "/whatsapp/admin/status");
+  ok("WhatsApp status is admin-only", w.status === 403, JSON.stringify(w));
+}
 r = await client.call("GET", "/auth/me"); ok("client /me has role client", r.data?.role === "client", JSON.stringify(r));
 r = await admin.call("GET", "/auth/me"); ok("admin /me has role admin", r.data?.role === "admin", JSON.stringify(r));
 const vendorId = (await vendor.call("GET", "/auth/me")).data.id, vendor2Id = (await vendor2.call("GET", "/auth/me")).data.id;
 
 // 2. vendor profile
 r = await vendor.call("PUT", "/vendor/profile", { business_name: "Ballroom Uji", category: "venue", city: "jakarta selatan", price_min: 35000000, price_max: 120000000, description: "Venue uji untuk E2E." });
-ok("profile without a WhatsApp number is refused", r.status === 400 && /WhatsApp/.test(r.data?.error ?? ""), JSON.stringify(r));
+ok("profile without a typed number uses the verified WhatsApp number", r.status === 200 && r.data?.whatsapp_number === "6281234567890", JSON.stringify(r));
 r = await vendor.call("PUT", "/vendor/profile", { business_name: "Ballroom Uji", category: "venue", city: "jakarta selatan", price_min: 35000000, price_max: 120000000, description: "Venue uji untuk E2E.", whatsapp_number: "021 555 1234" });
 ok("landline is not accepted as WhatsApp", r.status === 400, JSON.stringify(r));
 r = await vendor.call("PUT", "/vendor/profile", { business_name: "Ballroom Uji", category: "venue", city: "jakarta selatan", price_min: 35000000, price_max: 120000000, description: "Venue uji untuk E2E.", whatsapp_number: "0812-3456-7890" });

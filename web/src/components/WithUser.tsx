@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 
 import { loginWithNext } from "@/components/auth/redirect";
+import { WhatsAppGate } from "@/components/wa/WhatsAppVerify";
 import { useEffect, useState } from "react";
 
 import { apiGet, type CurrentUser } from "@/lib/api";
@@ -67,5 +68,10 @@ export function WithUser({
   }
   if (!user) return null;
 
-  return <>{children(user)}</>;
+  return (
+    <>
+      {children(user)}
+      <WhatsAppGate user={user} />
+    </>
+  );
 }

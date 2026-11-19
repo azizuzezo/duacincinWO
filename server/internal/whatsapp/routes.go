@@ -6,13 +6,14 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"duacincin/server/internal/auth"
 	"duacincin/server/internal/config"
 	"duacincin/server/internal/httpx"
 )
 
 // RequireBotSecret gates the inbound webhook with a shared secret instead
 // of a session cookie (same precedent as the Midtrans payment webhook) —
-// the caller is the whatsapp-bot/ process, never a browser.
+// the caller is the WhatsApp engine, never a browser.
 func RequireBotSecret(cfg *config.Config) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -26,10 +27,22 @@ func RequireBotSecret(cfg *config.Config) func(http.Handler) http.Handler {
 	}
 }
 
-// Mount registers the bot-facing webhook onto r.
+// Mount registers the engine webhook, the account's own number
+// verification, and the admin status card onto r.
 func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 	r.Route("/whatsapp", func(r chi.Router) {
-		r.Use(RequireBotSecret(cfg))
-		r.Post("/inbound", Inbound(deps))
+		r.With(RequireBotSecret(cfg)).Post("/inbound", Inbound(deps))
+
+		r.Group(func(r chi.Router) {
+			r.Use(auth.RequireAuth(cfg), auth.RequireRole(auth.RoleClient, auth.RoleVendor))
+			r.Get("/me", MyWhatsApp(deps))
+			r.Post("/me/code", SendWhatsAppCode(deps))
+			r.Post("/me/verify", VerifyWhatsAppCode(deps))
+		})
+
+		r.Group(func(r chi.Router) {
+			r.Use(auth.RequireAuth(cfg), auth.RequireRole(auth.RoleAdmin))
+			r.Get("/admin/status", AdminStatus(deps))
+		})
 	})
 }
