@@ -9,7 +9,7 @@
 
 import { useId, useMemo, useRef, useState } from "react";
 
-import { findRegion, searchRegions } from "@/lib/wilayah";
+import { findRegion, MAX_CITIES, searchRegions } from "@/lib/wilayah";
 
 import { controlClasses } from "./Field";
 
@@ -22,8 +22,9 @@ export function CityCombobox({
   error,
   hint,
   legacy,
-  max = 10,
+  max = MAX_CITIES,
   placeholder = "Ketik nama kabupaten atau kota",
+  groups = [],
 }: {
   id?: string;
   label: string;
@@ -37,6 +38,8 @@ export function CityCombobox({
   legacy?: string | null;
   max?: number;
   placeholder?: string;
+  /** Areas picked in one tap, e.g. { name: "Jabodetabek", cities: [...] }. */
+  groups?: { name: string; cities: string[] }[];
 }) {
   const auto = useId();
   const id = idProp ?? `cc${auto.replace(/:/g, "")}`;
@@ -93,6 +96,35 @@ export function CityCombobox({
       <label htmlFor={id} className="text-sm font-semibold text-dc-ink">
         {label}
       </label>
+
+      {groups.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {groups.map((g) => {
+            const missing = g.cities.filter((c) => !values.includes(c));
+            const all = missing.length === 0;
+            const room = max - values.length;
+            const canAdd = !all && missing.length <= room;
+            return (
+              <button
+                key={g.name}
+                type="button"
+                disabled={!all && !canAdd}
+                onClick={() => {
+                  if (all) onChange(values.filter((c) => !g.cities.includes(c)));
+                  else onChange([...values, ...missing]);
+                }}
+                title={!all && !canAdd ? `Kurangi pilihan lain dulu: perlu ${missing.length} slot, tersisa ${room}` : undefined}
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-dashed border-dc-gold/60 bg-dc-gold-wash px-4 text-sm font-semibold text-dc-ink transition-colors hover:border-dc-gold hover:bg-dc-gold-soft disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="text-dc-clay">
+                  {all ? <path d="M6 6l12 12M18 6 6 18" /> : <path d="M12 5v14M5 12h14" />}
+                </svg>
+                {all ? `Hapus semua ${g.name}` : `Semua ${g.name} (${g.cities.length} kota)`}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {values.length > 0 && (
         <ul className="flex flex-wrap gap-2" aria-label={`${label} terpilih`}>

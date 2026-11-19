@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CityCombobox } from "@/components/ui/CityCombobox";
+import { JABODETABEK } from "@/lib/wilayah";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Input, Textarea } from "@/components/ui/Field";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -307,7 +308,8 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
                         onBlur={blur("city")}
                         error={errors.city}
                         legacy={profile && (profile.cities ?? []).length === 0 && cities.length === 0 ? profile.city : null}
-                        hint="Pilih semua kabupaten/kota yang kamu layani, misalnya Bandung dan Sumedang."
+                        hint="Pilih semua kabupaten/kota yang kamu layani (maksimal 20), misalnya Bandung dan Sumedang. Melayani Jabodetabek? Pakai tombol di atas sekali klik."
+                        groups={[{ name: "Jabodetabek", cities: JABODETABEK }]}
                       />
                     </div>
                   </div>

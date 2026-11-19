@@ -1,6 +1,7 @@
 package vendors
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -232,7 +233,7 @@ func normalizeCities(in []string) ([]string, string) {
 	case len(out) == 0:
 		return nil, "kota wajib diisi"
 	case len(out) > wilayah.MaxCities:
-		return nil, "pilih paling banyak 10 kabupaten/kota"
+		return nil, fmt.Sprintf("pilih paling banyak %d kabupaten/kota", wilayah.MaxCities)
 	}
 	return out, ""
 }

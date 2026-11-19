@@ -5,9 +5,30 @@ import data from "./wilayah.json";
 
 export type Region = { city: string; province: string };
 
+/** Greater Jakarta, picked in one go on the vendor profile. Same list as
+ * server/internal/wilayah Jabodetabek (Kepulauan Seribu left out). */
+export const JABODETABEK = [
+  "Jakarta Barat",
+  "Jakarta Pusat",
+  "Jakarta Selatan",
+  "Jakarta Timur",
+  "Jakarta Utara",
+  "Bogor",
+  "Kab. Bogor",
+  "Depok",
+  "Tangerang",
+  "Kab. Tangerang",
+  "Tangerang Selatan",
+  "Bekasi",
+  "Kab. Bekasi",
+];
+
+/** Most kabupaten/kota one vendor can list (server: wilayah.MaxCities). */
+export const MAX_CITIES = 20;
+
 /** Every kabupaten/kota with its province, A to Z by city. */
 export const REGIONS: Region[] = (data as { name: string; cities: string[] }[])
-  .flatMap((p) => p.cities.map((city) => ({ city, province: p.name })))
+  .flatMap((p) => p.cities.map((city) => ({ city: city.trim(), province: p.name.trim() })))
   .sort((a, b) => a.city.localeCompare(b.city, "id"));
 
 const byLower = new Map(REGIONS.map((r) => [r.city.toLowerCase(), r]));

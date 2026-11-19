@@ -110,7 +110,7 @@ func toolDefs() []toolDef {
 			Description: "Cari vendor pernikahan sungguhan yang terdaftar dan terverifikasi di DuaCincin. Pakai setiap kali pengguna mencari, meminta rekomendasi, atau membandingkan vendor. Hasilnya tampil sebagai kartu vendor.",
 			Parameters: obj(map[string]any{
 				"kategori":    map[string]any{"type": "string", "enum": categoryEnum(), "description": "Jenis vendor."},
-				"kota":        map[string]any{"type": "string", "description": "Nama kabupaten/kota tanpa awalan Kota/Kabupaten, misalnya Bandung, Jakarta Selatan, Sleman. Kosongkan kalau pengguna tidak menyebut kota."},
+				"kota":        map[string]any{"type": "string", "description": "Nama kabupaten/kota tanpa awalan Kota/Kabupaten, misalnya Bandung, Jakarta Selatan, Sleman. Isi \"Jabodetabek\" kalau pengguna menyebut Jabodetabek/Jabotabek atau Jakarta dan sekitarnya. Kosongkan kalau pengguna tidak menyebut kota."},
 				"budget_maks": map[string]any{"type": "integer", "description": "Batas harga mulai vendor dalam rupiah penuh (misalnya 5000000). Kosongkan kalau tidak disebut."},
 			}, "kategori"),
 		}},
@@ -292,6 +292,9 @@ type vendorCardDTO struct {
 
 func normalizeCity(raw string) string {
 	s := strings.TrimSpace(raw)
+	if _, ok := wilayah.Group(s); ok {
+		return "Jabodetabek"
+	}
 	for _, p := range []string{"Kota ", "kota ", "Kabupaten ", "kabupaten "} {
 		s = strings.TrimPrefix(s, p)
 	}
@@ -306,6 +309,9 @@ func normalizeCity(raw string) string {
 func cityVariants(city string) []string {
 	if city == "" {
 		return []string{""}
+	}
+	if g, ok := wilayah.Group(city); ok {
+		return g
 	}
 	out := []string{city}
 	if bare, ok := strings.CutPrefix(city, "Kab. "); ok {
@@ -421,7 +427,7 @@ func (d *Deps) findVendors(ctx context.Context, category, city string, maxPrice 
 	js, _ := json.Marshal(forModel)
 
 	params := map[string]any{"category": category}
-	if city != "" {
+	if _, group := wilayah.Group(city); city != "" && !group {
 		params["city"] = city
 	}
 	if maxPrice > 0 {

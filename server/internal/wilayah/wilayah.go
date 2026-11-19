@@ -49,8 +49,27 @@ func Canonical(name string) (string, bool) {
 	return c, ok
 }
 
-// MaxCities caps how many kabupaten/kota one vendor can list.
-const MaxCities = 10
+// MaxCities caps how many kabupaten/kota one vendor can list (20 leaves
+// room for all of Jabodetabek, 13, plus a few more).
+const MaxCities = 20
+
+// Jabodetabek is Greater Jakarta: the five Jakarta cities, Bogor, Depok,
+// Tangerang and Bekasi (city and regency). Kepulauan Seribu is left out:
+// wedding vendors do not serve it as part of "Jabodetabek".
+var Jabodetabek = []string{
+	"Jakarta Barat", "Jakarta Pusat", "Jakarta Selatan", "Jakarta Timur", "Jakarta Utara",
+	"Bogor", "Kab. Bogor", "Depok", "Tangerang", "Kab. Tangerang", "Tangerang Selatan", "Bekasi", "Kab. Bekasi",
+}
+
+// Group returns the cities of a named area ("Jabodetabek", also spelled
+// "Jabotabek"), matched ignoring case and spaces.
+func Group(name string) ([]string, bool) {
+	switch strings.ToLower(strings.Join(strings.Fields(name), "")) {
+	case "jabodetabek", "jabotabek", "jabodetabekpunjur":
+		return Jabodetabek, true
+	}
+	return nil, false
+}
 
 var splitter = strings.NewReplacer(",", " ", "/", " ", "&", " ", ";", " ", "+", " ", "|", " ")
 

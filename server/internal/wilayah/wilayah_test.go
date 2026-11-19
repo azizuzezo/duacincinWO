@@ -54,3 +54,17 @@ func TestNoStraySpacesAndJakartaUtara(t *testing.T) {
 		}
 	}
 }
+
+func TestJabodetabekCitiesExist(t *testing.T) {
+	for _, c := range Jabodetabek {
+		if got, ok := Canonical(c); !ok || got != c {
+			t.Fatalf("%q not in the list", c)
+		}
+	}
+	if len(Jabodetabek) > MaxCities {
+		t.Fatal("Jabodetabek must fit in MaxCities")
+	}
+	if g, ok := Group(" JaboTabek "); !ok || len(g) != 13 {
+		t.Fatal("Jabotabek alias")
+	}
+}

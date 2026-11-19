@@ -390,3 +390,12 @@ func TestSplitBudgetWithout(t *testing.T) {
 		t.Fatalf("lines %d", n)
 	}
 }
+
+func TestJabodetabekSearch(t *testing.T) {
+	if got := normalizeCity("jabotabek"); got != "Jabodetabek" {
+		t.Fatal(got)
+	}
+	if got := cityVariants("Jabodetabek"); len(got) != 13 || got[0] != "Jakarta Barat" {
+		t.Fatal(got)
+	}
+}
