@@ -347,3 +347,34 @@ func TestToolNamePrefixes(t *testing.T) {
 		t.Fatal(got)
 	}
 }
+
+func TestSplitBudgetWithout(t *testing.T) {
+	out, err := splitBudget(150_000_000, 300, "entertainment")
+	if err != nil {
+		t.Fatal(err)
+	}
+	data := out.Block.Data.(map[string]any)
+	lines := data["lines"].([]budgetLine)
+	var sum int64
+	for _, l := range lines {
+		if l.Key == "entertainment" {
+			t.Fatal("entertainment still there")
+		}
+		sum += l.Amount
+	}
+	if sum != 150_000_000 || len(lines) != 6 {
+		t.Fatalf("sum %d lines %d", sum, len(lines))
+	}
+	// 40 / 92 of 150 juta for venue & catering.
+	if lines[0].Amount != 65_217_391 {
+		t.Fatalf("venue %d", lines[0].Amount)
+	}
+	if ex := data["excluded"].([]string); len(ex) != 1 || ex[0] != "Entertainment" {
+		t.Fatalf("excluded %v", ex)
+	}
+	// Aliases from the model and "venue" (never dropped) are handled.
+	out, _ = (&Deps{}).dispatch(context.Background(), "hitung_budget", `{"total":"150 juta","tanpa":["hiburan","venue"]}`)
+	if n := len(out.Block.Data.(map[string]any)["lines"].([]budgetLine)); n != 6 {
+		t.Fatalf("lines %d", n)
+	}
+}

@@ -270,6 +270,14 @@ function BudgetBlock({ data }: { data: Extract<Block, { type: "budget" }>["data"
   return (
     <div>
       <CardHead eyebrow="Pembagian budget" title="Rencana budget kamu" action={<MoreLink href="/register?role=client">Atur di Budget Planner</MoreLink>} />
+      {data.excluded && data.excluded.length > 0 && (
+        <p className="-mt-2 mb-4 inline-flex flex-wrap items-center gap-1.5 rounded-full bg-dc-gold-wash px-3 py-1 text-[0.8rem] font-semibold text-dc-ink">
+          <svg aria-hidden width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" className="text-dc-clay">
+            <path d="M6 6l12 12M18 6 6 18" />
+          </svg>
+          Tanpa {data.excluded.join(", ")}, porsinya dibagi ke pos lain
+        </p>
+      )}
       <div className="grid items-center gap-6 sm:grid-cols-[220px_1fr] sm:gap-8">
         <div className="relative mx-auto aspect-square w-[200px] sm:w-[220px]">
           <svg viewBox="0 0 180 180" className="h-full w-full -rotate-90">

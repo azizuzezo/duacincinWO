@@ -123,10 +123,15 @@ func toolDefs() []toolDef {
 		}},
 		{Type: "function", Function: toolDefFunc{
 			Name:        "hitung_budget",
-			Description: "Hitung pembagian budget pernikahan per pos dengan rumus Budget Planner DuaCincin. Wajib dipakai setiap kali pengguna menyebut total budget atau bertanya cukup tidaknya budget. Jangan menghitung sendiri.",
+			Description: "Hitung pembagian budget pernikahan per pos dengan rumus Budget Planner DuaCincin. Wajib dipakai setiap kali pengguna menyebut total budget, bertanya cukup tidaknya budget, atau minta menghapus/tidak memakai suatu pos (pakai parameter tanpa). Jangan menghitung sendiri.",
 			Parameters: obj(map[string]any{
 				"total":       map[string]any{"type": "integer", "description": "Total budget dalam rupiah penuh, misalnya 80000000."},
 				"jumlah_tamu": map[string]any{"type": "integer", "description": "Perkiraan jumlah tamu, kalau disebut."},
+				"tanpa": map[string]any{
+					"type":        "array",
+					"description": "Pos yang TIDAK dipakai pengguna (misalnya dia bilang tidak perlu entertainment). Porsinya dibagi ulang ke pos lain. Pakai total yang sama dengan sebelumnya kalau pengguna hanya mengubah pos.",
+					"items":       map[string]any{"type": "string", "enum": []string{"venue_catering", "decor", "photo_video", "mua_attire", "entertainment", "invitation_souvenir", "reserve"}},
+				},
 			}, "total"),
 		}},
 		{Type: "function", Function: toolDefFunc{
@@ -244,13 +249,14 @@ func (d *Deps) dispatch(ctx context.Context, name, rawArgs string) (toolOutput, 
 		var a struct {
 			Total      json.RawMessage `json:"total"`
 			JumlahTamu json.RawMessage `json:"jumlah_tamu"`
+			Tanpa      []string        `json:"tanpa"`
 		}
 		if err := json.Unmarshal([]byte(rawArgs), &a); err != nil {
 			return toolOutput{}, fmt.Errorf("argumen tidak valid")
 		}
 		total := amountFromText(strings.Trim(string(a.Total), `"`), true)
 		guests := int(digitsOnly(strings.Trim(string(a.JumlahTamu), `"`)))
-		return splitBudget(total, guests)
+		return splitBudget(total, guests, a.Tanpa...)
 	case "tampilkan_timeline":
 		return timeline(rawArgs)
 	case "hubungi_konsultan":
@@ -502,25 +508,62 @@ type budgetLine struct {
 	Amount     int64   `json:"amount"`
 }
 
-func splitBudget(total int64, guests int) (toolOutput, error) {
+// budgetAliases maps how people and models name a pos to its key.
+var budgetAliases = map[string]string{
+	"entertainment": "entertainment", "hiburan": "entertainment", "band": "entertainment", "musik": "entertainment",
+	"decor": "decor", "dekor": "decor", "dekorasi": "decor",
+	"photo_video": "photo_video", "foto": "photo_video", "video": "photo_video", "dokumentasi": "photo_video", "foto & video": "photo_video",
+	"mua_attire": "mua_attire", "mua": "mua_attire", "rias": "mua_attire", "busana": "mua_attire", "attire": "mua_attire",
+	"invitation_souvenir": "invitation_souvenir", "undangan": "invitation_souvenir", "souvenir": "invitation_souvenir",
+	"reserve": "reserve", "cadangan": "reserve", "dana cadangan": "reserve",
+	"venue_catering": "venue_catering", "venue": "venue_catering", "catering": "venue_catering", "katering": "venue_catering",
+}
+
+// splitBudget splits a total with the Budget Planner's default shares.
+// Pos the couple does not need (exclude) are dropped and their share is
+// spread over the remaining ones in proportion, so the total is unchanged.
+func splitBudget(total int64, guests int, exclude ...string) (toolOutput, error) {
 	if total < 1_000_000 || total > 100_000_000_000 {
 		return toolOutput{}, fmt.Errorf("total budget harus antara 1 juta dan 100 miliar rupiah")
 	}
 	if guests < 0 || guests > 100_000 {
 		guests = 0
 	}
-	lines := make([]budgetLine, 0, len(budgetOrder))
+	skip := map[string]bool{}
+	for _, e := range exclude {
+		if k, ok := budgetAliases[strings.ToLower(strings.TrimSpace(e))]; ok && k != "venue_catering" {
+			skip[k] = true
+		}
+	}
+	keys := make([]string, 0, len(budgetOrder))
+	var kept float64
+	for _, k := range budgetOrder {
+		if !skip[k] {
+			keys = append(keys, k)
+			kept += budget.DefaultPercentages[k]
+		}
+	}
+	lines := make([]budgetLine, 0, len(keys))
 	var used int64
-	for i, k := range budgetOrder {
-		pct := budget.DefaultPercentages[k]
-		amt := int64(math.Round(float64(total) * pct / 100))
-		if i == len(budgetOrder)-1 {
-			amt = total - used // rounding drift lands in the reserve
+	for i, k := range keys {
+		pct := math.Round(budget.DefaultPercentages[k]/kept*1000) / 10
+		amt := int64(math.Round(float64(total) * budget.DefaultPercentages[k] / kept))
+		if i == len(keys)-1 {
+			amt = total - used // rounding drift lands in the last pos
 		}
 		used += amt
 		lines = append(lines, budgetLine{Key: k, Label: budgetLabels[k], Percentage: pct, Amount: amt})
 	}
+	var excluded []string
+	for _, k := range budgetOrder {
+		if skip[k] {
+			excluded = append(excluded, budgetLabels[k])
+		}
+	}
 	data := map[string]any{"total": total, "lines": lines}
+	if len(excluded) > 0 {
+		data["excluded"] = excluded
+	}
 	// The model gets plain sentences in rupiah, largest first, so it does not
 	// misread keys or recompute numbers.
 	readable := make([]string, 0, len(lines))
@@ -532,6 +575,10 @@ func splitBudget(total int64, guests int) (toolOutput, error) {
 		"pembagian_per_pos": readable,
 		"pos_terbesar":      fmt.Sprintf("%s, %s", lines[0].Label, rupiah(lines[0].Amount)),
 		"catatan":           "Angka ini rumus default Budget Planner DuaCincin dan sudah tampil sebagai kartu. Pakai angka ini apa adanya, jangan dihitung ulang.",
+	}
+	if len(excluded) > 0 {
+		forModel["tanpa_pos"] = excluded
+		forModel["catatan"] = "Pos " + strings.Join(excluded, ", ") + " sudah dihapus dan porsinya dibagi ulang ke pos lain; kartu baru sudah tampil. Pakai angka ini apa adanya."
 	}
 	if guests > 0 {
 		perGuest := lines[0].Amount / int64(guests)
