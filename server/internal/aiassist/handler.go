@@ -15,6 +15,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -266,7 +267,7 @@ func (d *Deps) converse(ctx context.Context, history []chatMessage, visitor repo
 		res, err := d.llm.stream(ctx, msgs, roundTools, func(t string) {
 			closeThink()
 			wrote = true
-			send("text", map[string]string{"t": t})
+			send("text", map[string]string{"t": noLongDash(t)})
 		}, nil)
 		if err != nil {
 			log.Printf("aiassist: round %d: %v", round, err)
@@ -280,6 +281,14 @@ func (d *Deps) converse(ctx context.Context, history []chatMessage, visitor repo
 			closeThink()
 			if !wrote {
 				send("error", map[string]string{"message": "Maaf, aku belum menemukan jawabannya. Coba ceritakan dengan kata lain, atau tanya Wedding Consultant kami di bawah ini."})
+				return
+			}
+			// The visitor asked for a person: the card must be there, whatever
+			// the model decided (it sometimes says "kartunya sudah tampil").
+			if !consultantShown && asksForConsultant(lastUser(history)) {
+				b := consultantBlock("", "", "", 0)
+				b.Data.(map[string]any)["requested"] = true
+				send("block", b)
 			}
 			return
 		}
@@ -312,4 +321,24 @@ func (d *Deps) converse(ctx context.Context, history []chatMessage, visitor repo
 			send("text", map[string]string{"t": "\n\n"})
 		}
 	}
+}
+
+// noLongDash keeps the UI free of em/en dashes (DESIGN.md: "tanpa em dash"),
+// whatever the model writes.
+func noLongDash(t string) string {
+	return strings.NewReplacer(" — ", ", ", "—", ", ", " – ", ", ").Replace(t)
+}
+
+var consultantAsk = regexp.MustCompile(`(?i)(wedding\s*consultant|konsultan|consultant|\badmin\b|customer\s*service|\bcs\b|(ngobrol|bicara|chat|ngomong|tanya)\s+(sama|dengan|ke)\s+(orang|manusia|staf|tim))`)
+
+// asksForConsultant reports whether the visitor clearly asks for a person.
+func asksForConsultant(msg string) bool { return consultantAsk.MatchString(msg) }
+
+func lastUser(history []chatMessage) string {
+	for i := len(history) - 1; i >= 0; i-- {
+		if history[i].Role == "user" {
+			return history[i].Content
+		}
+	}
+	return ""
 }

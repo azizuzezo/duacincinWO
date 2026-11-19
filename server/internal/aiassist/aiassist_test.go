@@ -242,3 +242,22 @@ func TestPromptGreetsByName(t *testing.T) {
 		t.Fatal("empty visitor must not add a section")
 	}
 }
+
+func TestNoLongDash(t *testing.T) {
+	if got := noLongDash("Venue Rp60 juta — pos terbesar"); got != "Venue Rp60 juta, pos terbesar" {
+		t.Fatal(got)
+	}
+}
+
+func TestAsksForConsultant(t *testing.T) {
+	for _, m := range []string{"Aku mau chat sama wedding consultant aja", "bisa ngobrol sama orang?", "hubungkan ke admin dong", "mau tanya ke tim kalian"} {
+		if !asksForConsultant(m) {
+			t.Fatal("should ask:", m)
+		}
+	}
+	for _, m := range []string{"Cariin MUA di Bandung", "budget 150 juta cukup?", "pesta di gedung"} {
+		if asksForConsultant(m) {
+			t.Fatal("should not ask:", m)
+		}
+	}
+}
