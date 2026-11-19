@@ -283,3 +283,52 @@ func TestBudgetFromMessage(t *testing.T) {
 		}
 	}
 }
+
+func TestTextGateSwallowsCannedRefusal(t *testing.T) {
+	g := &textGate{}
+	out := g.feed("I'm having a hard time ") + g.feed("fulfilling your request. Can I help you with something else instead?") + g.flush()
+	if out != "" || !g.refused {
+		t.Fatalf("refusal leaked: %q", out)
+	}
+	g = &textGate{}
+	out = g.feed("Dengan budget ") + g.feed("150 juta untuk 300 tamu, pos terbesar ada di Venue & Catering, sekitar Rp60 juta.") + g.feed(" Lanjut?") + g.flush()
+	if out != "Dengan budget 150 juta untuk 300 tamu, pos terbesar ada di Venue & Catering, sekitar Rp60 juta. Lanjut?" || g.refused {
+		t.Fatalf("real answer changed: %q", out)
+	}
+	g = &textGate{}
+	if out := g.feed("Siap!") + g.flush(); out != "Siap!" {
+		t.Fatalf("short answer lost: %q", out)
+	}
+	if !strings.Contains(replacementText(map[string]bool{"budget": true}), "Budget Planner") {
+		t.Fatal("budget replacement")
+	}
+}
+
+func TestRefusalHeuristicAndBudgetContext(t *testing.T) {
+	for _, r := range []string{"I seem to be encountering an error. Can I try something else for you?", "I'm having a hard time fulfilling your request."} {
+		if !looksLikeRefusal(r) {
+			t.Fatal("refusal not caught:", r)
+		}
+	}
+	if looksLikeRefusal("Untuk budget Rp10 juta dengan 100 tamu, pos terbesar ada di venue dan catering.") {
+		t.Fatal("Indonesian answer flagged")
+	}
+	h := []chatMessage{{Role: "user", Content: "Bantu hitung budget pernikahanku"}, {Role: "assistant", Content: "Berapa totalnya?"}, {Role: "user", Content: "10 juta, 100 tamu"}}
+	if total, guests, ok := budgetFromContext(h); !ok || total != 10_000_000 || guests != 100 {
+		t.Fatalf("two-step budget: %d %d %v", total, guests, ok)
+	}
+	for _, m := range []string{"Cariin MUA 5 juta di Bandung", "Cariin MUA di Bandung budget 5 juta", "rekomendasi venue budget 50 juta"} {
+		if _, _, ok := budgetFromContext([]chatMessage{{Role: "user", Content: m}}); ok {
+			t.Fatal("a vendor price is not a wedding budget:", m)
+		}
+	}
+	if _, _, ok := budgetFromContext([]chatMessage{{Role: "user", Content: "Budget kami 150 juta, 300 tamu di Bandung, cukup nggak?"}}); !ok {
+		t.Fatal("wedding budget missed")
+	}
+	for _, args := range []string{`{"total":10000000}`, `{"total":"10 juta"}`, `{"total":"Rp10.000.000","jumlah_tamu":"100"}`} {
+		out, err := (&Deps{}).dispatch(context.Background(), "hitung_budget", args)
+		if err != nil || out.Block == nil || out.Block.Data.(map[string]any)["total"].(int64) != 10_000_000 {
+			t.Fatalf("lenient args %s: %v", args, err)
+		}
+	}
+}

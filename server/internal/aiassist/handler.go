@@ -29,7 +29,7 @@ import (
 const (
 	maxHistory      = 16   // earlier turns given to the model
 	maxUserChars    = 1000 // one visitor message
-	maxRounds       = 4    // model calls per visitor message (tool loops)
+	maxRounds       = 3    // model calls per visitor message (tool loops)
 	perIPPerHour    = 60   // generous: couples plan in long sessions, and one IP is often shared (wifi, carrier NAT)
 	globalPerDay    = 5000
 	requestDeadline = 110 * time.Second
@@ -48,7 +48,7 @@ type Deps struct {
 func NewDeps(vendorRepo *repository.VendorRepo, reviewRepo *repository.ReviewRepo, inspirationRepo *repository.InspirationRepo, chatRepo *repository.AIChatRepo, limiter *ratelimit.Limiter, cfg *config.Config) *Deps {
 	return &Deps{
 		Vendors: vendorRepo, Reviews: reviewRepo, Inspiration: inspirationRepo, Chats: chatRepo, Limiter: limiter, Cfg: cfg,
-		llm: &llmClient{baseURL: cfg.AIBaseURL, apiKey: cfg.AIAPIKey, model: cfg.AIModel, http: &http.Client{Timeout: 90 * time.Second}},
+		llm: &llmClient{baseURL: cfg.AIBaseURL, apiKey: cfg.AIAPIKey, model: cfg.AIModel, reasoning: cfg.AIReasoningEffort, http: &http.Client{Timeout: 90 * time.Second}},
 	}
 }
 
@@ -239,7 +239,21 @@ func (rc *recorder) turn() repository.AIChatTurn {
 func (d *Deps) converse(ctx context.Context, history []chatMessage, visitor repository.AIVisitor, send func(string, any)) {
 	msgs := append([]chatMessage{{Role: "system", Content: systemPrompt(time.Now(), visitor)}}, history...)
 	tools := toolDefs()
+	// Fast path: a named total budget is computed here, before the model,
+	// and shown at once; the model only explains it (one round saved, and
+	// the figures never depend on the model calling the tool).
+	var preBudget *toolOutput
+	if total, guests, ok := budgetFromContext(history); ok {
+		if out, err := splitBudget(total, guests); err == nil {
+			preBudget = &out
+			tools = withoutTool(tools, "hitung_budget")
+			msgs[len(msgs)-1].Content += "\n\n[Catatan sistem, bukan dari pengguna: kartu Budget Planner sudah tampil di layar dengan data ini: " + out.ForModel + ". Jelaskan singkat berdasarkan data itu; jangan menghitung ulang dan jangan memanggil hitung_budget.]"
+		}
+	}
 
+	wrote := false
+	consultantShown := false
+	budgetShown := false
 	stepN := 0
 	step := func(label string) string {
 		stepN++
@@ -249,6 +263,12 @@ func (d *Deps) converse(ctx context.Context, history []chatMessage, visitor repo
 	}
 	done := func(id string) { send("step", map[string]string{"id": id, "state": "done"}) }
 
+	if preBudget != nil {
+		id := step("Menghitung pembagian budget")
+		send("block", preBudget.Block)
+		budgetShown = true
+		done(id)
+	}
 	think := step("Memahami ceritamu")
 	thinkOpen := true
 	closeThink := func() {
@@ -258,19 +278,33 @@ func (d *Deps) converse(ctx context.Context, history []chatMessage, visitor repo
 		}
 	}
 
-	wrote := false
-	consultantShown := false
-	budgetShown := false
+	shown := map[string]bool{}
+	sendOrig := send
+	send = func(event string, payload any) {
+		if b, ok := payload.(*block); ok && event == "block" {
+			shown[b.Type] = true
+		}
+		sendOrig(event, payload)
+	}
 	for round := 0; round < maxRounds; round++ {
 		roundTools := tools
 		if round == maxRounds-1 {
 			roundTools = nil // last round: answer with what we have
 		}
+		gate := &textGate{}
+		emit := func(t string) {
+			if t != "" {
+				wrote = true
+				send("text", map[string]string{"t": noLongDash(t)})
+			}
+		}
 		res, err := d.llm.stream(ctx, msgs, roundTools, func(t string) {
 			closeThink()
-			wrote = true
-			send("text", map[string]string{"t": noLongDash(t)})
+			emit(gate.feed(t))
 		}, nil)
+		if err == nil {
+			emit(gate.flush())
+		}
 		if err != nil {
 			log.Printf("aiassist: round %d: %v", round, err)
 			closeThink()
@@ -281,6 +315,12 @@ func (d *Deps) converse(ctx context.Context, history []chatMessage, visitor repo
 		}
 		if len(res.ToolCalls) == 0 {
 			closeThink()
+			if gate.refused && !wrote {
+				// The model (or its proxy) answered with a canned refusal.
+				// Say something useful about what is on screen instead.
+				defer func() { emit(replacementText(shown)) }()
+				wrote = true
+			}
 			if !wrote {
 				send("error", map[string]string{"message": "Maaf, aku belum menemukan jawabannya. Coba ceritakan dengan kata lain, atau tanya Wedding Consultant kami di bawah ini."})
 				return
@@ -289,7 +329,7 @@ func (d *Deps) converse(ctx context.Context, history []chatMessage, visitor repo
 			// its own arithmetic: show the Budget Planner split anyway, so
 			// the figures on screen always come from DuaCincin's formula.
 			if !budgetShown {
-				if total, guests, ok := budgetFromMessage(lastUser(history)); ok {
+				if total, guests, ok := budgetFromContext(history); ok {
 					if out, err := splitBudget(total, guests); err == nil {
 						send("block", out.Block)
 					}
@@ -361,17 +401,15 @@ func lastUser(history []chatMessage) string {
 var (
 	budgetAmount = regexp.MustCompile(`(?i)(?:rp\.?\s*)?(\d+(?:[.,]\d+)*)\s*(miliar|milyar|m\b|juta|jt\b|ribu|rb\b)?`)
 	budgetWord   = regexp.MustCompile(`(?i)\b(budget|bujet|anggaran|dana|biaya|modal)\b`)
+	vendorAsk    = regexp.MustCompile(`(?i)\b(cari|cariin|carikan|rekomendasi|rekomendasiin|mua|rias|make ?up|dekor|dekorasi|venue|gedung|catering|katering|foto|fotografer|video|videografer|mc|souvenir|mobil|kue|hantaran|seserahan|band|entertainment|vendor)\b`)
 	guestCount   = regexp.MustCompile(`(?i)(\d{2,5})\s*(orang\s*)?(tamu|undangan|pax|orang)`)
 )
 
-// budgetFromMessage reads a total wedding budget (and guest count) from
-// the visitor's words: "budget 150 juta, 300 tamu", "dana Rp150.000.000",
-// "anggaran 1,5 M". ok is false when no budget word or plausible amount.
-func budgetFromMessage(msg string) (total int64, guests int, ok bool) {
-	if !budgetWord.MatchString(msg) {
-		return 0, 0, false
-	}
-	for _, m := range budgetAmount.FindAllStringSubmatch(msg, -1) {
+// amountFromText reads the first plausible rupiah total (1 juta to 100
+// miliar) in free text: "150 juta", "Rp150.000.000", "1,5 M", "80jt".
+// bareOK also accepts a plain number ("10000000"), as tools send it.
+func amountFromText(text string, bareOK bool) int64 {
+	for _, m := range budgetAmount.FindAllStringSubmatch(text, -1) {
 		num, unit := m[1], strings.ToLower(m[2])
 		var v float64
 		switch unit {
@@ -383,13 +421,32 @@ func budgetFromMessage(msg string) (total int64, guests int, ok bool) {
 			v = parseDecimal(num) * 1e3
 		default:
 			// A bare number only counts when written in full rupiah.
+			if !bareOK && !strings.ContainsAny(num, ".,") {
+				continue
+			}
 			v = float64(digitsOnly(num))
 		}
 		if v >= 1_000_000 && v <= 100_000_000_000 {
-			total = int64(v)
-			break
+			return int64(v)
 		}
 	}
+	return 0
+}
+
+// budgetFromMessage reads a total wedding budget (and guest count) from
+// the visitor's words: "budget 150 juta, 300 tamu", "dana Rp150.000.000",
+// "anggaran 1,5 M". ok is false when no budget word or plausible amount.
+func budgetFromMessage(msg string) (total int64, guests int, ok bool) {
+	// "Cariin MUA budget 5 juta" is a price limit for one vendor, not the
+	// wedding's total budget.
+	if !budgetWord.MatchString(msg) || vendorAsk.MatchString(msg) {
+		return 0, 0, false
+	}
+	return budgetAmountAndGuests(msg)
+}
+
+func budgetAmountAndGuests(msg string) (total int64, guests int, ok bool) {
+	total = amountFromText(msg, false)
 	if total == 0 {
 		return 0, 0, false
 	}
@@ -397,6 +454,29 @@ func budgetFromMessage(msg string) (total int64, guests int, ok bool) {
 		guests = int(digitsOnly(g[1]))
 	}
 	return total, guests, true
+}
+
+// budgetFromContext also catches a two-step ask: "Bantu hitung budget
+// pernikahanku" then "10 juta, 200 tamu" (the amount alone, right after a
+// message about the budget).
+func budgetFromContext(history []chatMessage) (total int64, guests int, ok bool) {
+	var users []string
+	for _, m := range history {
+		if m.Role == "user" {
+			users = append(users, m.Content)
+		}
+	}
+	if len(users) == 0 {
+		return 0, 0, false
+	}
+	last := users[len(users)-1]
+	if total, guests, ok = budgetFromMessage(last); ok {
+		return total, guests, ok
+	}
+	if len(users) >= 2 && budgetWord.MatchString(users[len(users)-2]) && !vendorAsk.MatchString(users[len(users)-2]) && !vendorAsk.MatchString(last) {
+		return budgetAmountAndGuests(last)
+	}
+	return 0, 0, false
 }
 
 // parseDecimal reads "1,5" or "1.5" as 1.5 and "150" as 150 (Indonesian
@@ -421,4 +501,92 @@ func digitsOnly(s string) int64 {
 		}
 	}
 	return n
+}
+
+// Canned refusals some models or proxies return instead of an answer
+// ("I'm having a hard time fulfilling your request...", "I seem to be
+// encountering an error..."). Kirana always answers in Indonesian, so a
+// reply that opens in English is treated as one too. Never shown as is.
+var (
+	cannedRefusal  = regexp.MustCompile(`(?i)(i'?m having a hard time|i seem to be|encountering an error|can i (try|help with|help you with) something else|something else (for you|instead)|i can'?t (help|assist)|i'?m (sorry|unable)|sorry, (but )?i|as an ai|i cannot (help|assist|fulfill))`)
+	englishWord    = regexp.MustCompile(`(?i)\b(i|you|the|can|something|else|error|request|help|seem|sorry|instead|with|to|be)\b`)
+	indonesianWord = regexp.MustCompile(`(?i)\b(yang|dan|untuk|di|ke|dari|ini|itu|kamu|aku|ada|bisa|dengan|budget|vendor|tamu|juta|ya)\b`)
+)
+
+func looksLikeRefusal(text string) bool {
+	if cannedRefusal.MatchString(text) {
+		return true
+	}
+	return len(englishWord.FindAllString(text, -1)) >= 4 && len(indonesianWord.FindAllString(text, -1)) == 0
+}
+
+const gateChars = 80
+
+// textGate holds back the first characters of a reply long enough to tell
+// a canned refusal from a real answer; a refusal is swallowed whole.
+type textGate struct {
+	buf      strings.Builder
+	released bool
+	refused  bool
+}
+
+func (g *textGate) feed(t string) string {
+	if g.refused {
+		return ""
+	}
+	if g.released {
+		return t
+	}
+	g.buf.WriteString(t)
+	if g.buf.Len() < gateChars {
+		return ""
+	}
+	return g.release()
+}
+
+// flush releases whatever is still held at the end of a round.
+func (g *textGate) flush() string {
+	if g.released || g.refused || g.buf.Len() == 0 {
+		return ""
+	}
+	return g.release()
+}
+
+func (g *textGate) release() string {
+	text := g.buf.String()
+	g.buf.Reset()
+	if looksLikeRefusal(text) {
+		g.refused = true
+		return ""
+	}
+	g.released = true
+	return text
+}
+
+// replacementText speaks to the cards already on screen when the model's
+// own words were a refusal.
+func replacementText(shown map[string]bool) string {
+	switch {
+	case shown["budget"]:
+		return "Ini pembagian budget dari Budget Planner DuaCincin untuk total yang kamu sebut. Pos terbesar ada di Venue & Catering. Mau aku bantu carikan vendor yang sesuai budget ini?"
+	case shown["vendors"]:
+		return "Ini vendor terdaftar di DuaCincin yang cocok dengan pencarianmu. Buka portofolionya untuk lihat karya mereka lebih lengkap ya."
+	case shown["consultant"]:
+		return "Wedding Consultant DuaCincin siap bantu, tinggal tekan tombol Chat konsultan di kartu ya."
+	case shown["timeline"]:
+		return "Ini urutan persiapannya. Mau aku bantu mulai dari langkah yang paling mendesak?"
+	case shown["inspirations"]:
+		return "Ini beberapa inspirasi dari galeri DuaCincin. Mau aku carikan vendor yang bisa mewujudkan konsep ini?"
+	}
+	return "Maaf, aku belum bisa menjawab yang itu. Coba ceritakan dengan kata lain, atau tanya Wedding Consultant kami."
+}
+
+func withoutTool(tools []toolDef, name string) []toolDef {
+	out := make([]toolDef, 0, len(tools))
+	for _, t := range tools {
+		if t.Function.Name != name {
+			out = append(out, t)
+		}
+	}
+	return out
 }

@@ -62,6 +62,9 @@ type Config struct {
 	AIBaseURL string
 	AIAPIKey  string
 	AIModel   string
+	// AIReasoningEffort is passed as reasoning_effort when set (optional,
+	// e.g. "low" or "none" for faster answers from thinking models).
+	AIReasoningEffort string
 }
 
 // Load reads environment variables, falling back to a local .env file
@@ -102,6 +105,8 @@ func Load() (*Config, error) {
 		AIBaseURL: strings.TrimRight(strings.TrimSpace(os.Getenv("AI_BASE_URL")), "/"),
 		AIAPIKey:  strings.TrimSpace(os.Getenv("AI_API_KEY")),
 		AIModel:   strings.TrimSpace(os.Getenv("AI_MODEL")),
+
+		AIReasoningEffort: strings.TrimSpace(os.Getenv("AI_REASONING_EFFORT")),
 	}
 
 	if cfg.DatabasePooler == "" {

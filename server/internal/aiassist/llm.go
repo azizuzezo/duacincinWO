@@ -53,6 +53,9 @@ type chatRequest struct {
 	Stream      bool          `json:"stream"`
 	MaxTokens   int           `json:"max_tokens,omitempty"`
 	Temperature float64       `json:"temperature"`
+	// ReasoningEffort ("none", "low", ...) is sent only when configured
+	// (AI_REASONING_EFFORT): thinking models answer much faster on "low".
+	ReasoningEffort string `json:"reasoning_effort,omitempty"`
 }
 
 // streamChunk is one `data:` line of the SSE stream.
@@ -79,8 +82,8 @@ type streamChunk struct {
 }
 
 type llmClient struct {
-	baseURL, apiKey, model string
-	http                   *http.Client
+	baseURL, apiKey, model, reasoning string
+	http                              *http.Client
 }
 
 // streamResult is what one completion round produced.
@@ -95,12 +98,13 @@ type streamResult struct {
 // model starts emitting hidden reasoning, so the UI can say it is thinking.
 func (c *llmClient) stream(ctx context.Context, msgs []chatMessage, tools []toolDef, onText func(string), onThinking func()) (*streamResult, error) {
 	body, err := json.Marshal(chatRequest{
-		Model:       c.model,
-		Messages:    msgs,
-		Tools:       tools,
-		Stream:      true,
-		MaxTokens:   1200,
-		Temperature: 0.6,
+		Model:           c.model,
+		Messages:        msgs,
+		Tools:           tools,
+		Stream:          true,
+		MaxTokens:       900,
+		Temperature:     0.6,
+		ReasoningEffort: c.reasoning,
 	})
 	if err != nil {
 		return nil, err

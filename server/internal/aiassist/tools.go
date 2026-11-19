@@ -222,14 +222,18 @@ func (d *Deps) dispatch(ctx context.Context, name, rawArgs string) (toolOutput, 
 		_ = json.Unmarshal([]byte(rawArgs), &a)
 		return d.findInspiration(ctx, a.KataKunci)
 	case "hitung_budget":
+		// Models send numbers in many shapes (10000000, "10 juta",
+		// "Rp10.000.000"): read them all rather than fail silently.
 		var a struct {
-			Total      float64 `json:"total"`
-			JumlahTamu float64 `json:"jumlah_tamu"`
+			Total      json.RawMessage `json:"total"`
+			JumlahTamu json.RawMessage `json:"jumlah_tamu"`
 		}
 		if err := json.Unmarshal([]byte(rawArgs), &a); err != nil {
 			return toolOutput{}, fmt.Errorf("argumen tidak valid")
 		}
-		return splitBudget(int64(a.Total), int(a.JumlahTamu))
+		total := amountFromText(strings.Trim(string(a.Total), `"`), true)
+		guests := int(digitsOnly(strings.Trim(string(a.JumlahTamu), `"`)))
+		return splitBudget(total, guests)
 	case "tampilkan_timeline":
 		return timeline(rawArgs)
 	case "hubungi_konsultan":
