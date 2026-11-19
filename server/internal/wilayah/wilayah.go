@@ -30,8 +30,13 @@ func init() {
 	if err := json.Unmarshal(raw, &provinces); err != nil {
 		panic("wilayah: " + err.Error())
 	}
-	for _, p := range provinces {
-		for _, c := range p.Cities {
+	// Names are trimmed on load: a stray space in the data ("Jakarta Utara ")
+	// once made a valid choice fail with "pilih kabupaten/kota dari daftar".
+	for i := range provinces {
+		provinces[i].Name = strings.TrimSpace(provinces[i].Name)
+		for j, c := range provinces[i].Cities {
+			c = strings.TrimSpace(c)
+			provinces[i].Cities[j] = c
 			byLower[strings.ToLower(c)] = c
 		}
 	}

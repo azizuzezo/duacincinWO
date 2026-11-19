@@ -508,16 +508,16 @@ func digitsOnly(s string) int64 {
 // encountering an error..."). Kirana always answers in Indonesian, so a
 // reply that opens in English is treated as one too. Never shown as is.
 var (
-	cannedRefusal  = regexp.MustCompile(`(?i)(i'?m having a hard time|i seem to be|encountering an error|can i (try|help with|help you with) something else|something else (for you|instead)|i can'?t (help|assist)|i'?m (sorry|unable)|sorry, (but )?i|as an ai|i cannot (help|assist|fulfill))`)
-	englishWord    = regexp.MustCompile(`(?i)\b(i|you|the|can|something|else|error|request|help|seem|sorry|instead|with|to|be)\b`)
-	indonesianWord = regexp.MustCompile(`(?i)\b(yang|dan|untuk|di|ke|dari|ini|itu|kamu|aku|ada|bisa|dengan|budget|vendor|tamu|juta|ya)\b`)
+	cannedRefusal  = regexp.MustCompile(`(?i)(i'?m having a hard time|i seem to be|encounter(ed|ing) an error|something went wrong|(please )?try (your request |that |it )?again|can i (try|help with|help you with) something else|something else (for you|instead)|i can'?t (help|assist)|i'?m (sorry|unable)|sorry, (but )?(i|something|there|an error)|an error (occurred|has occurred)|as an ai|i cannot (help|assist|fulfill))`)
+	englishWord    = regexp.MustCompile(`(?i)\b(i|you|your|the|a|an|is|was|were|it|of|for|to|be|can|could|please|try|again|something|else|error|request|help|seem|sorry|instead|with|went|wrong|there|this|that)\b`)
+	indonesianWord = regexp.MustCompile(`(?i)\b(yang|dan|untuk|di|ke|dari|ini|itu|kamu|aku|ada|bisa|dengan|budget|vendor|tamu|juta|ya|nggak|tidak|sudah|kalau)\b`)
 )
 
 func looksLikeRefusal(text string) bool {
 	if cannedRefusal.MatchString(text) {
 		return true
 	}
-	return len(englishWord.FindAllString(text, -1)) >= 4 && len(indonesianWord.FindAllString(text, -1)) == 0
+	return len(englishWord.FindAllString(text, -1)) >= 3 && len(indonesianWord.FindAllString(text, -1)) == 0
 }
 
 const gateChars = 80

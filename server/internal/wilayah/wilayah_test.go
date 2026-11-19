@@ -41,3 +41,16 @@ func TestSplit(t *testing.T) {
 		}
 	}
 }
+
+func TestNoStraySpacesAndJakartaUtara(t *testing.T) {
+	if c, ok := Canonical("Jakarta Utara"); !ok || c != "Jakarta Utara" {
+		t.Fatalf("Jakarta Utara: %q %v", c, ok)
+	}
+	for _, p := range provinces {
+		for _, c := range p.Cities {
+			if c != strings.TrimSpace(c) {
+				t.Fatalf("stray space in %q (%s)", c, p.Name)
+			}
+		}
+	}
+}

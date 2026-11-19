@@ -109,7 +109,7 @@ func (r *VendorRepo) ListApproved(ctx context.Context, category, city string, ma
 		from vendor_profiles
 		where status = 'approved'
 		  and ($1 = '' or $1::vendor_category = any(categories))
-		  and ($2 = '' or exists (select 1 from unnest(cities) c where lower(c) = lower($2)) or (cardinality(cities) = 0 and city ilike $2))
+		  and ($2 = '' or exists (select 1 from unnest(cities) c where lower(trim(c)) = lower(trim($2))) or (cardinality(cities) = 0 and city ilike $2))
 		  and ($3 = 0 or round(price_min * (1 + coalesce(commission_rate, $4))) <= $3)
 		order by created_at desc
 	`, category, city, maxPrice, DefaultCommissionRate)

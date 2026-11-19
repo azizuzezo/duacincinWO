@@ -305,13 +305,25 @@ func TestTextGateSwallowsCannedRefusal(t *testing.T) {
 }
 
 func TestRefusalHeuristicAndBudgetContext(t *testing.T) {
-	for _, r := range []string{"I seem to be encountering an error. Can I try something else for you?", "I'm having a hard time fulfilling your request."} {
+	for _, r := range []string{
+		"I seem to be encountering an error. Can I try something else for you?",
+		"I'm having a hard time fulfilling your request.",
+		"Sorry, something went wrong. Please try your request again.",
+		"I encountered an error doing what you asked. Could you try again?",
+		"An error occurred.",
+	} {
 		if !looksLikeRefusal(r) {
 			t.Fatal("refusal not caught:", r)
 		}
 	}
-	if looksLikeRefusal("Untuk budget Rp10 juta dengan 100 tamu, pos terbesar ada di venue dan catering.") {
-		t.Fatal("Indonesian answer flagged")
+	for _, ok := range []string{
+		"Untuk budget Rp10 juta dengan 100 tamu, pos terbesar ada di venue dan catering.",
+		"Tanpa entertainment, pos terbesar tetap Venue & Catering: Rp65.217.391.",
+		"Siap!",
+	} {
+		if looksLikeRefusal(ok) {
+			t.Fatal("Indonesian answer flagged:", ok)
+		}
 	}
 	h := []chatMessage{{Role: "user", Content: "Bantu hitung budget pernikahanku"}, {Role: "assistant", Content: "Berapa totalnya?"}, {Role: "user", Content: "10 juta, 100 tamu"}}
 	if total, guests, ok := budgetFromContext(h); !ok || total != 10_000_000 || guests != 100 {
