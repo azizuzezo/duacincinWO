@@ -270,12 +270,25 @@ function BudgetBlock({ data }: { data: Extract<Block, { type: "budget" }>["data"
   return (
     <div>
       <CardHead eyebrow="Pembagian budget" title="Rencana budget kamu" action={<MoreLink href="/register?role=client">Atur di Budget Planner</MoreLink>} />
-      {data.excluded && data.excluded.length > 0 && (
-        <p className="-mt-2 mb-4 inline-flex flex-wrap items-center gap-1.5 rounded-full bg-dc-gold-wash px-3 py-1 text-[0.8rem] font-semibold text-dc-ink">
-          <svg aria-hidden width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" className="text-dc-clay">
-            <path d="M6 6l12 12M18 6 6 18" />
-          </svg>
-          Tanpa {data.excluded.join(", ")}, porsinya dibagi ke pos lain
+      {((data.excluded?.length ?? 0) > 0 || (data.added?.length ?? 0) > 0) && (
+        <p className="-mt-2 mb-4 flex flex-wrap items-center gap-1.5 text-[0.8rem] font-semibold text-dc-ink">
+          {!!data.added?.length && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-dc-success-soft px-3 py-1 text-dc-success">
+              <svg aria-hidden width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              Ditambah {data.added.join(", ")}
+            </span>
+          )}
+          {!!data.excluded?.length && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-dc-gold-wash px-3 py-1">
+              <svg aria-hidden width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" className="text-dc-clay">
+                <path d="M6 6l12 12M18 6 6 18" />
+              </svg>
+              Tanpa {data.excluded.join(", ")}
+            </span>
+          )}
+          <span className="font-normal text-dc-text-3">Porsi dibagi ulang, total tetap.</span>
         </p>
       )}
       <div className="grid items-center gap-6 sm:grid-cols-[220px_1fr] sm:gap-8">

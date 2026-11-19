@@ -29,7 +29,7 @@ export type VendorItem = {
 export type Block =
   | { type: "vendors"; data: { label: string; city: string; total: number; query: { category: string; city?: string; max_price?: number }; items: VendorItem[] } }
   | { type: "inspirations"; data: { keyword: string; exact: boolean; items: { id: string; url: string; alt_text: string; caption: string; category: string }[] } }
-  | { type: "budget"; data: { total: number; guests?: number; per_guest?: number; excluded?: string[]; lines: { key: string; label: string; percentage: number; amount: number }[] } }
+  | { type: "budget"; data: { total: number; guests?: number; per_guest?: number; excluded?: string[]; added?: string[]; lines: { key: string; label: string; percentage: number; amount: number }[] } }
   | { type: "timeline"; data: { title: string; steps: { when: string; title: string; detail: string }[] } }
   | { type: "articles"; data: { slugs: string[] } }
   | { type: "consultant"; data: { reason: string; category: string; label?: string; city: string; budget?: number; requested?: boolean; fallback?: boolean } };

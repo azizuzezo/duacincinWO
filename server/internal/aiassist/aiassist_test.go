@@ -399,3 +399,44 @@ func TestJabodetabekSearch(t *testing.T) {
 		t.Fatal(got)
 	}
 }
+
+func TestSplitBudgetAddAndStack(t *testing.T) {
+	// Entertainment removed, then MC added: both changes hold.
+	out, err := splitBudgetWith(150_000_000, 300, []string{"entertainment"}, []budgetAdd{{Name: "mc"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	data := out.Block.Data.(map[string]any)
+	lines := data["lines"].([]budgetLine)
+	var sum int64
+	var labels []string
+	for _, l := range lines {
+		sum += l.Amount
+		labels = append(labels, l.Label)
+	}
+	if sum != 150_000_000 {
+		t.Fatalf("sum %d", sum)
+	}
+	got := strings.Join(labels, ",")
+	if strings.Contains(got, "Entertainment") || !strings.Contains(got, "MC") || !strings.HasSuffix(got, "MC,Dana cadangan") {
+		t.Fatal(got)
+	}
+	if ad := data["added"].([]string); len(ad) != 1 || ad[0] != "MC" {
+		t.Fatal(ad)
+	}
+	// Model shapes: list of names, or objects with a percent.
+	for _, args := range []string{`{"total":"150 juta","tanpa":["entertainment"],"tambah":["MC"]}`, `{"total":150000000,"tambah":[{"nama":"MC","persen":"5%"},{"nama":"Hantaran"}]}`} {
+		o, err := (&Deps{}).dispatch(context.Background(), "hitung_budget", args)
+		if err != nil || !strings.Contains(fmt.Sprint(o.Block.Data.(map[string]any)["added"]), "MC") {
+			t.Fatalf("%s: %v %v", args, err, o.Block)
+		}
+	}
+	// Adding a default pos back undoes its removal.
+	o, _ := splitBudgetWith(100_000_000, 0, []string{"entertainment"}, []budgetAdd{{Name: "Entertainment"}})
+	if _, ok := o.Block.Data.(map[string]any)["excluded"]; ok {
+		t.Fatal("entertainment should be back")
+	}
+	if !strings.Contains(blockNote(out.Block), "tanpa Entertainment, ditambah MC") {
+		t.Fatal(blockNote(out.Block))
+	}
+}

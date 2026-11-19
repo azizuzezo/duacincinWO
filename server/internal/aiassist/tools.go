@@ -123,7 +123,7 @@ func toolDefs() []toolDef {
 		}},
 		{Type: "function", Function: toolDefFunc{
 			Name:        "hitung_budget",
-			Description: "Hitung pembagian budget pernikahan per pos dengan rumus Budget Planner DuaCincin. Wajib dipakai setiap kali pengguna menyebut total budget, bertanya cukup tidaknya budget, atau minta menghapus/tidak memakai suatu pos (pakai parameter tanpa). Jangan menghitung sendiri.",
+			Description: "Hitung pembagian budget pernikahan per pos dengan rumus Budget Planner DuaCincin. Wajib dipakai setiap kali pengguna menyebut total budget, bertanya cukup tidaknya budget, atau minta menghapus pos (parameter tanpa) atau menambah pos seperti MC (parameter tambah). Jangan menghitung sendiri.",
 			Parameters: obj(map[string]any{
 				"total":       map[string]any{"type": "integer", "description": "Total budget dalam rupiah penuh, misalnya 80000000."},
 				"jumlah_tamu": map[string]any{"type": "integer", "description": "Perkiraan jumlah tamu, kalau disebut."},
@@ -131,6 +131,14 @@ func toolDefs() []toolDef {
 					"type":        "array",
 					"description": "Pos yang TIDAK dipakai pengguna (misalnya dia bilang tidak perlu entertainment). Porsinya dibagi ulang ke pos lain. Pakai total yang sama dengan sebelumnya kalau pengguna hanya mengubah pos.",
 					"items":       map[string]any{"type": "string", "enum": []string{"venue_catering", "decor", "photo_video", "mua_attire", "entertainment", "invitation_souvenir", "reserve"}},
+				},
+				"tambah": map[string]any{
+					"type":        "array",
+					"description": "Pos tambahan yang diminta pengguna, misalnya MC, Hantaran, Mobil Pengantin, Kue Pengantin, Content Creator, atau pos lain. persen opsional (bagian dari total).",
+					"items": obj(map[string]any{
+						"nama":   map[string]any{"type": "string"},
+						"persen": map[string]any{"type": "number"},
+					}, "nama"),
 				},
 			}, "total"),
 		}},
@@ -250,13 +258,14 @@ func (d *Deps) dispatch(ctx context.Context, name, rawArgs string) (toolOutput, 
 			Total      json.RawMessage `json:"total"`
 			JumlahTamu json.RawMessage `json:"jumlah_tamu"`
 			Tanpa      []string        `json:"tanpa"`
+			Tambah     json.RawMessage `json:"tambah"`
 		}
 		if err := json.Unmarshal([]byte(rawArgs), &a); err != nil {
 			return toolOutput{}, fmt.Errorf("argumen tidak valid")
 		}
 		total := amountFromText(strings.Trim(string(a.Total), `"`), true)
 		guests := int(digitsOnly(strings.Trim(string(a.JumlahTamu), `"`)))
-		return splitBudget(total, guests, a.Tanpa...)
+		return splitBudgetWith(total, guests, a.Tanpa, parseBudgetAdds(a.Tambah))
 	case "tampilkan_timeline":
 		return timeline(rawArgs)
 	case "hubungi_konsultan":
@@ -528,7 +537,35 @@ var budgetAliases = map[string]string{
 // splitBudget splits a total with the Budget Planner's default shares.
 // Pos the couple does not need (exclude) are dropped and their share is
 // spread over the remaining ones in proportion, so the total is unchanged.
+// budgetAdd is a pos the couple adds on top of the default split ("MC").
+// Percent is optional: 0 takes the usual share for that pos.
+type budgetAdd struct {
+	Name    string
+	Percent float64
+}
+
+// extraPos are pos couples often add, with a usual share of the total
+// (before everything is scaled back to 100%).
+var extraPos = map[string]struct {
+	Label string
+	Share float64
+}{
+	"mc": {"MC", 3}, "master of ceremony": {"MC", 3}, "pembawa acara": {"MC", 3},
+	"hantaran": {"Hantaran & Seserahan", 4}, "seserahan": {"Hantaran & Seserahan", 4}, "hantaran & seserahan": {"Hantaran & Seserahan", 4},
+	"mobil": {"Mobil Pengantin", 2}, "mobil pengantin": {"Mobil Pengantin", 2}, "wedding car": {"Mobil Pengantin", 2},
+	"kue": {"Kue Pengantin", 2}, "kue pengantin": {"Kue Pengantin", 2}, "wedding cake": {"Kue Pengantin", 2},
+	"content creator": {"Wedding Content Creator", 3}, "wedding content creator": {"Wedding Content Creator", 3}, "konten": {"Wedding Content Creator", 3},
+}
+
 func splitBudget(total int64, guests int, exclude ...string) (toolOutput, error) {
+	return splitBudgetWith(total, guests, exclude, nil)
+}
+
+// splitBudgetWith splits a total with the Budget Planner's default shares,
+// minus the pos the couple does not need (exclude) and plus the ones they
+// add (MC, hantaran...). Shares are scaled back to 100%, so the total is
+// always exactly what they named. Venue & Catering is never dropped.
+func splitBudgetWith(total int64, guests int, exclude []string, add []budgetAdd) (toolOutput, error) {
 	if total < 1_000_000 || total > 100_000_000_000 {
 		return toolOutput{}, fmt.Errorf("total budget harus antara 1 juta dan 100 miliar rupiah")
 	}
@@ -541,34 +578,82 @@ func splitBudget(total int64, guests int, exclude ...string) (toolOutput, error)
 			skip[k] = true
 		}
 	}
-	keys := make([]string, 0, len(budgetOrder))
-	var kept float64
-	for _, k := range budgetOrder {
-		if !skip[k] {
-			keys = append(keys, k)
-			kept += budget.DefaultPercentages[k]
+	type pos struct {
+		key, label string
+		share      float64
+	}
+	var extras []pos
+	seenExtra := map[string]bool{}
+	for _, a := range add {
+		name := strings.ToLower(strings.Join(strings.Fields(a.Name), " "))
+		if name == "" {
+			continue
+		}
+		// Adding back a default pos ("tambah entertainment lagi") undoes its removal.
+		if k, ok := budgetAliases[name]; ok {
+			delete(skip, k)
+			continue
+		}
+		label, share := "", 3.0
+		if e, ok := extraPos[name]; ok {
+			label, share = e.Label, e.Share
+		} else {
+			label = titleCase(a.Name)
+			if r := []rune(label); len(r) > 32 {
+				label = string(r[:32])
+			}
+		}
+		if a.Percent > 0 && a.Percent <= 50 {
+			share = a.Percent
+		}
+		if label == "" || seenExtra[label] {
+			continue
+		}
+		seenExtra[label] = true
+		extras = append(extras, pos{key: "extra:" + strings.ToLower(label), label: label, share: share})
+		if len(extras) == 8 {
+			break
 		}
 	}
-	lines := make([]budgetLine, 0, len(keys))
+	var all []pos
+	for _, k := range budgetOrder {
+		if k == "reserve" {
+			all = append(all, extras...) // extras sit before the reserve
+		}
+		if !skip[k] {
+			all = append(all, pos{key: k, label: budgetLabels[k], share: budget.DefaultPercentages[k]})
+		}
+	}
+	var sumShares float64
+	for _, p := range all {
+		sumShares += p.share
+	}
+	lines := make([]budgetLine, 0, len(all))
 	var used int64
-	for i, k := range keys {
-		pct := math.Round(budget.DefaultPercentages[k]/kept*1000) / 10
-		amt := int64(math.Round(float64(total) * budget.DefaultPercentages[k] / kept))
-		if i == len(keys)-1 {
+	for i, p := range all {
+		pct := math.Round(p.share/sumShares*1000) / 10
+		amt := int64(math.Round(float64(total) * p.share / sumShares))
+		if i == len(all)-1 {
 			amt = total - used // rounding drift lands in the last pos
 		}
 		used += amt
-		lines = append(lines, budgetLine{Key: k, Label: budgetLabels[k], Percentage: pct, Amount: amt})
+		lines = append(lines, budgetLine{Key: p.key, Label: p.label, Percentage: pct, Amount: amt})
 	}
-	var excluded []string
+	var excluded, added []string
 	for _, k := range budgetOrder {
 		if skip[k] {
 			excluded = append(excluded, budgetLabels[k])
 		}
 	}
+	for _, e := range extras {
+		added = append(added, e.label)
+	}
 	data := map[string]any{"total": total, "lines": lines}
 	if len(excluded) > 0 {
 		data["excluded"] = excluded
+	}
+	if len(added) > 0 {
+		data["added"] = added
 	}
 	// The model gets plain sentences in rupiah, largest first, so it does not
 	// misread keys or recompute numbers.
@@ -582,9 +667,17 @@ func splitBudget(total int64, guests int, exclude ...string) (toolOutput, error)
 		"pos_terbesar":      fmt.Sprintf("%s, %s", lines[0].Label, rupiah(lines[0].Amount)),
 		"catatan":           "Angka ini rumus default Budget Planner DuaCincin dan sudah tampil sebagai kartu. Pakai angka ini apa adanya, jangan dihitung ulang.",
 	}
-	if len(excluded) > 0 {
-		forModel["tanpa_pos"] = excluded
-		forModel["catatan"] = "Pos " + strings.Join(excluded, ", ") + " sudah dihapus dan porsinya dibagi ulang ke pos lain; kartu baru sudah tampil. Pakai angka ini apa adanya."
+	if len(excluded) > 0 || len(added) > 0 {
+		var parts []string
+		if len(excluded) > 0 {
+			forModel["tanpa_pos"] = excluded
+			parts = append(parts, "dihapus: "+strings.Join(excluded, ", "))
+		}
+		if len(added) > 0 {
+			forModel["pos_tambahan"] = added
+			parts = append(parts, "ditambah: "+strings.Join(added, ", "))
+		}
+		forModel["catatan"] = "Susunan pos sudah diubah (" + strings.Join(parts, "; ") + ") dan porsi dibagi ulang supaya total tetap sama; kartu baru sudah tampil. Pakai angka ini apa adanya."
 	}
 	if guests > 0 {
 		perGuest := lines[0].Amount / int64(guests)
@@ -695,7 +788,14 @@ func blockNote(b *block) string {
 		}
 		return fmt.Sprintf("kartu vendor %v: %s", data["label"], strings.Join(names, ", "))
 	case "budget":
-		return fmt.Sprintf("pembagian budget total %v", data["total"])
+		note := fmt.Sprintf("pembagian budget total %v", data["total"])
+		if ex, ok := data["excluded"].([]string); ok && len(ex) > 0 {
+			note += ", tanpa " + strings.Join(ex, ", ")
+		}
+		if ad, ok := data["added"].([]string); ok && len(ad) > 0 {
+			note += ", ditambah " + strings.Join(ad, ", ")
+		}
+		return note
 	case "inspirations":
 		return fmt.Sprintf("foto inspirasi %q", data["keyword"])
 	case "timeline":
@@ -752,4 +852,48 @@ func shortText(s string, n int) string {
 		cut = cut[:i]
 	}
 	return strings.TrimRight(cut, " ,.;:") + "…"
+}
+
+func titleCase(s string) string {
+	words := strings.Fields(s)
+	for i, w := range words {
+		r := []rune(strings.ToLower(w))
+		r[0] = []rune(strings.ToUpper(string(r[0])))[0]
+		words[i] = string(r)
+	}
+	return strings.Join(words, " ")
+}
+
+// parseBudgetAdds reads "tambah" as either ["MC", "Hantaran"] or
+// [{"nama":"MC","persen":5}], as models send both.
+func parseBudgetAdds(raw json.RawMessage) []budgetAdd {
+	if len(raw) == 0 {
+		return nil
+	}
+	var names []string
+	if json.Unmarshal(raw, &names) == nil {
+		out := make([]budgetAdd, 0, len(names))
+		for _, n := range names {
+			out = append(out, budgetAdd{Name: n})
+		}
+		return out
+	}
+	var objs []struct {
+		Nama   string          `json:"nama"`
+		Name   string          `json:"name"`
+		Persen json.RawMessage `json:"persen"`
+	}
+	if json.Unmarshal(raw, &objs) != nil {
+		return nil
+	}
+	out := make([]budgetAdd, 0, len(objs))
+	for _, o := range objs {
+		n := o.Nama
+		if n == "" {
+			n = o.Name
+		}
+		pct := parseDecimal(strings.Trim(strings.TrimSuffix(strings.Trim(string(o.Persen), `"`), "%"), " "))
+		out = append(out, budgetAdd{Name: n, Percent: pct})
+	}
+	return out
 }
