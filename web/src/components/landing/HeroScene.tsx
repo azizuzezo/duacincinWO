@@ -29,6 +29,7 @@ import { cityOptions } from "@/lib/wilayah";
 import styles from "./hero.module.css";
 import { SCENES } from "./scenes";
 import { GoldArchFrame } from "@/components/ornament/GoldArch";
+import { KiranaFace } from "./ask/Kirana3D";
 
 const STEP_MS = 7000;
 const POPULAR = ["venue", "decor", "mua_attire", "photo_video"];
@@ -39,7 +40,7 @@ function useDepth(sx: MotionValue<number>, sy: MotionValue<number>, f: number) {
   return { x: useTransform(sx, (v) => v * f), y: useTransform(sy, (v) => v * f) };
 }
 
-export function HeroScene() {
+export function HeroScene({ askEnabled = false }: { askEnabled?: boolean }) {
   const reduced = useReducedMotion();
   const ref = useRef<HTMLElement>(null);
   const inView = useInView(ref, { amount: 0.3 });
@@ -204,6 +205,23 @@ export function HeroScene() {
               </Link>
             ))}
           </div>
+
+          {askEnabled && (
+            <a
+              href="#tanya"
+              onClick={() => window.dispatchEvent(new Event("kirana:open"))}
+              style={{ animationDelay: "450ms" }}
+              className="animate-fade-up group mt-3 inline-flex min-h-11 items-center gap-2.5 rounded-full border border-dc-gold-antique/45 bg-dc-ink/55 py-1.5 pl-1.5 pr-4 text-sm font-semibold text-[#fbf6ec] backdrop-blur-sm transition-[border-color,background-color,transform] duration-300 ease-dc hover:border-dc-gold-antique hover:bg-dc-ink/75 motion-safe:hover:-translate-y-0.5"
+            >
+              <span aria-hidden className="rounded-full bg-linear-135 from-[#e2c27f] to-[#a17d36] p-[2px]">
+                <KiranaFace size={34} />
+              </span>
+              Bingung mulai dari mana? <span className="text-dc-gold-antique">Tanya Kirana, asisten AI kami</span>
+              <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="transition-transform duration-300 motion-safe:group-hover:translate-y-0.5">
+                <path d="M12 5v14M6 13l6 6 6-6" />
+              </svg>
+            </a>
+          )}
         </motion.div>
 
         {/* Layers 2 and 3: a warm halo behind, and the gold gate with the couple's

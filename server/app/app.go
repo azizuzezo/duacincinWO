@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"duacincin/server/internal/admin"
+	"duacincin/server/internal/aiassist"
 	"duacincin/server/internal/auth"
 	"duacincin/server/internal/booking"
 	"duacincin/server/internal/budget"
@@ -137,6 +138,7 @@ func New(ctx context.Context, opts Options) (*App, error) {
 	chatDeps.Mailer, chatDeps.Cfg = mailer, cfg
 
 	agreementRepo := repository.NewAgreementRepo(pool)
+	inspirationRepo := repository.NewInspirationRepo(pool)
 
 	deps := httpserver.Deps{
 		GoogleAuth: googleauth.NewDeps(userRepo, agreementRepo, limiter, cfg),
@@ -153,7 +155,8 @@ func New(ctx context.Context, opts Options) (*App, error) {
 		Chat:           chatDeps,
 		Whatsapp:       whatsappDeps,
 		Budget:         budget.NewDeps(repository.NewBudgetRepo(pool)),
-		Inspiration:    inspiration.NewDeps(repository.NewInspirationRepo(pool), storageClient, auditLogRepo),
+		Inspiration:    inspiration.NewDeps(inspirationRepo, storageClient, auditLogRepo),
+		AIAssist:       aiassist.NewDeps(vendorRepo, reviewRepo, inspirationRepo, repository.NewAIChatRepo(pool), limiter, cfg),
 		WeddingPlanner: weddingplanner.NewDeps(plannerRepo),
 		Notifications:  notifications.NewDeps(notificationRepo),
 		GuestList:      guestlist.NewDeps(guestRepo, repository.NewRSVPLinkRepo(pool), limiter),

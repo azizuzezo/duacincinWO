@@ -54,6 +54,14 @@ type Config struct {
 	// www.duacincin.id are same-site, so a host-only SameSite=Lax cookie is
 	// already sent on the web's credentialed fetches.
 	CookieDomain string
+
+	// Landing-page AI assistant (internal/aiassist), any OpenAI-compatible
+	// chat completions endpoint. AIBaseURL ends before /chat/completions.
+	// Server-only: the key never reaches the browser. All three empty =
+	// the assistant reports itself disabled and the landing hides it.
+	AIBaseURL string
+	AIAPIKey  string
+	AIModel   string
 }
 
 // Load reads environment variables, falling back to a local .env file
@@ -90,6 +98,10 @@ func Load() (*Config, error) {
 		GoogleClientID: strings.TrimSpace(os.Getenv("GOOGLE_CLIENT_ID")),
 
 		CookieDomain: strings.TrimSpace(os.Getenv("COOKIE_DOMAIN")),
+
+		AIBaseURL: strings.TrimRight(strings.TrimSpace(os.Getenv("AI_BASE_URL")), "/"),
+		AIAPIKey:  strings.TrimSpace(os.Getenv("AI_API_KEY")),
+		AIModel:   strings.TrimSpace(os.Getenv("AI_MODEL")),
 	}
 
 	if cfg.DatabasePooler == "" {
@@ -114,6 +126,9 @@ func Load() (*Config, error) {
 	}
 	if len(cfg.WOLinkSecret) < 32 {
 		log.Println("warning: WO_LINK_SECRET is not set (min 32 chars) — the DuaCincin Invitation link is disabled")
+	}
+	if !cfg.AIEnabled() {
+		log.Println("warning: AI_BASE_URL/AI_API_KEY/AI_MODEL not all set — the landing AI assistant is disabled")
 	}
 	if cfg.GoogleClientID == "" {
 		log.Println("warning: GOOGLE_CLIENT_ID is not set — \"Masuk dengan Google\" is disabled")
@@ -150,4 +165,9 @@ func allowedOrigins(raw string) []string {
 		}
 	}
 	return out
+}
+
+// AIEnabled reports whether the landing AI assistant has everything it needs.
+func (c *Config) AIEnabled() bool {
+	return c.AIBaseURL != "" && c.AIAPIKey != "" && c.AIModel != ""
 }

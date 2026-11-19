@@ -38,6 +38,14 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 
 ## Changelog
 
+### 2026-11-19 — Kirana, asisten AI di landing dan /kirana
+- **Apa:** Calon pengantin bisa bertanya apa saja soal pernikahannya tanpa login. Jawaban di-stream (SSE) dan disertai kartu dari data nyata: vendor terdaftar (dengan tag "kenapa cocok"), pembagian budget (rumus Budget Planner), foto Inspirasi, timeline, artikel. Kalau vendor yang cocok belum ada, Kirana tidak mengarang atau melebar ke kota lain, tapi menampilkan kartu Wedding Consultant beserta ringkasan kebutuhan yang bisa disalin.
+- **Backend:** `server/internal/aiassist` (OpenAI-compatible chat completions + tool calling, maks 4 putaran). Endpoint publik `GET /api/v1/ai/status`, `POST /api/v1/ai/chat` (body `{message}`), `GET|DELETE /api/v1/ai/history`. Riwayat disimpan per perangkat (cookie HttpOnly `dc_kirana`, hanya hash SHA-256 di DB), bukan per IP, karena satu IP sering dipakai bersama. Begitu login, sesi perangkat pindah ke akun. Rate limit 20 pesan per IP per jam dan 2000 per hari global. Env baru: `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`; kalau kosong, Kirana disembunyikan.
+- **Migrasi:** `000029_ai_chat` (`ai_chat_sessions`, `ai_chat_turns`), hanya menambah tabel. **Sudah diterapkan ke DB produksi pada 2026-11-19** atas izin pemilik, sebelum kode di-commit (deploy Vercel tidak menjalankan migrasi). Jangan ubah isi file migrasi ini lagi; perubahan skema berikutnya harus migrasi baru.
+- **Frontend:** section Kirana di beranda (pintu masuk) dan halaman `/kirana` (chat layar penuh). Maskot Kirana 3D (three.js / react-three-fiber, dibuat dari primitif tanpa file model), dimuat malas dan berhenti render di luar layar. Avatar kecil memakai still dari model yang sama (`public/kirana/*.webp`). Gaya kaca (`.dc-glass`, `.dc-glow-ring`, `.dc-specular` di globals.css), launcher mengambang, bottom sheet di HP. Dependensi baru: `three`, `@react-three/fiber`, `@react-three/drei`.
+- **Tes:** unit test `go test ./internal/aiassist`. `e2e/run.sh` meneruskan `E2E_AI_BASE_URL/E2E_AI_API_KEY/E2E_AI_MODEL` ke API bila diset. Suite lama tetap 147/147 API dan 45/45 UI.
+- **Belum diverifikasi:** streaming SSE dari fungsi Go di Vercel. Kalau Vercel menahan respons, jawaban tetap datang utuh di akhir.
+
 ### 2026-11-14 — Tag vendor di foto Inspirasi (pola Bridestory)
 - **Fase:** 4 (Galeri Inspirasi), lanjutan.
 - **Apa yang berubah:**

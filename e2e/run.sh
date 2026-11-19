@@ -56,7 +56,9 @@ echo "== Jalankan API (migrasi berjalan otomatis)"
 mkdir -p "$WORK/run/work"
 (cd "$WORK/run/work" && exec env -i PATH="$PATH" HOME="$HOME" PORT="$API_PORT" APP_ENV=development \
   DATABASE_POOLER="postgres://postgres:test@127.0.0.1:${PG_PORT}/duacincin?sslmode=disable" \
-  JWT_SECRET="e2e-only-secret-not-for-real-use" "$WORK/api" >"$WORK/api.log" 2>&1) &
+  JWT_SECRET="e2e-only-secret-not-for-real-use" \
+  AI_BASE_URL="${E2E_AI_BASE_URL:-}" AI_API_KEY="${E2E_AI_API_KEY:-}" AI_MODEL="${E2E_AI_MODEL:-}" \
+  "$WORK/api" >"$WORK/api.log" 2>&1) &
 PIDS+=($!)
 wait_for "http://localhost:${API_PORT}/healthz" "API" || { tail -20 "$WORK/api.log"; exit 1; }
 

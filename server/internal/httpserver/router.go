@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"duacincin/server/internal/admin"
+	"duacincin/server/internal/aiassist"
 	"duacincin/server/internal/auth"
 	"duacincin/server/internal/booking"
 	"duacincin/server/internal/budget"
@@ -46,6 +47,7 @@ type Deps struct {
 	Whatsapp       *whatsapp.Deps
 	InvitationLink *invitationlink.Deps
 	GoogleAuth     *googleauth.Deps
+	AIAssist       *aiassist.Deps
 }
 
 // NewRouter builds the root chi router for the DuaCincin API.
@@ -93,6 +95,13 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config, deps Deps) http.Handler {
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.Timeout(5 * time.Minute))
 			inspiration.Mount(r, deps.Inspiration, cfg)
+		})
+
+		// The landing AI assistant streams its answer (SSE) and may loop
+		// through several model calls; it enforces its own deadline
+		// (aiassist.requestDeadline) instead of the 15s route timeout.
+		r.Group(func(r chi.Router) {
+			aiassist.Mount(r, deps.AIAssist)
 		})
 
 		// The chat websocket upgrade route stays outside every request

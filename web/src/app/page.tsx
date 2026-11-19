@@ -1,3 +1,4 @@
+import { AskAISection, fetchAskEnabled } from "@/components/landing/ask/AskAISection";
 import { AdatMarquee } from "@/components/landing/AdatMarquee";
 import { BudgetDemo } from "@/components/landing/BudgetDemo";
 import { CategoryMosaic } from "@/components/landing/CategoryMosaic";
@@ -37,7 +38,8 @@ const SITE_LD = {
   ],
 };
 
-// Narrative: search (the door) -> what you can find (categories as photos,
+// Narrative: search (the door) -> or just ask the assistant (real data as
+// cards, hidden when the server has no AI configured) -> what you can find (categories as photos,
 // real vendors) -> the app itself, screen by screen -> where your money is ->
 // the invitation that fills itself from your plan -> try the budget ->
 // ideas to save -> a human to ask -> vendors join -> close.
@@ -47,13 +49,15 @@ const SITE_LD = {
 // paper, photo, so no two neighbours share a ground. Investor-facing
 // additions: the adat type band (white), the usual way vs DuaCincin
 // (ivory + one ink panel) (founders live on /tentang-kami).
-export default function Page() {
+export default async function Page() {
+  const askEnabled = await fetchAskEnabled();
   return (
     <>
       <Navbar overlay />
       <main id="konten" className="flex-1">
         <JsonLd data={SITE_LD} />
-        <HeroScene />
+        <HeroScene askEnabled={askEnabled} />
+        <AskAISection enabled={askEnabled} />
         <CategoryMosaic />
         <AdatMarquee />
         <WhyDuaCincin />
