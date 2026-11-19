@@ -17,6 +17,7 @@ import { EASE, useReducedMotion } from "@/lib/motion";
 
 import { ChatPanel } from "./ChatPanel";
 import { EXAMPLES, ExampleIcon } from "./Composer";
+import { Introduce, SKIP_KEY } from "./Introduce";
 import { Kirana3D, KiranaFace } from "./Kirana3D";
 import type { Kirana3DMood } from "./KiranaScene";
 import { useAsk, type Turn } from "./useAsk";
@@ -27,7 +28,37 @@ export function KiranaChatPage() {
   const reduced = useReducedMotion();
   const router = useRouter();
   const params = useSearchParams();
-  const { turns, busy, loaded, send, stop, reset, retry } = useAsk();
+  const { turns, busy, loaded, profile, saveProfile, send, stop, reset, retry } = useAsk();
+  const [skipped, setSkipped] = useState(true);
+  const [hello, setHello] = useState(false);
+
+  useEffect(() => {
+    try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- read a per-browser choice once
+      setSkipped(window.localStorage.getItem(SKIP_KEY) === "1");
+    } catch {
+      setSkipped(false);
+    }
+  }, []);
+
+  // A returning visitor gets a named hello from Kirana herself.
+  useEffect(() => {
+    if (!loaded || !profile) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- greet once the profile is known
+    setHello(true);
+    const t = setTimeout(() => setHello(false), 4200);
+    return () => clearTimeout(t);
+  }, [loaded, profile]);
+
+  const askIntro = loaded && !profile && !skipped && turns.length === 0 && !params.get("q");
+  function skipIntro() {
+    try {
+      window.localStorage.setItem(SKIP_KEY, "1");
+    } catch {
+      /* fine */
+    }
+    setSkipped(true);
+  }
   const input = useRef<HTMLTextAreaElement>(null);
   const [typing, setTyping] = useState(false);
   const [cheer, setCheer] = useState(false);
@@ -35,7 +66,7 @@ export function KiranaChatPage() {
 
   const lastAssistant = [...turns].reverse().find((t): t is AssistantTurn => t.role === "assistant");
   const streamingText = busy && !!lastAssistant?.parts.some((p) => p.kind === "text" && p.text.trim());
-  const mood: Kirana3DMood = busy ? (streamingText ? "talking" : "thinking") : cheer ? "happy" : typing ? "listening" : turns.length === 0 ? "wave" : "idle";
+  const mood: Kirana3DMood = busy ? (streamingText ? "talking" : "thinking") : cheer ? "happy" : typing ? "listening" : hello || turns.length === 0 ? "wave" : "idle";
 
   // The question carried over from the landing: ask it once, after the
   // history has loaded (so it lands after the earlier turns).
@@ -76,11 +107,25 @@ export function KiranaChatPage() {
       <div className="mx-auto h-[150px] w-[140px] lg:hidden">
         <Kirana3D mood={mood} className="h-full w-full" />
       </div>
+      {askIntro ? (
+        <div className="mt-2">
+          <Introduce onSave={saveProfile} onSkip={skipIntro} />
+        </div>
+      ) : (
+        <>
       <p className="mt-2 font-heading text-[2rem] font-semibold leading-tight text-dc-ink">
-        Hai, aku <span className="dc-em">Kirana</span>.
+        {profile ? (
+          <>
+            Halo <span className="dc-em">Kak {profile.name}</span>!
+          </>
+        ) : (
+          <>
+            Hai, aku <span className="dc-em">Kirana</span>.
+          </>
+        )}
       </p>
       <p className="mx-auto mt-2 max-w-[42ch] text-[0.98rem] leading-relaxed text-dc-text-2">
-        Ceritakan rencana pernikahanmu. Aku carikan vendor yang terdaftar di DuaCincin, hitung budget, dan susun persiapannya.
+        {profile ? "Senang ketemu lagi. " : ""}Ceritakan rencana pernikahanmu. Aku carikan vendor yang terdaftar di DuaCincin, hitung budget, dan susun persiapannya.
       </p>
       <ul className="mt-6 grid gap-2.5 text-left sm:grid-cols-2">
         {EXAMPLES.map((ex, i) => (
@@ -98,8 +143,22 @@ export function KiranaChatPage() {
           </motion.li>
         ))}
       </ul>
+        </>
+      )}
     </div>
   );
+
+  const notice = profile ? (
+    <motion.div
+      initial={reduced ? { opacity: 0 } : { opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: EASE }}
+      className="mx-auto flex w-fit items-center gap-2 rounded-full border border-dc-gold/30 bg-dc-gold-wash/80 px-3.5 py-1.5 text-sm font-semibold text-dc-ink"
+    >
+      <KiranaFace size={24} mood="happy" />
+      Halo lagi, Kak {profile.name}! Lanjut dari obrolan sebelumnya ya.
+    </motion.div>
+  ) : null;
 
   return (
     <div className="relative isolate flex h-[100dvh] flex-col overflow-hidden bg-dc-ivory">
@@ -134,9 +193,9 @@ export function KiranaChatPage() {
           <div className="relative h-[min(62vh,560px)] w-full">
             <Kirana3D mood={mood} className="h-full w-full" />
             <AnimatePresence>
-              {(cheer || typing || busy) && (
+              {(cheer || typing || busy || hello) && (
                 <motion.p
-                  key={cheer ? "cheer" : busy ? (streamingText ? "talk" : "think") : "typing"}
+                  key={cheer ? "cheer" : busy ? (streamingText ? "talk" : "think") : typing ? "typing" : "hello"}
                   aria-hidden
                   initial={reduced ? { opacity: 0 } : { opacity: 0, y: 8, scale: 0.9 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -144,21 +203,31 @@ export function KiranaChatPage() {
                   transition={{ duration: 0.35, ease: EASE }}
                   className="dc-glass absolute right-[6%] top-[8%] whitespace-nowrap rounded-2xl rounded-bl-sm px-3.5 py-2 text-sm font-semibold text-dc-ink"
                 >
-                  {cheer ? "Sudah siap!" : busy ? (streamingText ? "Ini dia…" : "Sebentar, aku carikan…") : "Aku dengarkan…"}
+                  {cheer ? "Sudah siap!" : busy ? (streamingText ? "Ini dia…" : "Sebentar, aku carikan…") : typing ? "Aku dengarkan…" : `Halo Kak ${profile?.name ?? ""}!`}
                 </motion.p>
               )}
             </AnimatePresence>
           </div>
-          <ul className="mt-2 flex flex-wrap justify-center gap-2 text-xs font-semibold text-dc-ink">
-            {["Vendor terverifikasi saja", "Riwayat tersimpan", "Gratis"].map((b) => (
-              <li key={b} className="dc-glass inline-flex items-center gap-1.5 rounded-full px-3 py-1.5">
-                <svg aria-hidden width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="text-dc-clay">
-                  <path d="m5 12 5 5 9-10" />
-                </svg>
-                {b}
-              </li>
+          {/* The stage she stands on: two interlocked gold rings, the brand
+              motif, lying flat like a pedestal with a soft glow. */}
+          <div aria-hidden className="relative -mt-[132px] h-28 w-[min(400px,86%)]">
+            <div className="absolute inset-x-[8%] bottom-6 h-16 rounded-[50%] bg-[radial-gradient(closest-side,rgb(220_187_118_/_0.55),transparent)] blur-xl" />
+            <svg viewBox="0 0 420 110" className="absolute inset-0 h-full w-full">
+              <defs>
+                <linearGradient id="kirana-stage-gold" x1="0" x2="1">
+                  <stop offset="0" stopColor="#9c7731" />
+                  <stop offset="0.5" stopColor="#f0d79c" />
+                  <stop offset="1" stopColor="#9c7731" />
+                </linearGradient>
+              </defs>
+              <ellipse cx="170" cy="55" rx="140" ry="30" fill="none" stroke="url(#kirana-stage-gold)" strokeWidth="3" opacity="0.9" />
+              <ellipse cx="250" cy="55" rx="140" ry="30" fill="none" stroke="url(#kirana-stage-gold)" strokeWidth="3" opacity="0.9" />
+              <ellipse cx="210" cy="55" rx="190" ry="44" fill="none" stroke="#b8924a" strokeOpacity="0.25" strokeWidth="1" strokeDasharray="2 7" className="dc-stage-spin" style={{ transformOrigin: "210px 55px" }} />
+            </svg>
+            {[0, 1, 2, 3, 4].map((i) => (
+              <span key={i} className="dc-sparkle absolute h-1.5 w-1.5 rounded-full bg-[#f0d79c]" style={{ left: `${14 + i * 18}%`, top: `${i % 2 ? 18 : 42}%`, animationDelay: `${i * 0.9}s` }} />
             ))}
-          </ul>
+          </div>
         </aside>
 
         {/* The conversation */}
@@ -187,6 +256,7 @@ export function KiranaChatPage() {
               sheet={false}
               onMinimize={() => {}}
               empty={welcome}
+              notice={notice}
             />
           )}
         </motion.section>

@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"unicode"
 
 	"duacincin/server/internal/auth"
 	"duacincin/server/internal/httpx"
@@ -108,12 +109,16 @@ func History(deps *Deps) http.HandlerFunc {
 		w.Header().Set("Cache-Control", "private, no-store")
 		v := deps.identify(w, r, false)
 		out := []uiTurn{}
+		var profile any
 		id, err := deps.session(r.Context(), v, false)
 		if err != nil {
 			httpx.Error(w, http.StatusInternalServerError, "riwayat tidak bisa dimuat")
 			return
 		}
 		if id != "" {
+			if vis, err := deps.Chats.Visitor(r.Context(), id); err == nil && vis.Name != "" {
+				profile = map[string]any{"name": vis.Name, "age": vis.Age}
+			}
 			turns, err := deps.Chats.RecentTurns(r.Context(), id, historyForUI)
 			if err != nil {
 				httpx.Error(w, http.StatusInternalServerError, "riwayat tidak bisa dimuat")
@@ -129,7 +134,7 @@ func History(deps *Deps) http.HandlerFunc {
 				out = append(out, u)
 			}
 		}
-		httpx.JSON(w, http.StatusOK, map[string]any{"turns": out})
+		httpx.JSON(w, http.StatusOK, map[string]any{"turns": out, "profile": profile})
 	}
 }
 
@@ -172,4 +177,61 @@ func nonNullJSON(b json.RawMessage, fallback string) json.RawMessage {
 func itoa(n int64) string {
 	b, _ := json.Marshal(n)
 	return string(b)
+}
+
+type profileBody struct {
+	Name string `json:"name"`
+	Age  int    `json:"age"`
+}
+
+// cleanName keeps a short, plain first name: letters, spaces, apostrophes
+// and dots, at most 40 characters, words capitalised ("siti" -> "Siti").
+func cleanName(raw string) string {
+	var b strings.Builder
+	for _, r := range strings.TrimSpace(raw) {
+		if unicode.IsLetter(r) || r == ' ' || r == '\'' || r == '.' || r == '-' {
+			b.WriteRune(r)
+		}
+	}
+	words := strings.Fields(b.String())
+	for i, w := range words {
+		rs := []rune(strings.ToLower(w))
+		rs[0] = unicode.ToUpper(rs[0])
+		words[i] = string(rs)
+	}
+	name := strings.Join(words, " ")
+	if r := []rune(name); len(r) > 40 {
+		name = strings.TrimSpace(string(r[:40]))
+	}
+	return name
+}
+
+// SaveProfile stores the name (and optional age) a visitor gave Kirana.
+func SaveProfile(deps *Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var body profileBody
+		if err := httpx.DecodeJSON(w, r, &body); err != nil {
+			httpx.Error(w, http.StatusBadRequest, "permintaan tidak valid")
+			return
+		}
+		name := cleanName(body.Name)
+		if name == "" {
+			httpx.Error(w, http.StatusBadRequest, "nama belum diisi")
+			return
+		}
+		if body.Age != 0 && (body.Age < 15 || body.Age > 99) {
+			httpx.Error(w, http.StatusBadRequest, "umur harus antara 15 dan 99")
+			return
+		}
+		v := deps.identify(w, r, true)
+		id, err := deps.session(r.Context(), v, true)
+		if err == nil && id != "" {
+			err = deps.Chats.SetVisitor(r.Context(), id, repository.AIVisitor{Name: name, Age: body.Age})
+		}
+		if err != nil || id == "" {
+			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
+			return
+		}
+		httpx.JSON(w, http.StatusOK, map[string]any{"name": name, "age": body.Age})
+	}
 }

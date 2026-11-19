@@ -10,4 +10,5 @@ func Mount(r chi.Router, deps *Deps) {
 	r.Post("/ai/chat", Chat(deps))
 	r.Get("/ai/history", History(deps))
 	r.Delete("/ai/history", ClearHistory(deps))
+	r.Put("/ai/profile", SaveProfile(deps))
 }

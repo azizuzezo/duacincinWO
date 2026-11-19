@@ -36,6 +36,7 @@ const (
 	maxVendors      = 6
 	maxInspirations = 8
 	maxTimeline     = 8
+	maxPortfolio    = 5
 )
 
 var vendorCategoryLabels = map[string]string{
@@ -144,6 +145,11 @@ func toolDefs() []toolDef {
 			}, "judul", "langkah"),
 		}},
 		{Type: "function", Function: toolDefFunc{
+			Name:        "hubungi_konsultan",
+			Description: "Tampilkan kartu untuk chat dengan Wedding Consultant DuaCincin (staf manusia). HANYA dipanggil kalau pengguna secara jelas meminta bicara/chat dengan Wedding Consultant, konsultan, admin, CS, atau manusia.",
+			Parameters:  obj(map[string]any{}),
+		}},
+		{Type: "function", Function: toolDefFunc{
 			Name:        "tampilkan_artikel",
 			Description: "Tampilkan artikel panduan DuaCincin yang relevan sebagai bacaan lanjutan.",
 			Parameters: obj(map[string]any{
@@ -180,6 +186,8 @@ func statusFor(name, rawArgs string) string {
 		return "Menyusun timeline persiapan"
 	case "tampilkan_artikel":
 		return "Memilih bacaan yang pas"
+	case "hubungi_konsultan":
+		return "Menghubungkan ke Wedding Consultant"
 	}
 	return "Sedang menyiapkan"
 }
@@ -224,6 +232,10 @@ func (d *Deps) dispatch(ctx context.Context, name, rawArgs string) (toolOutput, 
 		return splitBudget(int64(a.Total), int(a.JumlahTamu))
 	case "tampilkan_timeline":
 		return timeline(rawArgs)
+	case "hubungi_konsultan":
+		b := consultantBlock("", "", "", 0)
+		b.Data.(map[string]any)["requested"] = true
+		return toolOutput{ForModel: `{"ok":true,"catatan":"Kartu chat Wedding Consultant sudah tampil. Jawab singkat dan hangat."}`, Block: b}, nil
 	case "tampilkan_artikel":
 		var a struct {
 			Slugs []string `json:"slugs"`
@@ -246,6 +258,9 @@ type vendorCardDTO struct {
 	ReviewCount   int     `json:"review_count"`
 	// Reasons are short "kenapa cocok" tags, from facts only.
 	Reasons []string `json:"reasons"`
+	// Images are up to 5 portfolio photos (the first is SampleImage).
+	Images      []string `json:"images"`
+	Description string   `json:"description,omitempty"`
 }
 
 func normalizeCity(raw string) string {
@@ -330,9 +345,17 @@ func (d *Deps) findVendors(ctx context.Context, category, city string, maxPrice 
 			ID: p.UserID, BusinessName: p.BusinessName, Category: category, City: p.City,
 			PriceMin: repository.CustomerPrice(p.PriceMin, rate), PriceMax: repository.CustomerPrice(p.PriceMax, rate),
 		}
+		c.Images = []string{}
 		if items, err := d.Vendors.ListPortfolio(ctx, p.UserID); err == nil && len(items) > 0 {
 			c.SampleImage = items[0].PublicURL
+			for i, it := range items {
+				if i == maxPortfolio {
+					break
+				}
+				c.Images = append(c.Images, it.PublicURL)
+			}
 		}
+		c.Description = shortText(p.Description, 160)
 		if avg, n, err := d.Reviews.GetAggregateForVendor(ctx, p.UserID); err == nil {
 			c.AverageRating, c.ReviewCount = avg, n
 		}
@@ -640,4 +663,19 @@ func mergeConsultant(blocks []*block) *block {
 	merged["reason"] = strings.Join(reasons, " ")
 	merged["label"] = strings.Join(labels, ", ")
 	return &block{Type: "consultant", Data: merged}
+}
+
+// shortText trims a vendor description to one or two lines for a card,
+// cutting at a word boundary.
+func shortText(s string, n int) string {
+	s = strings.Join(strings.Fields(s), " ")
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	cut := string(r[:n])
+	if i := strings.LastIndex(cut, " "); i > n/2 {
+		cut = cut[:i]
+	}
+	return strings.TrimRight(cut, " ,.;:") + "…"
 }

@@ -7,6 +7,7 @@ import { Suspense, useEffect, useState } from "react";
 import { AgreementCheckbox, AgreementNotice } from "@/components/AgreementCheckbox";
 import { AuthCard } from "@/components/AuthCard";
 import { AuthDivider, GoogleSignIn } from "@/components/auth/GoogleSignIn";
+import { nextFromLocation } from "@/components/auth/redirect";
 import { Button } from "@/components/Button";
 import { PasswordField } from "@/components/PasswordField";
 import { TextField } from "@/components/TextField";
@@ -126,7 +127,7 @@ function RegisterContent() {
         signup_ticket: ticket,
         otp_code: otp,
       });
-      router.push(ROLE_CONFIG[role].redirect);
+      router.push(role === "client" ? (nextFromLocation() ?? ROLE_CONFIG[role].redirect) : ROLE_CONFIG[role].redirect);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Terjadi kesalahan, coba lagi.");
       setLoading(false);

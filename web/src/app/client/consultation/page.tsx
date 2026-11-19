@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { dayName, formatJam, monthShort } from "@/components/booking/format";
 import { CLIENT_NAV } from "@/components/shell/navConfig";
@@ -103,6 +103,16 @@ function ClientConsultationContent({ user }: { user: CurrentUser }) {
       show(err instanceof ApiError ? err.message : "Chat belum bisa dibuka. Coba lagi sebentar.", "danger");
     }
   }
+
+  // Arriving from Kirana's "Chat konsultan" (?chat=1, possibly after logging
+  // in first): open the consultation chat straight away.
+  const autoOpened = useRef(false);
+  useEffect(() => {
+    if (autoOpened.current || new URLSearchParams(window.location.search).get("chat") !== "1") return;
+    autoOpened.current = true;
+    void handleChat();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival
+  }, []);
 
   const sorted = [...meetings].sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at));
   const upcoming = sorted.filter((m) => new Date(m.scheduled_at).getTime() >= now);

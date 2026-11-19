@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { AuthCard } from "@/components/AuthCard";
 import { AuthDivider, GoogleSignIn } from "@/components/auth/GoogleSignIn";
-import { DASHBOARD_BY_ROLE } from "@/components/auth/redirect";
+import { afterLogin, nextFromLocation } from "@/components/auth/redirect";
 import { Button } from "@/components/Button";
 import { PasswordField } from "@/components/PasswordField";
 import { TextField } from "@/components/TextField";
@@ -18,6 +18,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // Carry ?next= to "Daftar di sini", so signing up also returns there.
+  const [registerHref, setRegisterHref] = useState("/register");
+  useEffect(() => {
+    const next = nextFromLocation();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- read the address once in the browser
+    if (next) setRegisterHref(`/register?role=client&next=${encodeURIComponent(next)}`);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -25,7 +32,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const user = await apiPost<CurrentUser>("/api/v1/auth/login", { email, password });
-      router.push(DASHBOARD_BY_ROLE[user.role]);
+      router.push(afterLogin(user.role));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Terjadi kesalahan, coba lagi.");
     } finally {
@@ -41,7 +48,7 @@ export default function LoginPage() {
       footer={
         <>
           Belum punya akun?{" "}
-          <Link href="/register" className="font-semibold text-dc-ink underline decoration-dc-gold underline-offset-4 hover:text-dc-clay">
+          <Link href={registerHref} className="font-semibold text-dc-ink underline decoration-dc-gold underline-offset-4 hover:text-dc-clay">
             Daftar di sini
           </Link>
         </>

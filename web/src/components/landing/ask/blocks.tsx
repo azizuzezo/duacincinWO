@@ -6,8 +6,9 @@
 // the registry. The model only picks which to show.
 //
 // Motion purpose, per card:
-// - vendors: cards rise one after another; with a mouse each leans toward
-//   the pointer (it is a thing you can pick up) and the photo sharpens in.
+// - vendors: cards rise one after another; each opens on a swipeable
+//   portfolio gallery (arrows on hover, dots show the position); the card
+//   lifts on hover.
 // - budget: the ring draws pos by pos and the amounts count up, so the
 //   split is seen being made; hovering a pos or its row lights both.
 // - inspirations: photos unveil upward in turn; one opens into a lightbox
@@ -16,9 +17,9 @@
 // - consultant: the one dark card in the chat (a person, not a list); its
 //   two avatars-as-initial rings slide together = you are being connected.
 // Reduced motion: everything is shown at once, no tilt, no draw.
-import { AnimatePresence, motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
-import { useEffect, useId, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { Counting } from "@/components/landing/Counting";
 import { BodyPortal } from "@/components/ui/BodyPortal";
@@ -74,82 +75,154 @@ function MoreLink({ href, children }: { href: string; children: React.ReactNode 
 
 /* ------------------------------------------------------------------ vendors */
 
-function TiltCard({ v, i }: { v: VendorItem; i: number }) {
-  const reduced = useReducedMotion();
-  const rx = useMotionValue(0);
-  const ry = useMotionValue(0);
-  const sx = useSpring(rx, { stiffness: 220, damping: 20 });
-  const sy = useSpring(ry, { stiffness: 220, damping: 20 });
-  const glareX = useTransform(sy, [-8, 8], ["20%", "80%"]);
-  const glare = useTransform(glareX, (x) => `radial-gradient(circle at ${x} 0%, rgba(255,246,225,0.28), transparent 55%)`);
-  const [loaded, setLoaded] = useState(false);
+/** Portfolio gallery: swipe on touch, arrows on hover, dots show where you are. */
+function Gallery({ v }: { v: VendorItem }) {
+  const imgs = (v.images && v.images.length ? v.images : v.sample_image ? [v.sample_image] : []).slice(0, 5);
+  const track = useRef<HTMLDivElement>(null);
+  const [idx, setIdx] = useState(0);
+  const [loaded, setLoaded] = useState<Set<number>>(() => new Set());
 
-  function move(e: PointerEvent<HTMLAnchorElement>) {
-    if (reduced || e.pointerType !== "mouse") return;
-    const r = e.currentTarget.getBoundingClientRect();
-    ry.set(((e.clientX - r.left) / r.width - 0.5) * 14);
-    rx.set(-((e.clientY - r.top) / r.height - 0.5) * 10);
-  }
-  function leave() {
-    rx.set(0);
-    ry.set(0);
+  function go(dir: -1 | 1) {
+    const el = track.current;
+    if (!el) return;
+    const next = Math.max(0, Math.min(imgs.length - 1, idx + dir));
+    el.scrollTo({ left: next * el.clientWidth, behavior: "smooth" });
   }
 
+  if (imgs.length === 0) {
+    return (
+      <div className="flex aspect-[4/3] flex-col items-center justify-center gap-2 bg-linear-to-br from-dc-cream to-dc-paper-3 text-dc-text-2">
+        <svg aria-hidden width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="5" width="18" height="14" rx="2.5" />
+          <circle cx="9" cy="10" r="1.8" />
+          <path d="m21 16-5-5-8 8" />
+        </svg>
+        <span className="text-sm font-semibold">Portofolio segera hadir</span>
+      </div>
+    );
+  }
   return (
-    <motion.li {...rise(reduced, i, 26)} className="w-[72%] max-w-[300px] shrink-0 snap-start [perspective:900px] sm:w-[46%] lg:w-auto lg:max-w-none">
-      <motion.div style={reduced ? undefined : { rotateX: sx, rotateY: sy, transformStyle: "preserve-3d" }}>
-        <Link
-          href={`/vendors/${v.id}`}
-          onPointerMove={move}
-          onPointerLeave={leave}
-          className="group relative block aspect-[4/5] overflow-hidden rounded-xl bg-dc-paper-3 shadow-soft transition-shadow duration-500 ease-dc hover:shadow-lift focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-dc-gold"
-        >
-          {v.sample_image ? (
-            // eslint-disable-next-line @next/next/no-img-element -- vendor portfolio on remote storage, same as the directory rail
+    <div className="group/g relative aspect-[4/3] overflow-hidden bg-dc-paper-3">
+      <div
+        ref={track}
+        onScroll={(e) => setIdx(Math.round(e.currentTarget.scrollLeft / Math.max(1, e.currentTarget.clientWidth)))}
+        className="flex h-full snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {imgs.map((src, i) => (
+          <div key={src + i} className="relative h-full w-full shrink-0 snap-center">
+            {/* eslint-disable-next-line @next/next/no-img-element -- vendor portfolio on remote storage */}
             <img
-              src={v.sample_image}
-              alt={`Portofolio ${v.business_name}`}
+              src={src}
+              alt={`Portofolio ${v.business_name} ${i + 1}`}
               loading="lazy"
-              onLoad={() => setLoaded(true)}
-              className={`absolute inset-0 h-full w-full object-cover transition-[transform,filter,opacity] duration-[900ms] ease-dc group-hover:scale-[1.06] motion-reduce:transition-none ${
-                loaded ? "scale-100 opacity-100 blur-0" : "scale-[1.08] opacity-0 blur-md"
-              }`}
+              draggable={false}
+              onLoad={() => setLoaded((s) => new Set(s).add(i))}
+              className={`h-full w-full object-cover transition-[transform,opacity,filter] duration-[900ms] ease-dc group-hover/g:scale-[1.04] motion-reduce:transition-none ${loaded.has(i) ? "opacity-100 blur-0" : "opacity-0 blur-md"}`}
             />
-          ) : (
-            <div className="flex h-full items-center justify-center pb-20 text-sm text-dc-text-2">Belum ada foto</div>
-          )}
-          <div aria-hidden className="absolute inset-x-0 bottom-0 h-[70%] bg-linear-to-t from-dc-ink via-dc-ink/80 to-transparent" />
-          {!reduced && <motion.div aria-hidden className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" style={{ background: glare }} />}
-          <span className="absolute left-3 top-3 rounded-full bg-dc-ink/85 px-2.5 py-1 text-[0.7rem] font-semibold text-dc-on-dark">{categoryLabel(v.category)}</span>
-          <div className="absolute inset-x-0 bottom-0 p-4" style={{ transform: "translateZ(30px)" }}>
-            <h4 className="font-heading text-[1.4rem] font-semibold leading-[1.05] text-[#fbf6ec]">{v.business_name}</h4>
-            <p className="mt-0.5 line-clamp-1 text-xs text-[#fbf6ec]/90">{v.city}</p>
-            {v.reasons && v.reasons.length > 0 && (
-              <ul aria-label="Kenapa cocok" className="mt-2 flex flex-wrap gap-1">
-                {v.reasons.slice(0, 2).map((r) => (
-                  <li key={r} className="inline-flex items-center gap-1 rounded-full bg-[#fbf6ec]/15 px-2 py-0.5 text-[0.68rem] font-semibold text-[#fbf6ec] backdrop-blur-sm">
-                    <svg aria-hidden width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-dc-gold-antique">
-                      <path d="m5 12 5 5 9-10" />
-                    </svg>
-                    {r}
-                  </li>
-                ))}
-              </ul>
-            )}
-            <div className="mt-3 flex items-end justify-between gap-2 border-t border-[#fbf6ec]/25 pt-2.5 text-[#fbf6ec]">
-              <p className="text-xs">{v.price_min > 0 ? <>Mulai <span className="text-sm font-bold tabular-nums">{shortRupiah(v.price_min)}</span></> : <span className="font-semibold">Harga lewat chat</span>}</p>
-              {v.review_count > 0 && (
-                <p className="flex items-center gap-1 text-xs tabular-nums">
-                  <svg aria-hidden width="12" height="12" viewBox="0 0 24 24" className="text-dc-gold-antique">
-                    <path fill="currentColor" d="m12 2.8 2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8Z" />
-                  </svg>
-                  <span className="font-bold">{RATING.format(v.average_rating)}</span>
-                </p>
-              )}
-            </div>
           </div>
-        </Link>
-      </motion.div>
+        ))}
+      </div>
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-dc-ink/55 to-transparent" />
+      <span className="absolute left-3 top-3 rounded-full bg-dc-ink/75 px-2.5 py-1 text-[0.7rem] font-semibold text-dc-on-dark backdrop-blur-sm">{categoryLabel(v.category)}</span>
+      <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-dc-white/95 px-2.5 py-1 text-[0.7rem] font-bold text-dc-ink shadow-soft">
+        <svg aria-hidden width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-dc-clay">
+          <path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6l-7-3Z" />
+          <path d="m9 12 2 2 4-4" />
+        </svg>
+        Terverifikasi
+      </span>
+      {imgs.length > 1 && (
+        <>
+          <div className="absolute inset-x-0 bottom-2.5 flex justify-center gap-1.5">
+            {imgs.map((_, i) => (
+              <span key={i} className={`h-1.5 rounded-full bg-white transition-all duration-300 ${i === idx ? "w-4 opacity-100" : "w-1.5 opacity-60"}`} />
+            ))}
+          </div>
+          {[-1, 1].map((d) => (
+            <button
+              key={d}
+              type="button"
+              onClick={() => go(d as -1 | 1)}
+              disabled={(d < 0 && idx === 0) || (d > 0 && idx === imgs.length - 1)}
+              aria-label={d < 0 ? "Foto sebelumnya" : "Foto berikutnya"}
+              className={`absolute top-1/2 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-dc-white/90 text-dc-ink opacity-0 shadow-soft transition-opacity duration-300 group-hover/g:opacity-100 disabled:!opacity-0 sm:flex ${d < 0 ? "left-2.5" : "right-2.5"}`}
+            >
+              <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                <path d={d < 0 ? "m15 6-6 6 6 6" : "m9 6 6 6-6 6"} />
+              </svg>
+            </button>
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+
+function VendorCard({ v, i }: { v: VendorItem; i: number }) {
+  const reduced = useReducedMotion();
+  return (
+    <motion.li {...rise(reduced, i, 26)} className="w-[86%] max-w-[380px] shrink-0 snap-start sm:w-[62%] lg:w-auto lg:max-w-none">
+      <article className="group flex h-full flex-col overflow-hidden rounded-[22px] border border-dc-line/80 bg-dc-white shadow-soft transition-[transform,box-shadow] duration-500 ease-dc hover:shadow-lift motion-safe:hover:-translate-y-1">
+        <Gallery v={v} />
+        <div className="flex flex-1 flex-col p-4 sm:p-5">
+          <div className="flex items-start justify-between gap-3">
+            <h4 className="font-heading text-[1.5rem] font-semibold leading-[1.1] text-dc-ink">{v.business_name}</h4>
+            {v.review_count > 0 ? (
+              <span className="mt-1 inline-flex shrink-0 items-center gap-1 text-sm font-bold tabular-nums text-dc-ink">
+                <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" className="text-dc-gold">
+                  <path fill="currentColor" d="m12 2.8 2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8Z" />
+                </svg>
+                {RATING.format(v.average_rating)}
+                <span className="font-semibold text-dc-text-3">({v.review_count})</span>
+              </span>
+            ) : (
+              <span className="mt-1 shrink-0 rounded-full bg-dc-gold-wash px-2 py-0.5 text-[0.7rem] font-bold text-dc-clay">Baru</span>
+            )}
+          </div>
+          <p className="mt-1 flex items-center gap-1.5 text-sm text-dc-text-2">
+            <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-dc-clay">
+              <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z" />
+              <circle cx="12" cy="9.5" r="2.5" />
+            </svg>
+            <span className="line-clamp-1">{v.city}</span>
+          </p>
+          {v.description && <p className="mt-2.5 line-clamp-2 text-sm leading-relaxed text-dc-text-2">{v.description}</p>}
+          {v.reasons && v.reasons.length > 0 && (
+            <ul aria-label="Kenapa cocok" className="mt-3 flex flex-wrap gap-1.5">
+              {v.reasons.slice(0, 3).map((r) => (
+                <li key={r} className="inline-flex items-center gap-1 rounded-full bg-dc-gold-wash px-2.5 py-1 text-[0.72rem] font-semibold text-dc-ink">
+                  <svg aria-hidden width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-dc-clay">
+                    <path d="m5 12 5 5 9-10" />
+                  </svg>
+                  {r}
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="mt-4 flex flex-col gap-3 border-t border-dc-line pt-3.5 min-[420px]:flex-row min-[420px]:items-end min-[420px]:justify-between lg:mt-auto">
+            <div>
+              <p className="text-[0.72rem] font-semibold text-dc-text-3">{v.price_min > 0 ? "Mulai dari" : "Harga"}</p>
+              <p className="text-[1.15rem] font-extrabold tabular-nums text-dc-ink">{v.price_min > 0 ? formatRupiah(v.price_min) : "Tanya lewat chat"}</p>
+            </div>
+            <Link
+              href={`/vendors/${v.id}`}
+              className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-full bg-dc-ink px-4 text-sm font-semibold text-dc-on-dark transition-[transform,background-color] duration-300 ease-dc hover:bg-dc-ink-2 active:scale-[0.98] motion-safe:group-hover:-translate-y-0.5"
+            >
+              Lihat portofolio
+              <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            </Link>
+          </div>
+          <p className="mt-2.5 flex items-center gap-1.5 text-[0.72rem] font-semibold text-dc-text-3">
+            <svg aria-hidden width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-dc-success">
+              <rect x="5" y="11" width="14" height="10" rx="2" />
+              <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+            </svg>
+            Bayar aman, dana ditahan escrow sampai acaramu selesai
+          </p>
+        </div>
+      </article>
     </motion.li>
   );
 }
@@ -162,13 +235,13 @@ function VendorsBlock({ data }: { data: Extract<Block, { type: "vendors" }>["dat
   return (
     <div>
       <CardHead
-        eyebrow={`${data.total} vendor ditemukan`}
+        eyebrow={data.total === 1 ? "1 vendor terdaftar & terverifikasi" : `${data.total} vendor terdaftar & terverifikasi`}
         title={title}
-        action={data.total > data.items.length ? <MoreLink href={`/vendors?${qs}`}>Lihat semua</MoreLink> : <MoreLink href={`/vendors?${qs}`}>Buka direktori</MoreLink>}
+        action={<MoreLink href={`/vendors?${qs}`}>{data.total > data.items.length ? `Lihat semua ${data.total}` : "Buka direktori"}</MoreLink>}
       />
-      <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-3 pt-1 [scrollbar-width:none] sm:-mx-6 sm:px-6 lg:mx-0 lg:grid lg:grid-cols-3 lg:gap-4 lg:overflow-visible lg:px-0 [&::-webkit-scrollbar]:hidden">
+      <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-3 pt-1 [scrollbar-width:none] sm:-mx-6 sm:px-6 lg:mx-0 lg:grid lg:grid-cols-2 lg:gap-4 lg:overflow-visible lg:px-0 [&::-webkit-scrollbar]:hidden">
         {data.items.map((v, i) => (
-          <TiltCard key={v.id} v={v} i={i} />
+          <VendorCard key={v.id} v={v} i={i} />
         ))}
       </ul>
     </div>
@@ -539,18 +612,22 @@ function ConsultantBlock({ data }: { data: Extract<Block, { type: "consultant" }
           </svg>
         </motion.span>
         <div className="min-w-0 flex-1">
-          <p className="text-[0.95rem] font-semibold leading-snug">{what ? `${what} belum tersedia` : "Butuh bantuan mencari vendor?"}</p>
-          <p className="text-[0.8rem] leading-snug text-dc-on-dark/75">Wedding Consultant kami bantu carikan, gratis.</p>
+          <p className="text-[0.95rem] font-semibold leading-snug">
+            {data.fallback ? "Kirana sedang ada kendala" : data.requested ? "Ngobrol dengan Wedding Consultant" : what ? `${what} belum tersedia` : "Butuh bantuan mencari vendor?"}
+          </p>
+          <p className="text-[0.8rem] leading-snug text-dc-on-dark/75">
+            {data.fallback ? "Wedding Consultant kami siap bantu langsung, gratis." : data.requested ? "Staf DuaCincin siap bantu rencanamu, gratis." : "Wedding Consultant kami bantu carikan, gratis."}
+          </p>
         </div>
         <Link
-          href="/client/consultation"
+          href="/client/consultation?chat=1"
           className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-full bg-linear-135 from-dc-gold-antique to-dc-gold px-4 text-sm font-semibold text-dc-ink transition-[transform,box-shadow] duration-300 ease-dc hover:shadow-gold active:scale-[0.98] motion-safe:hover:-translate-y-0.5"
         >
           <span className="sm:hidden">Chat</span>
           <span className="hidden sm:inline">Chat konsultan</span>
         </Link>
       </div>
-      {(data.label || data.city || data.budget) && (
+      {!!(data.label || data.city || data.budget) && (
         <div className="mt-2 border-t border-dc-on-dark/10 pt-1.5">
           <div className="flex items-center justify-between gap-2">
             <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="inline-flex min-h-11 items-center gap-1.5 rounded-full pr-2 text-[0.8rem] font-semibold text-dc-gold-antique">

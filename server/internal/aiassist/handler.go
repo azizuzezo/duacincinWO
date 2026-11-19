@@ -119,7 +119,7 @@ func Chat(deps *Deps) http.HandlerFunc {
 			return
 		}
 		if !ok {
-			httpx.Error(w, http.StatusTooManyRequests, "Kirana sedang ramai. Coba lagi sebentar lagi, atau ngobrol langsung dengan Wedding Consultant kami.")
+			httpx.Error(w, http.StatusTooManyRequests, "Kirana sedang ramai. Coba lagi sebentar lagi, atau ngobrol langsung dengan Wedding Consultant kami di bawah ini.")
 			return
 		}
 
@@ -161,7 +161,8 @@ func Chat(deps *Deps) http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(r.Context(), requestDeadline)
 		defer cancel()
 		history := append(modelHistory(past), chatMessage{Role: "user", Content: msg})
-		deps.converse(ctx, history, send)
+		visitor, _ := deps.Chats.Visitor(r.Context(), sessionID)
+		deps.converse(ctx, history, visitor, send)
 		send("done", struct{}{})
 
 		if err := deps.Chats.AddTurn(saveCtx, sessionID, rec.turn()); err != nil {
@@ -233,8 +234,8 @@ func (rc *recorder) turn() repository.AIChatTurn {
 	return t
 }
 
-func (d *Deps) converse(ctx context.Context, history []chatMessage, send func(string, any)) {
-	msgs := append([]chatMessage{{Role: "system", Content: systemPrompt(time.Now())}}, history...)
+func (d *Deps) converse(ctx context.Context, history []chatMessage, visitor repository.AIVisitor, send func(string, any)) {
+	msgs := append([]chatMessage{{Role: "system", Content: systemPrompt(time.Now(), visitor)}}, history...)
 	tools := toolDefs()
 
 	stepN := 0
@@ -271,14 +272,14 @@ func (d *Deps) converse(ctx context.Context, history []chatMessage, send func(st
 			log.Printf("aiassist: round %d: %v", round, err)
 			closeThink()
 			if !wrote {
-				send("error", map[string]string{"message": "Maaf, asisten sedang tidak bisa menjawab. Coba lagi sebentar lagi ya."})
+				send("error", map[string]string{"message": "Maaf, Kirana sedang ada kendala dan belum bisa menjawab. Coba lagi sebentar, atau langsung chat Wedding Consultant kami di bawah ini."})
 			}
 			return
 		}
 		if len(res.ToolCalls) == 0 {
 			closeThink()
 			if !wrote {
-				send("error", map[string]string{"message": "Maaf, aku belum menemukan jawabannya. Coba ceritakan dengan kata lain ya."})
+				send("error", map[string]string{"message": "Maaf, aku belum menemukan jawabannya. Coba ceritakan dengan kata lain, atau tanya Wedding Consultant kami di bawah ini."})
 			}
 			return
 		}

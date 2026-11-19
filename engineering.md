@@ -38,6 +38,13 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 
 ## Changelog
 
+### 2026-11-19 — Kirana: kenalan, kartu vendor dengan portofolio, cadangan ke Wedding Consultant
+- **Kenalan:** pengunjung baru diminta nama panggilan dan umur (opsional, bisa dilewati) lewat form di dalam chat. Disimpan di `ai_chat_sessions` (migrasi `000030_ai_chat_profile`), endpoint `PUT /api/v1/ai/profile`, ikut dikirim di `GET /api/v1/ai/history`. Kirana menyapa "Halo Kak {nama}" di /kirana, landing, dan launcher, dan nama masuk ke prompt.
+- **Wedding Consultant:** kartu muncul otomatis hanya kalau vendor tidak ditemukan, atau lewat alat `hubungi_konsultan` yang hanya boleh dipanggil kalau pengguna jelas meminta konsultan/manusia. Kalau AI bermasalah (gateway error, timeout, limit, koneksi putus), di bawah pesan error selalu ada kartu konsultan gratis. /kirana saat AI mati menampilkan halaman "Kirana sedang istirahat" dengan tombol ke konsultan.
+- **Login lalu kembali:** `?next=` (hanya path internal) didukung login email, Google, dan daftar client; `WithUser` menyertakannya otomatis. `/client/consultation?chat=1` langsung membuka chat konsultasi, jadi tombol kartu tetap sampai ke chat walau harus login dulu.
+- **Kartu vendor:** galeri portofolio (sampai 5 foto, geser/panah/titik), deskripsi singkat, rating, tag "kenapa cocok", harga mulai, badge terverifikasi, catatan escrow, tombol "Lihat portofolio".
+- **Migrasi `000030_ai_chat_profile` sudah diterapkan ke DB produksi pada 2026-11-19, sebelum push** (kode membaca kolom `visitor_name`/`visitor_age`). Jangan ubah isi file migrasi ini lagi.
+
 ### 2026-11-19 — Kirana, asisten AI di landing dan /kirana
 - **Apa:** Calon pengantin bisa bertanya apa saja soal pernikahannya tanpa login. Jawaban di-stream (SSE) dan disertai kartu dari data nyata: vendor terdaftar (dengan tag "kenapa cocok"), pembagian budget (rumus Budget Planner), foto Inspirasi, timeline, artikel. Kalau vendor yang cocok belum ada, Kirana tidak mengarang atau melebar ke kota lain, tapi menampilkan kartu Wedding Consultant beserta ringkasan kebutuhan yang bisa disalin.
 - **Backend:** `server/internal/aiassist` (OpenAI-compatible chat completions + tool calling, maks 4 putaran). Endpoint publik `GET /api/v1/ai/status`, `POST /api/v1/ai/chat` (body `{message}`), `GET|DELETE /api/v1/ai/history`. Riwayat disimpan per perangkat (cookie HttpOnly `dc_kirana`, hanya hash SHA-256 di DB), bukan per IP, karena satu IP sering dipakai bersama. Begitu login, sesi perangkat pindah ke akun. Rate limit 20 pesan per IP per jam dan 2000 per hari global. Env baru: `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`; kalau kosong, Kirana disembunyikan.

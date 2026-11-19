@@ -22,6 +22,8 @@ export type VendorItem = {
   average_rating: number;
   review_count: number;
   reasons?: string[];
+  images?: string[];
+  description?: string;
 };
 
 export type Block =
@@ -30,7 +32,9 @@ export type Block =
   | { type: "budget"; data: { total: number; guests?: number; per_guest?: number; lines: { key: string; label: string; percentage: number; amount: number }[] } }
   | { type: "timeline"; data: { title: string; steps: { when: string; title: string; detail: string }[] } }
   | { type: "articles"; data: { slugs: string[] } }
-  | { type: "consultant"; data: { reason: string; category: string; label?: string; city: string; budget?: number } };
+  | { type: "consultant"; data: { reason: string; category: string; label?: string; city: string; budget?: number; requested?: boolean; fallback?: boolean } };
+
+export type Profile = { name: string; age: number };
 
 export type Part = { kind: "text"; text: string } | { kind: "block"; block: Block };
 export type Step = { id: string; label: string; done: boolean };
@@ -44,14 +48,14 @@ const uid = () => `${Date.now().toString(36)}-${(seq++).toString(36)}`;
 
 const AI = `${API_URL}/api/v1/ai`;
 
-async function loadHistory(signal: AbortSignal): Promise<Turn[]> {
+async function loadHistory(signal: AbortSignal): Promise<{ turns: Turn[]; profile: Profile | null }> {
   try {
     const res = await fetch(`${AI}/history`, { credentials: "include", signal, cache: "no-store" });
-    if (!res.ok) return [];
-    const { turns } = (await res.json()) as { turns: Turn[] };
-    return Array.isArray(turns) ? turns : [];
+    if (!res.ok) return { turns: [], profile: null };
+    const { turns, profile } = (await res.json()) as { turns: Turn[]; profile: Profile | null };
+    return { turns: Array.isArray(turns) ? turns : [], profile: profile?.name ? profile : null };
   } catch {
-    return [];
+    return { turns: [], profile: null };
   }
 }
 
@@ -67,14 +71,16 @@ export function useAsk() {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const abort = useRef<AbortController | null>(null);
 
   useEffect(() => {
     const ctrl = new AbortController();
-    loadHistory(ctrl.signal).then((t) => {
+    loadHistory(ctrl.signal).then(({ turns: t, profile: p }) => {
       if (ctrl.signal.aborted) return;
       // Keep anything sent before the history arrived.
       setTurns((now) => (now.length ? [...t, ...now] : t));
+      setProfile(p);
       setLoaded(true);
     });
     return () => {
@@ -111,7 +117,7 @@ export function useAsk() {
           signal: ctrl.signal,
         });
         if (!res.ok || !res.body) {
-          let message = "Maaf, asisten sedang tidak bisa dihubungi. Coba lagi sebentar lagi ya.";
+          let message = "Maaf, Kirana sedang ada kendala. Coba lagi sebentar, atau langsung chat Wedding Consultant kami.";
           try {
             const j = (await res.json()) as { error?: string };
             if (j.error && res.status !== 500) message = j.error;
@@ -172,7 +178,7 @@ export function useAsk() {
         if ((e as Error).name === "AbortError") {
           patch(reply.id, (r) => ({ ...r, state: "done", steps: r.steps.map((s) => ({ ...s, done: true })) }));
         } else {
-          fail("Koneksi terputus. Periksa internetmu lalu coba lagi.");
+          fail("Koneksi terputus. Periksa internetmu lalu coba lagi, atau chat Wedding Consultant kami.");
         }
       } finally {
         abort.current = null;
@@ -197,5 +203,23 @@ export function useAsk() {
     void fetch(`${AI}/history`, { method: "DELETE", credentials: "include" }).catch(() => {});
   }, []);
 
-  return { turns, busy, loaded, send, stop, reset, retry };
+  /** Remember who the visitor is (Kirana greets them by name next time). */
+  const saveProfile = useCallback(async (name: string, age: number): Promise<string | null> => {
+    try {
+      const res = await fetch(`${AI}/profile`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, age }),
+      });
+      const j = (await res.json()) as Profile & { error?: string };
+      if (!res.ok) return j.error ?? "Belum bisa disimpan, coba lagi.";
+      setProfile({ name: j.name, age: j.age });
+      return null;
+    } catch {
+      return "Koneksi terputus, coba lagi.";
+    }
+  }, []);
+
+  return { turns, busy, loaded, profile, saveProfile, send, stop, reset, retry };
 }

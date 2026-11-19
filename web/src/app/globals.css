@@ -927,3 +927,16 @@ input[type="range"] {
   50% { transform: translateY(-8px); }
 }
 @media (prefers-reduced-motion: reduce) { .dc-kirana-float { animation: none; } }
+/* Kirana's stage on /kirana: a slow dotted orbit and a few rising sparkles. */
+.dc-stage-spin { animation: dc-stage-spin 40s linear infinite; }
+@keyframes dc-stage-spin { to { transform: rotate(360deg); } }
+.dc-sparkle { opacity: 0; animation: dc-sparkle 4.5s ease-in-out infinite; }
+@keyframes dc-sparkle {
+  0% { opacity: 0; transform: translateY(8px) scale(0.6); }
+  40% { opacity: 0.9; }
+  100% { opacity: 0; transform: translateY(-38px) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dc-stage-spin, .dc-sparkle { animation: none; }
+  .dc-sparkle { opacity: 0.6; }
+}

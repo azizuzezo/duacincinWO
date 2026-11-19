@@ -26,7 +26,7 @@ import { useAsk } from "./useAsk";
 export function AskAI() {
   const reduced = useReducedMotion();
   const router = useRouter();
-  const { turns } = useAsk();
+  const { turns, profile } = useAsk();
   const input = useRef<HTMLTextAreaElement>(null);
   const composerApi = useRef<ComposerApi | null>(null);
   const section = useRef<HTMLElement>(null);
@@ -100,7 +100,7 @@ export function AskAI() {
 
   return (
     <>
-      <KiranaLauncher />
+      <KiranaLauncher name={profile?.name} />
       <section ref={section} id="tanya" aria-labelledby="tanya-judul" onPointerMove={onSectionMove} className="relative isolate scroll-mt-20 overflow-hidden bg-dc-ivory py-16 sm:py-24 lg:py-28">
         {/* The scene behind the glass: a real wedding photo, softened and warm. */}
         <div aria-hidden className="absolute inset-0 -z-10">
@@ -127,7 +127,7 @@ export function AskAI() {
                   transition={{ duration: 0.4, ease: EASE }}
                   className="dc-glass absolute -right-8 top-4 whitespace-nowrap rounded-2xl rounded-bl-sm px-3.5 py-2 text-sm font-semibold text-dc-ink sm:-right-16 lg:right-[8%] lg:top-[12%]"
                 >
-                  {leaving ? "Siap, aku carikan!" : typing ? "Aku dengarkan…" : "Hai, aku Kirana!"}
+                  {leaving ? "Siap, aku carikan!" : typing ? "Aku dengarkan…" : profile ? `Halo lagi, Kak ${profile.name}!` : "Hai, aku Kirana!"}
                 </motion.p>
               )}
             </AnimatePresence>

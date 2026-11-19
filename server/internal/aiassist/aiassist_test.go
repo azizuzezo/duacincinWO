@@ -2,12 +2,14 @@ package aiassist
 
 import (
 	"context"
+	"duacincin/server/internal/repository"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestStreamAccumulatesToolCallsAndText(t *testing.T) {
@@ -119,12 +121,16 @@ func TestRupiahAndNoConsultantTool(t *testing.T) {
 	if got := rupiah(10000000); got != "Rp10.000.000" {
 		t.Fatal(got)
 	}
-	// The consultant card comes only from an empty vendor search, never on
-	// the model's own initiative.
+	// The old free-use consultant tool is gone; hubungi_konsultan is only
+	// for explicit requests (prompt rule) and always yields the card.
 	for _, d := range toolDefs() {
 		if d.Function.Name == "arahkan_konsultan" {
 			t.Fatal("arahkan_konsultan must not be offered to the model")
 		}
+	}
+	out, err := (&Deps{}).dispatch(context.Background(), "hubungi_konsultan", `{}`)
+	if err != nil || out.Block == nil || out.Block.Type != "consultant" || out.Block.Data.(map[string]any)["requested"] != true {
+		t.Fatalf("hubungi_konsultan: %+v %v", out, err)
 	}
 	if _, err := (&Deps{}).dispatch(context.Background(), "arahkan_konsultan", `{}`); err == nil {
 		t.Fatal("unknown tool must fail")
@@ -212,5 +218,27 @@ func TestMergeConsultant(t *testing.T) {
 	data := b.Data.(map[string]any)
 	if data["label"] != "Venue, Catering" || data["city"] != "Bandung" || data["budget"].(int64) != 12_000_000 || !strings.Contains(data["reason"].(string), "Catering") {
 		t.Fatalf("%+v", data)
+	}
+}
+
+func TestCleanNameAndShortText(t *testing.T) {
+	if got := cleanName("  siti   NURhaliza<script> "); got != "Siti Nurhalizascript" {
+		t.Fatal(got)
+	}
+	if got := cleanName("123"); got != "" {
+		t.Fatal(got)
+	}
+	if got := shortText("Kami spesialis dekorasi adat Jawa modern dengan bunga segar dan pencahayaan hangat", 40); got != "Kami spesialis dekorasi adat Jawa…" {
+		t.Fatal(got)
+	}
+}
+
+func TestPromptGreetsByName(t *testing.T) {
+	p := systemPrompt(time.Now(), repository.AIVisitor{Name: "Rina", Age: 26})
+	if !strings.Contains(p, "Kak Rina") || !strings.Contains(p, "umur 26") {
+		t.Fatal("visitor not in prompt")
+	}
+	if strings.Contains(systemPrompt(time.Now(), repository.AIVisitor{}), "PENGGUNA") {
+		t.Fatal("empty visitor must not add a section")
 	}
 }

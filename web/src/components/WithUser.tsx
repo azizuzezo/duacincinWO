@@ -1,6 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+
+import { loginWithNext } from "@/components/auth/redirect";
 import { useEffect, useState } from "react";
 
 import { apiGet, type CurrentUser } from "@/lib/api";
@@ -36,7 +38,7 @@ export function WithUser({
     apiGet<CurrentUser>("/api/v1/auth/me")
       .then((u) => {
         if (!allowedRoles.includes(u.role)) {
-          router.replace(loginPath);
+          router.replace(loginWithNext(loginPath));
           return;
         }
         // Keep the same object when nothing changed, so pages keyed on `user`
@@ -50,7 +52,7 @@ export function WithUser({
       .catch(() => {
         lastUser = null;
         setUser(null);
-        router.replace(loginPath);
+        router.replace(loginWithNext(loginPath));
       })
       .finally(() => setChecking(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps

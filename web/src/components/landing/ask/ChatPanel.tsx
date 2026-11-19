@@ -56,14 +56,20 @@ function AssistantTurnView({ turn, last, onAsk, onRetry }: { turn: AssistantTurn
       )}
 
       {turn.state === "error" && (
-        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dc-danger/20 bg-dc-danger-soft px-4 py-3 text-sm text-dc-danger">
-          <span className="font-semibold">{turn.error}</span>
-          {last && (
-            <button type="button" onClick={onRetry} className="inline-flex min-h-11 items-center rounded-full bg-dc-white px-4 font-semibold text-dc-ink shadow-soft hover:bg-dc-cream">
-              Coba lagi
-            </button>
+        <>
+          <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dc-danger/20 bg-dc-danger-soft px-4 py-3 text-sm text-dc-danger">
+            <span className="font-semibold">{turn.error}</span>
+            {last && (
+              <button type="button" onClick={onRetry} className="inline-flex min-h-11 items-center rounded-full bg-dc-white px-4 font-semibold text-dc-ink shadow-soft hover:bg-dc-cream">
+                Coba lagi
+              </button>
+            )}
+          </div>
+          {/* Whatever went wrong on Kirana's side, a person can still help. */}
+          {last && !turn.parts.some((p) => p.kind === "block" && p.block.type === "consultant") && (
+            <BlockView block={{ type: "consultant", data: { reason: "", category: "", city: "", fallback: true } }} />
           )}
-        </div>
+        </>
       )}
 
       <AnimatePresence>
@@ -106,6 +112,7 @@ export function ChatPanel({
   sheet,
   onMinimize,
   empty,
+  notice,
 }: {
   turns: Turn[];
   busy: boolean;
@@ -119,6 +126,8 @@ export function ChatPanel({
   onMinimize: () => void;
   /** Shown in the message area before the first question. */
   empty?: React.ReactNode;
+  /** Shown above the conversation (e.g. "Halo lagi, Kak Rina!"). */
+  notice?: React.ReactNode;
 }) {
   const reduced = useReducedMotion();
   const scroller = useRef<HTMLDivElement>(null);
@@ -202,6 +211,7 @@ export function ChatPanel({
       </div>
 
       <div ref={scroller} onScroll={onScroll} aria-busy={busy} className="flex-1 space-y-8 overflow-y-auto overscroll-contain px-4 py-6 sm:px-7 sm:py-7">
+        {turns.length > 0 && notice}
         {turns.length === 0 && empty}
         {turns.map((t, i) =>
           t.role === "user" ? (

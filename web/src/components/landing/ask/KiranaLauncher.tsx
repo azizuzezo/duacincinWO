@@ -39,7 +39,7 @@ function writeStore(store: "session" | "local", key: string) {
   }
 }
 
-export function KiranaLauncher() {
+export function KiranaLauncher({ name }: { name?: string }) {
   const reduced = useReducedMotion();
   const router = useRouter();
   const [shown, setShown] = useState(false);
@@ -126,7 +126,15 @@ export function KiranaLauncher() {
                 style={{ originX: 1, originY: 1 }}
                 className="dc-glass relative mr-1 max-w-[260px] rounded-2xl rounded-br-sm py-3 pl-4 pr-12 text-sm leading-snug text-dc-black"
               >
-                <span className="font-semibold text-dc-ink">Hai, aku Kirana!</span> Mau dibantu hitung budget atau cari vendor di kotamu?
+                {name ? (
+                  <>
+                    <span className="font-semibold text-dc-ink">Halo lagi, Kak {name}!</span> Mau lanjut ngobrol soal persiapan pernikahanmu?
+                  </>
+                ) : (
+                  <>
+                    <span className="font-semibold text-dc-ink">Hai, aku Kirana!</span> Mau dibantu hitung budget atau cari vendor di kotamu?
+                  </>
+                )}
                 <button
                   type="button"
                   onClick={() => {

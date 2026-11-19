@@ -139,3 +139,27 @@ func nullJSON(b json.RawMessage) any {
 	}
 	return []byte(b)
 }
+
+// AIVisitor is what a visitor told Kirana about themselves (both optional).
+type AIVisitor struct {
+	Name string
+	Age  int
+}
+
+// Visitor returns the session's visitor profile (zero value when unknown).
+func (r *AIChatRepo) Visitor(ctx context.Context, sessionID string) (AIVisitor, error) {
+	var v AIVisitor
+	err := r.pool.QueryRow(ctx, `select coalesce(visitor_name, ''), coalesce(visitor_age, 0) from ai_chat_sessions where id = $1`, sessionID).Scan(&v.Name, &v.Age)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return AIVisitor{}, nil
+	}
+	return v, err
+}
+
+// SetVisitor stores the visitor's name and age (age 0 = not given).
+func (r *AIChatRepo) SetVisitor(ctx context.Context, sessionID string, v AIVisitor) error {
+	_, err := r.pool.Exec(ctx, `
+		update ai_chat_sessions set visitor_name = nullif($2, ''), visitor_age = nullif($3, 0), updated_at = now() where id = $1
+	`, sessionID, v.Name, v.Age)
+	return err
+}

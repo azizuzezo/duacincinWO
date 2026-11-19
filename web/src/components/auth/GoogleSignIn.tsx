@@ -15,7 +15,7 @@ import { AgreementCheckbox } from "@/components/AgreementCheckbox";
 import { Button } from "@/components/ui/Button";
 import { apiPost, ApiError, type CurrentUser } from "@/lib/api";
 
-import { DASHBOARD_BY_ROLE } from "./redirect";
+import { afterLogin } from "./redirect";
 
 const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 const GSI_SRC = "https://accounts.google.com/gsi/client";
@@ -115,7 +115,7 @@ export function GoogleSignIn({ text = "signin_with", acceptTerms = false, role =
         role,
         accept_terms: accept,
       });
-      router.push(DASHBOARD_BY_ROLE[user.role]);
+      router.push(afterLogin(user.role));
       // Keep the busy state: the page is navigating away.
     } catch (err) {
       setBusy(false);
