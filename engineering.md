@@ -38,6 +38,13 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 
 ## Changelog
 
+### 2026-11-19 — WhatsApp WO jadi notifikasi saja
+
+- Pesan chat baru (klien ↔ vendor) dikabarkan lewat WhatsApp ke nomor terverifikasi penerima: siapa pengirimnya, isi pesannya (maks. 300 huruf; pesan yang terdeteksi berisi kontak tidak disalin), dan link ke chat web untuk membalas. Paling sering 1 notifikasi per percakapan per penerima tiap 15 menit.
+- Pesan yang dikirim ke nomor resmi tidak dibalas dan tidak disimpan (`/whatsapp/inbound` selalu menjawab kosong). Menu bot dan relay dua arah dihapus.
+- Klien/vendor yang baru memverifikasi nomornya mendapat ucapan selamat bergabung lewat WhatsApp; ganti nomor mendapat konfirmasi singkat.
+- Tidak ada perubahan env, migrasi, atau binary mesin: pengiriman tetap lewat relay undangan.
+
 ### 2026-11-19 — Nomor WhatsApp wajib & diverifikasi lewat kode WA
 
 - Klien dan vendor wajib punya nomor WhatsApp terverifikasi. Pendaftaran meminta nomornya (`whatsapp`, wajib); akun lama dan akun Google diminta lewat popup yang tidak bisa ditutup (`WhatsAppGate` di `WithUser`) sampai nomornya terverifikasi.

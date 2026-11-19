@@ -15,20 +15,16 @@ import (
 	"duacincin/server/internal/repository"
 )
 
-// NotifyNewMessage implements chat.Notifier — called by chat.SendMessage
-// (the web/app path) right after a message is persisted and broadcast, so
-// the WhatsApp side gets it too. RelayNewMessage below is the same logic,
-// reused for messages that originate from WhatsApp itself.
-func (d *Deps) NotifyNewMessage(ctx context.Context, conv *repository.Conversation, senderUserID string, msg *repository.Message) {
-	d.RelayNewMessage(ctx, conv, senderUserID, msg)
-}
+// chatNotifyEvery limits WhatsApp chat notifications: at most one per
+// conversation per recipient in this window, so a burst of messages is one
+// notification, not a stream of them. The web chat holds everything.
+const chatNotifyEvery = 15 * time.Minute
 
-// RelayNewMessage forwards msg to the *other* participant of conv over
-// WhatsApp, if they have a linked phone. It never leaks real numbers —
-// only the sender's display name is shown — and never delivers a message
-// into a thread the recipient isn't currently focused on; it only nudges
-// them to switch instead, so no content leaks into the wrong conversation.
-func (d *Deps) RelayNewMessage(ctx context.Context, conv *repository.Conversation, senderUserID string, msg *repository.Message) {
+// NotifyNewMessage implements chat.Notifier: called right after a chat
+// message is stored, it tells the other side of a client-vendor chat over
+// WhatsApp who wrote, what, and where to reply (the web chat). WhatsApp is
+// notification only: nothing sent to the official number is relayed back.
+func (d *Deps) NotifyNewMessage(ctx context.Context, conv *repository.Conversation, senderUserID string, msg *repository.Message) {
 	if conv.Type != repository.ConversationTypeVendorChat || conv.VendorID == nil {
 		return
 	}
@@ -41,29 +37,75 @@ func (d *Deps) RelayNewMessage(ctx context.Context, conv *repository.Conversatio
 	if err != nil || link.LinkState != repository.WhatsAppLinkStateLinked {
 		return
 	}
-
-	body := msg.Body
-	if body == "" && msg.AttachmentURL != nil {
-		body = "[lampiran gambar]"
+	if ok, err := d.Limiter.Allow(ctx, "wa-chat-notify:"+recipientID+":"+conv.ID, "wa_chat_notify", 1, chatNotifyEvery); err != nil || !ok {
+		return
 	}
-	senderLabel := d.participantLabel(ctx, conv, msg.SenderID)
 
-	switch {
-	case link.ActiveConversationID != nil && *link.ActiveConversationID == conv.ID:
-		d.deliver(ctx, link.JID, fmt.Sprintf("%s: %s", senderLabel, body))
+	d.deliver(ctx, link.JID, chatNotifyText(
+		d.participantLabel(ctx, conv, msg.SenderID),
+		messagePreview(msg),
+		d.conversationURL(conv, recipientID),
+	))
+}
 
-	case link.ActiveConversationID == nil && link.PendingMenu == nil:
-		if err := d.Links.SetActiveConversation(ctx, link.ID, &conv.ID); err != nil {
-			return
+// chatNotifyText is the WhatsApp notification for a new chat message.
+func chatNotifyText(sender, preview, replyURL string) string {
+	return fmt.Sprintf(`🔔 *Pesan baru di DuaCincin*
+
+Dari: *%s*
+%s
+
+Balas di sini:
+%s
+
+_Notifikasi otomatis, tidak perlu dibalas lewat WhatsApp._`, sender, preview, replyURL)
+}
+
+// messagePreview is the message as shown in a notification: quoted text
+// (shortened), or what kind of attachment it is.
+func messagePreview(msg *repository.Message) string {
+	if msg.Flagged {
+		// Contact details stay on the platform: never copy them to WhatsApp.
+		return "_(Pesan ini hanya bisa dibaca di DuaCincin.)_"
+	}
+	body := strings.Join(strings.Fields(msg.Body), " ")
+	if r := []rune(body); len(r) > 300 {
+		body = strings.TrimSpace(string(r[:300])) + "…"
+	}
+	note := ""
+	if msg.AttachmentURL != nil {
+		k := ""
+		if msg.AttachmentType != nil {
+			k = *msg.AttachmentType
 		}
-		d.deliver(ctx, link.JID, fmt.Sprintf("Pesan baru dari %s lewat DuaCincin:\n%s", senderLabel, body))
-
-	default:
-		// Another thread is in focus: still show who wrote and what, so the
-		// recipient knows at once whose message it is, and how to answer it.
-		d.deliver(ctx, link.JID, fmt.Sprintf("*%s* · #%s\n%s\n\n_Untuk membalas %s, ketik 'menu' lalu pilih percakapannya._",
-			senderLabel, convCode(conv.ID), body, senderLabel))
+		switch {
+		case strings.HasPrefix(k, "image"):
+			note = "📷 Foto"
+		case strings.HasPrefix(k, "video"):
+			note = "🎥 Video"
+		case strings.HasPrefix(k, "audio"):
+			note = "🎤 Pesan suara"
+		default:
+			note = "📎 Lampiran"
+		}
 	}
+	switch {
+	case body != "" && note != "":
+		return note + "\n\"" + body + "\""
+	case body != "":
+		return "\"" + body + "\""
+	default:
+		return note
+	}
+}
+
+// conversationURL is the web chat for userID's side of conv.
+func (d *Deps) conversationURL(conv *repository.Conversation, userID string) string {
+	base := strings.TrimRight(d.Cfg.WebBaseURL, "/")
+	if conv.VendorID != nil && *conv.VendorID == userID {
+		return base + "/vendor/messages/" + conv.ID
+	}
+	return base + "/client/messages/" + conv.ID
 }
 
 // participantLabel is the name shown to the *other* side — vendor's
@@ -91,6 +133,11 @@ func (d *Deps) deliver(ctx context.Context, jid, text string) {
 		return
 	}
 	if d.Cfg.WhatsAppBotCallbackURL == "" {
+		if d.Cfg.AppEnv == "development" {
+			// Local development and e2e: show what would have been sent.
+			log.Printf("[DEV] whatsapp ke %s: %q", jid, text)
+			return
+		}
 		log.Printf("whatsapp deliver: WHATSAPP_BOT_CALLBACK_URL not set, dropping message to %s", jid)
 		return
 	}
@@ -196,12 +243,3 @@ func (d *Deps) alertOfficialDown(ctx context.Context) {
 }
 
 var relayClient = &http.Client{Timeout: 15 * time.Second}
-
-// convCode is a short, stable tag for a conversation shown in WhatsApp.
-func convCode(id string) string {
-	c := strings.ToUpper(strings.ReplaceAll(id, "-", ""))
-	if len(c) > 4 {
-		c = c[:4]
-	}
-	return c
-}

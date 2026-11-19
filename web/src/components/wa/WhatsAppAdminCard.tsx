@@ -17,7 +17,7 @@ type Status = {
 };
 
 const OFFICIAL: Record<Status["official"], { label: string; dot: string; note: string }> = {
-  connected: { label: "Terhubung", dot: "bg-dc-success", note: "Chat dan kode verifikasi terkirim lewat nomor resmi." },
+  connected: { label: "Terhubung", dot: "bg-dc-success", note: "Notifikasi chat dan kode verifikasi terkirim lewat nomor resmi." },
   disconnected: {
     label: "Terputus",
     dot: "bg-dc-danger",

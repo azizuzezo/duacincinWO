@@ -243,8 +243,8 @@ export function WhatsAppGate({ user }: { user: CurrentUser }) {
                     Nomor terverifikasi
                   </h2>
                   <p className="text-sm leading-relaxed text-dc-text-2">
-                    Pesan dari {other} akan diteruskan ke WhatsApp <strong className="whitespace-nowrap text-dc-ink">{done.phone_display}</strong>, dan
-                    kamu bisa membalasnya langsung dari sana. Semua percakapan tetap tersimpan di DuaCincin.
+                    Setiap ada pesan baru dari {other}, kami kabari lewat WhatsApp ke <strong className="whitespace-nowrap text-dc-ink">{done.phone_display}</strong>{" "}
+                    lengkap dengan link untuk membalasnya di DuaCincin.
                   </p>
                   <UIButton type="button" block onClick={() => setOpen(false)}>
                     Lanjut
@@ -256,8 +256,8 @@ export function WhatsAppGate({ user }: { user: CurrentUser }) {
                     Verifikasi nomor WhatsApp
                   </h2>
                   <p className="mt-1 text-sm leading-relaxed text-dc-text-2">
-                    Wajib sekali saja. Chat dengan {other} diteruskan ke WhatsApp kamu lewat nomor resmi DuaCincin, jadi kami pastikan dulu nomornya
-                    benar milikmu.
+                    Wajib sekali saja. Kami kabari pesan baru dari {other} lewat WhatsApp resmi DuaCincin, jadi kami pastikan dulu nomornya benar
+                    milikmu.
                   </p>
                   <div className="mt-5">
                     <WhatsAppVerifyFlow status={status} onVerified={setDone} />

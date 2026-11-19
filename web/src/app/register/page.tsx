@@ -265,8 +265,8 @@ function RegisterContent() {
             onChange={(e) => setWhatsapp(e.target.value)}
             hint={
               role === "vendor"
-                ? "Pesan dari calon pengantin diteruskan ke sini lewat WhatsApp resmi DuaCincin. Diverifikasi dengan kode setelah daftar."
-                : "Balasan vendor diteruskan ke sini lewat WhatsApp resmi DuaCincin. Diverifikasi dengan kode setelah daftar. Hanya admin yang bisa melihatnya."
+                ? "Untuk notifikasi pesan dari calon pengantin lewat WhatsApp resmi DuaCincin. Diverifikasi dengan kode setelah daftar."
+                : "Untuk notifikasi pesan dari vendor lewat WhatsApp resmi DuaCincin. Diverifikasi dengan kode setelah daftar. Hanya admin yang bisa melihatnya."
             }
             required
           />

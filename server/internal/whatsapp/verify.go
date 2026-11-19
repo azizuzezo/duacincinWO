@@ -213,6 +213,12 @@ func VerifyWhatsAppCode(d *Deps) http.HandlerFunc {
 			return
 		}
 
+		// A first verified number is a new member: congratulate them. A
+		// changed number only gets a short confirmation.
+		hadNumber := false
+		if prev, err := d.Links.GetByUserID(ctx, claims.UserID); err == nil && prev.LinkState == repository.WhatsAppLinkStateLinked {
+			hadNumber = true
+		}
 		if err := d.Links.LinkVerified(ctx, claims.UserID, v.Phone); err != nil {
 			if errors.Is(err, repository.ErrPhoneTaken) {
 				httpx.Error(w, http.StatusConflict, "nomor WhatsApp ini sudah dipakai akun DuaCincin lain")
@@ -223,7 +229,11 @@ func VerifyWhatsAppCode(d *Deps) http.HandlerFunc {
 		}
 
 		if user, err := d.Users.GetByID(ctx, claims.UserID); err == nil {
-			d.deliver(ctx, v.Phone+"@s.whatsapp.net", welcomeText(user, d.Cfg.WebBaseURL))
+			text := welcomeText(user, d.Cfg.WebBaseURL)
+			if hadNumber {
+				text = numberChangedText(user)
+			}
+			d.deliver(ctx, v.Phone+"@s.whatsapp.net", text)
 		}
 		st, _ := d.waStatus(ctx, claims.UserID)
 		httpx.JSON(w, http.StatusOK, st)
@@ -259,19 +269,44 @@ Tidak merasa mendaftar di DuaCincin? Abaikan saja pesan ini. Nomor kamu tidak ak
 		code, webHost(webBase), name)
 }
 
-// welcomeText confirms the link and explains how chatting over WhatsApp works.
+// welcomeText congratulates a new member once their number is verified
+// and says what this number will be used for.
 func welcomeText(u *repository.User, webBase string) string {
-	role := "calon pengantin"
-	other := "vendor"
+	base := strings.TrimRight(webBase, "/")
+	name := strings.TrimSpace(u.FullName)
 	if u.Role == auth.RoleVendor {
-		role = "vendor"
-		other = "klien"
+		return fmt.Sprintf(`🎉 *Selamat bergabung di DuaCincin, %s!*
+
+Akun vendor kamu sudah aktif dan nomor WhatsApp ini sudah terverifikasi.
+
+Langkah berikutnya:
+1. Lengkapi profil usaha, foto portofolio, dan paket harga
+2. Tim DuaCincin meninjau profilmu
+3. Setelah disetujui, calon pengantin bisa menemukan dan menghubungimu
+
+Lengkapi profil: %s/vendor/profile
+
+Setiap ada pesan baru dari calon pengantin, kami kabari di sini lengkap dengan link untuk membalasnya.
+
+_Nomor ini khusus notifikasi, pesan yang dikirim ke sini tidak dibalas._`, name, base)
 	}
-	return fmt.Sprintf(`✅ *Nomor WhatsApp terverifikasi*
+	return fmt.Sprintf(`🎉 *Selamat bergabung di DuaCincin, %s!*
 
-Nomor ini sekarang terhubung ke akun DuaCincin *%s* (%s).
+Akun kamu sudah aktif dan nomor WhatsApp ini sudah terverifikasi. Semoga persiapan pernikahanmu lancar!
 
-Mulai sekarang, pesan dari %s di DuaCincin akan diteruskan ke sini, dan kamu bisa membalasnya langsung dari WhatsApp. Semua percakapan tetap tersimpan di %s.
+Mulai cari vendor: %s/vendors
+Atur rencana & budget: %s/client/dashboard
 
-Ketik *menu* kapan saja untuk melihat daftar percakapan.`, strings.TrimSpace(u.FullName), role, other, webHost(webBase))
+Setiap ada pesan baru dari vendor, kami kabari di sini lengkap dengan link untuk membalasnya.
+
+_Nomor ini khusus notifikasi, pesan yang dikirim ke sini tidak dibalas._`, name, base, base)
+}
+
+// numberChangedText confirms a changed WhatsApp number.
+func numberChangedText(u *repository.User) string {
+	return fmt.Sprintf(`✅ *Nomor WhatsApp diperbarui*
+
+Nomor ini sekarang dipakai untuk notifikasi akun DuaCincin *%s*. Notifikasi pesan baru akan dikirim ke sini.
+
+_Nomor ini khusus notifikasi, pesan yang dikirim ke sini tidak dibalas._`, strings.TrimSpace(u.FullName))
 }

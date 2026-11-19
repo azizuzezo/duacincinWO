@@ -184,6 +184,32 @@ ok("vendor is emailed once for the couple's two unread messages", (await waitCha
 r = await vendor.call("POST", `/conversations/${conv.id}/messages`, { body: "Tersedia, Kak." }); ok("vendor replies to the couple", r.status === 201, JSON.stringify(r));
 ok("couple is emailed when the vendor replies", (await waitChatEmails(emails.client, `/client/messages/${conv.id}`, 1)) === 1);
 
+// 5a. WhatsApp is notification only (no transport in e2e: the API logs "[DEV] whatsapp ke <jid>: <text>")
+{
+  const waOut = (phone) => readFileSync(API_LOG, "utf8").split("\n").filter((l) => l.includes(`[DEV] whatsapp ke ${phone}@s.whatsapp.net: `)).map((l) => JSON.parse(l.slice(l.indexOf(": \"") + 2)));
+  const inbound = async (phone, text, secret = "e2e-only-bot-secret-0123456789") => {
+    const res = await fetch(BASE + "/whatsapp/inbound", { method: "POST", headers: { "Content-Type": "application/json", "X-Bot-Secret": secret }, body: JSON.stringify({ jid: `${phone}@s.whatsapp.net`, phone, text }) });
+    return { status: res.status, data: await res.json().catch(() => null) };
+  };
+  const vPhone = "6281234567890", cPhone = (await client.call("GET", "/whatsapp/me")).data?.phone;
+  await new Promise((res) => setTimeout(res, 300));
+  ok("a newly verified couple is congratulated on WhatsApp", waOut(cPhone).some((t) => t.includes("Selamat bergabung di DuaCincin, Client Uji")), JSON.stringify(waOut(cPhone)));
+  ok("a newly verified vendor is congratulated on WhatsApp", waOut(vPhone).some((t) => t.includes("Selamat bergabung di DuaCincin") && t.includes("/vendor/profile")), JSON.stringify(waOut(vPhone)));
+  const toVendor = waOut(vPhone).filter((t) => t.includes("Pesan baru di DuaCincin"));
+  ok("vendor gets one WhatsApp notification for the couple's burst of messages", toVendor.length === 1, JSON.stringify(toVendor));
+  ok("the notification says who, what, and links to the vendor's chat", toVendor[0]?.includes("Dari: *Client Uji*") && toVendor[0]?.includes('"Halo, apakah tanggal 14 Maret tersedia?"') && toVendor[0]?.includes(`/vendor/messages/${conv.id}`), JSON.stringify(toVendor[0]));
+  const toClient = waOut(cPhone).filter((t) => t.includes("Pesan baru di DuaCincin"));
+  ok("couple gets a notification of the vendor's reply with a link to their chat", toClient.length === 1 && toClient[0].includes("Dari: *Ballroom Uji*") && toClient[0].includes(`/client/messages/${conv.id}`), JSON.stringify(toClient));
+  let w = await inbound(vPhone, "Siap kak");
+  ok("a WhatsApp message from a member gets no reply", w.status === 200 && !w.data?.reply, JSON.stringify(w));
+  r = await vendor.call("GET", `/conversations/${conv.id}/messages`);
+  ok("and is not added to any chat", r.data?.at(-1)?.body !== "Siap kak", JSON.stringify(r.data?.at(-1)));
+  w = await inbound("6289900001111", "mau tanya vendor di duacincin");
+  ok("an unknown number gets no reply either", w.status === 200 && !w.data?.reply, JSON.stringify(w));
+  w = await inbound(vPhone, "halo", "wrong");
+  ok("inbound webhook needs the bot secret", w.status === 401, JSON.stringify(w));
+}
+
 // 5b. Admin <-> Vendor chat: one thread per (admin, vendor), only those two.
 r = await vendor.call("POST", `/conversations/admin-vendor/${vendorId}`, {}); ok("vendor cannot start an admin chat", r.status === 403, JSON.stringify(r));
 r = await client.call("POST", `/conversations/admin-vendor/${vendorId}`, {}); ok("client cannot start an admin chat", r.status === 403, JSON.stringify(r));
