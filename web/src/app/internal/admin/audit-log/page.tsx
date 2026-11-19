@@ -22,6 +22,7 @@ const GROUPS: { id: string; label: string; actions: string[] }[] = [
   { id: "semua", label: "Semua", actions: [] },
   { id: "verifikasi", label: "Verifikasi vendor", actions: ["vendor.approve", "vendor.reject", "vendor.delete"] },
   { id: "komisi", label: "Komisi", actions: ["vendor.set_commission"] },
+  { id: "lokasi", label: "Lokasi vendor", actions: ["vendor.set_cities"] },
   { id: "pencairan", label: "Pencairan", actions: ["disbursement.mark_disbursed"] },
   { id: "sengketa", label: "Sengketa", actions: ["dispute.resolve"] },
   { id: "nama", label: "Ganti nama", actions: ["vendor_name_change.resolve"] },

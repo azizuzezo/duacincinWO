@@ -68,3 +68,16 @@ func TestJabodetabekCitiesExist(t *testing.T) {
 		t.Fatal("Jabotabek alias")
 	}
 }
+
+func TestNormalizeCities(t *testing.T) {
+	out, msg := NormalizeCities([]string{" jakarta utara", "Jakarta Utara", "kab. bogor"})
+	if msg != "" || len(out) != 2 || out[0] != "Jakarta Utara" || out[1] != "Kab. Bogor" {
+		t.Fatal(out, msg)
+	}
+	if _, msg := NormalizeCities([]string{"Gotham"}); msg == "" {
+		t.Fatal("unknown city accepted")
+	}
+	if _, msg := NormalizeCities(nil); msg == "" {
+		t.Fatal("empty accepted")
+	}
+}

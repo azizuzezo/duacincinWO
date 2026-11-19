@@ -9,11 +9,13 @@ import { Shell } from "@/components/shell/Shell";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { CityCombobox } from "@/components/ui/CityCombobox";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { WithUser } from "@/components/WithUser";
-import { apiGet, apiPost, ApiError, type Conversation, formatRupiah, formatWhatsApp, categoriesLabel, type CurrentUser } from "@/lib/api";
+import { apiGet, apiPost, apiPut, ApiError, type Conversation, formatRupiah, formatWhatsApp, categoriesLabel, type CurrentUser } from "@/lib/api";
 import { useLiveRefresh } from "@/lib/useLiveRefresh";
+import { findRegion, JABODETABEK } from "@/lib/wilayah";
 import { Monogram, PAGE, persen, relatif, RowsSkeleton, tanggal } from "../../../_ui";
 
 type PricePair = { vendor: number; website: number };
@@ -187,6 +189,8 @@ function Content({ user }: { user: CurrentUser }) {
               )}
             </div>
 
+            <VendorCities vendor={vendor} onSaved={(cities) => setVendor({ ...vendor, cities, city: cities.join(", ") })} />
+
             <section aria-labelledby="cek-harga" className="mb-8">
               <h2 id="cek-harga" className="mb-3 font-heading text-2xl text-dc-ink">
                 Pemeriksaan harga
@@ -297,5 +301,123 @@ function PriceRow({ label, note, pair, fee, updated, isPackage = false }: { labe
       </p>
       <p className="text-sm text-dc-text-3 md:text-right">{updated ? relatif(updated) : <span className="md:hidden" />}</p>
     </li>
+  );
+}
+
+/** Service area, with the Admin's emergency edit: for when a vendor cannot
+ * fix their kabupaten/kota themselves. Same rules as the vendor form; a
+ * reason is required, goes to the audit log and to the vendor's
+ * notification. */
+function VendorCities({ vendor, onSaved }: { vendor: AdminVendorDetail; onSaved: (cities: string[]) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [cities, setCities] = useState<string[]>(vendor.cities);
+  const [reason, setReason] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  function start() {
+    setCities(vendor.cities);
+    setReason("");
+    setError(null);
+    setSaved(false);
+    setEditing(true);
+  }
+
+  async function save() {
+    if (cities.length === 0) return setError("Pilih minimal satu kabupaten atau kota.");
+    if (reason.trim().length < 5) return setError("Tulis alasan perubahan, minimal 5 karakter.");
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await apiPut<{ cities: string[] }>(`/api/v1/admin/vendors/${vendor.user_id}/cities`, { cities, reason: reason.trim() });
+      onSaved(res.cities);
+      setEditing(false);
+      setSaved(true);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Lokasi belum bisa disimpan. Coba lagi.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section aria-labelledby="lokasi" className="mb-8">
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 id="lokasi" className="font-heading text-2xl text-dc-ink">
+            Lokasi layanan
+          </h2>
+          <p className="text-sm text-dc-text-2">Kabupaten/kota yang dilayani vendor. Biasanya diatur vendor sendiri di profilnya.</p>
+        </div>
+        {!editing && (
+          <Button size="sm" variant="ghost" onClick={start}>
+            Ubah lokasi (darurat)
+          </Button>
+        )}
+      </div>
+
+      {saved && (
+        <p role="status" className="mb-3 rounded-lg bg-dc-success-soft px-4 py-3 text-sm font-medium text-dc-success">
+          Lokasi tersimpan. Vendor sudah diberi notifikasi beserta alasannya, dan perubahan tercatat di audit log.
+        </p>
+      )}
+
+      {!editing ? (
+        vendor.cities.length > 0 ? (
+          <ul className="flex flex-wrap gap-2">
+            {vendor.cities.map((c) => (
+              <li key={c} className="inline-flex min-h-9 items-center gap-1 rounded-full border border-dc-line-strong bg-dc-cream px-3.5 text-sm font-semibold text-dc-ink">
+                {c}
+                <span className="font-normal text-dc-text-3">· {findRegion(c)?.province ?? "di luar daftar"}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="rounded-lg bg-dc-warning-soft px-4 py-3 text-sm font-medium text-dc-warning">
+            Belum ada kabupaten/kota terpilih{vendor.city ? ` (teks lama: "${vendor.city}")` : ""}. Vendor ini tidak muncul di pencarian per kota.
+          </p>
+        )
+      ) : (
+        <Card className="flex flex-col gap-4 p-5">
+          <p className="rounded-lg bg-dc-warning-soft px-4 py-3 text-sm leading-relaxed text-dc-warning">
+            Pakai hanya saat darurat, misalnya vendor tidak bisa menyimpan profilnya. Vendor akan menerima notifikasi berisi daftar baru dan alasanmu.
+          </p>
+          <CityCombobox
+            id="admin-cities"
+            label="Kabupaten/kota layanan"
+            values={cities}
+            onChange={setCities}
+            groups={[{ name: "Jabodetabek", cities: JABODETABEK }]}
+            hint="Hanya dari daftar resmi kabupaten/kota, maksimal 20."
+          />
+          <label className="flex flex-col gap-1.5">
+            <span className="text-sm font-semibold text-dc-ink">Alasan perubahan</span>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={3}
+              maxLength={300}
+              placeholder="Misalnya: vendor tidak bisa menyimpan Jakarta Utara, diminta lewat chat 19 Nov"
+              className="rounded-md border border-dc-line-strong bg-dc-white px-3.5 py-2.5 text-base text-dc-ink outline-none focus:border-dc-gold focus:shadow-[0_0_0_4px_rgb(184_146_74_/_0.15)]"
+            />
+            <span className="text-xs text-dc-text-3">Wajib. Tercatat di audit log dan dikirim ke vendor.</span>
+          </label>
+          {error && (
+            <p role="alert" className="text-sm font-semibold text-dc-danger">
+              {error}
+            </p>
+          )}
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button size="sm" variant="ghost" onClick={() => setEditing(false)} disabled={saving}>
+              Batal
+            </Button>
+            <Button size="sm" variant="primary" loading={saving} onClick={save}>
+              Simpan lokasi
+            </Button>
+          </div>
+        </Card>
+      )}
+    </section>
   );
 }

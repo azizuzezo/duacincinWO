@@ -97,6 +97,7 @@ export const ACTION_LABEL: Record<string, string> = {
   "vendor.approve": "Menyetujui vendor",
   "vendor.reject": "Menolak vendor",
   "vendor.set_commission": "Mengubah komisi vendor",
+  "vendor.set_cities": "Mengubah lokasi layanan vendor (darurat)",
   "vendor.delete": "Menghapus vendor",
   "disbursement.mark_disbursed": "Menandai dana sudah dicairkan",
   "dispute.resolve": "Memutuskan sengketa",
@@ -121,6 +122,13 @@ export function auditDetail(action: string, meta?: Record<string, unknown>): str
   if (action === "vendor.delete" && str("business_name")) out.push(`Vendor: ${str("business_name")}`);
   if (action === "dispute.resolve" && str("sanction")) out.push(`Keputusan: ${SANCTION_LABEL[str("sanction")!] ?? str("sanction")}`);
   if (action === "vendor_name_change.resolve" && str("status")) out.push(str("status") === "approved" ? "Hasil: disetujui" : "Hasil: ditolak");
+  if (action === "vendor.set_cities") {
+    const list = (k: string) => (Array.isArray(meta[k]) ? (meta[k] as unknown[]).filter((x): x is string => typeof x === "string") : []);
+    const from = list("from");
+    out.push(`Sebelumnya: ${from.length ? from.join(", ") : "kosong"}`);
+    out.push(`Menjadi: ${list("to").join(", ")}`);
+    if (str("reason")) out.push(`Alasan: ${str("reason")}`);
+  }
   if (action === "vendor.set_commission") {
     const rate = meta.rate;
     if (typeof rate === "number") out.push(`Komisi baru: ${persen(rate)}`);

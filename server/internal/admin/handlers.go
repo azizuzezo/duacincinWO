@@ -593,6 +593,7 @@ func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 		r.Post("/vendors/bulk-approve", bulkApproveVendors(deps))
 		r.Post("/vendors/{id}/reject", rejectVendor(deps))
 		r.Patch("/vendors/{id}/commission", setCommission(deps))
+		r.Put("/vendors/{id}/cities", setVendorCities(deps))
 		r.Delete("/vendors/{id}", deleteVendor(deps))
 
 		r.Get("/disbursements/pending", listPendingDisbursements(deps))

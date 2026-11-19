@@ -1,7 +1,6 @@
 package vendors
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -213,30 +212,9 @@ func normalizeCategories(in []string) ([]string, string) {
 	return out, ""
 }
 
-// normalizeCities checks each name against the national kabupaten/kota list
-// (so the directory groups vendors under one spelling), keeps the list's
-// spelling and drops repeats. A non-empty message means the input is refused.
-func normalizeCities(in []string) ([]string, string) {
-	out := make([]string, 0, len(in))
-	seen := map[string]bool{}
-	for _, name := range in {
-		c, ok := wilayah.Canonical(name)
-		if !ok {
-			return nil, "pilih kabupaten/kota dari daftar"
-		}
-		if !seen[c] {
-			seen[c] = true
-			out = append(out, c)
-		}
-	}
-	switch {
-	case len(out) == 0:
-		return nil, "kota wajib diisi"
-	case len(out) > wilayah.MaxCities:
-		return nil, fmt.Sprintf("pilih paling banyak %d kabupaten/kota", wilayah.MaxCities)
-	}
-	return out, ""
-}
+// normalizeCities is wilayah.NormalizeCities (shared with the admin's
+// emergency edit, so both follow one rule).
+func normalizeCities(in []string) ([]string, string) { return wilayah.NormalizeCities(in) }
 
 func nonNil(s []string) []string {
 	if s == nil {

@@ -10,6 +10,7 @@ package wilayah
 import (
 	_ "embed"
 	"encoding/json"
+	"fmt"
 	"strings"
 )
 
@@ -114,4 +115,30 @@ func Split(text string) (cities []string, ok bool) {
 		}
 	}
 	return cities, len(cities) > 0
+}
+
+// NormalizeCities checks each name against the national kabupaten/kota list
+// (so the directory groups vendors under one spelling), keeps the list's
+// spelling and drops repeats. A non-empty message means the input is
+// refused. Used by the vendor profile and the admin's emergency edit.
+func NormalizeCities(in []string) ([]string, string) {
+	out := make([]string, 0, len(in))
+	seen := map[string]bool{}
+	for _, name := range in {
+		c, ok := Canonical(name)
+		if !ok {
+			return nil, "pilih kabupaten/kota dari daftar"
+		}
+		if !seen[c] {
+			seen[c] = true
+			out = append(out, c)
+		}
+	}
+	switch {
+	case len(out) == 0:
+		return nil, "kota wajib diisi"
+	case len(out) > MaxCities:
+		return nil, fmt.Sprintf("pilih paling banyak %d kabupaten/kota", MaxCities)
+	}
+	return out, ""
 }
