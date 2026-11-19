@@ -16,6 +16,7 @@ import (
 	"net"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -29,8 +30,8 @@ const (
 	maxHistory      = 16   // earlier turns given to the model
 	maxUserChars    = 1000 // one visitor message
 	maxRounds       = 4    // model calls per visitor message (tool loops)
-	perIPPerHour    = 20
-	globalPerDay    = 2000
+	perIPPerHour    = 60   // generous: couples plan in long sessions, and one IP is often shared (wifi, carrier NAT)
+	globalPerDay    = 5000
 	requestDeadline = 110 * time.Second
 )
 
@@ -259,6 +260,7 @@ func (d *Deps) converse(ctx context.Context, history []chatMessage, visitor repo
 
 	wrote := false
 	consultantShown := false
+	budgetShown := false
 	for round := 0; round < maxRounds; round++ {
 		roundTools := tools
 		if round == maxRounds-1 {
@@ -282,6 +284,16 @@ func (d *Deps) converse(ctx context.Context, history []chatMessage, visitor repo
 			if !wrote {
 				send("error", map[string]string{"message": "Maaf, aku belum menemukan jawabannya. Coba ceritakan dengan kata lain, atau tanya Wedding Consultant kami di bawah ini."})
 				return
+			}
+			// The visitor named a total budget but the model answered from
+			// its own arithmetic: show the Budget Planner split anyway, so
+			// the figures on screen always come from DuaCincin's formula.
+			if !budgetShown {
+				if total, guests, ok := budgetFromMessage(lastUser(history)); ok {
+					if out, err := splitBudget(total, guests); err == nil {
+						send("block", out.Block)
+					}
+				}
 			}
 			// The visitor asked for a person: the card must be there, whatever
 			// the model decided (it sometimes says "kartunya sudah tampil").
@@ -308,6 +320,9 @@ func (d *Deps) converse(ctx context.Context, history []chatMessage, visitor repo
 				}
 			case out.Block != nil:
 				send("block", out.Block)
+				if out.Block.Type == "budget" {
+					budgetShown = true
+				}
 			}
 			done(id)
 			msgs = append(msgs, chatMessage{Role: "tool", ToolCallID: tc.ID, Content: out.ForModel})
@@ -341,4 +356,69 @@ func lastUser(history []chatMessage) string {
 		}
 	}
 	return ""
+}
+
+var (
+	budgetAmount = regexp.MustCompile(`(?i)(?:rp\.?\s*)?(\d+(?:[.,]\d+)*)\s*(miliar|milyar|m\b|juta|jt\b|ribu|rb\b)?`)
+	budgetWord   = regexp.MustCompile(`(?i)\b(budget|bujet|anggaran|dana|biaya|modal)\b`)
+	guestCount   = regexp.MustCompile(`(?i)(\d{2,5})\s*(orang\s*)?(tamu|undangan|pax|orang)`)
+)
+
+// budgetFromMessage reads a total wedding budget (and guest count) from
+// the visitor's words: "budget 150 juta, 300 tamu", "dana Rp150.000.000",
+// "anggaran 1,5 M". ok is false when no budget word or plausible amount.
+func budgetFromMessage(msg string) (total int64, guests int, ok bool) {
+	if !budgetWord.MatchString(msg) {
+		return 0, 0, false
+	}
+	for _, m := range budgetAmount.FindAllStringSubmatch(msg, -1) {
+		num, unit := m[1], strings.ToLower(m[2])
+		var v float64
+		switch unit {
+		case "miliar", "milyar", "m":
+			v = parseDecimal(num) * 1e9
+		case "juta", "jt":
+			v = parseDecimal(num) * 1e6
+		case "ribu", "rb":
+			v = parseDecimal(num) * 1e3
+		default:
+			// A bare number only counts when written in full rupiah.
+			v = float64(digitsOnly(num))
+		}
+		if v >= 1_000_000 && v <= 100_000_000_000 {
+			total = int64(v)
+			break
+		}
+	}
+	if total == 0 {
+		return 0, 0, false
+	}
+	if g := guestCount.FindStringSubmatch(msg); g != nil {
+		guests = int(digitsOnly(g[1]))
+	}
+	return total, guests, true
+}
+
+// parseDecimal reads "1,5" or "1.5" as 1.5 and "150" as 150 (Indonesian
+// writes the decimal comma; a thousands dot before a unit is rare).
+func parseDecimal(s string) float64 {
+	s = strings.ReplaceAll(s, ",", ".")
+	if strings.Count(s, ".") > 1 {
+		s = strings.ReplaceAll(s, ".", "")
+	}
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return 0
+	}
+	return f
+}
+
+func digitsOnly(s string) int64 {
+	var n int64
+	for _, r := range s {
+		if r >= '0' && r <= '9' {
+			n = n*10 + int64(r-'0')
+		}
+	}
+	return n
 }

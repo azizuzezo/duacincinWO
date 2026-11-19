@@ -31,12 +31,12 @@ type AIChatTurn struct {
 	CreatedAt time.Time
 }
 
-// SessionForDevice returns the anonymous session of a device, or "" when
-// it has none yet. A session already handed to a user is not returned:
-// after logging out, the next visitor on that device starts clean.
+// SessionForDevice returns the session of a device, or "" when it has none
+// yet. The device keeps its conversation (and the name Kirana knows) even
+// after its visitor logs in and out again.
 func (r *AIChatRepo) SessionForDevice(ctx context.Context, deviceHash string) (string, error) {
 	var id string
-	err := r.pool.QueryRow(ctx, `select id from ai_chat_sessions where device_hash = $1 and user_id is null`, deviceHash).Scan(&id)
+	err := r.pool.QueryRow(ctx, `select id from ai_chat_sessions where device_hash = $1`, deviceHash).Scan(&id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", nil
 	}
@@ -58,9 +58,9 @@ func (r *AIChatRepo) SessionForUser(ctx context.Context, userID, deviceHash stri
 	if deviceHash == "" {
 		return "", nil
 	}
-	// Claim it and detach it from the device.
+	// Claim it for the account; it stays linked to the device too.
 	err = r.pool.QueryRow(ctx, `
-		update ai_chat_sessions set user_id = $1, device_hash = null, updated_at = now()
+		update ai_chat_sessions set user_id = $1, updated_at = now()
 		where device_hash = $2 and user_id is null
 		returning id
 	`, userID, deviceHash).Scan(&id)

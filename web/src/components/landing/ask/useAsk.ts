@@ -59,6 +59,41 @@ async function loadHistory(signal: AbortSignal): Promise<{ turns: Turn[]; profil
   }
 }
 
+const NAME_KEY = "dc-kirana-name";
+
+function readKnownName(): Profile | null {
+  try {
+    const p = JSON.parse(window.localStorage.getItem(NAME_KEY) ?? "null") as Profile | null;
+    return p && typeof p.name === "string" && p.name ? { name: p.name, age: Number(p.age) || 0 } : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Saves the profile on the server (and in this browser as a fallback).
+ * Returns the saved profile, or an error message to show. */
+async function putProfile(name: string, age: number): Promise<Profile | string> {
+  try {
+    const res = await fetch(`${AI}/profile`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, age }),
+    });
+    const j = (await res.json()) as Profile & { error?: string };
+    if (!res.ok) return j.error ?? "Belum bisa disimpan, coba lagi.";
+    const saved = { name: j.name, age: j.age };
+    try {
+      window.localStorage.setItem(NAME_KEY, JSON.stringify(saved));
+    } catch {
+      /* storage blocked: the server copy is enough */
+    }
+    return saved;
+  } catch {
+    return "Koneksi terputus, coba lagi.";
+  }
+}
+
 function appendText(parts: Part[], t: string): Part[] {
   const last = parts[parts.length - 1];
   if (last?.kind === "text") return [...parts.slice(0, -1), { kind: "text", text: last.text + t }];
@@ -80,7 +115,12 @@ export function useAsk() {
       if (ctrl.signal.aborted) return;
       // Keep anything sent before the history arrived.
       setTurns((now) => (now.length ? [...t, ...now] : t));
-      setProfile(p);
+      // The server did not recognise this browser but it told Kirana its name
+      // before (cookie cleared, new session...): reconnect quietly instead
+      // of asking again.
+      const known = p ?? readKnownName();
+      setProfile(known);
+      if (!p && known) void putProfile(known.name, known.age);
       setLoaded(true);
     });
     return () => {
@@ -205,20 +245,10 @@ export function useAsk() {
 
   /** Remember who the visitor is (Kirana greets them by name next time). */
   const saveProfile = useCallback(async (name: string, age: number): Promise<string | null> => {
-    try {
-      const res = await fetch(`${AI}/profile`, {
-        method: "PUT",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, age }),
-      });
-      const j = (await res.json()) as Profile & { error?: string };
-      if (!res.ok) return j.error ?? "Belum bisa disimpan, coba lagi.";
-      setProfile({ name: j.name, age: j.age });
-      return null;
-    } catch {
-      return "Koneksi terputus, coba lagi.";
-    }
+    const r = await putProfile(name, age);
+    if (typeof r === "string") return r;
+    setProfile(r);
+    return null;
   }, []);
 
   return { turns, busy, loaded, profile, saveProfile, send, stop, reset, retry };

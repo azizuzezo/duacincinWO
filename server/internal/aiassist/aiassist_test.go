@@ -261,3 +261,25 @@ func TestAsksForConsultant(t *testing.T) {
 		}
 	}
 }
+
+func TestBudgetFromMessage(t *testing.T) {
+	cases := []struct {
+		msg    string
+		total  int64
+		guests int
+		ok     bool
+	}{
+		{"Budget kami 150 juta, 300 tamu di Bandung, cukup nggak?", 150_000_000, 300, true},
+		{"dana Rp150.000.000 buat 250 undangan", 150_000_000, 250, true},
+		{"anggaran 1,5 M untuk 1000 orang", 1_500_000_000, 1000, true},
+		{"budget 80jt", 80_000_000, 0, true},
+		{"Cariin MUA di Bandung", 0, 0, false},
+		{"nikah 2 bulan lagi, 300 tamu", 0, 0, false},
+	}
+	for _, c := range cases {
+		total, guests, ok := budgetFromMessage(c.msg)
+		if total != c.total || guests != c.guests || ok != c.ok {
+			t.Fatalf("%q: got %d %d %v", c.msg, total, guests, ok)
+		}
+	}
+}

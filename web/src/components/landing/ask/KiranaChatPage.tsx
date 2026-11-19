@@ -190,7 +190,7 @@ export function KiranaChatPage() {
       <main id="konten" className="relative mx-auto grid min-h-0 w-full max-w-[1320px] flex-1 gap-6 px-0 pb-0 sm:px-4 sm:pb-4 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-8 lg:px-8 lg:pb-6">
         {/* Kirana, live, beside the conversation (desktop) */}
         <aside className="relative hidden min-h-0 flex-col items-center justify-center lg:flex">
-          <div className="relative h-[min(62vh,560px)] w-full">
+          <div className="relative z-10 h-[min(62vh,560px)] w-full">
             <Kirana3D mood={mood} className="h-full w-full" />
             <AnimatePresence>
               {(cheer || typing || busy || hello) && (
@@ -208,24 +208,35 @@ export function KiranaChatPage() {
               )}
             </AnimatePresence>
           </div>
-          {/* The stage she stands on: two interlocked gold rings, the brand
-              motif, lying flat like a pedestal with a soft glow. */}
-          <div aria-hidden className="relative -mt-[132px] h-28 w-[min(400px,86%)]">
+          {/* The stage she stands on: two interlocked gold rings lying flat.
+              Drawn as a real object: the back halves sit behind Kirana, the
+              front halves in front of her, so she stands inside the rings
+              instead of being cut through by them. */}
+          <div aria-hidden className="relative -mt-[150px] h-28 w-[min(400px,86%)]">
             <div className="absolute inset-x-[8%] bottom-6 h-16 rounded-[50%] bg-[radial-gradient(closest-side,rgb(220_187_118_/_0.55),transparent)] blur-xl" />
-            <svg viewBox="0 0 420 110" className="absolute inset-0 h-full w-full">
-              <defs>
-                <linearGradient id="kirana-stage-gold" x1="0" x2="1">
-                  <stop offset="0" stopColor="#9c7731" />
-                  <stop offset="0.5" stopColor="#f0d79c" />
-                  <stop offset="1" stopColor="#9c7731" />
-                </linearGradient>
-              </defs>
-              <ellipse cx="170" cy="55" rx="140" ry="30" fill="none" stroke="url(#kirana-stage-gold)" strokeWidth="3" opacity="0.9" />
-              <ellipse cx="250" cy="55" rx="140" ry="30" fill="none" stroke="url(#kirana-stage-gold)" strokeWidth="3" opacity="0.9" />
-              <ellipse cx="210" cy="55" rx="190" ry="44" fill="none" stroke="#b8924a" strokeOpacity="0.25" strokeWidth="1" strokeDasharray="2 7" className="dc-stage-spin" style={{ transformOrigin: "210px 55px" }} />
-            </svg>
+            {(["back", "front"] as const).map((layer) => (
+              <svg key={layer} viewBox="0 0 420 110" className={`absolute inset-0 h-full w-full ${layer === "front" ? "z-20" : "z-0"}`}>
+                <defs>
+                  <linearGradient id={`kirana-stage-${layer}`} x1="0" x2="1">
+                    <stop offset="0" stopColor="#9c7731" />
+                    <stop offset="0.5" stopColor="#f0d79c" />
+                    <stop offset="1" stopColor="#9c7731" />
+                  </linearGradient>
+                  <clipPath id={`kirana-stage-clip-${layer}`}>
+                    <rect x="0" y={layer === "back" ? 0 : 55} width="420" height="55" />
+                  </clipPath>
+                </defs>
+                <g clipPath={`url(#kirana-stage-clip-${layer})`} fill="none" stroke={`url(#kirana-stage-${layer})`} strokeWidth="3" opacity={layer === "back" ? 0.75 : 0.95}>
+                  <ellipse cx="170" cy="55" rx="140" ry="30" />
+                  <ellipse cx="250" cy="55" rx="140" ry="30" />
+                </g>
+                {layer === "back" && (
+                  <ellipse cx="210" cy="55" rx="190" ry="44" fill="none" stroke="#b8924a" strokeOpacity="0.25" strokeWidth="1" strokeDasharray="2 7" className="dc-stage-spin" style={{ transformOrigin: "210px 55px" }} />
+                )}
+              </svg>
+            ))}
             {[0, 1, 2, 3, 4].map((i) => (
-              <span key={i} className="dc-sparkle absolute h-1.5 w-1.5 rounded-full bg-[#f0d79c]" style={{ left: `${14 + i * 18}%`, top: `${i % 2 ? 18 : 42}%`, animationDelay: `${i * 0.9}s` }} />
+              <span key={i} className="dc-sparkle absolute z-20 h-1.5 w-1.5 rounded-full bg-[#f0d79c]" style={{ left: `${14 + i * 18}%`, top: `${i % 2 ? 18 : 42}%`, animationDelay: `${i * 0.9}s` }} />
             ))}
           </div>
         </aside>
