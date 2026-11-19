@@ -332,3 +332,18 @@ func TestRefusalHeuristicAndBudgetContext(t *testing.T) {
 		}
 	}
 }
+
+func TestToolNamePrefixes(t *testing.T) {
+	for _, n := range []string{"hitung_budget", "default_api.hitung_budget", "functions.hitung_budget", "tools/hitung_budget", " Hitung_Budget "} {
+		if toolName(n) != "hitung_budget" {
+			t.Fatal(n, toolName(n))
+		}
+	}
+	out := (&Deps{}).runTool(context.Background(), "default_api.hitung_budget", `{"total":"150 juta","jumlah_tamu":300}`)
+	if out.Block == nil || out.Block.Type != "budget" {
+		t.Fatalf("prefixed tool did not run: %+v", out)
+	}
+	if got := statusFor("default_api.hitung_budget", "{}"); got != "Menghitung pembagian budget" {
+		t.Fatal(got)
+	}
+}

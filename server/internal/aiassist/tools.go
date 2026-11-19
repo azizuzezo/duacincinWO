@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math"
 	"sort"
 	"strings"
@@ -162,6 +163,7 @@ func toolDefs() []toolDef {
 // statusFor is the line shown while a tool is about to run, built from its
 // arguments so the visitor sees what is actually being searched.
 func statusFor(name, rawArgs string) string {
+	name = toolName(name)
 	var a map[string]any
 	_ = json.Unmarshal([]byte(rawArgs), &a)
 	str := func(k string) string { s, _ := a[k].(string); return strings.TrimSpace(s) }
@@ -192,8 +194,23 @@ func statusFor(name, rawArgs string) string {
 	return "Sedang menyiapkan"
 }
 
+// toolName undoes the prefixes some providers put on function names
+// (Gemini via OpenAI-compatible proxies: "default_api.hitung_budget",
+// "functions.cari_vendor", "tools/cari_vendor") and stray case/spaces.
+func toolName(raw string) string {
+	n := strings.ToLower(strings.TrimSpace(raw))
+	if i := strings.LastIndexAny(n, ".:/"); i >= 0 {
+		n = n[i+1:]
+	}
+	return n
+}
+
 func (d *Deps) runTool(ctx context.Context, name, rawArgs string) toolOutput {
+	name = toolName(name)
 	out, err := d.dispatch(ctx, name, rawArgs)
+	if err != nil {
+		log.Printf("aiassist: tool %q: %v", name, err)
+	}
 	if err != nil {
 		return toolOutput{ForModel: fmt.Sprintf(`{"error":%q}`, err.Error())}
 	}
