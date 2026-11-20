@@ -11,6 +11,7 @@ import { ButtonLink } from "@/components/ui/Button";
 export const metadata: Metadata = {
   title: "Bantuan dan pertanyaan umum",
   description: "Jawaban atas pertanyaan yang sering muncul soal escrow, booking, sengketa, dan akun vendor di DuaCincin.",
+  alternates: { canonical: "/bantuan" },
 };
 
 // Official DuaCincin WO support channels (PRD §10.6). Leave empty until the

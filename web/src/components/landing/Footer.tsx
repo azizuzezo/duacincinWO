@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Reveal } from "@/components/landing/Reveal";
 import { BrandLogo } from "@/components/ui/BrandLogo";
+import { VENDOR_CATEGORIES } from "@/lib/api";
 import { COMPANY, COMPANY_PAGE } from "@/lib/company";
 
 const EXPLORE = [
@@ -80,7 +81,25 @@ export function Footer() {
             </ul>
           </nav>
         </div>
-        <div className="mt-14 flex flex-col gap-3 border-t border-dc-on-dark/15 pt-6 text-sm text-dc-on-dark/80 sm:flex-row sm:items-center sm:justify-between">
+        {/* Every category hub from every page: the way in for "vendor <kategori>" searches. */}
+        <nav aria-label="Kategori vendor" className="mt-12">
+          <p className={GROUP}>Vendor pernikahan per kategori</p>
+          <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-0.5">
+            {VENDOR_CATEGORIES.map((c) => (
+              <li key={c.value}>
+                <Link href={`/kategori/${c.value}`} className={LINK}>
+                  {c.label}
+                </Link>
+              </li>
+            ))}
+            <li>
+              <Link href="/vendors?kota=Jabodetabek" className={LINK}>
+                Vendor di Jabodetabek
+              </Link>
+            </li>
+          </ul>
+        </nav>
+        <div className="mt-10 flex flex-col gap-3 border-t border-dc-on-dark/15 pt-6 text-sm text-dc-on-dark/80 sm:flex-row sm:items-center sm:justify-between">
           <p>
             &copy; {new Date().getFullYear()} DuaCincin, dikelola{" "}
             <Link href={COMPANY_PAGE} className="underline decoration-dc-on-dark/40 underline-offset-4 transition-colors hover:text-dc-gold-antique hover:decoration-dc-gold-antique">

@@ -7,6 +7,7 @@ import { COMPANY, COMPANY_PAGE } from "@/lib/company";
 export const metadata: Metadata = {
   title: "Ketentuan Layanan Client",
   description: `Ketentuan layanan bagi calon pengantin yang mencari, memesan, dan membayar vendor pernikahan lewat DuaCincin, diselenggarakan ${COMPANY.name}.`,
+  alternates: { canonical: "/legal/client-tos" },
 };
 
 // Text in force at LEGAL_VERSION (lib/legal.ts). Any material change needs a

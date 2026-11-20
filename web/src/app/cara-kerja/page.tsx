@@ -14,6 +14,7 @@ export const metadata: Metadata = {
   title: "Cara kerja dari pilih vendor sampai hari-H",
   description:
     "Tujuh tahap pemesanan di DuaCincin, dan di mana uangmu berada pada setiap tahap: ditahan escrow sampai acara selesai.",
+  alternates: { canonical: "/cara-kerja" },
 };
 
 // PRD §8.11, one entry per stage, with where the client's money sits and the

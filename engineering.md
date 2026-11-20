@@ -38,6 +38,15 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 
 ## Changelog
 
+### 2026-11-21 — SEO: halaman bisa dibaca crawler
+
+- `/vendors` dan `/vendors/[id]` kini server component: daftar vendor, serta profil + paket + ulasan, diambil di server (cache 5 menit) dan diteruskan ke komponen client yang sama (`_ui/VendorDirectory.tsx`, `_ui/VendorDetail.tsx`). Sebelumnya HTML awal kosong (H1 dan kartu vendor baru muncul setelah JavaScript). Vendor yang tidak ada kini 404 sungguhan.
+- Canonical di semua halaman publik (beranda, direktori, kategori, kota, cara kerja, bantuan, inspirasi, untuk vendor, legal, kredit, daftar); `/login` dan `/forgot-password` noindex. Judul & deskripsi beranda, direktori, kategori, kota memuat "vendor pernikahan"; meta deskripsi vendor dijadikan satu baris.
+- Halaman kategori/kota: FAQ yang dijawab dari data halaman itu sendiri (kisaran & nilai tengah harga, kota layanan, pertanyaan sebelum booking, escrow) + JSON-LD `ItemList` dan `FAQPage`. Slug kota yang bukan kabupaten/kota (atau Jabodetabek) jadi 404; kota tanpa vendor noindex.
+- Sitemap: halaman Jabodetabek dan 13 kotanya ikut untuk vendor "Jabodetabek"; `lastmod` hanya untuk artikel (bukan waktu build di setiap URL).
+- Footer: tautan ke 12 kategori dari setiap halaman.
+- Di luar kode: redirect `duacincin.id` → `www` masih 307 (pengaturan domain Vercel), sebaiknya 308.
+
 ### 2026-11-21 — Admin: klien terdaftar & percakapan klien–vendor
 
 - **Klien Terdaftar** (`/internal/admin/klien`, `GET /admin/clients?q=&page=`): semua akun calon pengantin, dengan status & nomor WhatsApp (terverifikasi / belum verifikasi / belum isi; hanya admin yang melihat nomornya), tanggal daftar, jumlah booking dan percakapan, serta pintasan ke percakapannya dan Kirim WhatsApp. Cari nama, email, atau nomor; 30 per halaman.

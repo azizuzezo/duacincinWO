@@ -7,6 +7,7 @@ import { COMPANY, COMPANY_PAGE } from "@/lib/company";
 export const metadata: Metadata = {
   title: "Perjanjian Kemitraan Vendor",
   description: `Perjanjian kemitraan antara ${COMPANY.name} dan vendor pernikahan yang bergabung di DuaCincin.`,
+  alternates: { canonical: "/legal/vendor-agreement" },
 };
 
 // Text in force at LEGAL_VERSION (lib/legal.ts). Any material change needs a

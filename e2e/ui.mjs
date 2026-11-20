@@ -14,6 +14,26 @@ const out = []; let failed = 0; const ok = (n, c, d = "") => { out.push(`${c ? "
   ok("directory card shows verified rating 5,0 (1 ulasan)", /5,0\s*\(1 ulasan\)/.test(dir), dir.slice(0, 300));
   ok("pending vendor not shown", !dir.includes("Dekor Uji"));
   const vid = await s.ev("document.querySelector('main ul li a')?.getAttribute('href')");
+  // SEO: what a crawler gets without running JavaScript.
+  {
+    const raw = async (path) => { const r = await fetch(WEB + path); return { status: r.status, html: await r.text() }; };
+    const has = (html, re) => re.test(html);
+    let p = await raw("/vendors");
+    ok("SEO: directory HTML has its H1 and the vendor cards without JavaScript", p.status === 200 && has(p.html, /<h1[^>]*>[^]*?Temukan vendor/) && p.html.includes("Ballroom Uji"), p.html.slice(0, 200));
+    ok("SEO: directory canonical is /vendors", has(p.html, /<link rel="canonical" href="[^"]*\/vendors"/));
+    p = await raw(vid);
+    ok("SEO: vendor profile HTML has the vendor name as H1 and its packages", p.status === 200 && has(p.html, /<h1[^>]*>[^<]*Ballroom Uji/) && p.html.includes("Half Day Plus"), p.html.slice(0, 200));
+    p = await raw("/vendors/00000000-0000-0000-0000-000000000000");
+    ok("SEO: an unknown vendor is a real 404", p.status === 404, String(p.status));
+    p = await raw("/kategori/venue/jakarta-selatan");
+    ok("SEO: city page has canonical, ItemList and an FAQ answered from real prices", p.status === 200 && has(p.html, /rel="canonical" href="[^"]*\/kategori\/venue\/jakarta-selatan"/) && p.html.includes('"ItemList"') && p.html.includes("Berapa harga vendor Venue di Jakarta Selatan?"), p.html.slice(0, 200));
+    p = await raw("/kategori/venue/kota-yang-tidak-ada");
+    ok("SEO: a made-up city slug is a 404, not an empty page", p.status === 404, String(p.status));
+    p = await raw("/kategori/venue/sumedang");
+    ok("SEO: a real city with no vendor yet is noindex", p.status === 200 && has(p.html, /<meta name="robots" content="noindex/), p.html.match(/<meta name="robots"[^>]*>/)?.[0] ?? "no robots meta");
+    p = await raw("/");
+    ok("SEO: home has a canonical and the category links in the footer", has(p.html, /<link rel="canonical" href="[^"]*"/) && p.html.includes('href="/kategori/mua_attire"'));
+  }
   await s.shot("real-directory");
   await s.go(`${WEB}/vendors?kota=Jabodetabek`);
   await sleep(800);

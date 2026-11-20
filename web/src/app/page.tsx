@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+
 import { AskAISection, fetchAskEnabled } from "@/components/landing/ask/AskAISection";
 import { AdatMarquee } from "@/components/landing/AdatMarquee";
 import { BudgetDemo } from "@/components/landing/BudgetDemo";
@@ -49,6 +51,15 @@ const SITE_LD = {
 // paper, photo, so no two neighbours share a ground. Investor-facing
 // additions: the adat type band (white), the usual way vs DuaCincin
 // (ivory + one ink panel) (founders live on /tentang-kami).
+// Home: the brand plus the search people type ("vendor pernikahan"), with
+// a description short enough to show whole in results.
+export const metadata: Metadata = {
+  title: { absolute: "DuaCincin: Vendor Pernikahan Terverifikasi di Indonesia" },
+  description:
+    "Cari vendor pernikahan terverifikasi: venue, katering, MUA, foto, dekorasi. Bandingkan harga, chat langsung, dan bayar aman lewat escrow DuaCincin.",
+  alternates: { canonical: "/" },
+};
+
 export default async function Page() {
   const askEnabled = await fetchAskEnabled();
   return (

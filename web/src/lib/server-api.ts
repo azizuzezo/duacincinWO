@@ -1,4 +1,4 @@
-import type { DirectoryCard, VendorProfile } from "@/lib/api";
+import type { DirectoryCard, Review, VendorPackage, VendorProfile } from "@/lib/api";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
@@ -45,6 +45,38 @@ export async function fetchPublicVendor(id: string): Promise<VendorProfile | nul
     return null;
   }
 }
+
+/** fetchPublicVendor for the profile page itself: notFound is true only
+ * when the API says the vendor does not exist (404), never on an outage. */
+export async function fetchPublicVendorResult(id: string): Promise<{ vendor: VendorProfile | null; notFound: boolean }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/v1/vendors/${encodeURIComponent(id)}`, {
+      next: { revalidate: 300 },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (res.status === 404) return { vendor: null, notFound: true };
+    if (!res.ok) return { vendor: null, notFound: false };
+    const v = (await res.json()) as VendorProfile | null;
+    return { vendor: v?.business_name ? v : null, notFound: false };
+  } catch {
+    return { vendor: null, notFound: false };
+  }
+}
+
+async function fetchList<T>(path: string): Promise<T[] | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}${path}`, { next: { revalidate: 300 }, signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return null;
+    return ((await res.json()) as T[] | null) ?? [];
+  } catch {
+    return null;
+  }
+}
+
+/** A vendor's public packages / reviews for the server-rendered profile;
+ * null on failure so the page fetches them in the browser instead. */
+export const fetchPublicPackages = (id: string) => fetchList<VendorPackage>(`/api/v1/vendors/${encodeURIComponent(id)}/packages`);
+export const fetchPublicReviews = (id: string) => fetchList<Review>(`/api/v1/vendors/${encodeURIComponent(id)}/reviews`);
 
 /** "jakarta-selatan" -> "Jakarta Selatan" (display), and the API filter value. */
 export function cityFromSlug(slug: string): string {

@@ -25,7 +25,9 @@ export async function generateMetadata({ params }: LayoutProps<"/vendors/[id]">)
 }
 
 /** Cut at a word boundary so previews never end mid-word. */
-function clip(text: string, max: number): string {
+function clip(raw: string, max: number): string {
+  // One line: a vendor's story keeps its line breaks, a snippet must not.
+  const text = raw.replace(/\s+/g, " ").trim();
   if (text.length <= max) return text;
   const cut = text.slice(0, max - 1);
   return `${cut.slice(0, cut.lastIndexOf(" ")).replace(/[\s,.;:]+$/, "")}…`;

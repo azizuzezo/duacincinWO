@@ -9,7 +9,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { artFor, CATEGORY_ART } from "@/components/vendor/directory/categoryArt";
 import { CategoryPicture } from "@/components/vendor/directory/CategoryPicture";
 import { VendorCard } from "@/components/vendor/VendorCard";
-import { categoryLabel, VENDOR_CATEGORIES, type DirectoryCard, vendorCities } from "@/lib/api";
+import { categoryLabel, formatRupiah, VENDOR_CATEGORIES, type DirectoryCard, vendorCities } from "@/lib/api";
 import { citySlug } from "@/lib/server-api";
 import { SITE_URL as SITE } from "@/lib/site";
 
@@ -45,6 +45,25 @@ export function CategoryListing({
     { name: label, path: `/kategori/${category}` },
     ...(cityName ? [{ name: cityName, path: `/kategori/${category}/${citySlug(cityName)}` }] : []),
   ];
+  const faq = buildFaq({ label, cityName, cards, cities, ask: art.ask, failed });
+  const pagePath = crumbs[crumbs.length - 1].path;
+  // The listed vendors (ItemList) and the FAQ below, both mirroring what is on the page.
+  const listLd =
+    !failed && cards.length > 0
+      ? {
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          name: `Vendor ${label}${where}`,
+          url: `${SITE}${pagePath}`,
+          numberOfItems: cards.length,
+          itemListElement: cards.map((c, i) => ({ "@type": "ListItem", position: i + 1, url: `${SITE}/vendors/${c.id}`, name: c.business_name })),
+        }
+      : null;
+  const faqLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faq.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
+  };
   const breadcrumbLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -55,7 +74,9 @@ export function CategoryListing({
     <div className="flex min-h-screen flex-col bg-dc-ivory">
       <Navbar />
       <main id="konten" className="flex-1">
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd).replace(/</g, "\\u003c") }} />
+        {[breadcrumbLd, listLd, faqLd].filter(Boolean).map((ld, i) => (
+          <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, "\\u003c") }} />
+        ))}
         <section aria-labelledby="kategori-judul" className="dc-grain relative overflow-hidden">
           <div className="dc-container grid gap-10 pb-14 pt-8 sm:pt-12 lg:grid-cols-12 lg:items-center lg:gap-14 lg:pb-20 lg:pt-16">
             <div className="animate-fade-up lg:col-span-6">
@@ -222,6 +243,22 @@ export function CategoryListing({
           )}
         </section>
 
+        <section aria-labelledby="faq-judul" className="border-t border-dc-line">
+          <div className="dc-container grid gap-8 py-14 lg:grid-cols-12 lg:gap-14 lg:py-20">
+            <h2 id="faq-judul" className="font-heading text-[clamp(2rem,3.6vw,2.8rem)] leading-tight text-dc-ink lg:col-span-4">
+              Seputar vendor {label} <span className="dc-em">{cityName ? `di ${cityName}` : "pernikahan"}</span>
+            </h2>
+            <dl className="flex flex-col divide-y divide-dc-line lg:col-span-8">
+              {faq.map((f) => (
+                <div key={f.q} className="py-5 first:pt-0">
+                  <dt className="font-semibold text-dc-ink">{f.q}</dt>
+                  <dd className="mt-2 leading-relaxed text-dc-text-2">{f.a}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </section>
+
         <section aria-labelledby="lain-judul" className="border-t border-dc-line bg-dc-white">
           <Reveal className="dc-container py-14 lg:py-20">
             <h2 id="lain-judul" className="font-heading text-[clamp(2rem,3.6vw,2.8rem)] leading-tight text-dc-ink">
@@ -246,4 +283,68 @@ export function CategoryListing({
       <Footer />
     </div>
   );
+}
+
+/** Questions a couple searching "vendor <kategori> <kota>" asks, answered
+ * from this page's own listing (prices, cities, counts), so every category
+ * and city page says something true and specific. */
+function buildFaq({
+  label,
+  cityName,
+  cards,
+  cities,
+  ask,
+  failed,
+}: {
+  label: string;
+  cityName?: string;
+  cards: DirectoryCard[];
+  cities: string[];
+  ask: string[];
+  failed: boolean;
+}): { q: string; a: string }[] {
+  const where = cityName ? ` di ${cityName}` : "";
+  const priced = cards.map((c) => c.price_min).filter((p) => p > 0).sort((a, b) => a - b);
+  const out: { q: string; a: string }[] = [];
+
+  let price: string;
+  if (failed) price = `Lihat kisaran harga terbaru di direktori DuaCincin, tiap vendor ${label} mencantumkan harga mulai dari.`;
+  else if (priced.length === 0)
+    price = cards.length
+      ? `Vendor ${label}${where} di DuaCincin membahas harga lewat chat sesuai kebutuhan acaramu, jadi tanyakan paket dan harganya langsung.`
+      : `Belum ada vendor ${label}${where} dengan harga tercantum. Lihat vendor ${label} di kota lain sebagai gambaran.`;
+  else {
+    const median = priced[Math.floor((priced.length - 1) / 2)];
+    price =
+      priced.length === 1
+        ? `Saat ini ada 1 vendor ${label}${where} dengan harga mulai dari ${formatRupiah(priced[0])}.`
+        : `Dari ${priced.length} vendor ${label}${where} yang mencantumkan harga di DuaCincin, harga mulai dari ${formatRupiah(priced[0])} sampai ${formatRupiah(priced[priced.length - 1])}, dengan nilai tengah ${formatRupiah(median)}. Harga akhir tergantung paket, jumlah tamu, dan tanggal acara.`;
+  }
+  out.push({ q: `Berapa harga vendor ${label}${where}?`, a: price });
+
+  if (cityName) {
+    out.push({
+      q: `Apakah vendor ${label} dari kota lain bisa melayani ${cityName}?`,
+      a: `Bisa jadi. Banyak vendor ${label} melayani beberapa kota sekaligus. Buka profil vendor untuk melihat kota layanannya, lalu tanyakan biaya transportasi lewat chat sebelum booking.`,
+    });
+  } else if (cities.length > 0) {
+    const shown = cities.slice(0, 12).join(", ");
+    out.push({
+      q: `Di kota mana saja ada vendor ${label} di DuaCincin?`,
+      a: `Saat ini vendor ${label} di DuaCincin melayani ${shown}${cities.length > 12 ? `, dan ${cities.length - 12} kota lainnya` : ""}. Pilih kota di atas untuk melihat vendornya.`,
+    });
+  }
+
+  if (ask.length > 0) {
+    out.push({
+      q: `Apa yang perlu ditanyakan sebelum booking vendor ${label}?`,
+      a: `${ask.join(" ")} Simpan jawabannya di chat DuaCincin supaya ada catatan bila nanti ada perbedaan.`,
+    });
+  }
+
+  out.push({
+    q: `Bagaimana cara booking vendor ${label} dengan aman?`,
+    a: `Pilih vendor, ngobrol lewat chat DuaCincin, lalu ajukan booking dengan tanggal dan paket yang disepakati. Pembayaranmu ditahan lewat escrow DuaCincin dan baru diteruskan ke vendor setelah acaramu selesai, jadi uangmu tetap aman bila ada masalah.`,
+  });
+  return out;
 }

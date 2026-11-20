@@ -17,6 +17,7 @@ export const metadata: Metadata = {
   title: "Untuk vendor: terima booking dan pembayaran lewat escrow",
   description:
     "Daftarkan profil dan portofolio usaha pernikahanmu di DuaCincin, terima booking lewat chat, dan terima pembayaran setelah acara selesai dikonfirmasi.",
+  alternates: { canonical: "/untuk-vendor" },
 };
 
 const SHOT = "/showcase/pages";

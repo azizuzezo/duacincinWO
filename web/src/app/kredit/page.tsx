@@ -9,6 +9,7 @@ import { Reveal } from "@/components/landing/Reveal";
 export const metadata: Metadata = {
   title: "Kredit foto",
   description: "Sumber, fotografer, dan lisensi setiap foto dan lukisan yang dipakai di DuaCincin.",
+  alternates: { canonical: "/kredit" },
 };
 
 // Credits page: one row per picture, photo first, so a reader sees which

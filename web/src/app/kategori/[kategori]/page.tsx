@@ -12,8 +12,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!VENDOR_CATEGORIES.some((c) => c.value === kategori)) return {};
   const label = categoryLabel(kategori);
   return {
-    title: `Vendor ${label} pernikahan terverifikasi`,
-    description: `Bandingkan vendor ${label} pernikahan terverifikasi di Indonesia: portofolio, harga mulai dari, dan pembayaran aman lewat escrow DuaCincin.`,
+    title: `Vendor ${label} Pernikahan Terverifikasi`,
+    description: `Bandingkan vendor ${label} pernikahan terverifikasi di Indonesia: portofolio, harga mulai dari, ulasan, dan pembayaran aman lewat escrow DuaCincin.`,
+    alternates: { canonical: `/kategori/${kategori}` },
   };
 }
 
