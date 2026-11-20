@@ -7,6 +7,14 @@ import { fetchDirectory } from "@/lib/server-api";
 
 type Props = { params: Promise<{ kategori: string }> };
 
+// Rendered on first visit (never at build time, when the API may be empty
+// or unreachable), then served from the edge cache and refreshed every 5
+// minutes, the same as the API cache.
+export const revalidate = 300;
+export function generateStaticParams() {
+  return [];
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { kategori } = await params;
   if (!VENDOR_CATEGORIES.some((c) => c.value === kategori)) return {};

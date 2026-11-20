@@ -3,6 +3,7 @@ import type { MetadataRoute } from "next";
 import { ARTICLES } from "@/content/artikel/registry";
 import { VENDOR_CATEGORIES, vendorCategoryList, vendorCities } from "@/lib/api";
 import { cityFromSlug, citySlug, fetchAllVendors } from "@/lib/server-api";
+import { MIN_VENDORS_TO_INDEX } from "@/lib/seo";
 import { JABODETABEK, JABODETABEK_AREA } from "@/lib/wilayah";
 import { SITE_URL as SITE } from "@/lib/site";
 
@@ -14,9 +15,11 @@ export const revalidate = 3600;
 // has at least one vendor (empty city pages are left out on purpose). If the
 // API is down the static part is still served.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const fixed = ["", "/vendors", "/artikel", "/cara-kerja", "/untuk-vendor", "/bantuan", "/inspirasi", "/tentang-kami", "/legal/client-tos", "/legal/vendor-agreement"];
+  const fixed = ["", "/vendors", "/artikel", "/cara-kerja", "/untuk-vendor", "/bantuan", "/inspirasi", "/tentang-kami", "/kirana", "/legal/client-tos", "/legal/vendor-agreement"];
   const vendors = (await fetchAllVendors()) ?? [];
-  const cityPages = new Set<string>();
+  // Category x city pages with at least MIN_VENDORS_TO_INDEX vendors (the
+  // rest are noindex, see app/kategori/[kategori]/[kota]/page.tsx).
+  const cityCounts = new Map<string, number>();
   for (const v of vendors) {
     // Only cities whose slug reads back as the same name (the API matches
     // case-insensitively): "Toli-Toli" or an old free-text "Bandung, Sumedang"
@@ -24,12 +27,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // A "Jabodetabek" vendor is found on the area page and on each of its 13 city pages.
     const listed = vendorCities(v).flatMap((city) => (city === JABODETABEK_AREA ? [city, ...JABODETABEK] : [city]));
     const cities = listed.filter((city) => cityFromSlug(citySlug(city)).toLowerCase() === city.trim().toLowerCase());
-    for (const c of vendorCategoryList(v)) for (const city of cities) cityPages.add(`/kategori/${c}/${citySlug(city)}`);
+    for (const c of vendorCategoryList(v))
+      for (const city of new Set(cities)) {
+        const p = `/kategori/${c}/${citySlug(city)}`;
+        cityCounts.set(p, (cityCounts.get(p) ?? 0) + 1);
+      }
   }
+  const cityPages = [...cityCounts].filter(([, n]) => n >= MIN_VENDORS_TO_INDEX).map(([p]) => p);
   return [
     ...fixed.map((p) => ({ url: `${SITE}${p}`, changeFrequency: "weekly" as const, priority: p === "" ? 1 : 0.7 })),
     ...VENDOR_CATEGORIES.map((c) => ({ url: `${SITE}/kategori/${c.value}`, changeFrequency: "weekly" as const, priority: 0.6 })),
-    ...[...cityPages].sort().map((p) => ({ url: `${SITE}${p}`, changeFrequency: "weekly" as const, priority: 0.5 })),
+    ...cityPages.sort().map((p) => ({ url: `${SITE}${p}`, changeFrequency: "weekly" as const, priority: 0.5 })),
     ...ARTICLES.map((a) => ({ url: `${SITE}/artikel/${a.slug}`, lastModified: new Date(a.updated ?? a.published), changeFrequency: "monthly" as const, priority: 0.6 })),
     ...vendors.map((v) => ({ url: `${SITE}/vendors/${v.id}`, changeFrequency: "weekly" as const, priority: 0.5 })),
   ];

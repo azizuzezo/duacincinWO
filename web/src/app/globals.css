@@ -634,19 +634,20 @@ input[type="range"] {
   background: var(--dc-ivory);
 }
 
-/* Intro: draw (0 to 0.9s), hold, wipe up (1.25s to 2s). */
+/* Intro: draw (0 to 0.6s), short hold, wipe up (0.7s to 1.15s). Kept short:
+   it covers the hero, so its length adds straight to the page's LCP. */
 .dc-intro {
-  animation: dc-wipe-up 750ms var(--dc-ease) 1250ms forwards;
+  animation: dc-wipe-up 450ms var(--dc-ease) 700ms forwards;
 }
 .dc-intro .dc-loader-track {
   stroke: var(--dc-gold);
   stroke-dasharray: 100;
   stroke-dashoffset: 100;
-  animation: dc-draw 900ms var(--dc-ease) forwards;
+  animation: dc-draw 600ms var(--dc-ease) forwards;
 }
 .dc-intro .dc-loader-track:nth-of-type(2) {
   stroke: var(--dc-clay);
-  animation-delay: 160ms;
+  animation-delay: 100ms;
 }
 .dc-intro .dc-loader-arc {
   display: none;
@@ -654,7 +655,7 @@ input[type="range"] {
 .dc-intro .dc-loader-word {
   opacity: 0;
   transform: translateY(10px);
-  animation: dc-rise 700ms var(--dc-ease) 380ms forwards;
+  animation: dc-rise 450ms var(--dc-ease) 200ms forwards;
 }
 @keyframes dc-draw {
   to { stroke-dashoffset: 0; }

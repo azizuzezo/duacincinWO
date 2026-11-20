@@ -31,6 +31,18 @@ const out = []; let failed = 0; const ok = (n, c, d = "") => { out.push(`${c ? "
     ok("SEO: a made-up city slug is a 404, not an empty page", p.status === 404, String(p.status));
     p = await raw("/kategori/venue/sumedang");
     ok("SEO: a real city with no vendor yet is noindex", p.status === 200 && has(p.html, /<meta name="robots" content="noindex/), p.html.match(/<meta name="robots"[^>]*>/)?.[0] ?? "no robots meta");
+    p = await raw("/kategori/venue/jakarta-selatan");
+    ok("SEO: a city page with fewer than 3 vendors is noindex (still reachable)", p.status === 200 && has(p.html, /<meta name="robots" content="noindex/));
+    let r = await fetch(WEB + "/llms.txt");
+    const llms = await r.text();
+    ok("SEO: /llms.txt lists the site, categories and articles", r.status === 200 && llms.startsWith("# DuaCincin") && llms.includes("/kategori/mua_attire") && llms.includes("/artikel/cara-menyusun-anggaran-pernikahan"), llms.slice(0, 200));
+    ok("SEO: security headers are sent", r.headers.get("x-content-type-options") === "nosniff" && !!r.headers.get("referrer-policy") && !!r.headers.get("permissions-policy"), JSON.stringify([...r.headers]));
+    p = await raw("/bantuan");
+    ok("SEO: Bantuan has FAQPage built from its visible questions", p.html.includes('"FAQPage"') && p.html.includes('"WebPage"'));
+    p = await raw("/artikel/cara-menyusun-anggaran-pernikahan");
+    ok("SEO: budget article has the rupiah table, per-guest line and FAQ", p.html.includes("Rp400 ribu") && p.html.includes("Berapa biaya pernikahan untuk 100 tamu?") && p.html.includes("Diperbarui"), p.html.length);
+    p = await raw("/tentang-kami");
+    ok("SEO: Tentang kami has AboutPage with the founders", p.html.includes('"AboutPage"') && p.html.includes("Riyan Riyadi"));
     p = await raw("/");
     ok("SEO: home has a canonical and the category links in the footer", has(p.html, /<link rel="canonical" href="[^"]*"/) && p.html.includes('href="/kategori/mua_attire"'));
   }

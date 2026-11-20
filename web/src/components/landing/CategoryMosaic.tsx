@@ -64,7 +64,7 @@ export function CategoryMosaic() {
     <section aria-labelledby="kategori-judul" className="dc-grain relative overflow-hidden bg-dc-ivory">
       <div className="mx-auto max-w-[1440px] px-3 py-20 sm:px-6 sm:py-28 lg:px-10 lg:py-32">
         <Reveal className="mx-auto max-w-3xl text-center">
-          <p className="dc-eyebrow justify-center">Tujuh kategori vendor</p>
+          <p className="dc-eyebrow justify-center">Kategori vendor utama</p>
           <h2 id="kategori-judul" className="mt-4 font-heading text-[clamp(2.5rem,5.4vw,4.8rem)] leading-[1] text-dc-ink">
             Semua untuk hari-H, <span className="dc-em">di satu tempat.</span>
           </h2>

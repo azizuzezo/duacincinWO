@@ -41,9 +41,10 @@ export const ARTICLES: Article[] = [
       "Pembagian anggaran pernikahan per pos (venue dan katering, dekorasi, dokumentasi, rias), cara menghitung jumlah tamu, dan dana cadangan 10%.",
     topic: "Anggaran",
     published: "2026-11-18",
+    updated: "2026-11-21",
     image: "/photos/pinterest/pelaminan-kristal.webp",
     imageAlt: "Pelaminan pernikahan dengan hiasan kristal",
-    readMinutes: 6,
+    readMinutes: 8,
     categories: ["venue", "catering", "decor"],
   },
   {

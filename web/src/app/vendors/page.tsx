@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 
 import { VENDOR_CATEGORIES } from "@/lib/api";
+import { JsonLd, webPageLd } from "@/components/seo/JsonLd";
 import { fetchDirectory } from "@/lib/server-api";
+import { SITE_URL } from "@/lib/site";
 
 import { type DirectoryParams, VendorDirectory } from "./_ui/VendorDirectory";
 
@@ -19,5 +21,22 @@ export default async function VendorDirectoryPage({ searchParams }: PageProps<"/
   const search: DirectoryParams = { category: one(sp.category), q: one(sp.q), kota: one(sp.kota), budget: one(sp.budget), urut: one(sp.urut) };
   const category = VENDOR_CATEGORIES.some((c) => c.value === search.category) ? search.category! : "";
   const { cards, failed } = await fetchDirectory(category);
-  return <VendorDirectory search={search} initialCards={failed ? null : cards} />;
+  return (
+    <>
+      <JsonLd
+        data={{
+          ...webPageLd("CollectionPage", "/vendors", "Direktori vendor pernikahan DuaCincin", "Vendor pernikahan terverifikasi per kategori dan kota."),
+          ...(!failed &&
+            cards.length > 0 && {
+              mainEntity: {
+                "@type": "ItemList",
+                numberOfItems: cards.length,
+                itemListElement: cards.map((c, i) => ({ "@type": "ListItem", position: i + 1, url: `${SITE_URL}/vendors/${c.id}`, name: c.business_name })),
+              },
+            }),
+        }}
+      />
+      <VendorDirectory search={search} initialCards={failed ? null : cards} />
+    </>
+  );
 }

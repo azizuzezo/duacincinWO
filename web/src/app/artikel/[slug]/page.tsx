@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 
 import { PublicShell } from "@/components/landing/PublicShell";
 import { ArticleCard } from "@/components/public/artikel/ArticleCard";
-import { breadcrumbLd, JsonLd, ORGANIZATION_LD } from "@/components/seo/JsonLd";
+import { breadcrumbLd, JsonLd, ORGANIZATION_LD, ORGANIZATION_REF } from "@/components/seo/JsonLd";
 import { ButtonLink } from "@/components/ui/Button";
 import { ARTICLES, articleBySlug, formatArticleDate } from "@/content/artikel/registry";
 import { categoryLabel } from "@/lib/api";
@@ -60,13 +60,14 @@ export default async function ArtikelPage({ params }: PageProps<"/artikel/[slug]
     "@type": "BlogPosting",
     headline: a.title,
     description: a.description,
-    image: `${SITE_URL}${a.image}`,
-    datePublished: a.published,
-    dateModified: a.updated ?? a.published,
+    image: [`${SITE_URL}${a.image}`],
+    // Dates in the registry are days; publish time is 08:00 WIB.
+    datePublished: `${a.published}T08:00:00+07:00`,
+    dateModified: `${a.updated ?? a.published}T08:00:00+07:00`,
     inLanguage: "id-ID",
     articleSection: a.topic,
     author: ORGANIZATION_LD,
-    publisher: ORGANIZATION_LD,
+    publisher: ORGANIZATION_REF,
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
   };
 
@@ -94,7 +95,7 @@ export default async function ArtikelPage({ params }: PageProps<"/artikel/[slug]
               <h1 className="mt-4 font-heading text-[clamp(2.2rem,4.6vw,3.6rem)] leading-[1.04] text-dc-ink">{a.title}</h1>
               <p className="mt-5 max-w-2xl text-lg leading-relaxed text-dc-text-2">{a.description}</p>
               <p className="mt-6 text-sm text-dc-text-2">
-                Tim DuaCincin · <time dateTime={a.updated ?? a.published}>{formatArticleDate(a.updated ?? a.published)}</time> · {a.readMinutes} menit baca
+                Tim DuaCincin · {a.updated ? "Diperbarui " : ""}<time dateTime={a.updated ?? a.published}>{formatArticleDate(a.updated ?? a.published)}</time> · {a.readMinutes} menit baca
               </p>
             </div>
             <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-dc-ivory shadow-float lg:col-span-5 lg:aspect-[4/5]">

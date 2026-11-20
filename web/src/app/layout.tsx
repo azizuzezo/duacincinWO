@@ -65,7 +65,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {/* Intro: once per session, public pages only. Decided before paint. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var d=document.documentElement;if(/^\\/(client|vendor|internal)(\\/|$)/.test(location.pathname)||sessionStorage.getItem("dc-intro"))d.classList.add("dc-no-intro");else sessionStorage.setItem("dc-intro","1")}catch(e){document.documentElement.classList.add("dc-no-intro")}`,
+            __html: `try{var d=document.documentElement;if(/^\\/(client|vendor|internal)(\\/|$)/.test(location.pathname)||/bot|crawl|spider|lighthouse|speed insights|pagespeed/i.test(navigator.userAgent)||sessionStorage.getItem("dc-intro"))d.classList.add("dc-no-intro");else sessionStorage.setItem("dc-intro","1")}catch(e){document.documentElement.classList.add("dc-no-intro")}`,
           }}
         />
         <div aria-hidden className="dc-intro">

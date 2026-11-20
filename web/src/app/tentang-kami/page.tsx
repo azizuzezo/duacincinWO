@@ -4,6 +4,8 @@ import { Founders } from "@/components/landing/Founders";
 import { PublicShell } from "@/components/landing/PublicShell";
 import { Reveal } from "@/components/landing/Reveal";
 import { COMPANY } from "@/lib/company";
+import { JsonLd, ORGANIZATION_REF, personLd, webPageLd } from "@/components/seo/JsonLd";
+import { FOUNDERS } from "@/lib/team";
 
 export const metadata: Metadata = {
   title: "Tentang kami",
@@ -32,6 +34,13 @@ function Shield() {
 export default function TentangKamiPage() {
   return (
     <PublicShell overlay={false}>
+      <JsonLd
+        data={{
+          ...webPageLd("AboutPage", "/tentang-kami", "Tentang DuaCincin", "Pendiri DuaCincin dan PT Karsa Loka Semesta, perusahaan yang mengelola DuaCincin."),
+          about: ORGANIZATION_REF,
+          mentions: FOUNDERS.map((f) => personLd(f)),
+        }}
+      />
       <header className="dc-grain border-b border-dc-line bg-dc-cream">
         <div className="dc-container py-12 sm:py-16">
           <p className="dc-eyebrow">Tentang kami</p>

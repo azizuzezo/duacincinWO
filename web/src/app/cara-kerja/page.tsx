@@ -9,6 +9,7 @@ import { PhoneFrame } from "@/components/ui/DeviceFrame";
 import { ButtonLink } from "@/components/ui/Button";
 import { FeatureIcon } from "@/components/ui/FeatureIcon";
 import { Rings } from "@/components/ui/Rings";
+import { breadcrumbLd, JsonLd, webPageLd } from "@/components/seo/JsonLd";
 
 export const metadata: Metadata = {
   title: "Cara kerja dari pilih vendor sampai hari-H",
@@ -88,6 +89,8 @@ const JUMPS = [
 export default function CaraKerjaPage() {
   return (
     <PublicShell>
+      <JsonLd data={webPageLd("WebPage", "/cara-kerja", "Cara kerja DuaCincin", "Tahap pemesanan vendor di DuaCincin dan di mana uangmu berada pada setiap tahap (escrow).")} />
+      <JsonLd data={breadcrumbLd([{ name: "Beranda", path: "/" }, { name: "Cara kerja", path: "/cara-kerja" }])} />
       <PageHero
         image="/photos/pinterest/akad-joglo-lorong.webp"
         focus="50% 35%"

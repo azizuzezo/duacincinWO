@@ -7,6 +7,7 @@ import { Reveal } from "@/components/landing/Reveal";
 import { EscrowPanel } from "@/components/public/bantuan/EscrowPanel";
 import { HelpCenter, type Faq, type Topic } from "@/components/public/bantuan/HelpCenter";
 import { ButtonLink } from "@/components/ui/Button";
+import { JsonLd, webPageLd } from "@/components/seo/JsonLd";
 
 export const metadata: Metadata = {
   title: "Bantuan dan pertanyaan umum",
@@ -145,6 +146,15 @@ const TOPICS: Topic[] = [
 export default function BantuanPage() {
   return (
     <PublicShell>
+      <JsonLd data={webPageLd("WebPage", "/bantuan", "Bantuan DuaCincin", "Jawaban atas pertanyaan soal escrow, booking, sengketa, dan akun vendor di DuaCincin.")} />
+      {/* The questions and answers shown on this page, word for word. */}
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: TOPICS.flatMap((t) => t.items).map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.text } })),
+        }}
+      />
       <PageHero
         image="/photos/pinterest/pendopo-kursi-tamu.webp"
         eyebrow="Pusat bantuan"

@@ -38,6 +38,18 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 
 ## Changelog
 
+### 2026-11-21 — SEO tahap 2 (audit claude-seo + marketingskills)
+
+Audit 6 agen claude-seo (teknis, konten, schema, GEO, SXO, performa) pada situs live; laporan di scratchpad sesi. Yang diterapkan:
+- Halaman kota diindeks dan masuk sitemap hanya bila ada minimal 3 vendor (`lib/seo.ts` MIN_VENDORS_TO_INDEX); di bawah itu noindex,follow. Mencegah belasan halaman kota yang isinya vendor yang sama.
+- Kategori, kota, dan profil vendor kini ISR (`revalidate = 300` + `generateStaticParams`), dilayani dari cache edge, bukan dirender tiap request.
+- Schema: Organization diperkaya (deskripsi, logo PNG, PSE sebagai identifier, founder dari `lib/team.ts`); LocalBusiness vendor dengan address (kota utama), gambar portofolio, dan OfferCatalog dari paket; CollectionPage + ItemList di /vendors; AboutPage di /tentang-kami; WebPage + Breadcrumb di /cara-kerja; WebPage + FAQPage (dari FAQ yang tampil) di /bantuan; WebApplication + H1 (sr-only) di /kirana; BlogPosting dengan tanggal ISO lengkap, image array, publisher sebagai referensi.
+- Judul profil vendor: satu kota + "(+N kota)", tidak lagi semua kota. Deskripsi dipotong di akhir kalimat.
+- `/llms.txt` dibuat otomatis dari daftar kategori & artikel. /kirana masuk sitemap.
+- Header keamanan dasar (nosniff, Referrer-Policy, X-Frame-Options, Permissions-Policy). CSP menyusul setelah allow-list diuji.
+- Intro beranda dipersingkat dari 2 detik ke ~1,15 detik dan dilewati untuk crawler/Lighthouse (menutupi elemen LCP).
+- Artikel anggaran: ringkasan jawaban langsung, tabel pembagian dalam rupiah untuk total Rp50/100/150 juta (hitungan dari persentase artikel, bukan harga pasar), baris per tamu untuk 100 tamu, FAQ; label "Diperbarui" di artikel.
+
 ### 2026-11-21 — SEO: halaman bisa dibaca crawler
 
 - `/vendors` dan `/vendors/[id]` kini server component: daftar vendor, serta profil + paket + ulasan, diambil di server (cache 5 menit) dan diteruskan ke komponen client yang sama (`_ui/VendorDirectory.tsx`, `_ui/VendorDetail.tsx`). Sebelumnya HTML awal kosong (H1 dan kartu vendor baru muncul setelah JavaScript). Vendor yang tidak ada kini 404 sungguhan.
