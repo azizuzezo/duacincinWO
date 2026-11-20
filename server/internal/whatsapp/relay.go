@@ -194,7 +194,7 @@ var errOfficialDown = errors.New("official WhatsApp number is disconnected")
 func (d *Deps) sendNow(ctx context.Context, phone, text string) error {
 	jid := phone + "@s.whatsapp.net"
 	if d.Cfg.WARelayURL == "" {
-		if d.Cfg.WhatsAppBotCallbackURL == "" {
+		if d.Cfg.WhatsAppBotCallbackURL == "" && d.Cfg.AppEnv != "development" {
 			return errors.New("no WhatsApp transport configured")
 		}
 		d.deliver(ctx, jid, text)

@@ -14,6 +14,7 @@ const ICON = {
   warning: ["M11 2 1 19h20L11 2ZM11 9v4M11 15.5h.01"],
   cash: ["M11 1v20M16 4.5H8.2a3 3 0 0 0 0 6h5.6a3 3 0 0 1 0 6H5"],
   image: ["M1 15l4-5.5 3 3.5 2-2.5L16 15M0 3h18v14H0Z"],
+  send: ["M21 3 3 10.5l7 2.5 2.5 7L21 3Z", "M10 13l4.5-4.5"],
   envelope: ["M3 6.5A1.5 1.5 0 0 1 4.5 5h15A1.5 1.5 0 0 1 21 6.5v11a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5Z", "m3.5 6 8.5 7 8.5-7"],
 } as const;
 
@@ -52,6 +53,7 @@ export const ADMIN_NAV: NavItem[] = [
   { tab: true, href: "/internal/admin/disbursements", group: "Uang dan sengketa", label: "Pencairan", icon: ICON.cash },
   { href: "/internal/consultations", group: "Layanan", label: "Konsultasi", icon: ICON.chat },
   { href: "/internal/admin/pesan", group: "Layanan", label: "Pesan Vendor", icon: ICON.chat },
+  { href: "/internal/admin/whatsapp", group: "Layanan", label: "Kirim WhatsApp", icon: ICON.send },
   { href: "/internal/admin/inspirasi", group: "Layanan", label: "Inspirasi", icon: ICON.image },
   { href: "/internal/admin/tim", group: "Sistem", label: "Tim Internal", icon: ICON.users },
   { href: "/internal/admin/audit-log", group: "Sistem", label: "Audit Log", icon: ICON.checklist },

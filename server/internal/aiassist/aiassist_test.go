@@ -395,7 +395,7 @@ func TestJabodetabekSearch(t *testing.T) {
 	if got := normalizeCity("jabotabek"); got != "Jabodetabek" {
 		t.Fatal(got)
 	}
-	if got := cityVariants("Jabodetabek"); len(got) != 13 || got[0] != "Jakarta Barat" {
+	if got := cityVariants("Jabodetabek"); len(got) != 1 || got[0] != "Jabodetabek" {
 		t.Fatal(got)
 	}
 }

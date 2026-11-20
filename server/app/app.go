@@ -136,6 +136,7 @@ func New(ctx context.Context, opts Options) (*App, error) {
 	// gets forwarded to WhatsApp when the other participant is linked.
 	chatDeps.Notifier = whatsappDeps
 	whatsappDeps.Notifications = notificationRepo
+	whatsappDeps.AuditLog = auditLogRepo
 	chatDeps.Mailer, chatDeps.Cfg = mailer, cfg
 
 	agreementRepo := repository.NewAgreementRepo(pool)

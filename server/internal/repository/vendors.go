@@ -3,10 +3,13 @@ package repository
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"duacincin/server/internal/wilayah"
 )
 
 type VendorProfile struct {
@@ -109,15 +112,27 @@ func (r *VendorRepo) ListApproved(ctx context.Context, category, city string, ma
 		from vendor_profiles
 		where status = 'approved'
 		  and ($1 = '' or $1::vendor_category = any(categories))
-		  and ($2 = '' or exists (select 1 from unnest(cities) c where lower(trim(c)) = lower(trim($2))) or (cardinality(cities) = 0 and city ilike $2))
+		  and ($2 = '' or exists (select 1 from unnest(cities) c where lower(trim(c)) = any($5::text[])) or (cardinality(cities) = 0 and city ilike $2))
 		  and ($3 = 0 or round(price_min * (1 + coalesce(commission_rate, $4))) <= $3)
 		order by created_at desc
-	`, category, city, maxPrice, DefaultCommissionRate)
+	`, category, city, maxPrice, DefaultCommissionRate, cityMatchNames(city))
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	return collectVendorProfiles(rows)
+}
+
+// cityMatchNames lowercases wilayah.MatchNames(city) for the SQL above: a
+// search for Depok also finds vendors serving "Jabodetabek", and a search
+// for Jabodetabek finds vendors in any of its cities.
+func cityMatchNames(city string) []string {
+	names := wilayah.MatchNames(city)
+	out := make([]string, 0, len(names))
+	for _, n := range names {
+		out = append(out, strings.ToLower(strings.TrimSpace(n)))
+	}
+	return out
 }
 
 // CountApproved powers the Admin dashboard's "jumlah vendor aktif" stat.

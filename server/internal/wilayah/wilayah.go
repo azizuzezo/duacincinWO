@@ -44,10 +44,51 @@ func init() {
 }
 
 // Canonical returns the list's spelling of a city name, matched ignoring
-// case and surrounding spaces, and false when it is not on the list.
+// case and surrounding spaces, and false when it is not on the list. The
+// area "Jabodetabek" (also "Jabotabek") is a valid entry of its own.
 func Canonical(name string) (string, bool) {
+	if _, ok := Group(name); ok {
+		return JabodetabekArea, true
+	}
 	c, ok := byLower[strings.ToLower(strings.TrimSpace(name))]
 	return c, ok
+}
+
+// JabodetabekArea is the single service-area entry for all of Greater
+// Jakarta: a vendor picks it once instead of listing 13 cities, and is
+// found by a search for any of them.
+const JabodetabekArea = "Jabodetabek"
+
+// inJabodetabek reports whether a canonical city is one of Jabodetabek's.
+func inJabodetabek(c string) bool {
+	for _, j := range Jabodetabek {
+		if j == c {
+			return true
+		}
+	}
+	return false
+}
+
+// MatchNames is every entry a vendor may have listed that serves city:
+// the city itself plus "Jabodetabek" for a city inside it, or, for the
+// area itself, "Jabodetabek" plus its 13 cities. Unknown names stay as
+// typed. "" gives nil (any city).
+func MatchNames(city string) []string {
+	city = strings.TrimSpace(city)
+	if city == "" {
+		return nil
+	}
+	if _, ok := Group(city); ok {
+		return append([]string{JabodetabekArea}, Jabodetabek...)
+	}
+	c, ok := Canonical(city)
+	if !ok {
+		return []string{city}
+	}
+	if inJabodetabek(c) {
+		return []string{c, JabodetabekArea}
+	}
+	return []string{c}
 }
 
 // MaxCities caps how many kabupaten/kota one vendor can list (20 leaves
@@ -133,6 +174,16 @@ func NormalizeCities(in []string) ([]string, string) {
 			seen[c] = true
 			out = append(out, c)
 		}
+	}
+	// "Jabodetabek" already covers its cities: keep the one entry.
+	if seen[JabodetabekArea] {
+		kept := out[:0]
+		for _, c := range out {
+			if !inJabodetabek(c) {
+				kept = append(kept, c)
+			}
+		}
+		out = kept
 	}
 	switch {
 	case len(out) == 0:

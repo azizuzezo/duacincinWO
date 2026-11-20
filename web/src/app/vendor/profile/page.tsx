@@ -281,7 +281,7 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
                         onBlur={blur("city")}
                         error={errors.city}
                         legacy={profile && (profile.cities ?? []).length === 0 && cities.length === 0 ? profile.city : null}
-                        hint="Pilih semua kabupaten/kota yang kamu layani (maksimal 20), misalnya Bandung dan Sumedang. Melayani Jabodetabek? Pakai tombol di atas sekali klik."
+                        hint="Pilih semua kabupaten/kota yang kamu layani (maksimal 20), misalnya Bandung dan Sumedang. Melayani seluruh Jabodetabek? Pilih Jabodetabek di atas: dihitung 1 lokasi, dan calon pengantin yang mencari di salah satu dari 13 kotanya tetap menemukanmu."
                         groups={[{ name: "Jabodetabek", cities: JABODETABEK }]}
                       />
                     </div>

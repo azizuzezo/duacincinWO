@@ -38,6 +38,12 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 
 ## Changelog
 
+### 2026-11-21 — Kirim WhatsApp dari admin; Jabodetabek satu lokasi
+
+- Halaman admin **Kirim WhatsApp** (`/internal/admin/whatsapp`, menu Layanan): cari klien/vendor yang nomornya terverifikasi (nama, nama usaha, email, atau nomor; filter peran), tulis pesan (maks. 1.000 karakter, pratinjau gaya WhatsApp), konfirmasi, kirim lewat nomor resmi. Pesan diberi kepala "Pesan dari Tim DuaCincin" dan catatan bahwa nomor ini tidak menerima balasan. Batas 60 pesan per admin per jam. Setiap kiriman tercatat di audit log (`whatsapp.admin_send`), yang juga jadi riwayat di halaman itu. Detail vendor punya pintasan "Kirim WhatsApp" (`?user=<id>`).
+- Endpoint: `GET /whatsapp/admin/recipients`, `POST /whatsapp/admin/send`, `GET /whatsapp/admin/sent` (admin saja).
+- **Jabodetabek** kini satu lokasi tersendiri (`wilayah.JabodetabekArea`): dipilih sekali, dihitung 1 dari 20, dan menggantikan kota-kota yang sudah dicakupnya. Pencarian kota di dalam Jabodetabek juga menemukan vendor "Jabodetabek"; pencarian "Jabodetabek" menemukan vendor di salah satu dari 13 kotanya (`wilayah.MatchNames`, dipakai `VendorRepo.ListApproved`, jadi direktori, halaman SEO, dan Kirana ikut). Vendor lama yang mendaftar 13 kota tetap berfungsi tanpa diubah.
+
 ### 2026-11-19 — WhatsApp WO jadi notifikasi saja
 
 - Pesan chat baru (klien ↔ vendor) dikabarkan lewat WhatsApp ke nomor terverifikasi penerima: siapa pengirimnya, isi pesannya (maks. 300 huruf; pesan yang terdeteksi berisi kontak tidak disalin), dan link ke chat web untuk membalas. Paling sering 1 notifikasi per percakapan per penerima tiap 15 menit.

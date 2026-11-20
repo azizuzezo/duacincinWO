@@ -61,3 +61,27 @@ func (r *AuditLogRepo) List(ctx context.Context, limit, offset int) ([]AuditLogE
 	}
 	return out, rows.Err()
 }
+
+// ListByAction returns the latest entries of one action, newest first.
+func (r *AuditLogRepo) ListByAction(ctx context.Context, action string, limit int) ([]AuditLogEntry, error) {
+	rows, err := r.pool.Query(ctx, `
+		select l.id, l.actor_id, l.actor_role, u.full_name, u.email, l.action, l.target_type, l.target_id, l.metadata, l.created_at
+		from admin_audit_log l join users u on u.id = l.actor_id
+		where l.action = $1
+		order by l.created_at desc limit $2
+	`, action, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []AuditLogEntry
+	for rows.Next() {
+		var e AuditLogEntry
+		if err := rows.Scan(&e.ID, &e.ActorID, &e.ActorRole, &e.ActorName, &e.ActorEmail, &e.Action, &e.TargetType, &e.TargetID, &e.Metadata, &e.CreatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, e)
+	}
+	return out, rows.Err()
+}

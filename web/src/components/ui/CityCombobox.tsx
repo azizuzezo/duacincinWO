@@ -38,7 +38,8 @@ export function CityCombobox({
   legacy?: string | null;
   max?: number;
   placeholder?: string;
-  /** Areas picked in one tap, e.g. { name: "Jabodetabek", cities: [...] }. */
+  /** Areas picked as one entry, e.g. { name: "Jabodetabek", cities: [...] }:
+   * picking one drops the cities it covers. */
   groups?: { name: string; cities: string[] }[];
 }) {
   const auto = useId();
@@ -57,7 +58,10 @@ export function CityCombobox({
   const full = values.length >= max;
 
   function toggle(city: string) {
+    const group = groups.find((g) => g.name === city);
     if (values.includes(city)) onChange(values.filter((c) => c !== city));
+    // An area replaces the cities it already covers.
+    else if (group) onChange([...values.filter((c) => !group.cities.includes(c)), city]);
     else if (!full) onChange([...values, city]);
     setQuery("");
     setActive(0);
@@ -100,26 +104,19 @@ export function CityCombobox({
       {groups.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {groups.map((g) => {
-            const missing = g.cities.filter((c) => !values.includes(c));
-            const all = missing.length === 0;
-            const room = max - values.length;
-            const canAdd = !all && missing.length <= room;
+            const picked = values.includes(g.name);
             return (
               <button
                 key={g.name}
                 type="button"
-                disabled={!all && !canAdd}
-                onClick={() => {
-                  if (all) onChange(values.filter((c) => !g.cities.includes(c)));
-                  else onChange([...values, ...missing]);
-                }}
-                title={!all && !canAdd ? `Kurangi pilihan lain dulu: perlu ${missing.length} slot, tersisa ${room}` : undefined}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-dashed border-dc-gold/60 bg-dc-gold-wash px-4 text-sm font-semibold text-dc-ink transition-colors hover:border-dc-gold hover:bg-dc-gold-soft disabled:cursor-not-allowed disabled:opacity-50"
+                aria-pressed={picked}
+                onClick={() => toggle(g.name)}
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-dashed border-dc-gold/60 bg-dc-gold-wash px-4 text-sm font-semibold text-dc-ink transition-colors hover:border-dc-gold hover:bg-dc-gold-soft aria-pressed:border-solid aria-pressed:border-dc-gold aria-pressed:bg-dc-gold-soft"
               >
                 <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="text-dc-clay">
-                  {all ? <path d="M6 6l12 12M18 6 6 18" /> : <path d="M12 5v14M5 12h14" />}
+                  {picked ? <path d="M6 6l12 12M18 6 6 18" /> : <path d="M12 5v14M5 12h14" />}
                 </svg>
-                {all ? `Hapus semua ${g.name}` : `Semua ${g.name} (${g.cities.length} kota)`}
+                {picked ? `Hapus ${g.name}` : `Seluruh ${g.name} (${g.cities.length} kota, dihitung 1)`}
               </button>
             );
           })}

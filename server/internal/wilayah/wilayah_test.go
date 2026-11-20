@@ -81,3 +81,25 @@ func TestNormalizeCities(t *testing.T) {
 		t.Fatal("empty accepted")
 	}
 }
+
+func TestJabodetabekArea(t *testing.T) {
+	if c, ok := Canonical(" jabotabek "); !ok || c != JabodetabekArea {
+		t.Fatalf("Canonical(jabotabek) = %q, %v", c, ok)
+	}
+	out, msg := NormalizeCities([]string{"Depok", "Jabodetabek", "Bandung", "Jakarta Selatan"})
+	if msg != "" || len(out) != 2 || out[0] != JabodetabekArea || out[1] != "Bandung" {
+		t.Fatalf("NormalizeCities = %v %q, want [Jabodetabek Bandung]", out, msg)
+	}
+	if got := MatchNames("depok"); len(got) != 2 || got[0] != "Depok" || got[1] != JabodetabekArea {
+		t.Fatalf("MatchNames(depok) = %v", got)
+	}
+	if got := MatchNames("Jabodetabek"); len(got) != 14 || got[0] != JabodetabekArea {
+		t.Fatalf("MatchNames(Jabodetabek) = %v", got)
+	}
+	if got := MatchNames("Bandung"); len(got) != 1 || got[0] != "Bandung" {
+		t.Fatalf("MatchNames(Bandung) = %v", got)
+	}
+	if MatchNames("") != nil {
+		t.Fatal("MatchNames(\"\") should be nil")
+	}
+}

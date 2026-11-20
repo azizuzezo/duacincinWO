@@ -43,6 +43,9 @@ func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 		r.Group(func(r chi.Router) {
 			r.Use(auth.RequireAuth(cfg), auth.RequireRole(auth.RoleAdmin))
 			r.Get("/admin/status", AdminStatus(deps))
+			r.Get("/admin/recipients", AdminRecipients(deps))
+			r.Get("/admin/sent", AdminSentWhatsApp(deps))
+			r.Post("/admin/send", AdminSendWhatsApp(deps))
 		})
 	})
 }

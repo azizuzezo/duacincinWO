@@ -28,6 +28,8 @@ type Deps struct {
 	Cfg      *config.Config
 	// Notifications, when set, alerts admins if the official number drops.
 	Notifications *repository.NotificationRepo
+	// AuditLog records (and lists) messages admins send from the panel.
+	AuditLog *repository.AuditLogRepo
 }
 
 func NewDeps(

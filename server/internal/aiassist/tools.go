@@ -319,8 +319,9 @@ func cityVariants(city string) []string {
 	if city == "" {
 		return []string{""}
 	}
-	if g, ok := wilayah.Group(city); ok {
-		return g
+	if _, ok := wilayah.Group(city); ok {
+		// One search: the directory matches the area and all its cities.
+		return []string{wilayah.JabodetabekArea}
 	}
 	out := []string{city}
 	if bare, ok := strings.CutPrefix(city, "Kab. "); ok {
@@ -436,7 +437,7 @@ func (d *Deps) findVendors(ctx context.Context, category, city string, maxPrice 
 	js, _ := json.Marshal(forModel)
 
 	params := map[string]any{"category": category}
-	if _, group := wilayah.Group(city); city != "" && !group {
+	if city != "" {
 		params["city"] = city
 	}
 	if maxPrice > 0 {

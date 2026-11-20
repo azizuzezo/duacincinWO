@@ -177,6 +177,12 @@ function Content({ user }: { user: CurrentUser }) {
               <Button size="sm" variant="ghost" className="ml-auto" loading={chatState.opening} onClick={openChat}>
                 Chat vendor
               </Button>
+              <Link
+                href={`/internal/admin/whatsapp?user=${vendor.user_id}`}
+                className="inline-flex min-h-11 items-center text-sm font-semibold text-dc-clay underline underline-offset-4 hover:text-dc-ink"
+              >
+                Kirim WhatsApp
+              </Link>
               {vendor.status === "approved" && (
                 <Link href={`/vendors/${vendor.user_id}`} target="_blank" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-dc-clay underline underline-offset-4 hover:text-dc-ink">
                   Lihat seperti calon pengantin

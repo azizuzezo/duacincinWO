@@ -141,3 +141,66 @@ func (r *WhatsAppLinkRepo) Coverage(ctx context.Context) (WhatsAppCoverage, erro
 	`).Scan(&c.ClientsVerified, &c.ClientsMissing, &c.VendorsVerified, &c.VendorsMissing)
 	return c, err
 }
+
+// WhatsAppRecipient is a client or vendor with a verified WhatsApp number.
+type WhatsAppRecipient struct {
+	UserID       string
+	FullName     string
+	Email        string
+	Role         string
+	BusinessName string
+	Phone        string
+}
+
+// SearchRecipients finds verified clients/vendors by name, business name,
+// email or number (q may be empty), optionally one role or one user.
+func (r *WhatsAppLinkRepo) SearchRecipients(ctx context.Context, q, role, userID string, limit int) ([]WhatsAppRecipient, error) {
+	rows, err := r.pool.Query(ctx, `
+		select u.id, coalesce(u.full_name, ''), u.email, u.role, coalesce(vp.business_name, ''), l.phone
+		from users u
+		join whatsapp_links l on l.user_id = u.id and l.link_state = 'linked'
+		left join vendor_profiles vp on vp.user_id = u.id
+		where u.role::text in ('client', 'vendor')
+		  and ($2::text = '' or u.role::text = $2::text)
+		  and ($3::text = '' or u.id::text = $3::text)
+		  and ($1::text = ''
+		    or strpos(lower(coalesce(u.full_name, '')), lower($1)) > 0
+		    or strpos(lower(u.email), lower($1)) > 0
+		    or strpos(lower(coalesce(vp.business_name, '')), lower($1)) > 0
+		    or ($4::text <> '' and strpos(l.phone, $4::text) > 0))
+		order by u.created_at desc
+		limit $5
+	`, q, role, userID, digitsOf(q), limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []WhatsAppRecipient
+	for rows.Next() {
+		var x WhatsAppRecipient
+		if err := rows.Scan(&x.UserID, &x.FullName, &x.Email, &x.Role, &x.BusinessName, &x.Phone); err != nil {
+			return nil, err
+		}
+		out = append(out, x)
+	}
+	return out, rows.Err()
+}
+
+// digitsOf keeps the digits of a typed number, dropping a leading 0 so
+// "0812..." matches the stored "62812..."; "" when fewer than 4 digits.
+func digitsOf(s string) string {
+	b := make([]byte, 0, len(s))
+	for i := 0; i < len(s); i++ {
+		if s[i] >= '0' && s[i] <= '9' {
+			b = append(b, s[i])
+		}
+	}
+	d := string(b)
+	if len(d) > 0 && d[0] == '0' {
+		d = d[1:]
+	}
+	if len(d) < 4 {
+		return ""
+	}
+	return d
+}

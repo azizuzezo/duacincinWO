@@ -107,6 +107,11 @@ for (const [w, h, label] of [[1440, 900, "desktop"], [390, 844, "mobile"]]) {
   await s.go(`${WEB}/internal/admin/vendors`);
   const pend = await s.ev("document.querySelector('main').innerText");
   ok("pending vendors page: deleted vendor gone, empty state shown", !pend.includes("Dekor Uji") && pend.includes("Tidak ada vendor yang menunggu"), pend.slice(0, 300));
+  await s.go(`${WEB}/internal/admin/whatsapp`);
+  await sleep(1200);
+  const wa = await s.ev("document.querySelector('main').innerText");
+  ok("admin Kirim WhatsApp: verified vendor listed, history shows the API test send", wa.includes("Ballroom Uji") && wa.includes("Riwayat terkirim") && wa.includes("Halo Kak, profilmu sudah kami tinjau."), wa.slice(0, 500));
+  await s.shot("admin-kirim-whatsapp");
   await s.go(`${WEB}/internal/admin/inspirasi`);
   const insp = await s.ev("document.querySelector('main').innerText");
   ok("admin inspirasi: tagged photo lists its vendor and offers 'Ubah vendor'", insp.includes("Vendor: Ballroom Uji") && insp.includes("Ubah vendor") && insp.includes("Tandai vendor"), insp.slice(0, 400));

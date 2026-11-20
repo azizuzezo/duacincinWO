@@ -140,6 +140,14 @@ ok("vendor serves several kabupaten/kota (deduped, list spelling)", r.status ===
 r = await vendor.call("PUT", "/vendor/profile", { category: "venue", cities: ["Bandung", "Bandung sumedang"], price_min: 35000000, price_max: 120000000, description: "x" }); ok("a free-text entry among cities is refused", r.status === 400, JSON.stringify(r));
 r = await vendor.call("PUT", "/vendor/profile", { category: "venue", cities: ["Bandung", "Sumedang", "Garut", "Bogor", "Depok", "Bekasi", "Cimahi", "Cianjur", "Subang", "Karawang", "Purwakarta", "Indramayu", "Majalengka", "Kuningan", "Ciamis", "Pangandaran", "Tasikmalaya", "Banjar", "Cirebon", "Sukabumi", "Bandung Barat"], price_min: 35000000, price_max: 120000000, description: "x" }); ok("more than 20 kabupaten/kota refused", r.status === 400, JSON.stringify(r));
 r = await new Client("anon").call("GET", "/vendors?category=venue&city=depok"); ok("directory finds the vendor under its second city", r.data?.some((v) => v.id === vendorId && v.cities?.includes("Depok")), JSON.stringify(r.data));
+// "Jabodetabek" is one service area: it absorbs its own cities, and a search for any of them finds the vendor.
+r = await vendor.call("PUT", "/vendor/profile", { category: "venue", cities: ["Depok", "jabotabek", "Bandung", "Jakarta Selatan"], price_min: 35000000, price_max: 120000000, description: "x" });
+ok("Jabodetabek is saved as one area and drops the cities it covers", r.status === 200 && JSON.stringify(r.data?.cities) === JSON.stringify(["Jabodetabek", "Bandung"]), JSON.stringify(r.data));
+r = await new Client("anon").call("GET", "/vendors?category=venue&city=Bekasi"); ok("a search for a Jabodetabek city finds a Jabodetabek vendor", r.data?.some((v) => v.id === vendorId), JSON.stringify(r.data));
+r = await new Client("anon").call("GET", "/vendors?category=venue&city=Jabodetabek"); ok("a search for Jabodetabek finds the vendor", r.data?.some((v) => v.id === vendorId), JSON.stringify(r.data));
+r = await new Client("anon").call("GET", "/vendors?category=venue&city=Sumedang"); ok("a city outside the vendor's areas does not match", !r.data?.some((v) => v.id === vendorId), JSON.stringify(r.data));
+r = await vendor.call("PUT", "/vendor/profile", { category: "venue", cities: ["Jakarta Selatan", "Depok"], price_min: 35000000, price_max: 120000000, description: "Venue uji untuk E2E." });
+r = await new Client("anon").call("GET", "/vendors?category=venue&city=Jabodetabek"); ok("a search for Jabodetabek finds vendors listing one of its cities", r.data?.some((v) => v.id === vendorId), JSON.stringify(r.data));
 // Several categories per vendor: the first is the main one, the directory finds the vendor under each.
 const multiCat = { cities: ["Jakarta Selatan", "Depok"], price_min: 35000000, price_max: 120000000, description: "Venue uji untuk E2E." };
 r = await vendor.call("PUT", "/vendor/profile", { ...multiCat, categories: ["venue", "mc", "venue"] });
@@ -208,6 +216,29 @@ ok("couple is emailed when the vendor replies", (await waitChatEmails(emails.cli
   ok("an unknown number gets no reply either", w.status === 200 && !w.data?.reply, JSON.stringify(w));
   w = await inbound(vPhone, "halo", "wrong");
   ok("inbound webhook needs the bot secret", w.status === 401, JSON.stringify(w));
+
+  // Admin panel: send a WhatsApp to a verified client/vendor
+  w = await admin.call("GET", "/whatsapp/admin/recipients?q=ballroom");
+  ok("admin finds a verified vendor by business name", w.status === 200 && w.data?.some((x) => x.business_name === "Ballroom Uji" && x.role === "vendor"), JSON.stringify(w));
+  w = await admin.call("GET", "/whatsapp/admin/recipients?q=0812-3456");
+  ok("admin finds a recipient by a typed number", w.status === 200 && w.data?.some((x) => x.business_name === "Ballroom Uji"), JSON.stringify(w));
+  w = await admin.call("GET", "/whatsapp/admin/recipients?role=client&q=client%20uji");
+  ok("role filter keeps only clients", w.status === 200 && w.data?.length >= 1 && w.data.every((x) => x.role === "client"), JSON.stringify(w));
+  w = await admin.call("GET", `/whatsapp/admin/recipients?user_id=${vendor2Id}`);
+  ok("an unverified account is not a recipient", w.status === 200 && w.data?.length === 0, JSON.stringify(w));
+  w = await admin.call("POST", "/whatsapp/admin/send", { user_id: vendorId, message: "Halo Kak, profilmu sudah kami tinjau." });
+  ok("admin sends a WhatsApp to a vendor", w.status === 200 && w.data?.sent === true, JSON.stringify(w));
+  ok("the vendor gets it with the DuaCincin team header", waOut(vPhone).some((t) => t.startsWith("📣 *Pesan dari Tim DuaCincin*") && t.includes("Halo Kak, profilmu sudah kami tinjau.")), JSON.stringify(waOut(vPhone).slice(-1)));
+  w = await admin.call("POST", "/whatsapp/admin/send", { user_id: vendor2Id, message: "x" });
+  ok("sending to an unverified account is refused", w.status === 400, JSON.stringify(w));
+  w = await admin.call("POST", "/whatsapp/admin/send", { user_id: vendorId, message: "   " });
+  ok("an empty message is refused", w.status === 400, JSON.stringify(w));
+  w = await admin.call("POST", "/whatsapp/admin/send", { user_id: vendorId, message: "a".repeat(1001) });
+  ok("a message over 1000 characters is refused", w.status === 400, JSON.stringify(w));
+  w = await admin.call("GET", "/whatsapp/admin/sent");
+  ok("the send is in the admin history", w.status === 200 && w.data?.[0]?.recipient_name === "Ballroom Uji" && w.data[0].message === "Halo Kak, profilmu sudah kami tinjau." && w.data[0].phone_tail === "7890", JSON.stringify(w.data?.[0]));
+  w = await client.call("POST", "/whatsapp/admin/send", { user_id: vendorId, message: "x" });
+  ok("only admins can send from the panel", w.status === 403, JSON.stringify(w));
 }
 
 // 5b. Admin <-> Vendor chat: one thread per (admin, vendor), only those two.
