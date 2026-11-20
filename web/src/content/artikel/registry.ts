@@ -23,6 +23,126 @@ export type Article = {
 
 export const ARTICLES: Article[] = [
   {
+    slug: "biaya-nikah-di-kua",
+    title: "Biaya nikah di KUA: Rp0 atau Rp600 ribu, cara bayar, pungli",
+    description:
+      "Tarif Rp0 untuk akad di KUA pada jam kerja, Rp600.000 di luar KUA atau di luar jam kerja (PP 59/2018). Cara bayar lewat kode billing dan pungutan tidak sah.",
+    topic: "Legal",
+    published: "2026-11-21",
+    image: "/photos/pinterest/akad-joglo-lorong.webp",
+    imageAlt: "Akad nikah di lorong rumah joglo",
+    readMinutes: 7,
+    categories: ["venue"],
+  },
+  {
+    slug: "syarat-nikah-di-kua",
+    title: "Syarat nikah di KUA: dokumen, alur, dan batas waktu daftar",
+    description:
+      "Daftar dokumen nikah di KUA menurut PMA 30/2024, syarat usia 19 tahun, izin orang tua, janda/duda, TNI/Polri, WNA, alur SIMKAH, dan batas 10 hari kerja.",
+    topic: "Legal",
+    published: "2026-11-21",
+    image: "/photos/pinterest/pasangan-internasional.webp",
+    imageAlt: "Pasangan pengantin bergandengan tangan",
+    readMinutes: 7,
+    categories: ["mua_attire",  "invitation_souvenir"],
+  },
+  {
+    slug: "biaya-pernikahan-jakarta",
+    title: "Biaya pernikahan di Jakarta: kisaran per pos dan contohnya",
+    description:
+      "Kisaran biaya nikah di Jakarta per pos (gedung, katering per pax, dekorasi, MUA, foto-video, WO) dengan sumber, plus contoh hitungan 300 tamu.",
+    topic: "Anggaran",
+    published: "2026-11-21",
+    image: "/photos/pinterest/pendopo-kursi-tamu.webp",
+    imageAlt: "Kursi tamu tertata rapi di pendopo pernikahan",
+    readMinutes: 7,
+    categories: ["venue",  "catering",  "decor",  "mua_attire",  "photo_video"],
+  },
+  {
+    slug: "biaya-pernikahan-sederhana-50-juta",
+    title: "Biaya pernikahan sederhana 50 juta: rincian dan jumlah tamu",
+    description:
+      "Rincian biaya nikah 50 juta: berapa tamu yang muat, pilihan di rumah, gedung kecil, atau resepsi siang, pos yang boleh dipangkas, dan checklist anggaran.",
+    topic: "Anggaran",
+    published: "2026-11-21",
+    image: "/photos/pinterest/resepsi-taman.webp",
+    imageAlt: "Resepsi pernikahan sederhana di taman",
+    readMinutes: 6,
+    categories: ["catering",  "venue",  "decor",  "mua_attire",  "photo_video"],
+  },
+  {
+    slug: "harga-catering-pernikahan-per-pax",
+    title: "Harga catering pernikahan per pax di Jabodetabek",
+    description:
+      "Harga katering pernikahan per pax untuk prasmanan, gubukan, nasi kotak, dan plated di Jabodetabek, cara hitung porsi per undangan, plus contoh 300 dan 500 tamu.",
+    topic: "Katering",
+    published: "2026-11-21",
+    image: "/photos/pinterest/katering-jajanan.webp",
+    imageAlt: "Meja katering berisi jajanan pernikahan",
+    readMinutes: 7,
+    categories: ["catering",  "venue"],
+  },
+  {
+    slug: "harga-mua-pengantin",
+    title: "Harga MUA pengantin: akad, resepsi, adat, dan hijab",
+    description:
+      "Harga MUA pengantin untuk akad, akad dan resepsi, dan paket busana, plus biaya tambahan paes adat Jawa, hijab, retouch, keluarga, dan cara memesan aman.",
+    topic: "Rias",
+    published: "2026-11-21",
+    image: "/photos/pinterest/rias-hijab.webp",
+    imageAlt: "Pengantin berhijab dengan riasan pernikahan",
+    readMinutes: 7,
+    categories: ["mua_attire"],
+  },
+  {
+    slug: "susunan-acara-pernikahan-adat-jawa",
+    title: "Susunan acara pernikahan adat Jawa: urutan dan maknanya",
+    description:
+      "Urutan acara pernikahan adat Jawa dari srah-srahan, siraman, midodareni, ijab kabul, sampai panggih dan sungkeman, plus contoh rundown dan vendor yang perlu.",
+    topic: "Adat",
+    published: "2026-11-21",
+    image: "/photos/pinterest/foto-gapura.webp",
+    imageAlt: "Pasangan pengantin berfoto di gapura bunga",
+    readMinutes: 7,
+    categories: ["mua_attire",  "decor",  "entertainment",  "mc",  "hantaran"],
+  },
+  {
+    slug: "adat-pernikahan-sunda",
+    title: "Adat pernikahan Sunda: urutan prosesi dan maknanya",
+    description:
+      "Urutan adat pernikahan Sunda dari neundeun omong, ngeuyeuk seureuh, sawer, nincak endog, sampai huap lingkung, beserta makna, siger, dan vendor yang dibutuhkan.",
+    topic: "Adat",
+    published: "2026-11-21",
+    image: "/photos/pinterest/konsultan-rias.webp",
+    imageAlt: "Perias menyiapkan riasan pengantin",
+    readMinutes: 7,
+    categories: ["mua_attire",  "decor",  "entertainment",  "mc",  "hantaran"],
+  },
+  {
+    slug: "adat-pernikahan-minang",
+    title: "Adat pernikahan Minang: urutan prosesi, makna, dan suntiang",
+    description:
+      "Urutan adat pernikahan Minang dari maresek, batimbang tando, malam bainai, manjapuik marapulai sampai manjalang mintuo, beserta makna dan vendor.",
+    topic: "Adat",
+    published: "2026-11-21",
+    image: "/photos/pinterest/pelaminan-kristal.webp",
+    imageAlt: "Pelaminan pernikahan yang megah",
+    readMinutes: 7,
+    categories: ["mua_attire",  "decor",  "catering",  "hantaran"],
+  },
+  {
+    slug: "daftar-seserahan-pernikahan",
+    title: "Daftar seserahan pernikahan lengkap, makna, dan harganya",
+    description:
+      "Daftar seserahan pernikahan yang umum beserta makna, kisaran harga, jumlah nampan ganjil, variasi adat Jawa, Sunda, Betawi, dan Minang, plus tips mengemas.",
+    topic: "Seserahan",
+    published: "2026-11-21",
+    image: "/photos/pinterest/suvenir-anggrek.webp",
+    imageAlt: "Suvenir dan hantaran berhias anggrek",
+    readMinutes: 6,
+    categories: ["hantaran"],
+  },
+  {
     slug: "checklist-persiapan-pernikahan",
     title: "Checklist persiapan pernikahan 12 bulan, dari lamaran sampai hari H",
     description:

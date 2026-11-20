@@ -41,6 +41,10 @@ const out = []; let failed = 0; const ok = (n, c, d = "") => { out.push(`${c ? "
     ok("SEO: Bantuan has FAQPage built from its visible questions", p.html.includes('"FAQPage"') && p.html.includes('"WebPage"'));
     p = await raw("/artikel/cara-menyusun-anggaran-pernikahan");
     ok("SEO: budget article has the rupiah table, per-guest line and FAQ", p.html.includes("Rp400 ribu") && p.html.includes("Berapa biaya pernikahan untuk 100 tamu?") && p.html.includes("Diperbarui"), p.html.length);
+    for (const slug of ["biaya-nikah-di-kua", "syarat-nikah-di-kua", "biaya-pernikahan-jakarta", "biaya-pernikahan-sederhana-50-juta", "harga-catering-pernikahan-per-pax", "harga-mua-pengantin", "susunan-acara-pernikahan-adat-jawa", "adat-pernikahan-sunda", "adat-pernikahan-minang", "daftar-seserahan-pernikahan"]) {
+      p = await raw(`/artikel/${slug}`);
+      ok(`SEO: article ${slug} renders with H1, summary, a table and an FAQ`, p.status === 200 && has(p.html, /<h1[^>]*>/) && p.html.includes("Ringkasnya:") && p.html.includes("<table") && p.html.includes("Pertanyaan yang sering muncul"), String(p.status));
+    }
     p = await raw("/tentang-kami");
     ok("SEO: Tentang kami has AboutPage with the founders", p.html.includes('"AboutPage"') && p.html.includes("Riyan Riyadi"));
     p = await raw("/");
