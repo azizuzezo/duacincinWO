@@ -38,6 +38,11 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 
 ## Changelog
 
+### 2026-11-21 — Admin: klien terdaftar & percakapan klien–vendor
+
+- **Klien Terdaftar** (`/internal/admin/klien`, `GET /admin/clients?q=&page=`): semua akun calon pengantin, dengan status & nomor WhatsApp (terverifikasi / belum verifikasi / belum isi; hanya admin yang melihat nomornya), tanggal daftar, jumlah booking dan percakapan, serta pintasan ke percakapannya dan Kirim WhatsApp. Cari nama, email, atau nomor; 30 per halaman.
+- **Percakapan Klien–Vendor** (`/internal/admin/percakapan`, `GET /admin/chats?q=&client_id=&vendor_id=&page=`, `GET /admin/chats/{id}`): daftar semua chat klien–vendor (pesan terakhir, jumlah pesan, pesan yang ditandai, status tutup) dan tampilan isi chat **hanya baca**: tidak menandai pesan terkirim/dibaca, tidak bisa membalas. Membuka satu chat dicatat di audit log (`chat.view`, paling sering 1x per admin per chat per hari). Detail vendor punya pintasan "Percakapan dengan klien".
+
 ### 2026-11-21 — Kirim WhatsApp dari admin; Jabodetabek satu lokasi
 
 - Halaman admin **Kirim WhatsApp** (`/internal/admin/whatsapp`, menu Layanan): cari klien/vendor yang nomornya terverifikasi (nama, nama usaha, email, atau nomor; filter peran), tulis pesan (maks. 1.000 karakter, pratinjau gaya WhatsApp), konfirmasi, kirim lewat nomor resmi. Pesan diberi kepala "Pesan dari Tim DuaCincin" dan catatan bahwa nomor ini tidak menerima balasan. Batas 60 pesan per admin per jam. Setiap kiriman tercatat di audit log (`whatsapp.admin_send`), yang juga jadi riwayat di halaman itu. Detail vendor punya pintasan "Kirim WhatsApp" (`?user=<id>`).

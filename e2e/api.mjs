@@ -251,6 +251,31 @@ ok("admin starts a chat with the vendor", r.status === 200 && av?.type === "admi
 r = await admin.call("POST", `/conversations/admin-vendor/${vendorId}`, {}); ok("starting again reuses the thread", r.data?.id === av?.id, JSON.stringify(r));
 r = await admin.call("POST", `/conversations/admin-vendor/${vendor2Id}`, {}); ok("admin can reach a vendor still pending review", r.status === 200, JSON.stringify(r));
 r = await admin.call("POST", `/conversations/${av.id}/messages`, { body: "Halo, mohon konfirmasi nomor 081234567890 untuk verifikasi." }); ok("admin sends; contact details are not flagged in an admin chat", r.status === 201 && r.data?.flagged === false, JSON.stringify(r));
+
+// 5c. Admin: registered clients and read-only client-vendor chats
+{
+  let w = await admin.call("GET", "/admin/clients?q=client%20uji");
+  ok("admin lists registered clients with their WhatsApp status", w.status === 200 && w.data?.items?.some((c) => c.full_name === "Client Uji" && c.whatsapp_status === "verified" && c.conversations >= 1), JSON.stringify(w.data));
+  w = await vendor.call("GET", "/admin/clients");
+  ok("only admins can list clients", w.status === 403, JSON.stringify(w));
+  w = await admin.call("GET", "/admin/chats?q=ballroom");
+  const row = w.data?.items?.find((c) => c.id === conv.id);
+  ok("admin lists client-vendor chats with names and counts", w.status === 200 && row?.client_name === "Client Uji" && row?.vendor_name === "Ballroom Uji" && row?.messages >= 3 && row?.flagged >= 1, JSON.stringify(row ?? w.data));
+  w = await admin.call("GET", `/admin/chats?client_id=${(await client.call("GET", "/auth/me")).data.id}`);
+  ok("chats can be narrowed to one client", w.status === 200 && w.data?.items?.length >= 1 && w.data.items.every((c) => c.client_name === "Client Uji"), JSON.stringify(w.data));
+  const before = (await client.call("GET", `/conversations/${conv.id}/messages`)).data?.map((m) => m.status).join(",");
+  w = await admin.call("GET", `/admin/chats/${conv.id}`);
+  ok("admin reads a client-vendor chat, each message marked client or vendor", w.status === 200 && w.data?.conversation?.vendor?.name === "Ballroom Uji" && w.data.messages.some((m) => m.from === "client" && m.body.includes("14 Maret")) && w.data.messages.some((m) => m.from === "vendor"), JSON.stringify(w.data?.messages?.slice(0, 2)));
+  await admin.call("GET", `/admin/chats/${conv.id}`);
+  const after = (await client.call("GET", `/conversations/${conv.id}/messages`)).data?.map((m) => m.status).join(",");
+  ok("reading as admin changes no read ticks", before === after, `${before} -> ${after}`);
+  w = await admin.call("GET", "/admin/audit-log?limit=20");
+  ok("opening a chat is audit-logged once per day", w.data?.filter((e) => e.action === "chat.view" && e.target_id === conv.id).length === 1, JSON.stringify(w.data?.filter((e) => e.action === "chat.view")));
+  w = await admin.call("GET", `/admin/chats/${av.id}`);
+  ok("the admin chat view is only for client-vendor chats", w.status === 404, JSON.stringify(w));
+  w = await vendor.call("GET", `/admin/chats/${conv.id}`);
+  ok("only admins can read chats here", w.status === 403, JSON.stringify(w));
+}
 r = await admin.call("POST", `/conversations/${av.id}/messages`, { body: "Terima kasih." }); ok("admin sends a second message", r.status === 201, JSON.stringify(r));
 ok("vendor is emailed once for the admin's two unread messages", (await waitChatEmails(emails.vendor, `/vendor/messages/${av.id}`, 1)) === 1, String(chatEmails(emails.vendor, `/vendor/messages/${av.id}`)));
 r = await vendor.call("GET", "/conversations"); const avRow = r.data?.find((c) => c.id === av.id);

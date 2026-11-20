@@ -114,6 +114,18 @@ for (const [w, h, label] of [[1440, 900, "desktop"], [390, 844, "mobile"]]) {
   await s.go(`${WEB}/internal/admin/vendors`);
   const pend = await s.ev("document.querySelector('main').innerText");
   ok("pending vendors page: deleted vendor gone, empty state shown", !pend.includes("Dekor Uji") && pend.includes("Tidak ada vendor yang menunggu"), pend.slice(0, 300));
+  await s.go(`${WEB}/internal/admin/klien`);
+  await sleep(1000);
+  const kl = await s.ev("document.querySelector('main').innerText");
+  ok("admin Klien terdaftar lists the couple with WhatsApp status", kl.includes("Client Uji") && kl.includes("WA terverifikasi"), kl.slice(0, 400));
+  await s.go(`${WEB}/internal/admin/percakapan`);
+  await sleep(1000);
+  const pc = await s.ev("document.querySelector('main').innerText");
+  ok("admin Percakapan lists the couple's chat with the vendor", pc.includes("Client Uji") && pc.includes("Ballroom Uji"), pc.slice(0, 400));
+  await s.ev("document.querySelector('main ul li a').click(); 1");
+  await sleep(1500);
+  const th = await s.ev("document.querySelector('main').innerText");
+  ok("admin chat view shows the messages read-only", th.includes("14 Maret") && th.includes("Hanya baca") && !th.includes("Tulis pesan"), th.slice(0, 400));
   await s.go(`${WEB}/internal/admin/whatsapp`);
   await sleep(1200);
   const wa = await s.ev("document.querySelector('main').innerText");

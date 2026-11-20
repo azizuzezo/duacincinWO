@@ -146,12 +146,14 @@ func New(ctx context.Context, opts Options) (*App, error) {
 	authDeps.WhatsApp = whatsappLinkRepo
 	vendorsDeps := vendors.NewDeps(vendorRepo, vendorNameChangeRepo, storageClient, reviewRepo, disbursementRepo)
 	vendorsDeps.WhatsApp = whatsappLinkRepo
+	adminDeps := admin.NewDeps(vendorRepo, vendorNameChangeRepo, disbursementRepo, disputeRepo, userRepo, bookingRepo, auditLogRepo, notificationRepo, storageClient, vendors.PortfolioBucket)
+	adminDeps.Chat = chatRepo
 
 	deps := httpserver.Deps{
 		GoogleAuth:     googleauth.NewDeps(userRepo, agreementRepo, limiter, cfg),
 		Auth:           authDeps,
 		Vendors:        vendorsDeps,
-		Admin:          admin.NewDeps(vendorRepo, vendorNameChangeRepo, disbursementRepo, disputeRepo, userRepo, bookingRepo, auditLogRepo, notificationRepo, storageClient, vendors.PortfolioBucket),
+		Admin:          adminDeps,
 		Chat:           chatDeps,
 		Whatsapp:       whatsappDeps,
 		Budget:         budget.NewDeps(repository.NewBudgetRepo(pool)),

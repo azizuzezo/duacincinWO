@@ -178,6 +178,12 @@ function Content({ user }: { user: CurrentUser }) {
                 Chat vendor
               </Button>
               <Link
+                href={`/internal/admin/percakapan?vendor=${vendor.user_id}`}
+                className="inline-flex min-h-11 items-center text-sm font-semibold text-dc-clay underline underline-offset-4 hover:text-dc-ink"
+              >
+                Percakapan dengan klien
+              </Link>
+              <Link
                 href={`/internal/admin/whatsapp?user=${vendor.user_id}`}
                 className="inline-flex min-h-11 items-center text-sm font-semibold text-dc-clay underline underline-offset-4 hover:text-dc-ink"
               >

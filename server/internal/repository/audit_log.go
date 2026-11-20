@@ -85,3 +85,14 @@ func (r *AuditLogRepo) ListByAction(ctx context.Context, action string, limit in
 	}
 	return out, rows.Err()
 }
+
+// LoggedSince reports whether actorID already logged action on targetID
+// within the last window (to keep "viewed" entries from flooding the log).
+func (r *AuditLogRepo) LoggedSince(ctx context.Context, actorID, action, targetID string, window time.Duration) (bool, error) {
+	var ok bool
+	err := r.pool.QueryRow(ctx, `
+		select exists(select 1 from admin_audit_log
+			where actor_id = $1 and action = $2 and target_id = $3 and created_at > now() - make_interval(secs => $4))
+	`, actorID, action, targetID, window.Seconds()).Scan(&ok)
+	return ok, err
+}

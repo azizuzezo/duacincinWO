@@ -104,6 +104,7 @@ export const ACTION_LABEL: Record<string, string> = {
   "vendor_name_change.resolve": "Memproses ganti nama vendor",
   "staff.create": "Menambah anggota tim",
   "whatsapp.admin_send": "Mengirim pesan WhatsApp",
+  "chat.view": "Membuka percakapan klien dan vendor",
 };
 
 export const SANCTION_LABEL: Record<string, string> = {
@@ -120,6 +121,7 @@ export function auditDetail(action: string, meta?: Record<string, unknown>): str
   const str = (k: string) => (typeof meta[k] === "string" && (meta[k] as string).trim() ? (meta[k] as string).trim() : null);
   if (action === "vendor.approve" && meta.bulk === true) out.push("Disetujui bersama vendor lain");
   if (action === "vendor.reject" && str("reason"))out.push(`Alasan: ${str("reason")}`);
+  if (action === "chat.view" && str("client_name")) out.push(`${str("client_name")} dengan ${str("vendor_name") ?? "vendor"}`);
   if (action === "whatsapp.admin_send" && str("recipient_name")) out.push(`Ke: ${str("recipient_name")}`);
   if (action === "vendor.delete" && str("business_name")) out.push(`Vendor: ${str("business_name")}`);
   if (action === "dispute.resolve" && str("sanction")) out.push(`Keputusan: ${SANCTION_LABEL[str("sanction")!] ?? str("sanction")}`);

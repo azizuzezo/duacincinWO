@@ -52,6 +52,8 @@ export const ADMIN_NAV: NavItem[] = [
   { tab: true, href: "/internal/admin/disputes", group: "Uang dan sengketa", label: "Sengketa", icon: ICON.warning },
   { tab: true, href: "/internal/admin/disbursements", group: "Uang dan sengketa", label: "Pencairan", icon: ICON.cash },
   { href: "/internal/consultations", group: "Layanan", label: "Konsultasi", icon: ICON.chat },
+  { href: "/internal/admin/klien", group: "Pengguna", label: "Klien Terdaftar", icon: ICON.users },
+  { href: "/internal/admin/percakapan", group: "Pengguna", label: "Percakapan Klien–Vendor", icon: ICON.chat },
   { href: "/internal/admin/pesan", group: "Layanan", label: "Pesan Vendor", icon: ICON.chat },
   { href: "/internal/admin/whatsapp", group: "Layanan", label: "Kirim WhatsApp", icon: ICON.send },
   { href: "/internal/admin/inspirasi", group: "Layanan", label: "Inspirasi", icon: ICON.image },
