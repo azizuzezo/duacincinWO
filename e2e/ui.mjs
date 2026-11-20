@@ -15,6 +15,13 @@ const out = []; let failed = 0; const ok = (n, c, d = "") => { out.push(`${c ? "
   ok("pending vendor not shown", !dir.includes("Dekor Uji"));
   const vid = await s.ev("document.querySelector('main ul li a')?.getAttribute('href')");
   await s.shot("real-directory");
+  await s.go(`${WEB}/vendors?kota=Jabodetabek`);
+  await sleep(800);
+  const jabo = await s.ev("document.querySelector('main').innerText");
+  ok("directory filter 'Jabodetabek' shows a vendor listing Jakarta Selatan and Depok", jabo.includes("Ballroom Uji") && !/\b0 vendor\b/.test(jabo), jabo.slice(0, 300));
+  await s.go(`${WEB}/vendors?kota=Sumedang`);
+  await sleep(800);
+  ok("directory filter for a city the vendor does not serve hides it", !(await s.ev("document.querySelector('main').innerText")).includes("Ballroom Uji"));
   await s.go(`${WEB}` + vid);
   const det = await s.ev("document.body.innerText");
   ok("detail page: packages from real API", det.includes("Half Day Plus") && det.includes("Full Day") && det.includes("22.000.000"), det.slice(0, 200));

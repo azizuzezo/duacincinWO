@@ -87,7 +87,7 @@ for (const [k, c] of Object.entries(who)) { r = await c.call("POST", "/auth/logi
   w = await admin.call("GET", "/whatsapp/me");
   ok("admin has no WhatsApp verification to do", w.status === 403, JSON.stringify(w));
   w = await admin.call("GET", "/whatsapp/admin/status");
-  ok("admin sees WhatsApp coverage", w.status === 200 && w.data?.clients_verified >= 1 && w.data?.vendors_verified >= 1 && w.data?.official === "not_configured", JSON.stringify(w));
+  ok("admin sees WhatsApp coverage (vendors still pending are not counted yet)", w.status === 200 && w.data?.clients_verified >= 1 && w.data?.vendors_verified === 0 && w.data?.vendors_missing === 0 && w.data?.official === "not_configured", JSON.stringify(w));
   w = await client.call("GET", "/whatsapp/admin/status");
   ok("WhatsApp status is admin-only", w.status === 403, JSON.stringify(w));
 }
@@ -218,6 +218,8 @@ ok("couple is emailed when the vendor replies", (await waitChatEmails(emails.cli
   ok("inbound webhook needs the bot secret", w.status === 401, JSON.stringify(w));
 
   // Admin panel: send a WhatsApp to a verified client/vendor
+  w = await admin.call("GET", "/whatsapp/admin/status");
+  ok("WhatsApp coverage counts the approved vendor", w.status === 200 && w.data?.vendors_verified === 1, JSON.stringify(w));
   w = await admin.call("GET", "/whatsapp/admin/recipients?q=ballroom");
   ok("admin finds a verified vendor by business name", w.status === 200 && w.data?.some((x) => x.business_name === "Ballroom Uji" && x.role === "vendor"), JSON.stringify(w));
   w = await admin.call("GET", "/whatsapp/admin/recipients?q=0812-3456");

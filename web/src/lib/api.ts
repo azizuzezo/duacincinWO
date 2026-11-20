@@ -15,6 +15,13 @@ export class ApiError extends Error {
   }
 }
 
+// When an admin last changed something (approve, resolve, disburse, ...).
+// Cached admin counts older than this are stale (lib/useAdminQueues).
+let lastAdminWrite = 0;
+export function lastAdminWriteAt(): number {
+  return lastAdminWrite;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
@@ -31,6 +38,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (!res.ok) {
     throw new ApiError(res.status, body?.error ?? "Terjadi kesalahan, coba lagi.");
   }
+  if (init?.method && init.method !== "GET" && path.startsWith("/api/v1/admin/")) lastAdminWrite = Date.now();
 
   return body as T;
 }

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { apiGet } from "@/lib/api";
+import { apiGet, lastAdminWriteAt } from "@/lib/api";
 
 export type AdminQueues = { disputes: number; disbursements: number; vendors: number; nameChanges: number };
 
@@ -32,7 +32,8 @@ export function useAdminQueues(enabled: boolean) {
   const load = useCallback(
     (force: boolean) => {
       if (!enabled) return;
-      if (!force && cache && Date.now() - cache.at < TTL_MS) {
+      // Fresh for 30 s, unless an admin action changed the queues since.
+      if (!force && cache && Date.now() - cache.at < TTL_MS && cache.at > lastAdminWriteAt()) {
         setQueues(cache.data);
         setLoading(false);
         return;

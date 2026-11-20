@@ -121,7 +121,8 @@ func (r *WhatsAppLinkRepo) LinkVerified(ctx context.Context, userID, phone strin
 	return tx.Commit(ctx)
 }
 
-// WhatsAppCoverage counts, per role, accounts with and without a verified number.
+// WhatsAppCoverage counts accounts with and without a verified number:
+// active clients, and active vendors (approved, the ones couples can reach).
 type WhatsAppCoverage struct {
 	ClientsVerified, ClientsMissing int
 	VendorsVerified, VendorsMissing int
@@ -137,7 +138,9 @@ func (r *WhatsAppLinkRepo) Coverage(ctx context.Context) (WhatsAppCoverage, erro
 			count(*) filter (where u.role = 'vendor' and l.id is null)
 		from users u
 		left join whatsapp_links l on l.user_id = u.id and l.link_state = 'linked'
-		where u.role in ('client', 'vendor')
+		left join vendor_profiles vp on vp.user_id = u.id
+		where u.account_status = 'active'
+		  and (u.role = 'client' or (u.role = 'vendor' and vp.status = 'approved'))
 	`).Scan(&c.ClientsVerified, &c.ClientsMissing, &c.VendorsVerified, &c.VendorsMissing)
 	return c, err
 }

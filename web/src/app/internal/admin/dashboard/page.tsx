@@ -94,6 +94,25 @@ function AdminDashboardContent({ user }: { user: CurrentUser }) {
     });
   }, []);
 
+  // The board is left open: refresh it when the admin comes back to the tab
+  // and every minute while it is visible, so counts never sit stale.
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState !== "visible") return;
+      reloadQueues();
+      load();
+      setTick((t) => t + 1);
+    };
+    const id = window.setInterval(refresh, 60_000);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const firstName = user.full_name?.split(" ")[0] ?? "";
   const open = queues ? QUEUES.filter((q) => queues[q.key] > 0) : [];
   const focus = open[0];
@@ -217,7 +236,7 @@ function AdminDashboardContent({ user }: { user: CurrentUser }) {
               </dl>
             </Card>
             <div className="mt-10">
-              <WhatsAppAdminCard />
+              <WhatsAppAdminCard refreshKey={tick} />
             </div>
           </section>
 

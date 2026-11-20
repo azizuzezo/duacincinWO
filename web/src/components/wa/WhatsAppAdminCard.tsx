@@ -28,7 +28,7 @@ const OFFICIAL: Record<Status["official"], { label: string; dot: string; note: s
 };
 
 /** Admin dashboard: is the shared official number up, and who has verified a number. */
-export function WhatsAppAdminCard() {
+export function WhatsAppAdminCard({ refreshKey = 0 }: { refreshKey?: number }) {
   const [s, setS] = useState<Status | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -44,7 +44,7 @@ export function WhatsAppAdminCard() {
   );
   useEffect(() => {
     void fetchStatus();
-  }, [fetchStatus]);
+  }, [fetchStatus, refreshKey]);
   const load = () => {
     setS(null);
     void fetchStatus();
@@ -95,13 +95,15 @@ export function WhatsAppAdminCard() {
             </div>
             <dl className="grid grid-cols-2 divide-x divide-dc-line">
               {[
-                { label: "Klien terverifikasi", ok: s.clients_verified, missing: s.clients_missing },
-                { label: "Vendor terverifikasi", ok: s.vendors_verified, missing: s.vendors_missing },
+                { label: "Klien", ok: s.clients_verified, missing: s.clients_missing },
+                { label: "Vendor aktif", ok: s.vendors_verified, missing: s.vendors_missing },
               ].map((r) => (
                 <div key={r.label} className="px-5 py-4">
                   <dt className="text-sm text-dc-text-2">{r.label}</dt>
                   <dd className="mt-1 font-heading text-3xl font-semibold text-dc-ink [font-variant-numeric:lining-nums_tabular-nums]">{r.ok}</dd>
-                  <dd className="text-xs text-dc-text-3">{r.missing} belum</dd>
+                  <dd className="text-xs text-dc-text-3">
+                    dari {r.ok + r.missing} sudah verifikasi WA{r.missing > 0 ? ` · ${r.missing} belum` : ""}
+                  </dd>
                 </div>
               ))}
             </dl>

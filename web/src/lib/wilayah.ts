@@ -28,6 +28,20 @@ export const JABODETABEK = [
   "Kab. Bekasi",
 ];
 
+/** Whether a vendor listing `cities` serves `city` (same rule as the
+ * server's wilayah.MatchNames): a Jabodetabek city is served by a
+ * "Jabodetabek" vendor, and "Jabodetabek" by a vendor in any of its cities. */
+export function servesCity(cities: string[], city: string): boolean {
+  const want = city.trim().toLowerCase();
+  if (!want) return true;
+  const have = cities.map((c) => c.trim().toLowerCase());
+  if (have.includes(want)) return true;
+  const area = JABODETABEK_AREA.toLowerCase();
+  const inArea = JABODETABEK.map((c) => c.toLowerCase());
+  if (want === area || want === "jabotabek") return have.includes(area) || have.some((c) => inArea.includes(c));
+  return inArea.includes(want) && have.includes(area);
+}
+
 /** Most kabupaten/kota one vendor can list (server: wilayah.MaxCities). */
 export const MAX_CITIES = 20;
 
