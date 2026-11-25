@@ -34,6 +34,8 @@ type Deps struct {
 	Notifications *repository.NotificationRepo
 	// Chat backs the read-only client-vendor chat views (set in app.go).
 	Chat *repository.ChatRepo
+	// AISettings backs the Kirana model settings page (set in app.go).
+	AISettings *repository.AISettingsRepo
 	// Storage and PortfolioBucket let a vendor deletion also remove the
 	// vendor's portfolio files. The bucket name is passed in because the
 	// vendors package imports this one.
@@ -617,5 +619,8 @@ func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 
 		r.Get("/staff", listStaff(deps))
 		r.Post("/staff", createStaff(deps))
+
+		r.Get("/ai-settings", getAISettings(deps))
+		r.Put("/ai-settings", saveAISettings(deps))
 	})
 }

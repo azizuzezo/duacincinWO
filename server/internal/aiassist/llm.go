@@ -114,6 +114,10 @@ func (c *llmClient) stream(ctx context.Context, msgs []chatMessage, tools []tool
 		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+c.apiKey)
+	// Sarvam authenticates with its own header (docs.sarvam.ai v2).
+	if strings.Contains(c.baseURL, "sarvam.ai") {
+		req.Header.Set("api-subscription-key", c.apiKey)
+	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "text/event-stream")
 

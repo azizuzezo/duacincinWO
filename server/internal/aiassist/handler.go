@@ -18,6 +18,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"duacincin/server/internal/config"
@@ -42,21 +43,65 @@ type Deps struct {
 	Chats       *repository.AIChatRepo
 	Limiter     *ratelimit.Limiter
 	Cfg         *config.Config
-	llm         *llmClient
+	// Settings is the admin-edited LLM configuration (the AI_* env vars are ignored).
+	Settings *repository.AISettingsRepo
+
+	mu       sync.Mutex
+	cached   *llmClient
+	cachedAt time.Time
 }
 
-func NewDeps(vendorRepo *repository.VendorRepo, reviewRepo *repository.ReviewRepo, inspirationRepo *repository.InspirationRepo, chatRepo *repository.AIChatRepo, limiter *ratelimit.Limiter, cfg *config.Config) *Deps {
+func NewDeps(vendorRepo *repository.VendorRepo, reviewRepo *repository.ReviewRepo, inspirationRepo *repository.InspirationRepo, chatRepo *repository.AIChatRepo, settings *repository.AISettingsRepo, limiter *ratelimit.Limiter, cfg *config.Config) *Deps {
 	return &Deps{
-		Vendors: vendorRepo, Reviews: reviewRepo, Inspiration: inspirationRepo, Chats: chatRepo, Limiter: limiter, Cfg: cfg,
-		llm: &llmClient{baseURL: cfg.AIBaseURL, apiKey: cfg.AIAPIKey, model: cfg.AIModel, reasoning: cfg.AIReasoningEffort, http: &http.Client{Timeout: 90 * time.Second}},
+		Vendors: vendorRepo, Reviews: reviewRepo, Inspiration: inspirationRepo, Chats: chatRepo, Settings: settings, Limiter: limiter, Cfg: cfg,
 	}
+}
+
+const settingsTTL = 15 * time.Second
+
+var llmHTTP = &http.Client{Timeout: 90 * time.Second}
+
+// client resolves the LLM configuration from the admin panel only; the AI_*
+// env vars are deliberately ignored. Cached briefly so a settings change reaches
+// every instance within settingsTTL without a DB read per message. It
+// returns nil when the assistant is not fully configured.
+func (d *Deps) client(ctx context.Context) *llmClient {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if time.Since(d.cachedAt) < settingsTTL {
+		return d.cached
+	}
+	c := &llmClient{http: llmHTTP}
+	if d.Settings != nil {
+		if s, err := d.Settings.Get(ctx); err != nil {
+			log.Printf("aiassist: load settings: %v", err)
+		} else {
+			if v := strings.TrimRight(strings.TrimSpace(s.BaseURL), "/"); v != "" {
+				c.baseURL = v
+			}
+			if v := strings.TrimSpace(s.Model); v != "" {
+				c.model = v
+			}
+			if v := strings.TrimSpace(s.APIKey); v != "" {
+				c.apiKey = v
+			}
+			if v := strings.TrimSpace(s.ReasoningEffort); v != "" {
+				c.reasoning = v
+			}
+		}
+	}
+	if c.baseURL == "" || c.apiKey == "" || c.model == "" {
+		c = nil
+	}
+	d.cached, d.cachedAt = c, time.Now()
+	return d.cached
 }
 
 // Status lets the landing decide whether to show the assistant at all.
 func Status(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "public, max-age=60")
-		httpx.JSON(w, http.StatusOK, map[string]bool{"enabled": deps.Cfg.AIEnabled()})
+		httpx.JSON(w, http.StatusOK, map[string]bool{"enabled": deps.client(r.Context()) != nil})
 	}
 }
 
@@ -96,7 +141,8 @@ func validMessage(raw string) (string, string) {
 // never from the request, and both the message and the reply are saved.
 func Chat(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !deps.Cfg.AIEnabled() {
+		llm := deps.client(r.Context())
+		if llm == nil {
 			httpx.Error(w, http.StatusServiceUnavailable, "asisten sedang tidak tersedia")
 			return
 		}
@@ -164,7 +210,7 @@ func Chat(deps *Deps) http.HandlerFunc {
 		defer cancel()
 		history := append(modelHistory(past), chatMessage{Role: "user", Content: msg})
 		visitor, _ := deps.Chats.Visitor(r.Context(), sessionID)
-		deps.converse(ctx, history, visitor, send)
+		deps.converse(ctx, llm, history, visitor, send)
 		send("done", struct{}{})
 
 		if err := deps.Chats.AddTurn(saveCtx, sessionID, rec.turn()); err != nil {
@@ -236,7 +282,7 @@ func (rc *recorder) turn() repository.AIChatTurn {
 	return t
 }
 
-func (d *Deps) converse(ctx context.Context, history []chatMessage, visitor repository.AIVisitor, send func(string, any)) {
+func (d *Deps) converse(ctx context.Context, llm *llmClient, history []chatMessage, visitor repository.AIVisitor, send func(string, any)) {
 	msgs := append([]chatMessage{{Role: "system", Content: systemPrompt(time.Now(), visitor)}}, history...)
 	tools := toolDefs()
 	// Fast path: a named total budget is computed here, before the model,
@@ -298,7 +344,7 @@ func (d *Deps) converse(ctx context.Context, history []chatMessage, visitor repo
 				send("text", map[string]string{"t": noLongDash(t)})
 			}
 		}
-		res, err := d.llm.stream(ctx, msgs, roundTools, func(t string) {
+		res, err := llm.stream(ctx, msgs, roundTools, func(t string) {
 			closeThink()
 			emit(gate.feed(t))
 		}, nil)

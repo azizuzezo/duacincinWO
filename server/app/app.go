@@ -148,6 +148,8 @@ func New(ctx context.Context, opts Options) (*App, error) {
 	vendorsDeps.WhatsApp = whatsappLinkRepo
 	adminDeps := admin.NewDeps(vendorRepo, vendorNameChangeRepo, disbursementRepo, disputeRepo, userRepo, bookingRepo, auditLogRepo, notificationRepo, storageClient, vendors.PortfolioBucket)
 	adminDeps.Chat = chatRepo
+	aiSettingsRepo := repository.NewAISettingsRepo(pool)
+	adminDeps.AISettings = aiSettingsRepo
 
 	deps := httpserver.Deps{
 		GoogleAuth:     googleauth.NewDeps(userRepo, agreementRepo, limiter, cfg),
@@ -158,7 +160,7 @@ func New(ctx context.Context, opts Options) (*App, error) {
 		Whatsapp:       whatsappDeps,
 		Budget:         budget.NewDeps(repository.NewBudgetRepo(pool)),
 		Inspiration:    inspiration.NewDeps(inspirationRepo, storageClient, auditLogRepo),
-		AIAssist:       aiassist.NewDeps(vendorRepo, reviewRepo, inspirationRepo, repository.NewAIChatRepo(pool), limiter, cfg),
+		AIAssist:       aiassist.NewDeps(vendorRepo, reviewRepo, inspirationRepo, repository.NewAIChatRepo(pool), aiSettingsRepo, limiter, cfg),
 		WeddingPlanner: weddingplanner.NewDeps(plannerRepo),
 		Notifications:  notifications.NewDeps(notificationRepo),
 		GuestList:      guestlist.NewDeps(guestRepo, repository.NewRSVPLinkRepo(pool), limiter),
