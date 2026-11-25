@@ -49,7 +49,7 @@ export function vendorCategory(value: string) {
  * category elsewhere). */
 export const CATEGORY_THUMB: Record<string, string> = {
   venue: "/photos/pinterest/venue-joglo-sm.webp",
-  catering: "/photos/pinterest/katering-jajanan-sm.webp",
+  catering: "/photos/kategori-vendor/catering-meja-sm.webp",
   decor: "/photos/pinterest/dekorasi-taman-sm.webp",
   mua_attire: "/photos/pinterest/rias-hijab-sm.webp",
   photo_video: "/photos/pinterest/foto-gapura-sm.webp",

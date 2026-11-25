@@ -35,7 +35,7 @@ export const VENDOR_PANEL: AuthPanel = {
     </>
   ),
   bullets: ["Profil dan portofolio tampil di direktori setelah diverifikasi", "Chat dan booking dengan calon pengantin di satu tempat", "Dana cair setelah acara selesai, harga paketmu diterima utuh"],
-  photos: ["/photos/pinterest/pendopo-kursi-tamu.webp", "/photos/pinterest/pelaminan-kristal.webp", "/photos/pinterest/katering-jajanan.webp"],
+  photos: ["/photos/pinterest/pendopo-kursi-tamu.webp", "/photos/pinterest/pelaminan-kristal.webp", "/photos/kategori-vendor/catering-meja.webp"],
 };
 
 function PhotoPanel({ panel }: { panel: AuthPanel }) {

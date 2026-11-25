@@ -113,7 +113,7 @@ const CATEGORY_PHOTO: Record<
     note: "Gedung, ballroom, taman",
   },
   catering: {
-    src: "/photos/pinterest/katering-jajanan.webp",
+    src: "/photos/kategori-vendor/catering-meja.webp",
     note: "Prasmanan, gubukan, menu adat",
   },
   decor: {

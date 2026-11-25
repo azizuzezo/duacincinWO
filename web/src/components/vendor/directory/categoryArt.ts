@@ -30,8 +30,8 @@ export const CATEGORY_ART: Record<string, CategoryArt> = {
     ask: ["Berapa kapasitas duduk dan berdiri?", "Jam berapa boleh mulai loading dekorasi?", "Apakah wajib memakai katering rekanan?"],
   },
   catering: {
-    src: "/photos/pinterest/katering-jajanan.webp",
-    alt: "Meja jajanan tradisional di atas daun pisang dan nampan rotan",
+    src: "/photos/kategori-vendor/catering-meja.webp",
+    alt: "Meja hidangan pernikahan dengan kue kecil di nampan emas dan rangkaian anggrek putih",
     covers: "Prasmanan, gubukan, menu adat",
     intro:
       "Hidangan adalah hal yang paling diingat tamu. Bandingkan jenis paket, menu, dan harga mulai dari, lalu minta detail porsi per tamu lewat chat sebelum memilih.",

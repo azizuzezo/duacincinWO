@@ -85,15 +85,6 @@ export const CREDIT_GROUPS: CreditGroup[] = [
         change: "Diperkecil",
       },
       {
-        thumb: "/photos/pinterest/katering-jajanan-sm.webp",
-        what: "Meja jajanan tradisional di atas daun pisang (kategori katering)",
-        title: "Pin meja jajanan",
-        author: "pemilik aslinya, via Pinterest",
-        license: "Hak cipta pemilik foto",
-        source: "https://www.pinterest.com/pin/605452743702173003/",
-        change: "Diperkecil",
-      },
-      {
         thumb: "/photos/pinterest/dekorasi-taman-sm.webp",
         what: "Panggung taman putih dengan lilin dan lampu gantung (kategori dekorasi)",
         title: "Pin dekorasi taman",
@@ -294,6 +285,16 @@ export const CREDIT_GROUPS: CreditGroup[] = [
         license: "Pexels License",
         licenseUrl: "https://www.pexels.com/license/",
         source: "https://www.pexels.com/photo/7448030/",
+        change: "Diperkecil dan dikonversi ke WebP",
+      },
+      {
+        thumb: "/photos/kategori-vendor/catering-meja-sm.webp",
+        what: "Meja hidangan dengan kue kecil dan anggrek putih (kategori Catering)",
+        title: "Dessert Buffet Next to Flowers",
+        author: "Jonathan Borba",
+        license: "Pexels License",
+        licenseUrl: "https://www.pexels.com/license/",
+        source: "https://www.pexels.com/photo/26774580/",
         change: "Diperkecil dan dikonversi ke WebP",
       },
       {
