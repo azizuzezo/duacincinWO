@@ -98,7 +98,7 @@ export default function TentangKamiPage() {
       />
       <div className="wd">
         <PageHero
-          image="/banner/tentang.webp"
+          image="/banner/foto-tentang.webp"
           focus="65% 50%"
           crumbs={[{ name: "Tentang kami" }]}
           title={

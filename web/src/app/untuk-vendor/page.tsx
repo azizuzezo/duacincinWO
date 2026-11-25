@@ -180,8 +180,8 @@ export default function UntukVendorPage() {
           crumbs={[{ name: "Untuk vendor" }]}
           title="Punya usaha pernikahan? Tampilkan karyamu."
           sub="Calon pengantin mencari, berdiskusi, dan membayar di satu tempat. Kamu fokus mengerjakan acara."
-          image="/banner/vendor.webp"
-          focus="65% 50%"
+          image="/banner/foto-venue-taman.webp"
+          focus="55% 72%"
           actions={
             <>
               <Link

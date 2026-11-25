@@ -125,7 +125,7 @@ export default function BantuanPage() {
         }}
       />
       <div className="wd">
-        <PageHero image="/banner/bantuan.webp" focus="70% 50%" crumbs={[{ name: "Bantuan" }]} title="Pusat bantuan" sub="Jawaban soal pembayaran, booking, perencanaan, dan akun vendor.">
+        <PageHero image="/banner/foto-bantuan.webp" focus="70% 50%" crumbs={[{ name: "Bantuan" }]} title="Pusat bantuan" sub="Jawaban soal pembayaran, booking, perencanaan, dan akun vendor.">
           {/* Quick tiles, one per topic, each tinted so the four read apart at a glance. */}
           <ul aria-label="Topik" className="mt-7 grid grid-cols-2 gap-3 lg:grid-cols-4">
             {TOPICS.map((t, i) => (

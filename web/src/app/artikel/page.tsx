@@ -41,7 +41,7 @@ export default function ArtikelIndexPage() {
     <PublicShell>
       <JsonLd data={listLd} />
       <div className="wd">
-        <PageHero image="/banner/artikel.webp" focus="70% 50%" crumbs={[{ name: "Artikel" }]} title="Artikel persiapan pernikahan" sub="Checklist, anggaran, venue, vendor, sampai ragam adat." />
+        <PageHero image="/banner/foto-artikel.webp" focus="70% 50%" crumbs={[{ name: "Artikel" }]} title="Artikel persiapan pernikahan" sub="Checklist, anggaran, venue, vendor, sampai ragam adat." />
         {lead && (
           <section aria-label="Artikel terbaru" className="wd-container pt-10 sm:pt-12">
             <FeaturedArticle article={lead} />

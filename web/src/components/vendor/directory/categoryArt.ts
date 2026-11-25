@@ -1,5 +1,5 @@
-// Picture and plain copy per vendor category (five pictures are AI-made
-// still lifes without people, public/photos/kategori-ai, credited on /kredit), shared by the /vendors directory
+// Picture and plain copy per vendor category (real photos only; six come from
+// Unsplash / Pexels, public/photos/kategori-vendor, credited on /kredit), shared by the /vendors directory
 // and the server-rendered /kategori pages. Pictures come from the DuaCincin
 // Pinterest board (public/photos/pinterest, credited on /kredit), the same
 // ones the home page category mosaic uses.
@@ -62,8 +62,8 @@ export const CATEGORY_ART: Record<string, CategoryArt> = {
     ask: ["Berapa fotografer dan videografer yang datang?", "Kapan hasil foto dan video diterima?", "Sudah termasuk album cetak?"],
   },
   entertainment: {
-    src: "/photos/pinterest/kirab-malam.webp",
-    alt: "Kirab pengantin malam hari di antara tamu yang mengabadikan momen",
+    src: "/photos/kategori-vendor/band-solo.webp",
+    alt: "Penyanyi muda bersetelan jas tampil bersama band, foto hitam putih",
     covers: "Musik, band, hiburan adat",
     intro:
       "Musik menjaga suasana tetap hidup. Dengarkan contoh penampilan bila vendor menyediakannya, dan bicarakan susunan lagu sesuai rundown acaramu.",
@@ -78,40 +78,40 @@ export const CATEGORY_ART: Record<string, CategoryArt> = {
     ask: ["Berapa lama waktu produksi?", "Berapa jumlah pesanan minimal?", "Bisa minta contoh cetak dulu?"],
   },
   hantaran: {
-    src: "/photos/kategori-ai/hantaran.webp",
-    alt: "Kotak seserahan berhias mawar putih berisi kain batik, perlengkapan ibadah, sepatu, dan buah",
+    src: "/photos/kategori-vendor/foto-hantaran.webp",
+    alt: "Seserahan sepatu dan tas berhias bunga dalam kotak akrilik",
     covers: "Seserahan, hantaran, mahar hias",
     intro:
       "Hantaran dan seserahan dibawa ke keluarga pasangan, jadi tampilannya ikut dilihat banyak orang. Lihat contoh susunan di portofolio, lalu bicarakan isi dan jumlah wadahnya.",
     ask: ["Isi seserahan dari kami atau disiapkan vendor?", "Berapa jumlah wadah dalam satu paket?", "Wadah dikembalikan atau boleh disimpan?"],
   },
   mc: {
-    src: "/photos/kategori-ai/mc.webp",
-    alt: "Mikrofon emas di depan panggung pelaminan berhias bunga",
+    src: "/photos/kategori-vendor/mc-solo.webp",
+    alt: "Pria muda bertuksedo berbicara dengan mikrofon di atas panggung",
     covers: "MC akad, resepsi, acara adat",
     intro:
       "MC menjaga acara berjalan sesuai rundown dan membuat tamu merasa disambut. Tanyakan pengalamannya dengan adat yang kamu pakai dan bahasa yang dipakai di panggung.",
     ask: ["Bisa memandu prosesi adat kami?", "Bahasa apa saja yang dipakai?", "Ada pertemuan teknis sebelum hari-H?"],
   },
   content_creator: {
-    src: "/photos/kategori-ai/content-creator.webp",
-    alt: "Ponsel di gimbal, kamera, dan ring light di venue pernikahan",
+    src: "/photos/kategori-vendor/foto-content-creator.webp",
+    alt: "Ponsel merekam momen pernikahan di taman",
     covers: "Konten Reels, TikTok, behind the scene",
     intro:
       "Wedding content creator merekam momen dari dekat dengan ponsel dan mengunggahnya cepat, berbeda dari dokumentasi foto dan video. Lihat contoh kontennya, lalu pastikan kapan hasilnya diterima.",
     ask: ["Berapa video yang diterima dan kapan?", "Diunggah ke akun kami atau akun vendor?", "Mulai dari sesi rias atau dari akad?"],
   },
   wedding_car: {
-    src: "/photos/kategori-ai/mobil.webp",
-    alt: "Mobil pengantin klasik berwarna krem berhias rangkaian bunga di kap mesin",
+    src: "/photos/kategori-vendor/foto-mobil.webp",
+    alt: "Rangkaian bunga putih dan merah muda di kap mobil pengantin",
     covers: "Mobil pengantin, sopir, hiasan bunga",
     intro:
       "Mobil pengantin mengantar kalian di hari-H dan sering ikut tampil di foto. Pilih jenis mobilnya, lalu pastikan durasi sewa, sopir, dan hiasannya.",
     ask: ["Sudah termasuk sopir dan bensin?", "Berapa jam durasi sewanya?", "Hiasan bunga termasuk paket?"],
   },
   wedding_cake: {
-    src: "/photos/kategori-ai/kue.webp",
-    alt: "Kue pengantin putih empat tingkat berhias mawar dan daun emas",
+    src: "/photos/kategori-vendor/foto-kue.webp",
+    alt: "Kue pengantin putih tiga tingkat berhias bunga baby's breath",
     covers: "Kue pengantin, dessert table",
     intro:
       "Kue pengantin jadi pusat perhatian saat sesi potong kue. Lihat desain di portofolio, lalu tanyakan rasa, jumlah tingkat, dan cara kuenya dibawa ke venue.",

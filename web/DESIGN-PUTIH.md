@@ -40,8 +40,8 @@ Header dua baris (logo, kolom cari, Masuk/Daftar; lalu menu dengan mega menu kat
 
 ## Gambar
 - Foto vendor dan inspirasi: hanya dari API (asli).
-- Kategori dan fitur: foto board Pinterest DuaCincin dan tangkapan layar produk asli (`public/showcase`).
-- Latar banner (`public/banner/*`): dibuat dengan AI atas izin pemilik (Nov 2026), hanya benda dan dekorasi tanpa orang, tercatat di `/kredit` sebagai buatan AI. Jangan membuat foto orang, vendor, atau acara dengan AI.
+- Kategori dan fitur: foto board Pinterest DuaCincin, foto stok berlisensi, dan tangkapan layar produk asli (`public/showcase`). Tema Digital Invitation: tangkapan layar asli dari invitation.duacincin.id (`public/invitation`).
+- **Tidak ada gambar buatan AI** (keputusan pemilik, Nov 2026). Banner, header halaman (`public/banner/*`), dan foto kategori tanpa foto sendiri (`public/photos/kategori-vendor/*`) adalah foto nyata dari Unsplash/Pexels berlisensi bebas pakai, tercatat dengan nama fotografer di `/kredit`.
 
 ## Gerak
 Carousel banner bergeser tiap 6 detik dan fitur tiap 7 detik. Keduanya berhenti saat di-hover atau difokus, punya tombol jeda, dan mati di `prefers-reduced-motion`. Foto login berganti sekali lalu berhenti. Hover kartu memakai zoom pelan pada foto. Reveal saat scroll memakai `Reveal` yang sudah ada.

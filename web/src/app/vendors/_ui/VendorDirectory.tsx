@@ -121,7 +121,7 @@ export function VendorDirectory({ search, initialCards }: { search: DirectoryPar
               crumbs={[{ name: "Beranda", href: "/" }, ...(category ? [{ name: "Vendor", href: "/vendors" }, { name: label }] : [{ name: "Vendor" }])]}
               title={title}
               sub="Lihat portofolio dan harga mulai dari, lalu bayar aman lewat escrow DuaCincin."
-              image={category && CATEGORY_ART[category] ? CATEGORY_ART[category].src : "/banner/vendor.webp"}
+              image={category && CATEGORY_ART[category] ? CATEGORY_ART[category].src : "/banner/foto-venue-taman.webp"}
             />
             <div className="mt-5 border-b border-wd-line pb-4">
               <CategoryStrip active={category} onPick={selectCategory} withAll />

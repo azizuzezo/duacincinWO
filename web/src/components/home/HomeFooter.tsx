@@ -1,9 +1,10 @@
 // Footer: a champagne ground (marketplace style, text kept at 7:1+), the
-// logo, the sister invitation product, link groups and the legal line.
+// logo, the sister invitation product, social accounts, link groups and
+// the legal line.
 import Link from "next/link";
 
 import { BrandLogo } from "@/components/ui/BrandLogo";
-import { COMPANY, COMPANY_PAGE } from "@/lib/company";
+import { COMPANY, COMPANY_PAGE, SOCIAL } from "@/lib/company";
 
 const GROUPS = [
   {
@@ -39,7 +40,7 @@ const LINK = "inline-flex min-h-9 items-center text-[0.93rem] text-wd-text trans
 export function HomeFooter() {
   return (
     <footer className="bg-wd-champagne">
-      <div className="wd-container pb-8 pt-16 sm:pt-20">
+      <div className="wd-container pb-28 pt-16 sm:pt-20">
         <div className="grid gap-12 lg:grid-cols-[1.3fr_2fr]">
           <div>
             <Link href="/" aria-label="DuaCincin, ke beranda" className="inline-flex rounded-md py-1">
@@ -85,13 +86,33 @@ export function HomeFooter() {
             </Link>
             . Dibuat di Indonesia.
           </p>
-          <div className="flex gap-6">
-            <Link href="/login" className={LINK}>
-              Masuk
-            </Link>
-            <Link href="/register" className={LINK}>
-              Buat akun
-            </Link>
+          <div className="flex items-center gap-2">
+            <span className="mr-1 text-sm font-semibold text-wd-ink">Ikuti kami</span>
+            <a
+              href={SOCIAL.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Instagram DuaCincin ${SOCIAL.handle} (tab baru)`}
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-wd-ink ring-1 ring-[#e2d0aa] transition-[color,box-shadow,transform] duration-300 hover:text-wd-accent-ink hover:shadow-wd-card motion-safe:hover:-translate-y-0.5"
+            >
+              <svg aria-hidden width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="5" />
+                <circle cx="12" cy="12" r="4" />
+                <circle cx="17.5" cy="6.5" r="0.9" fill="currentColor" stroke="none" />
+              </svg>
+            </a>
+            <a
+              href={SOCIAL.threads}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Threads DuaCincin ${SOCIAL.handle} (tab baru)`}
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-wd-ink ring-1 ring-[#e2d0aa] transition-[color,box-shadow,transform] duration-300 hover:text-wd-accent-ink hover:shadow-wd-card motion-safe:hover:-translate-y-0.5"
+            >
+              <svg aria-hidden width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16.8 11.2c-.4-2.6-2.1-3.9-4.6-3.9-2.8 0-4.6 2-4.6 4.8 0 3 1.9 4.9 4.8 4.9 2.2 0 3.9-1.1 4.4-3 .5-2-1-3.2-3.2-3.2-1.8 0-3 .8-3 2.1 0 1.1 1 1.9 2.3 1.9 2.5 0 3.6-2.4 3.4-5.6" />
+                <path d="M19.6 7.5A8.7 8.7 0 0 0 12 3.5c-5 0-8.5 3.5-8.5 8.5s3.4 8.5 8.4 8.5c3.4 0 6-1.6 7.3-4.3" />
+              </svg>
+            </a>
           </div>
         </div>
       </div>

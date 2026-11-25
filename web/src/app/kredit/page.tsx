@@ -65,7 +65,7 @@ export default function KreditPage() {
   return (
     <PublicShell>
       <div className="wd">
-        <PageHero image="/banner/kredit.webp" focus="70% 50%" crumbs={[{ name: "Kredit foto" }]} title="Kredit foto" sub={`Sumber, pembuat, dan lisensi ${total} gambar di DuaCincin. Klik judulnya untuk membuka sumber aslinya.`}>
+        <PageHero image="/banner/foto-kredit.webp" focus="70% 50%" crumbs={[{ name: "Kredit foto" }]} title="Kredit foto" sub={`Sumber, pembuat, dan lisensi ${total} gambar di DuaCincin. Klik judulnya untuk membuka sumber aslinya.`}>
           {/* One tile per group with three of its pictures, so the reader
               jumps straight to the picture they came looking for. */}
           <ul aria-label="Bagian" className="mt-7 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">

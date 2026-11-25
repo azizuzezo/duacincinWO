@@ -11,7 +11,7 @@ export default function InspirationGalleryPage() {
     <PublicShell>
       <div className="wd">
         <PageHero
-          image="/banner/inspirasi.webp"
+          image="/banner/foto-inspirasi.webp"
           crumbs={[{ name: "Inspirasi" }]}
           title="Inspirasi pernikahan"
           sub={

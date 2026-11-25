@@ -131,7 +131,7 @@ export default function CaraKerjaPage() {
           crumbs={[{ name: "Cara kerja escrow" }]}
           title="Cara kerja escrow"
           sub="Tujuh tahap dari chat pertama sampai hari-H. Dana baru diteruskan ke vendor setelah acaramu selesai."
-          image="/banner/escrow.webp"
+          image="/banner/foto-escrow.webp"
           focus="75% 50%"
         >
           <ul className="mt-6 flex flex-wrap gap-2">

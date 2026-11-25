@@ -11,3 +11,10 @@ export const COMPANY = {
 } as const;
 
 export const COMPANY_PAGE = "/tentang-kami#perusahaan";
+
+/** Official social accounts (footer "Ikuti kami" and Organization sameAs). */
+export const SOCIAL = {
+  handle: "@duacincin.studio",
+  instagram: "https://www.instagram.com/duacincin.studio/",
+  threads: "https://www.threads.com/@duacincin.studio",
+} as const;

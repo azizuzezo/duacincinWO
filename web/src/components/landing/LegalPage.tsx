@@ -36,7 +36,7 @@ export function LegalPage({
     <PublicShell>
       <ReadingProgress targetId="isi-dokumen" />
       <div className="wd">
-        <PageHero image="/banner/legal.webp" focus="70% 50%" crumbs={[{ name: "Legal" }, { name: title }]} title={title} sub={intro}>
+        <PageHero image="/banner/foto-legal.webp" focus="70% 50%" crumbs={[{ name: "Legal" }, { name: title }]} title={title} sub={intro}>
           <dl className="mt-5 flex max-w-2xl flex-wrap gap-x-6 gap-y-2 text-sm text-wd-muted">
             <div className="flex gap-1.5">
               <dt>Versi</dt>

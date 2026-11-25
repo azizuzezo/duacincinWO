@@ -6,8 +6,8 @@
 // auto-advance every 6s that stops while hovered or focused and never runs
 // under reduced motion. Each banner is one link with real text over the
 // picture (readable by search engines and screen readers; a scrim keeps
-// the text above 4.5:1). Backgrounds in public/banner are AI-generated
-// still lifes without people (credited on /kredit); Kirana's banner shows
+// the text above 4.5:1). Backgrounds in public/banner are real photos
+// from Unsplash (credited on /kredit); Kirana's banner shows
 // only when the assistant is configured.
 import Image from "next/image";
 import Link from "next/link";
@@ -39,7 +39,7 @@ const BASE: Banner[] = [
   {
     id: "escrow",
     href: "/cara-kerja",
-    img: "/banner/escrow",
+    img: "/banner/foto-escrow",
     pos: "object-[80%_50%]",
     tone: "light",
     kicker: "Pembayaran escrow",
@@ -68,7 +68,7 @@ const BASE: Banner[] = [
   {
     id: "rencana",
     href: "/register?role=client",
-    img: "/banner/rencana",
+    img: "/banner/foto-rencana",
     pos: "object-[80%_50%]",
     tone: "light",
     kicker: "Budget planner",
@@ -79,8 +79,8 @@ const BASE: Banner[] = [
   {
     id: "vendor",
     href: "/register?role=vendor",
-    img: "/banner/vendor",
-    pos: "object-[70%_50%]",
+    img: "/banner/foto-venue-taman",
+    pos: "object-[55%_70%]",
     tone: "dark",
     kicker: "Untuk vendor",
     title: "Punya usaha pernikahan? Terima booking di sini",

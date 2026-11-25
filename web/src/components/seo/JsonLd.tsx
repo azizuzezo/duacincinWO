@@ -1,4 +1,4 @@
-import { COMPANY } from "@/lib/company";
+import { COMPANY, SOCIAL } from "@/lib/company";
 import { SITE_URL } from "@/lib/site";
 import { FOUNDERS } from "@/lib/team";
 
@@ -23,6 +23,7 @@ export const ORGANIZATION_LD = {
   // Registered electronic system (PSE) number: a public, checkable identifier.
   identifier: { "@type": "PropertyValue", propertyID: "Tanda Daftar PSE Kominfo", value: COMPANY.pseNumber },
   founder: FOUNDERS.map((f) => personLd(f)),
+  sameAs: [SOCIAL.instagram, SOCIAL.threads],
 } as const;
 
 /** A founder as a Person, linked to their public profiles. */
