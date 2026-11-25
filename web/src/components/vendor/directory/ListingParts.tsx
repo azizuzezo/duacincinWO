@@ -10,7 +10,7 @@ import type { ReactNode } from "react";
 
 import { VENDOR_CATEGORIES } from "@/lib/api";
 
-import { CATEGORY_ART } from "./categoryArt";
+import { categoryThumb } from "./categoryArt";
 
 /** 1 column on small phones, 2 from 480px, 3 next to the sidebar, 4 on wide screens. */
 export const GRID = "grid grid-cols-1 gap-x-5 gap-y-8 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
@@ -49,13 +49,13 @@ export function Breadcrumb({ items }: { items: Crumb[] }) {
 /** Breadcrumb, bold sans H1, one muted line. With `image`: a wide rounded
  * cover picture and the title on a white card overlapping its lower edge
  * (the same cover header as the content pages). */
-export function ListingHeader({ id, crumbs, title, sub, image }: { id: string; crumbs: Crumb[]; title: ReactNode; sub?: ReactNode; image?: string }) {
+export function ListingHeader({ id, crumbs, title, sub, image, focus = "50% 28%" }: { id: string; crumbs: Crumb[]; title: ReactNode; sub?: ReactNode; image?: string; focus?: string }) {
   if (image) {
     return (
       <div className="pt-2 sm:pt-3">
         <Breadcrumb items={crumbs} />
         <div className="relative mt-1 h-[170px] overflow-hidden rounded-[24px] bg-wd-blush sm:h-[230px] lg:h-[260px]">
-          <Image src={image} alt="" fill priority sizes="(min-width: 1280px) 1200px, 100vw" className="object-cover object-center" />
+          <Image src={image} alt="" fill priority sizes="(min-width: 1280px) 1200px, 100vw" className="object-cover" style={{ objectPosition: focus }} />
           <div aria-hidden className="absolute inset-0 bg-linear-to-t from-black/15 via-transparent to-transparent" />
         </div>
         <div className="relative z-10 -mt-12 mx-3 max-w-[720px] rounded-[22px] bg-white p-5 shadow-wd-pop sm:-mt-16 sm:ml-8 sm:p-7">
@@ -79,7 +79,7 @@ export function ListingHeader({ id, crumbs, title, sub, image }: { id: string; c
 }
 
 function catImage(value: string) {
-  return CATEGORY_ART[value]?.src.replace(/\.webp$/, "-sm.webp");
+  return categoryThumb(value);
 }
 
 /** Every category as a small round photo in one swipeable row. Pass

@@ -122,6 +122,7 @@ export function VendorDirectory({ search, initialCards }: { search: DirectoryPar
               title={title}
               sub="Lihat portofolio dan harga mulai dari, lalu bayar aman lewat escrow DuaCincin."
               image={category && CATEGORY_ART[category] ? CATEGORY_ART[category].src : "/banner/foto-venue-taman.webp"}
+              focus={category ? CATEGORY_ART[category]?.focus : "55% 70%"}
             />
             <div className="mt-5 border-b border-wd-line pb-4">
               <CategoryStrip active={category} onPick={selectCategory} withAll />

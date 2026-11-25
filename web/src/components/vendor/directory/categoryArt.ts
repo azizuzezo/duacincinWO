@@ -9,6 +9,11 @@
 
 export type CategoryArt = {
   src: string;
+  /** Small square picture for icons and thumbnails, when it differs from `src`
+   * (e.g. a photo we may only use small). Defaults to the `-sm` version of `src`. */
+  icon?: string;
+  /** CSS object-position for wide crops (cover headers); default "50% 28%". */
+  focus?: string;
   alt: string;
   /** Cutout image: shown contained on a warm studio ground. */
   studio?: boolean;
@@ -87,6 +92,9 @@ export const CATEGORY_ART: Record<string, CategoryArt> = {
   },
   mc: {
     src: "/photos/kategori-vendor/mc-solo.webp",
+    // Icon only, used with permission from Hayday Media (credited on /kredit).
+    icon: "/photos/kategori-vendor/mc-hayday-ikon.webp",
+    focus: "50% 35%",
     alt: "Pria muda bertuksedo berbicara dengan mikrofon di atas panggung",
     covers: "MC akad, resepsi, acara adat",
     intro:
@@ -129,4 +137,11 @@ export const FALLBACK_ART: CategoryArt = {
 
 export function artFor(category: string): CategoryArt {
   return CATEGORY_ART[category] ?? FALLBACK_ART;
+}
+
+/** Thumbnail for a category: its own `icon` if set, else the small version of its photo. */
+export function categoryThumb(value: string): string | undefined {
+  const art = CATEGORY_ART[value];
+  if (!art) return undefined;
+  return art.icon ?? art.src.replace(/\.webp$/, "-sm.webp");
 }

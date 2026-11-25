@@ -17,7 +17,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import { useFocusTrap } from "@/components/ui/useFocusTrap";
-import { CATEGORY_ART } from "@/components/vendor/directory/categoryArt";
+import { CATEGORY_ART, categoryThumb } from "@/components/vendor/directory/categoryArt";
 import { VENDOR_CATEGORIES } from "@/lib/api";
 import { EASE, useReducedMotion } from "@/lib/motion";
 
@@ -31,7 +31,6 @@ const LINKS = [
   { href: "/untuk-vendor", label: "Untuk vendor" },
 ];
 
-const small = (src: string) => src.replace(/\.webp$/, "-sm.webp");
 
 function SearchIcon({ size = 18 }: { size?: number }) {
   return (
@@ -197,7 +196,7 @@ export function HomeNav() {
                                 <span className="relative block aspect-[4/3] overflow-hidden rounded-xl bg-wd-blush">
                                   {art && (
                                     <Image
-                                      src={small(art.src)}
+                                      src={categoryThumb(c.value)!}
                                       alt=""
                                       fill
                                       sizes="180px"
@@ -277,7 +276,7 @@ export function HomeNav() {
                     <li key={c.value}>
                       <Link href={`/kategori/${c.value}`} onClick={() => setOpen(false)} className="block">
                         <span className="relative block aspect-square overflow-hidden rounded-xl bg-wd-blush">
-                          {art && <Image src={small(art.src)} alt="" fill sizes="120px" className="object-cover" />}
+                          {art && <Image src={categoryThumb(c.value)!} alt="" fill sizes="120px" className="object-cover" />}
                         </span>
                         <span className="mt-1.5 block text-[0.8rem] font-medium leading-tight text-wd-ink">{c.label}</span>
                       </Link>

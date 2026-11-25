@@ -87,6 +87,7 @@ export function CategoryListing({
               title={`Vendor ${label} di ${cityName ?? "Indonesia"}`}
               sub={art.covers}
               image={art.src}
+              focus={art.focus}
             />
             <div className="mt-5 border-b border-wd-line pb-4">
               <CategoryStrip active={category} hrefFor={(v) => (v ? `/kategori/${v}` : "/vendors")} withAll />

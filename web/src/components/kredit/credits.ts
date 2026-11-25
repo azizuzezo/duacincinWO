@@ -288,6 +288,14 @@ export const CREDIT_GROUPS: CreditGroup[] = [
         change: "Diperkecil dan dikonversi ke WebP",
       },
       {
+        thumb: "/photos/kategori-vendor/mc-hayday-ikon.webp",
+        what: "MC berjas putih di depan dinding bunga (ikon kategori MC)",
+        title: "Foto MC pernikahan",
+        author: "Hayday Media (Ribbon)",
+        license: "Dipakai dengan izin",
+        change: "Dipotong persegi untuk ikon",
+      },
+      {
         thumb: "/photos/kategori-vendor/catering-meja-sm.webp",
         what: "Meja hidangan dengan kue kecil dan anggrek putih (kategori Catering)",
         title: "Dessert Buffet Next to Flowers",

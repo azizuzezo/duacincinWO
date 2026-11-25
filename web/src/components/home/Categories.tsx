@@ -9,7 +9,7 @@ import Link from "next/link";
 import { useMemo, useRef } from "react";
 
 import { useDirectory } from "@/components/landing/useHomeData";
-import { CATEGORY_ART } from "@/components/vendor/directory/categoryArt";
+import { CATEGORY_ART, categoryThumb } from "@/components/vendor/directory/categoryArt";
 import { VENDOR_CATEGORIES, vendorCategoryList } from "@/lib/api";
 
 import { RailArrows } from "./RailArrows";
@@ -50,7 +50,7 @@ export function Categories() {
                       <span className="relative block h-full w-full overflow-hidden rounded-full bg-wd-blush ring-2 ring-transparent transition-[box-shadow] duration-300 group-hover:ring-wd-accent">
                         {art && (
                           <Image
-                            src={art.src.replace(/\.webp$/, "-sm.webp")}
+                            src={categoryThumb(c.value)!}
                             alt=""
                             fill
                             sizes="104px"
