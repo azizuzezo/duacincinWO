@@ -1,22 +1,37 @@
 "use client";
 
+// Guest RSVP in the "Putih" system: a white invitation card with a fine gold
+// inner frame (the gold gate on top, the couple's names in the display
+// serif), then the reply card. No marketplace header: a guest came to answer
+// an invitation, not to shop. The root carries data-wd-public so shared
+// pieces (GoldArch, the dc- motion classes) read in the Putih palette.
+//
+// States: loading (skeleton of the card), invalid or inactive link (4xx),
+// could not load (network or server, with "Coba lagi"), the form (with
+// inline name validation and a send error), and sent (thank-you card that
+// takes focus). The API has no "already answered" signal, so a guest who
+// opens the link again simply sees the form.
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
+import { wdButton } from "@/components/home/ui";
+import { GoldArch } from "@/components/ornament/GoldArch";
 import { BrandLogo } from "@/components/ui/BrandLogo";
-import { Button, buttonClasses } from "@/components/ui/Button";
-import { controlClasses } from "@/components/ui/Field";
-import { Skeleton } from "@/components/ui/Skeleton";
 import { apiGet, apiPost, ApiError, type RSVPInfo } from "@/lib/api";
 import { EASE, useReducedMotion } from "@/lib/motion";
 
 import { daysUntil, downloadIcs, googleCalendarUrl, parseEventDate } from "./calendar";
-import { GoldArch } from "@/components/ornament/GoldArch";
 
 type Status = "attending" | "not_attending";
+type Load = "loading" | "ready" | "invalid" | "failed";
 const MAX_PARTY = 10;
 const MAX_MESSAGE = 500;
+const NAME_ERROR = "Tulis namamu dulu, supaya pengantin tahu siapa yang datang.";
+
+const FIELD =
+  "block min-h-12 w-full rounded-[14px] border border-wd-line-2 bg-white px-4 text-[0.98rem] text-wd-ink outline-none transition-[border-color,box-shadow] placeholder:text-wd-muted hover:border-wd-muted focus:border-wd-accent-ink focus:shadow-[0_0_0_4px_var(--wd-accent-soft)] focus-visible:outline-none aria-[invalid=true]:border-wd-danger";
+const LABEL = "text-[0.9rem] font-semibold text-wd-ink";
 
 /** "Pernikahan Shareen & Utama" -> { lead: "Pernikahan", names: "Shareen & Utama" }. */
 function splitTitle(name: string) {
@@ -24,13 +39,42 @@ function splitTitle(name: string) {
   return m ? { lead: m[1], names: m[2] } : { lead: "", names: name };
 }
 
+/** The couple's names with the "&" set in the gold italic. */
+function Names({ names }: { names: string }) {
+  const parts = names.split(/\s+&\s+/);
+  if (parts.length !== 2) return <>{names}</>;
+  return (
+    <>
+      {parts[0]} <em className="px-[0.05em]">&amp;</em> {parts[1]}
+    </>
+  );
+}
+
 /** Two rings that slide together: the one celebratory motion, on success. */
 function JoiningRings({ reduced }: { reduced: boolean }) {
   const t = { duration: reduced ? 0 : 0.9, ease: EASE, delay: reduced ? 0 : 0.15 };
   return (
-    <svg viewBox="0 0 64 40" fill="none" className="mx-auto h-14 w-24 text-dc-gold" aria-hidden>
-      <motion.circle cx="24" cy="20" r="14" stroke="currentColor" strokeWidth="1.4" initial={{ x: reduced ? 0 : -10, opacity: reduced ? 1 : 0 }} animate={{ x: 0, opacity: 1 }} transition={t} />
-      <motion.circle cx="40" cy="20" r="14" stroke="currentColor" strokeWidth="1.4" initial={{ x: reduced ? 0 : 10, opacity: reduced ? 1 : 0 }} animate={{ x: 0, opacity: 1 }} transition={t} />
+    <svg viewBox="0 0 64 40" fill="none" className="mx-auto h-14 w-24 text-wd-accent-deep" aria-hidden>
+      <motion.circle cx="24" cy="20" r="14" stroke="currentColor" strokeWidth="1.6" initial={{ x: reduced ? 0 : -10, opacity: reduced ? 1 : 0 }} animate={{ x: 0, opacity: 1 }} transition={t} />
+      <motion.circle cx="40" cy="20" r="14" stroke="currentColor" strokeWidth="1.6" initial={{ x: reduced ? 0 : 10, opacity: reduced ? 1 : 0 }} animate={{ x: 0, opacity: 1 }} transition={t} />
+    </svg>
+  );
+}
+
+function Rings({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 40" fill="none" className={`mx-auto h-12 w-20 text-wd-accent-deep ${className}`} aria-hidden>
+      <circle cx="24" cy="20" r="14" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="40" cy="20" r="14" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
+      <rect x="3.5" y="5" width="17" height="15" rx="2.5" />
+      <path d="M3.5 10h17M8 3v4M16 3v4" />
     </svg>
   );
 }
@@ -38,31 +82,41 @@ function JoiningRings({ reduced }: { reduced: boolean }) {
 function SaveTheDate({ title, date, venue }: { title: string; date: Date; venue: string }) {
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
-      <Button variant="ghost" size="sm" onClick={() => downloadIcs(title, date, venue)}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden>
-          <rect x="3.5" y="5" width="17" height="15" rx="2.5" />
-          <path d="M3.5 10h17M8 3v4M16 3v4" />
-        </svg>
+      <button type="button" onClick={() => downloadIcs(title, date, venue)} className={wdButton({ variant: "outline", size: "sm", className: "min-h-11" })}>
+        <CalendarIcon />
         Simpan ke kalender
-      </Button>
-      <a href={googleCalendarUrl(title, date, venue)} target="_blank" rel="noopener noreferrer" className={buttonClasses({ variant: "quiet", size: "sm" })}>
+      </button>
+      <a href={googleCalendarUrl(title, date, venue)} target="_blank" rel="noopener noreferrer" className={wdButton({ variant: "outline", size: "sm", className: "min-h-11" })}>
         Tambah ke Google Calendar
+        <span className="sr-only"> (membuka tab baru)</span>
       </a>
+    </div>
+  );
+}
+
+/** White card with a fine gold inner frame: the invitation's paper. */
+function Paper({ children, className = "", ...rest }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div {...rest} className={`relative rounded-[32px] border border-wd-line bg-white shadow-wd-card ${className}`}>
+      <span aria-hidden className="pointer-events-none absolute inset-2.5 rounded-[24px] border border-wd-accent-line/60 sm:inset-3" />
+      <div className="relative">{children}</div>
     </div>
   );
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="dc-grain flex min-h-dvh flex-col bg-dc-ivory">
-      <a href="#konten" className="dc-skip">
+    <div data-wd-public className="wd flex min-h-dvh flex-col bg-wd-paper">
+      <a href="#konten" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-full focus:bg-wd-ink focus:px-4 focus:py-2 focus:text-white">
         Langsung ke konten
       </a>
-      <main id="konten" className="relative mx-auto w-full max-w-xl flex-1 px-4 pb-10 pt-6 sm:pt-10">
+      {/* A soft champagne glow at the top, like light on card stock. */}
+      <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 h-[420px] bg-[radial-gradient(70%_100%_at_50%_0%,var(--wd-accent-wash),transparent)]" />
+      <main id="konten" className="relative mx-auto w-full max-w-[600px] flex-1 px-4 pb-10 pt-6 sm:pt-12">
         {children}
       </main>
-      <footer className="pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2 text-center">
-        <Link href="/" className="inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-xs text-dc-text-3 hover:text-dc-ink">
+      <footer className="relative pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2 text-center">
+        <Link href="/" className="inline-flex min-h-11 items-center gap-2 rounded-full px-3 text-[0.8rem] text-wd-muted transition-colors hover:text-wd-ink">
           Undangan ini dikelola lewat
           <BrandLogo size={18} tone="dark" />
         </Link>
@@ -71,11 +125,14 @@ function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
+function Bone({ className }: { className: string }) {
+  return <span aria-hidden className={`block animate-pulse rounded-full bg-wd-blush motion-reduce:animate-none ${className}`} />;
+}
+
 export function RsvpView({ token }: { token: string }) {
   const reduced = useReducedMotion() ?? false;
   const [info, setInfo] = useState<RSVPInfo | null>(null);
-  const [notFound, setNotFound] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [load, setLoad] = useState<Load>("loading");
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -88,23 +145,36 @@ export function RsvpView({ token }: { token: string }) {
   const [message, setMessage] = useState("");
   const nameRef = useRef<HTMLInputElement>(null);
   const doneRef = useRef<HTMLDivElement>(null);
+  const errRef = useRef<HTMLParagraphElement>(null);
   const ids = { name: useId(), phone: useId(), msg: useId(), party: useId() };
 
-  useEffect(() => {
+  const fetchInfo = useCallback(() => {
     apiGet<RSVPInfo>(`/api/v1/rsvp/${token}`)
-      .then(setInfo)
-      .catch(() => setNotFound(true))
-      .finally(() => setLoading(false));
+      .then((d) => {
+        setInfo(d);
+        setLoad("ready");
+      })
+      // A 4xx means the link itself is wrong or switched off; anything else
+      // (offline, server down) is worth another try.
+      .catch((e) => setLoad(e instanceof ApiError && e.status >= 400 && e.status < 500 ? "invalid" : "failed"));
   }, [token]);
+
+  useEffect(() => {
+    fetchInfo();
+  }, [fetchInfo]);
 
   useEffect(() => {
     if (submitted) doneRef.current?.focus();
   }, [submitted]);
 
+  useEffect(() => {
+    if (error) errRef.current?.focus();
+  }, [error]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) {
-      setNameError("Tulis namamu dulu, supaya pengantin tahu siapa yang datang.");
+      setNameError(NAME_ERROR);
       nameRef.current?.focus();
       return;
     }
@@ -126,33 +196,54 @@ export function RsvpView({ token }: { token: string }) {
     }
   }
 
-  if (loading) {
+  if (load === "loading") {
     return (
       <Shell>
-        <div role="status" aria-label="Memuat undangan" className="flex flex-col items-center pt-8">
-          <Skeleton className="h-40 w-40 rounded-t-full" />
-          <Skeleton className="mt-8 h-4 w-32" />
-          <Skeleton className="mt-5 h-14 w-3/4" />
-          <Skeleton className="mt-6 h-6 w-1/2" />
-          <Skeleton className="mt-10 h-80 w-full rounded-2xl" />
+        <div role="status" aria-label="Memuat undangan">
+          <Paper className="flex flex-col items-center px-6 py-10">
+            <span aria-hidden className="block h-40 w-36 animate-pulse rounded-t-full bg-wd-blush motion-reduce:animate-none" />
+            <Bone className="mt-8 h-4 w-36" />
+            <Bone className="mt-5 h-12 w-3/4" />
+            <Bone className="mt-6 h-5 w-1/2" />
+            <Bone className="mt-3 h-7 w-24" />
+          </Paper>
+          <span aria-hidden className="mt-6 block h-96 animate-pulse rounded-[28px] bg-white motion-reduce:animate-none" />
         </div>
       </Shell>
     );
   }
 
-  if (notFound || !info) {
+  if (load === "failed") {
     return (
       <Shell>
-        <div role="alert" className="mt-10 rounded-2xl border border-dc-line bg-dc-white px-6 py-12 text-center shadow-soft">
-          <svg viewBox="0 0 64 40" fill="none" className="mx-auto h-12 w-20 text-dc-gold" aria-hidden>
-            <circle cx="24" cy="20" r="14" stroke="currentColor" strokeWidth="1.3" />
-            <circle cx="40" cy="20" r="14" stroke="currentColor" strokeWidth="1.3" />
-          </svg>
-          <h1 className="mt-5 font-heading text-[2rem] leading-tight text-dc-ink">Undangan tidak ditemukan</h1>
-          <p className="mx-auto mt-3 max-w-sm leading-relaxed text-dc-text-2">
+        <Paper role="alert" className="mt-6 px-6 py-12 text-center sm:px-12">
+          <Rings />
+          <h1 className="wd-display mt-5 text-[clamp(1.9rem,6vw,2.3rem)] leading-tight">Undangan belum bisa dimuat</h1>
+          <p className="mx-auto mt-3 max-w-sm leading-relaxed text-wd-text">Sepertinya koneksi sedang terputus atau server sibuk. Periksa internetmu lalu coba lagi.</p>
+          <button
+            type="button"
+            onClick={() => {
+              setLoad("loading");
+              fetchInfo();
+            }}
+            className={wdButton({ className: "mt-7" })}>
+            Coba lagi
+          </button>
+        </Paper>
+      </Shell>
+    );
+  }
+
+  if (load === "invalid" || !info) {
+    return (
+      <Shell>
+        <Paper role="alert" className="mt-6 px-6 py-12 text-center sm:px-12">
+          <Rings />
+          <h1 className="wd-display mt-5 text-[clamp(1.9rem,6vw,2.3rem)] leading-tight">Undangan tidak ditemukan</h1>
+          <p className="mx-auto mt-3 max-w-sm leading-relaxed text-wd-text">
             Tautan ini tidak valid atau sudah tidak aktif. Coba buka lagi tautan yang dibagikan pengantin, atau tanyakan tautan yang baru kepada mereka.
           </p>
-        </div>
+        </Paper>
       </Shell>
     );
   }
@@ -163,50 +254,60 @@ export function RsvpView({ token }: { token: string }) {
   const dateText = date?.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const calTitle = info.event_name || "Pernikahan";
   const firstName = name.trim().split(/\s+/)[0];
+  const upcoming = days !== null && days >= 0;
 
   return (
     <Shell>
-      <header className="text-center">
-        <div className="relative mx-auto w-48 sm:w-56">
-          <GoldArch className="relative h-auto w-full" />
-        </div>
-        <p className="dc-eyebrow mt-4 justify-center">Undangan {lead ? lead.toLowerCase() : "pernikahan"}</p>
-        <h1 className="mt-3">
-          {lead && <span className="sr-only">{lead} </span>}
-          <span className="dc-script block break-words text-[clamp(2.75rem,12vw,4.5rem)] leading-[1.05]">{names}</span>
-        </h1>
-        <div className="dc-rule mx-auto my-6 w-24" />
-        {dateText && <p className="font-heading text-[1.75rem] leading-tight text-dc-ink first-letter:uppercase">{dateText}</p>}
-        {days !== null && days >= 0 && (
-          <p className="mt-2 inline-flex rounded-full bg-dc-cream px-3 py-1 text-sm font-semibold text-dc-clay">
-            {days === 0 ? "Hari ini" : days === 1 ? "Besok" : `${days} hari lagi`}
-          </p>
-        )}
-        {info.venue_note && (
-          <p className="mx-auto mt-4 flex max-w-sm items-start justify-center gap-2 text-dc-text-2">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="mt-0.5 shrink-0 text-dc-clay" aria-hidden>
-              <path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z" />
-              <circle cx="12" cy="9.5" r="2.5" />
+      <Paper className="px-6 pb-9 pt-8 text-center sm:px-12 sm:pb-11 sm:pt-10">
+        <header>
+          <div className="relative mx-auto w-40 sm:w-48">
+            <GoldArch className="relative h-auto w-full" />
+          </div>
+          <p className="wd-kicker mt-4">Undangan {lead ? lead.toLowerCase() : "pernikahan"}</p>
+          <h1 className="wd-display mt-2 break-words text-[clamp(2.5rem,10vw,3.75rem)] leading-[1.04]">
+            {lead && <span className="sr-only">{lead} </span>}
+            <Names names={names} />
+          </h1>
+          <div aria-hidden className="mx-auto my-6 flex w-40 items-center gap-3 text-wd-accent-deep">
+            <span className="h-px flex-1 bg-wd-accent-line" />
+            <svg width="10" height="10" viewBox="0 0 10 10">
+              <path d="M5 0 6.2 3.8 10 5 6.2 6.2 5 10 3.8 6.2 0 5 3.8 3.8Z" fill="currentColor" />
             </svg>
-            <span>
-              {info.venue_note}
+            <span className="h-px flex-1 bg-wd-accent-line" />
+          </div>
+          {dateText && <p className="text-[1.15rem] font-semibold text-wd-ink first-letter:uppercase sm:text-[1.25rem]">{dateText}</p>}
+          {upcoming && (
+            <p className="mt-2.5 inline-flex rounded-full bg-wd-accent-soft px-3 py-1 text-sm font-semibold text-wd-accent-ink">
+              {days === 0 ? "Hari ini" : days === 1 ? "Besok" : `${days} hari lagi`}
+            </p>
+          )}
+          {info.venue_note && (
+            <div className="mx-auto mt-4 flex max-w-sm flex-col items-center gap-0.5 text-wd-text">
+              <p className="flex items-start justify-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="mt-0.5 shrink-0 text-wd-accent-ink" aria-hidden>
+                  <path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z" />
+                  <circle cx="12" cy="9.5" r="2.5" />
+                </svg>
+                <span>{info.venue_note}</span>
+              </p>
               <a
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(info.venue_note)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="ml-1 inline-flex min-h-11 items-center font-semibold text-dc-clay underline underline-offset-4 hover:text-dc-ink"
+                className="inline-flex min-h-11 items-center rounded-md px-1 text-sm font-semibold text-wd-accent-ink underline decoration-wd-accent-line underline-offset-4 hover:text-wd-ink"
               >
                 Buka peta
+                <span className="sr-only"> (membuka tab baru)</span>
               </a>
-            </span>
-          </p>
-        )}
-        {date && days !== null && days >= 0 && (
-          <div className="mt-4">
-            <SaveTheDate title={calTitle} date={date} venue={info.venue_note} />
-          </div>
-        )}
-      </header>
+            </div>
+          )}
+          {date && upcoming && (
+            <div className="mt-5">
+              <SaveTheDate title={calTitle} date={date} venue={info.venue_note} />
+            </div>
+          )}
+        </header>
+      </Paper>
 
       <AnimatePresence mode="wait" initial={false}>
         {submitted ? (
@@ -218,13 +319,13 @@ export function RsvpView({ token }: { token: string }) {
             initial={{ opacity: 0, y: reduced ? 0 : 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: reduced ? 0.01 : 0.5, ease: EASE }}
-            className="mt-10 rounded-2xl border border-dc-line bg-dc-white px-6 py-10 text-center shadow-lift outline-none"
+            className="mt-6 rounded-[28px] border border-wd-accent-line bg-wd-accent-wash px-6 py-10 text-center outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wd-accent-ink"
           >
             <JoiningRings reduced={reduced} />
-            <h2 className="mt-5 font-heading text-[2.2rem] leading-tight text-dc-ink">
-              Terima kasih, <span className="dc-em">{firstName}</span>
+            <h2 className="wd-display mt-5 text-[clamp(1.9rem,6vw,2.3rem)] leading-tight">
+              Terima kasih, <em>{firstName}</em>
             </h2>
-            <p className="mx-auto mt-3 max-w-sm leading-relaxed text-dc-text-2">
+            <p className="mx-auto mt-3 max-w-sm leading-relaxed text-wd-text">
               {status === "attending"
                 ? `Konfirmasi kehadiranmu${partySize > 1 ? ` untuk ${partySize} orang` : ""} sudah kami terima. Sampai jumpa di hari bahagia.`
                 : "Konfirmasimu sudah kami terima. Terima kasih sudah memberi kabar dan doa."}
@@ -238,15 +339,15 @@ export function RsvpView({ token }: { token: string }) {
             onSubmit={handleSubmit}
             noValidate
             aria-labelledby="rsvp-judul"
-            className="mt-10 rounded-2xl border border-dc-line bg-dc-white p-5 shadow-lift sm:p-8"
+            className="mt-6 rounded-[28px] border border-wd-line bg-white p-5 shadow-wd-card sm:p-8"
           >
-            <h2 id="rsvp-judul" className="font-heading text-[2rem] leading-tight text-dc-ink">
-              Kabari kami kehadiranmu
+            <h2 id="rsvp-judul" className="wd-title text-[1.5rem] leading-tight sm:text-[1.65rem]">
+              Kabari kami <em>kehadiranmu</em>
             </h2>
-            <p className="mt-1 text-sm leading-relaxed text-dc-text-2">Supaya pengantin bisa menyiapkan tempat untukmu.</p>
+            <p className="mt-1.5 text-[0.95rem] leading-relaxed text-wd-muted">Supaya pengantin bisa menyiapkan tempat untukmu.</p>
 
             <fieldset className="mt-6">
-              <legend className="mb-2 text-sm font-semibold text-dc-ink">Apakah kamu akan hadir?</legend>
+              <legend className={`mb-2.5 ${LABEL}`}>Apakah kamu akan hadir?</legend>
               <div className="grid grid-cols-2 gap-3">
                 {(
                   [
@@ -258,13 +359,21 @@ export function RsvpView({ token }: { token: string }) {
                   return (
                     <label
                       key={value}
-                      className={`relative flex min-h-20 cursor-pointer flex-col justify-center rounded-xl border px-4 py-3 transition-[border-color,background-color,box-shadow] duration-300 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-dc-gold ${
-                        on ? "border-dc-ink bg-dc-ink text-dc-on-dark shadow-soft" : "border-dc-line-strong bg-dc-ivory text-dc-ink hover:border-dc-ink"
+                      className={`relative flex min-h-20 cursor-pointer flex-col justify-center rounded-[18px] border px-4 py-3 transition-[border-color,background-color,box-shadow] duration-300 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-wd-accent-ink ${
+                        on ? "border-wd-accent-ink bg-wd-accent-wash shadow-[0_0_0_1px_var(--wd-accent-ink)]" : "border-wd-line-2 bg-white hover:border-wd-muted"
                       }`}
                     >
                       <input type="radio" name="rsvp-status" value={value} checked={on} onChange={() => setStatus(value)} className="sr-only" />
-                      <span className="font-heading text-2xl leading-tight">{label}</span>
-                      <span className={`text-xs ${on ? "text-dc-on-dark/80" : "text-dc-text-3"}`}>{sub}</span>
+                      <span className="wd-display text-[1.3rem] leading-tight sm:text-[1.45rem]">{label}</span>
+                      <span className={`pr-6 text-[0.8rem] ${on ? "text-wd-text" : "text-wd-muted"}`}>{sub}</span>
+                      <span
+                        aria-hidden
+                        className={`absolute bottom-3 right-3 flex h-5 w-5 items-center justify-center rounded-full border transition-colors ${on ? "border-wd-accent bg-wd-accent text-wd-ink" : "border-wd-line-2 bg-white text-transparent"}`}
+                      >
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="m5 12 5 5 9-10" />
+                        </svg>
+                      </span>
                     </label>
                   );
                 })}
@@ -272,7 +381,7 @@ export function RsvpView({ token }: { token: string }) {
             </fieldset>
 
             <div className="mt-5 flex flex-col gap-1.5">
-              <label htmlFor={ids.name} className="text-sm font-semibold text-dc-ink">
+              <label htmlFor={ids.name} className={LABEL}>
                 Nama
               </label>
               <input
@@ -286,15 +395,16 @@ export function RsvpView({ token }: { token: string }) {
                   if (nameError && e.target.value.trim()) setNameError(null);
                 }}
                 onBlur={() => {
-                  if (!name.trim() && name.length > 0) setNameError("Tulis namamu dulu, supaya pengantin tahu siapa yang datang.");
+                  if (!name.trim() && name.length > 0) setNameError(NAME_ERROR);
                 }}
                 required
                 aria-invalid={nameError ? true : undefined}
                 aria-describedby={nameError ? `${ids.name}-err` : undefined}
-                className={controlClasses}
+                placeholder="Nama lengkapmu"
+                className={FIELD}
               />
               {nameError && (
-                <p id={`${ids.name}-err`} role="alert" className="text-xs font-medium text-dc-danger">
+                <p id={`${ids.name}-err`} role="alert" className="text-[0.82rem] font-medium text-wd-danger">
                   {nameError}
                 </p>
               )}
@@ -309,24 +419,26 @@ export function RsvpView({ token }: { token: string }) {
                   transition={{ duration: reduced ? 0.01 : 0.3, ease: EASE }}
                   className="overflow-hidden"
                 >
-                  <div className="flex items-center justify-between gap-4 pt-5">
+                  <div className="mt-5 flex items-center justify-between gap-4 rounded-[18px] bg-wd-paper px-4 py-3">
                     <div>
-                      <p id={ids.party} className="text-sm font-semibold text-dc-ink">
+                      <p id={ids.party} className={LABEL}>
                         Jumlah yang hadir
                       </p>
-                      <p className="text-xs text-dc-text-3">Termasuk kamu</p>
+                      <p className="text-[0.8rem] text-wd-muted">Termasuk kamu, maksimal {MAX_PARTY}</p>
                     </div>
-                    <div role="group" aria-labelledby={ids.party} className="flex items-center gap-1 rounded-full border border-dc-line-strong bg-dc-ivory p-1">
+                    <div role="group" aria-labelledby={ids.party} className="flex items-center gap-1 rounded-full border border-wd-line-2 bg-white p-1">
                       <button
                         type="button"
                         onClick={() => setPartySize((n) => Math.max(1, n - 1))}
                         disabled={partySize <= 1}
                         aria-label="Kurangi satu orang"
-                        className="flex h-11 w-11 items-center justify-center rounded-full text-xl text-dc-ink hover:bg-dc-cream disabled:opacity-40"
+                        className="flex h-11 w-11 items-center justify-center rounded-full text-wd-ink transition-colors hover:bg-wd-blush disabled:opacity-35 disabled:hover:bg-transparent"
                       >
-                        <span aria-hidden>−</span>
+                        <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                          <path d="M5 12h14" />
+                        </svg>
                       </button>
-                      <output aria-live="polite" className="min-w-12 text-center font-heading text-2xl tabular-nums text-dc-ink">
+                      <output aria-live="polite" className="min-w-10 text-center text-[1.25rem] font-semibold tabular-nums text-wd-ink">
                         {partySize}
                         <span className="sr-only"> orang</span>
                       </output>
@@ -335,9 +447,11 @@ export function RsvpView({ token }: { token: string }) {
                         onClick={() => setPartySize((n) => Math.min(MAX_PARTY, n + 1))}
                         disabled={partySize >= MAX_PARTY}
                         aria-label="Tambah satu orang"
-                        className="flex h-11 w-11 items-center justify-center rounded-full text-xl text-dc-ink hover:bg-dc-cream disabled:opacity-40"
+                        className="flex h-11 w-11 items-center justify-center rounded-full text-wd-ink transition-colors hover:bg-wd-blush disabled:opacity-35 disabled:hover:bg-transparent"
                       >
-                        <span aria-hidden>+</span>
+                        <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                          <path d="M12 5v14M5 12h14" />
+                        </svg>
                       </button>
                     </div>
                   </div>
@@ -346,15 +460,15 @@ export function RsvpView({ token }: { token: string }) {
             </AnimatePresence>
 
             <div className="mt-5 flex flex-col gap-1.5">
-              <label htmlFor={ids.phone} className="text-sm font-semibold text-dc-ink">
-                Nomor WhatsApp <span className="font-normal text-dc-text-3">(opsional)</span>
+              <label htmlFor={ids.phone} className={LABEL}>
+                Nomor WhatsApp <span className="font-normal text-wd-muted">(opsional)</span>
               </label>
-              <input id={ids.phone} type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="08xx" className={controlClasses} />
+              <input id={ids.phone} type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="08xx" className={FIELD} />
             </div>
 
             <div className="mt-5 flex flex-col gap-1.5">
-              <label htmlFor={ids.msg} className="text-sm font-semibold text-dc-ink">
-                Ucapan dan doa <span className="font-normal text-dc-text-3">(opsional)</span>
+              <label htmlFor={ids.msg} className={LABEL}>
+                Ucapan dan doa <span className="font-normal text-wd-muted">(opsional)</span>
               </label>
               <textarea
                 id={ids.msg}
@@ -362,21 +476,23 @@ export function RsvpView({ token }: { token: string }) {
                 onChange={(e) => setMessage(e.target.value.slice(0, MAX_MESSAGE))}
                 rows={4}
                 aria-describedby={`${ids.msg}-count`}
-                className={`${controlClasses} py-3`}
+                placeholder="Tulis ucapan untuk kedua mempelai"
+                className={`${FIELD} resize-y py-3 leading-relaxed`}
               />
-              <p id={`${ids.msg}-count`} className="text-right text-xs text-dc-text-3">
+              <p id={`${ids.msg}-count`} className={`text-right text-[0.78rem] tabular-nums ${message.length >= MAX_MESSAGE ? "font-semibold text-wd-accent-ink" : "text-wd-muted"}`}>
                 {message.length}/{MAX_MESSAGE}
               </p>
             </div>
 
             {error && (
-              <p role="alert" className="mt-4 rounded-lg border border-dc-danger/25 bg-dc-danger/5 px-4 py-3 text-sm text-dc-danger">
+              <p ref={errRef} tabIndex={-1} role="alert" className="mt-4 rounded-xl bg-[#fbeceb] px-4 py-3 text-sm text-wd-danger outline-none">
                 {error}
               </p>
             )}
-            <Button type="submit" variant="gold" size="lg" block loading={saving} className="mt-5">
-              {status === "attending" ? "Kirim, aku akan hadir" : "Kirim kabar"}
-            </Button>
+            <button type="submit" disabled={saving} aria-busy={saving || undefined} className={wdButton({ size: "lg", className: "mt-5 w-full" })}>
+              {saving && <span aria-hidden className="h-4 w-4 animate-spin rounded-full border-2 border-wd-ink/30 border-t-wd-ink motion-reduce:animate-none" />}
+              {saving ? "Mengirim…" : status === "attending" ? "Kirim, aku akan hadir" : "Kirim kabar"}
+            </button>
           </motion.form>
         )}
       </AnimatePresence>

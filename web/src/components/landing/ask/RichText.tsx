@@ -29,7 +29,7 @@ function words(text: string, key: string, animate: boolean) {
 function inline(text: string, key: string, animate = false) {
   return text.split(/(\*\*[^*]+\*\*)/g).map((seg, i) =>
     seg.startsWith("**") && seg.endsWith("**") && seg.length > 4 ? (
-      <strong key={`${key}-${i}`} className="font-semibold text-dc-ink">
+      <strong key={`${key}-${i}`} className="font-semibold text-wd-ink">
         {words(seg.slice(2, -2), `${key}-${i}`, animate)}
       </strong>
     ) : (
@@ -83,7 +83,7 @@ export function RichText({ text, live }: { text: string; live: boolean }) {
   const blocks = visible.split(/\n{2,}/);
 
   return (
-    <div className="space-y-3 text-[1.02rem] leading-[1.75] text-dc-black">
+    <div className="space-y-3 text-[1rem] leading-[1.75] text-wd-text">
       {blocks.map((b, bi) => {
         const lines = b.split("\n").filter((l) => l.trim() !== "");
         const isLast = bi === blocks.length - 1;
@@ -93,7 +93,7 @@ export function RichText({ text, live }: { text: string; live: boolean }) {
             <ul key={bi} className="space-y-1.5 pl-1">
               {lines.map((l, li) => (
                 <li key={li} className="flex gap-3">
-                  <span aria-hidden className="mt-[0.7em] h-1.5 w-1.5 shrink-0 rounded-full bg-dc-gold" />
+                  <span aria-hidden className="mt-[0.7em] h-1.5 w-1.5 shrink-0 rounded-full bg-wd-accent-deep" />
                   <span>
                     {inline(l.replace(/^\s*([-*•]|\d+\.)\s+/, ""), `${bi}-${li}`, animate)}
                     {li === lines.length - 1 && caret}

@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { wdButton } from "@/components/home/ui";
 import { PageHero } from "@/components/landing/PageHero";
 import { PublicShell } from "@/components/landing/PublicShell";
-import { Reveal } from "@/components/landing/Reveal";
-import { EscrowPanel } from "@/components/public/bantuan/EscrowPanel";
-import { HelpCenter, type Faq, type Topic } from "@/components/public/bantuan/HelpCenter";
-import { ButtonLink } from "@/components/ui/Button";
+import { FaqList, type Faq, type Topic } from "@/components/public/bantuan/FaqList";
+import { SectionNav } from "@/components/public/shared/SectionNav";
+import { LIFT } from "@/components/public/shared/styles";
 import { JsonLd, webPageLd } from "@/components/seo/JsonLd";
 
 export const metadata: Metadata = {
@@ -20,8 +20,10 @@ export const metadata: Metadata = {
 // TODO(konten): isi saat pemilik produk menetapkan kontak dukungan resmi WO.
 const SUPPORT_CHANNELS: { label: string; value: string; href: string }[] = [];
 
-// The questions couples ask first (ids are "<topic>-<index>").
-const POPULAR = ["pembayaran-0", "pembayaran-2", "booking-2", "vendor-1"];
+// Soft tints of the Putih palette for the topic tiles (text stays ink, 9:1+).
+const TILE = ["bg-wd-accent-wash ring-wd-accent-soft", "bg-[#f3f0ea] ring-wd-line", "bg-[#f1f3ee] ring-[#e3e8dc]", "bg-[#f6efec] ring-[#ecdfd9]"];
+
+const LINK = "font-semibold text-wd-accent-ink underline underline-offset-4 hover:text-wd-ink";
 
 const faq = (q: string, text: string, a?: React.ReactNode): Faq => ({ q, text, a: a ?? text });
 
@@ -31,15 +33,6 @@ const TOPICS: Topic[] = [
   {
     key: "pembayaran",
     label: "Pembayaran dan escrow",
-    blurb: "DP, pelunasan, dan kapan uangmu sampai ke vendor.",
-    screen: "/showcase/pages/k4-dp.webp",
-    icon: (
-      <>
-        <rect x="3" y="6" width="18" height="13" rx="2" />
-        <path d="M3 10h18" />
-        <circle cx="16" cy="15" r="1.5" />
-      </>
-    ),
     items: [
       faq(
         "Kapan uangku sampai ke vendor?",
@@ -62,14 +55,6 @@ const TOPICS: Topic[] = [
   {
     key: "booking",
     label: "Vendor dan booking",
-    blurb: "Melihat vendor, chat, dan kalau terjadi sengketa.",
-    screen: "/showcase/pages/k2-chat.webp",
-    icon: (
-      <>
-        <path d="M4 5h16v11H9l-5 4V5z" />
-        <path d="M8 9h8M8 12h5" />
-      </>
-    ),
     items: [
       faq(
         "Apakah harus masuk untuk melihat vendor?",
@@ -92,14 +77,6 @@ const TOPICS: Topic[] = [
   {
     key: "konsultan",
     label: "Konsultan dan perencanaan",
-    blurb: "Wedding consultant dan isi wedding planner.",
-    screen: "/showcase/pages/k5-konsultan.webp",
-    icon: (
-      <>
-        <circle cx="12" cy="8" r="4" />
-        <path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" />
-      </>
-    ),
     items: [
       faq(
         "Apa itu wedding consultant, dan apakah wajib?",
@@ -114,14 +91,6 @@ const TOPICS: Topic[] = [
   {
     key: "vendor",
     label: "Untuk vendor",
-    blurb: "Tampil di direktori, komisi, dan pencairan dana.",
-    screen: "/showcase/pages/v-dashboard-m.webp",
-    icon: (
-      <>
-        <path d="M4 10l8-6 8 6v10H4V10z" />
-        <path d="M10 20v-6h4v6" />
-      </>
-    ),
     items: [
       faq(
         "Bagaimana usaha saya bisa tampil di direktori?",
@@ -155,84 +124,88 @@ export default function BantuanPage() {
           mainEntity: TOPICS.flatMap((t) => t.items).map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.text } })),
         }}
       />
-      <PageHero
-        image="/photos/pinterest/pendopo-kursi-tamu.webp"
-        eyebrow="Pusat bantuan"
-        title={
-          <>
-            Ada yang <span className="dc-em-light">belum jelas?</span>
-          </>
-        }
-        subtitle="Soal pembayaran, booking, perencanaan, dan akun vendor."
-      />
+      <div className="wd">
+        <PageHero image="/banner/bantuan.webp" focus="70% 50%" crumbs={[{ name: "Bantuan" }]} title="Pusat bantuan" sub="Jawaban soal pembayaran, booking, perencanaan, dan akun vendor.">
+          {/* Quick tiles, one per topic, each tinted so the four read apart at a glance. */}
+          <ul aria-label="Topik" className="mt-7 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            {TOPICS.map((t, i) => (
+              <li key={t.key}>
+                <a href={`#topik-${t.key}`} className={`group flex h-full min-h-28 flex-col justify-between rounded-[18px] p-4 ring-1 ring-inset sm:p-5 ${TILE[i % TILE.length]} ${LIFT}`}>
+                  <span className="text-[0.98rem] font-semibold leading-snug text-wd-ink">{t.label}</span>
+                  <span className="mt-3 flex items-center justify-between text-sm text-wd-text">
+                    {t.items.length} pertanyaan
+                    <svg aria-hidden width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-300 group-hover:translate-y-0.5">
+                      <path d="M12 5v14M6 13l6 6 6-6" />
+                    </svg>
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </PageHero>
+        <SectionNav label="Topik bantuan" items={TOPICS.map((t) => ({ id: `topik-${t.key}`, label: t.label, count: t.items.length }))} />
 
-      <section className="bg-dc-ivory">
-        <div className="dc-container pb-16 sm:pb-20 lg:pb-24">
-          <HelpCenter
-            topics={TOPICS}
-            popular={POPULAR}
-            aside={
-              <aside aria-labelledby="bantuan-lanjut">
-            <div className="lg:sticky lg:top-28">
-              <div className="dc-on-dark relative overflow-hidden rounded-2xl bg-dc-ink p-6 text-dc-on-dark shadow-lift sm:p-7">
-                <p className="dc-eyebrow">Masih butuh bantuan?</p>
-                <h2 id="bantuan-lanjut" className="mt-4 font-heading text-[2rem] leading-[1.08] text-dc-on-dark">
-                  Tanya langsung ke <span className="dc-em-light">wedding consultant.</span>
+        <div className="wd-container grid gap-12 py-12 sm:py-16 lg:grid-cols-12 lg:gap-16">
+          <div className="min-w-0 lg:col-span-8">
+            <FaqList topics={TOPICS} />
+            <p className="mt-10 text-sm text-wd-text">
+              Rincian lengkap ada di{" "}
+              <Link href="/legal/client-tos" className={LINK}>
+                Ketentuan Layanan Client
+              </Link>{" "}
+              dan{" "}
+              <Link href="/legal/vendor-agreement" className={LINK}>
+                Perjanjian Kemitraan Vendor
+              </Link>
+              .
+            </p>
+          </div>
+
+          <aside aria-labelledby="bantuan-lanjut" className="lg:col-span-4">
+            <div className="flex flex-col gap-4 lg:sticky lg:top-[190px]">
+              <div className="rounded-[22px] bg-wd-accent-wash p-6 ring-1 ring-wd-accent-soft">
+                <h2 id="bantuan-lanjut" className="wd-title text-[1.25rem]">
+                  Masih butuh bantuan?
                 </h2>
-                <p className="mt-3 text-sm leading-relaxed text-dc-on-dark/80">
-                  Konsultan DuaCincin menjawab lewat chat di akun client-mu, misalnya soal memilih vendor, anggaran, dan langkah booking.
-                </p>
-                <ButtonLink href="/client/consultation" variant="gold" size="md" block className="mt-6">
+                <p className="mt-2 text-[0.95rem] leading-relaxed text-wd-text">Tanya wedding consultant DuaCincin lewat chat di akun client-mu.</p>
+                <Link href="/client/consultation" className={wdButton({ className: "mt-5 w-full" })}>
                   Chat dengan wedding consultant
-                </ButtonLink>
-                <p className="mt-3 text-xs leading-relaxed text-dc-on-dark/75">
+                </Link>
+                <p className="mt-3 text-sm text-wd-muted">
                   Belum punya akun?{" "}
-                  <Link href="/register" className="font-semibold text-dc-gold-antique underline underline-offset-4">
+                  <Link href="/register" className={LINK}>
                     Buat akun client
-                  </Link>{" "}
-                  dulu, lalu buka menu Konsultasi.
+                  </Link>
                 </p>
                 {SUPPORT_CHANNELS.length > 0 && (
-                  <ul className="mt-6 border-t border-dc-ink-3 pt-5">
+                  <ul className="mt-5 border-t border-wd-accent-soft pt-4">
                     {SUPPORT_CHANNELS.map((c) => (
                       <li key={c.href}>
-                        <a href={c.href} className="flex min-h-11 flex-col justify-center text-sm hover:text-dc-gold-antique">
-                          <span className="text-xs text-dc-on-dark/70">{c.label}</span>
-                          <span className="font-semibold">{c.value}</span>
+                        <a href={c.href} className="flex min-h-11 flex-col justify-center text-sm hover:text-wd-accent-ink">
+                          <span className="text-xs text-wd-muted">{c.label}</span>
+                          <span className="font-semibold text-wd-ink">{c.value}</span>
                         </a>
                       </li>
                     ))}
                   </ul>
                 )}
               </div>
-              <div className="mt-4 rounded-2xl border border-dc-line bg-dc-white p-6">
-                <h3 className="font-heading text-2xl text-dc-ink">Kamu vendor?</h3>
-                <p className="mt-2 text-sm leading-relaxed text-dc-text-2">
-                  Pertanyaan soal booking dan pencairan ada di dashboard vendor. Untuk aturan kerja sama, baca perjanjiannya.
-                </p>
+              <div className="rounded-[22px] border border-wd-line p-6">
+                <h2 className="wd-title text-[1.1rem]">Kamu vendor?</h2>
+                <p className="mt-2 text-sm leading-relaxed text-wd-text">Booking dan pencairan ada di dashboard vendor.</p>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <ButtonLink href="/vendor/dashboard" variant="ghost" size="sm">
-                    Buka dashboard vendor
-                  </ButtonLink>
-                  <ButtonLink href="/legal/vendor-agreement" variant="quiet" size="sm">
+                  <Link href="/vendor/dashboard" className={wdButton({ variant: "outline", size: "sm" })}>
+                    Dashboard vendor
+                  </Link>
+                  <Link href="/legal/vendor-agreement" className={wdButton({ variant: "outline", size: "sm" })}>
                     Perjanjian kemitraan
-                  </ButtonLink>
+                  </Link>
                 </div>
               </div>
             </div>
-              </aside>
-            }
-          />
+          </aside>
         </div>
-      </section>
-
-      <section aria-labelledby="escrow-judul" className="bg-dc-cream">
-        <div className="dc-container py-16 sm:py-20 lg:py-24">
-          <Reveal>
-            <EscrowPanel />
-          </Reveal>
-        </div>
-      </section>
+      </div>
     </PublicShell>
   );
 }

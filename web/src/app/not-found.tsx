@@ -1,107 +1,102 @@
 import Link from "next/link";
 
-import { Footer } from "@/components/landing/Footer";
-import { Navbar } from "@/components/landing/Navbar";
-import { Button } from "@/components/ui/Button";
-import { Rings } from "@/components/ui/Rings";
-import { Picker } from "@/components/ui/Picker";
-import { categoryOptions } from "@/components/vendor/directory/categoryOptions";
+import Image from "next/image";
+
+import { wdButton } from "@/components/home/ui";
+import { PublicShell } from "@/components/landing/PublicShell";
+import { CATEGORY_THUMB } from "@/components/public/inspirasi/adat";
+import { DidYouMean, type KnownPage } from "@/components/public/notfound/DidYouMean";
+import { LIFT, ZOOM } from "@/components/public/shared/styles";
+import { ARTICLES } from "@/content/artikel/registry";
 import { VENDOR_CATEGORIES } from "@/lib/api";
-import { GoldArch } from "@/components/ornament/GoldArch";
 
 export const metadata = { title: "Halaman tidak ditemukan" };
 
 const PAGES = [
-  { href: "/cara-kerja", label: "Cara kerja escrow", sub: "Di mana uangmu di setiap tahap" },
-  { href: "/inspirasi", label: "Galeri inspirasi", sub: "Foto pernikahan sungguhan" },
-  { href: "/bantuan", label: "Pusat bantuan", sub: "Jawaban pertanyaan umum" },
+  { href: "/vendors", label: "Semua vendor" },
+  { href: "/inspirasi", label: "Inspirasi" },
+  { href: "/artikel", label: "Artikel" },
+  { href: "/bantuan", label: "Bantuan" },
 ];
 
-// PRD §10.6: a 404 that helps. The one visual is the gold wedding arch
-// cutout: a gate that is ready, with no page behind it. One primary action:
-// search vendors (same form fields as the home hero, so /vendors reads them).
+// Real public pages, for the "did you mean" hint on a mistyped address.
+const KNOWN: KnownPage[] = [
+  { path: "/vendors", label: "Semua vendor" },
+  { path: "/inspirasi", label: "Inspirasi" },
+  { path: "/artikel", label: "Artikel" },
+  { path: "/bantuan", label: "Bantuan" },
+  { path: "/cara-kerja", label: "Cara kerja escrow" },
+  { path: "/untuk-vendor", label: "Untuk vendor" },
+  { path: "/tentang-kami", label: "Tentang kami" },
+  { path: "/kredit", label: "Kredit foto" },
+  { path: "/legal/client-tos", label: "Ketentuan Layanan Client" },
+  { path: "/legal/vendor-agreement", label: "Perjanjian Kemitraan Vendor" },
+  { path: "/login", label: "Masuk" },
+  { path: "/register", label: "Daftar" },
+  ...ARTICLES.map((a) => ({ path: `/artikel/${a.slug}`, label: a.title })),
+  ...VENDOR_CATEGORIES.map((c) => ({ path: `/kategori/${c.value}`, label: `Vendor ${c.label}` })),
+];
+
+// A 404 that helps: one short line, the vendor search (same `q` the
+// directory reads), then categories and a few pages to continue from.
 export default function NotFound() {
   return (
-    <div className="flex min-h-screen flex-col bg-dc-ivory">
-      <Navbar />
-      <main id="konten" className="dc-grain flex-1">
-        <div className="dc-container grid items-center gap-12 py-14 sm:py-20 lg:grid-cols-12 lg:gap-16 lg:py-24">
-          <div className="lg:col-span-7">
-            <p className="dc-eyebrow">Halaman tidak ditemukan</p>
-            <h1 className="mt-4 font-heading text-[clamp(2.6rem,6vw,4.75rem)] leading-[1] text-dc-ink">
-              Gapuranya sudah siap, <span className="dc-em">halamannya belum ada.</span>
-            </h1>
-            <p className="mt-5 max-w-lg text-lg leading-relaxed text-dc-text-2">
-              Alamatnya mungkin salah ketik atau halamannya sudah dipindah. Lanjutkan dari pencarian vendor di bawah, atau kembali ke beranda.
-            </p>
+    <PublicShell>
+      <div className="wd">
+        <div className="wd-container max-w-[1000px] py-16 text-center sm:py-24">
+          <p className="text-sm font-semibold text-wd-accent-ink">404</p>
+          <h1 className="wd-title mt-2 text-[clamp(1.9rem,4vw,2.6rem)] leading-tight">Halaman ini tidak ditemukan</h1>
+          <p className="mx-auto mt-3 max-w-md text-wd-text">Mungkin alamatnya salah ketik atau halamannya sudah dipindah. Coba cari vendor di bawah.</p>
+          <DidYouMean pages={KNOWN} />
 
-            <form action="/vendors" method="get" role="search" aria-label="Cari vendor" className="mt-8 flex max-w-xl flex-col gap-2 rounded-2xl border border-dc-line bg-dc-white p-2 shadow-lift sm:flex-row sm:items-center">
-              <div className="sm:w-48 sm:shrink-0">
-                <Picker
-                  id="nf-kategori"
-                  name="category"
-                  label="Kategori"
-                  defaultValue=""
-                  options={categoryOptions()}
-                  panelMinWidth={360}
-                  valueClassName="text-sm font-semibold text-dc-ink"
-                  className="flex min-h-12 w-full items-center rounded-xl bg-dc-cream px-4 text-left transition-colors hover:bg-dc-paper-3"
-                />
-              </div>
-              <label htmlFor="nf-q" className="sr-only">
-                Kota atau nama vendor
-              </label>
-              <input id="nf-q" name="q" type="search" placeholder="Kota atau nama vendor" className="min-h-12 flex-1 rounded-xl px-4 text-base text-dc-black placeholder:text-dc-text-3 focus:outline-none" />
-              <Button type="submit" variant="gold" size="md">
-                Cari vendor
-              </Button>
-            </form>
+          <form action="/vendors" method="get" role="search" aria-label="Cari vendor" className="mx-auto mt-8 flex max-w-xl items-center gap-2 rounded-full border border-wd-line-2 bg-white p-1.5 pl-5 focus-within:border-wd-ink">
+            <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="shrink-0 text-wd-muted">
+              <circle cx="11" cy="11" r="7" />
+              <path d="M20 20l-3.5-3.5" />
+            </svg>
+            <label htmlFor="nf-q" className="sr-only">
+              Cari MUA, venue, katering, atau kota
+            </label>
+            <input id="nf-q" name="q" type="search" placeholder="Cari MUA, venue, katering, atau kota" className="min-h-11 min-w-0 flex-1 bg-transparent text-base text-wd-ink placeholder:text-wd-muted focus:outline-none" />
+            <button type="submit" className={wdButton({ size: "sm", className: "min-h-11" })}>
+              Cari
+            </button>
+          </form>
 
-            <Link href="/" className="mt-5 inline-flex min-h-11 items-center text-sm font-semibold text-dc-clay underline underline-offset-4 hover:text-dc-ink">
-              Kembali ke beranda
-            </Link>
-          </div>
+          <nav aria-label="Kategori vendor" className="mt-12">
+            <h2 className="text-sm font-semibold text-wd-ink">Atau pilih kategori</h2>
+            <ul className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+              {VENDOR_CATEGORIES.map((c) => (
+                <li key={c.value}>
+                  <Link href={`/kategori/${c.value}`} className={`group flex h-full flex-col overflow-hidden rounded-[16px] border border-wd-line bg-white text-left hover:border-wd-line-2 ${LIFT}`}>
+                    <span className="relative block aspect-square overflow-hidden bg-wd-blush">
+                      {CATEGORY_THUMB[c.value] && <Image src={CATEGORY_THUMB[c.value]} alt="" fill sizes="140px" className={ZOOM} />}
+                    </span>
+                    <span className="flex min-h-11 items-center px-2.5 py-2 text-[0.8rem] font-semibold leading-tight text-wd-ink sm:text-sm">{c.label}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
 
-          <div className="relative mx-auto w-full max-w-sm lg:col-span-5" aria-hidden>
-            <div className="absolute inset-x-6 bottom-6 top-10 rounded-t-full bg-[radial-gradient(120%_80%_at_50%_100%,#ead7ae_0%,#f3ecdf_60%,#faf6ef_100%)]" />
-            <Rings className="absolute left-1/2 top-[46%] w-40 -translate-x-1/2 -translate-y-1/2 text-dc-gold" stroke="currentColor" strokeWidth={0.8} />
-            <GoldArch className="relative h-auto w-full" />
-            <p className="relative mt-2 text-center font-heading text-5xl leading-none text-dc-text-3">404</p>
-          </div>
+          <nav aria-label="Halaman lain" className="mt-8">
+            <ul className="flex flex-wrap justify-center gap-x-6">
+              <li>
+                <Link href="/" className="inline-flex min-h-11 items-center text-sm font-semibold text-wd-accent-ink underline underline-offset-4 hover:text-wd-ink">
+                  Beranda
+                </Link>
+              </li>
+              {PAGES.map((p) => (
+                <li key={p.href}>
+                  <Link href={p.href} className="inline-flex min-h-11 items-center text-sm font-semibold text-wd-accent-ink underline underline-offset-4 hover:text-wd-ink">
+                    {p.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
         </div>
-
-        <div className="dc-container pb-16 sm:pb-24">
-          <div className="dc-rule" />
-          <div className="mt-10 grid gap-10 lg:grid-cols-12">
-            <nav aria-label="Halaman lain" className="lg:col-span-7">
-              <p className="text-sm font-semibold text-dc-text-3">Mungkin yang kamu cari</p>
-              <ul className="mt-3 grid gap-3 sm:grid-cols-3">
-                {PAGES.map((p) => (
-                  <li key={p.href}>
-                    <Link href={p.href} className="flex min-h-20 flex-col justify-center rounded-xl border border-dc-line bg-dc-white px-4 py-3 transition-[border-color,box-shadow] hover:border-dc-ink hover:shadow-soft">
-                      <span className="font-semibold text-dc-ink">{p.label}</span>
-                      <span className="text-xs text-dc-text-3">{p.sub}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-            <nav aria-label="Kategori vendor" className="lg:col-span-5">
-              <p className="text-sm font-semibold text-dc-text-3">Atau langsung ke kategori</p>
-              <ul className="mt-3 flex flex-wrap gap-2">
-                {VENDOR_CATEGORIES.map((c) => (
-                  <li key={c.value}>
-                    <Link href={`/vendors?category=${c.value}`} className="inline-flex min-h-11 items-center rounded-full border border-dc-line-strong bg-dc-white px-4 text-sm font-semibold text-dc-ink transition-colors hover:border-dc-ink">
-                      {c.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          </div>
-        </div>
-      </main>
-      <Footer />
-    </div>
+      </div>
+    </PublicShell>
   );
 }

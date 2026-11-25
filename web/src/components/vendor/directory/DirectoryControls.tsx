@@ -2,14 +2,15 @@
 
 import { useId, useMemo, useState } from "react";
 
-import { Button } from "@/components/ui/Button";
+import { wdButton } from "@/components/home/ui";
 import { Picker } from "@/components/ui/Picker";
 import { Sheet } from "@/components/ui/Sheet";
 import { VENDOR_CATEGORIES } from "@/lib/api";
 import { cityOptions } from "@/lib/wilayah";
 
-import { categoryOptions } from "./categoryOptions";
 import { BUDGETS, SORTS, type Filters, type Sort } from "./filters";
+import { ChoiceChips, CityQuickChips } from "./ListingMotion";
+import { FilterButton, RadioList, TEXT_LINK } from "./ListingParts";
 
 type Props = {
   category: string;
@@ -18,227 +19,145 @@ type Props = {
   onChange: (patch: Partial<Filters>) => void;
   onReset: () => void;
   cities: string[];
+  /** Vendors per city in the loaded list, for the quick city chips. */
+  cityCounts: Map<string, number>;
   resultCount: number;
   ready: boolean;
 };
 
-const SEGMENT =
-  "flex min-h-14 transition-colors hover:bg-dc-cream/50 focus-within:bg-dc-cream/70 focus-within:ring-2 focus-within:ring-inset focus-within:ring-dc-gold";
-const SEG_LABEL = "text-xs font-semibold text-dc-text-3";
-// The picker trigger fills the whole 56px segment, so the full cell is the
-// target; its caption is the segment label and the value sits under it.
-const SEG_PICKER = {
-  className: "flex min-h-14 w-full items-center px-4 text-left outline-none focus-visible:outline-none aria-expanded:bg-dc-cream/70",
-  captionClassName: SEG_LABEL,
-  valueClassName: "text-sm font-semibold text-dc-ink",
-};
-const CATEGORY_OPTIONS = categoryOptions();
+export const BUDGET_HINT = "Vendor yang harganya ditanyakan lewat chat tidak ikut tampil saat budget dipilih.";
+const CATEGORY_CHOICES = [{ value: "", label: "Semua kategori" }, ...VENDOR_CATEGORIES];
+const BUDGET_CHOICES = BUDGETS.map((b) => ({ value: b.value, label: b.short }));
 
-/** Sticky search + filters under the directory hero.
- * Desktop (lg): one white bar of labelled segments, so every filter stays in
- * reach while scrolling a long list. Below lg: search field plus a "Filter"
- * button that opens a bottom sheet with big tap targets; changes apply live
- * and the sheet footer shows how many vendors match. */
-export function DirectoryControls({ category, onCategory, filters, onChange, onReset, cities, resultCount, ready }: Props) {
-  const cityOpts = useMemo(() => cityOptions(cities), [cities]);
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const searchId = useId();
-  const activeCount = [category, filters.city, filters.budget, filters.sort !== "default" ? "s" : ""].filter(Boolean).length;
+/** Kota picker styled as a field (searchable, every kabupaten/kota). */
+export function CityField({ value, onChange, cities }: { value: string; onChange: (v: string) => void; cities: string[] }) {
+  const opts = useMemo(() => cityOptions(cities), [cities]);
+  return (
+    <Picker
+      label="Kota"
+      value={value}
+      onChange={onChange}
+      options={opts}
+      placeholder="Semua kota"
+      searchPlaceholder="Cari kota atau provinsi"
+      sheetDescription="Semua kabupaten dan kota di Indonesia."
+      panelMinWidth={300}
+      className="flex min-h-12 w-full items-center rounded-[14px] border border-wd-line-2 bg-white px-4 text-left transition-colors hover:border-wd-ink aria-expanded:border-wd-ink"
+      valueClassName="text-[0.92rem] font-semibold text-wd-ink"
+    />
+  );
+}
 
-  // Desktop: visible "Cari vendor" label above the field, like every other
-  // segment in the bar. Phone: the icon + placeholder carry it and the label is
-  // for screen readers, so the field keeps its full width next to "Filter".
-  const search = (suffix: "d" | "m") => {
-    const desktop = suffix === "d";
-    return (
-      <div
-        className={`relative min-w-0 flex-1 rounded-[inherit] focus-within:ring-2 focus-within:ring-inset focus-within:ring-dc-gold ${
-          desktop ? "flex min-h-14 flex-col justify-center gap-0.5 pl-11 pr-4" : ""
-        }`}
+export function SearchField({ value, onChange, id }: { value: string; onChange: (v: string) => void; id: string }) {
+  return (
+    <div className="relative">
+      <label htmlFor={id} className="sr-only">
+        Cari nama vendor atau kota
+      </label>
+      <svg
+        aria-hidden
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-wd-muted"
       >
-        <label htmlFor={searchId + suffix} className={desktop ? SEG_LABEL : "sr-only"}>
-          {desktop ? "Cari vendor" : "Cari nama vendor atau kota"}
-        </label>
-        <svg
-          aria-hidden
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-dc-clay"
-        >
-          <circle cx="11" cy="11" r="6.5" />
-          <path d="m16 16 4.5 4.5" />
-        </svg>
-        <input
-          id={searchId + suffix}
-          type="search"
-          value={filters.query}
-          onChange={(e) => onChange({ query: e.target.value })}
-          placeholder={desktop ? "Nama vendor atau kota" : "Cari vendor atau kota"}
-          autoComplete="off"
-          className={`w-full bg-transparent text-dc-ink outline-none placeholder:text-dc-text-3 [&::-webkit-search-cancel-button]:appearance-none ${
-            desktop ? "text-sm font-semibold placeholder:font-normal" : "h-14 rounded-full pl-11 pr-4 text-base"
-          }`}
-        />
-      </div>
-    );
-  };
+        <circle cx="11" cy="11" r="6.5" />
+        <path d="m16 16 4.5 4.5" />
+      </svg>
+      <input
+        id={id}
+        type="search"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Cari vendor atau kota"
+        autoComplete="off"
+        className="h-12 w-full rounded-full border border-wd-line-2 bg-white pl-11 pr-4 text-base text-wd-ink outline-none transition-colors placeholder:text-wd-muted hover:border-wd-ink focus:border-wd-ink sm:text-[0.92rem] [&::-webkit-search-cancel-button]:appearance-none"
+      />
+    </div>
+  );
+}
 
+/** Desktop (lg+) left sidebar: search, category, kota, budget, sort. Every
+ * change applies at once; the page mirrors it into the URL. */
+export function FilterSidebar({ category, onCategory, filters, onChange, onReset, cities, cityCounts }: Props) {
+  const id = useId();
+  const active = activeCount(category, filters);
+  return (
+    <div className="flex flex-col">
+      <div className="flex min-h-11 items-center justify-between gap-3 pb-1">
+        <h2 className="text-[1.05rem] font-semibold text-wd-ink">Saring vendor</h2>
+        {active > 0 && (
+          <button type="button" onClick={onReset} className={`-mr-2 min-h-11 rounded-md px-2 text-[0.88rem] ${TEXT_LINK}`}>
+            Hapus semua<span className="sr-only"> filter</span>
+          </button>
+        )}
+      </div>
+      <div className="pb-5">
+        <SearchField id={`${id}-q`} value={filters.query} onChange={(v) => onChange({ query: v })} />
+      </div>
+      <RadioList name={`${id}-kat`} legend="Kategori" value={category} options={CATEGORY_CHOICES} onPick={onCategory} />
+      <div className="border-t border-wd-line py-5">
+        <p id={`${id}-kota`} className="mb-2 text-[0.95rem] font-semibold text-wd-ink">
+          Kota
+        </p>
+        <CityField value={filters.city} onChange={(v) => onChange({ city: v })} cities={cities} />
+        <CityQuickChips counts={cityCounts} value={filters.city} onPick={(v) => onChange({ city: v })} />
+      </div>
+      <RadioList name={`${id}-budget`} legend="Budget mulai dari" value={filters.budget} options={BUDGET_CHOICES} onPick={(v) => onChange({ budget: v })} hint={BUDGET_HINT} />
+      <RadioList name={`${id}-urut`} legend="Urutkan" value={filters.sort} options={SORTS} onPick={(v) => onChange({ sort: v as Sort })} />
+    </div>
+  );
+}
+
+function activeCount(category: string, filters: Filters) {
+  return [category, filters.query.trim(), filters.city, filters.budget, filters.sort !== "default" ? "s" : ""].filter(Boolean).length;
+}
+
+/** Below lg: search field and a "Filter" button that opens the bottom sheet
+ * with big tap targets; changes apply live, the footer shows the count. */
+export function MobileFilters({ category, onCategory, filters, onChange, onReset, cities, cityCounts, resultCount, ready }: Props) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  const activeCount = [category, filters.city, filters.budget, filters.sort !== "default" ? "s" : ""].filter(Boolean).length;
   return (
     <>
-      {/* Desktop bar */}
-      <div className="hidden overflow-hidden rounded-2xl border border-dc-line-strong bg-dc-white shadow-soft focus-within:border-dc-ink/40 lg:flex">
-        {search("d")}
-        <Segment wide>
-          <Picker label="Kategori" showLabel value={category} onChange={onCategory} options={CATEGORY_OPTIONS} panelMinWidth={360} {...SEG_PICKER} />
-        </Segment>
-        <Segment>
-          <Picker
-            label="Kota"
-            showLabel
-            value={filters.city}
-            onChange={(v) => onChange({ city: v })}
-            options={cityOpts}
-            searchPlaceholder="Cari kota atau provinsi"
-            sheetDescription="Semua kabupaten dan kota di Indonesia."
-            panelMinWidth={320}
-            {...SEG_PICKER}
-          />
-        </Segment>
-        <Segment wide>
-          <Picker
-            label="Budget mulai dari"
-            showLabel
-            value={filters.budget}
-            onChange={(v) => onChange({ budget: v })}
-            options={BUDGETS.map((b) => ({ value: b.value, label: b.short }))}
-            panelMinWidth={240}
-            {...SEG_PICKER}
-          />
-        </Segment>
-        <Segment>
-          <Picker label="Urutkan" showLabel value={filters.sort} onChange={(v) => onChange({ sort: v as Sort })} options={SORTS} panelMinWidth={220} {...SEG_PICKER} />
-        </Segment>
-      </div>
-
-      {/* Phone and tablet: search + sheet trigger */}
-      <div className="flex items-center gap-2 lg:hidden">
-        <div className="flex min-w-0 flex-1 rounded-full border border-dc-line-strong bg-dc-white shadow-soft focus-within:border-dc-ink/40">
-          {search("m")}
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <SearchField id={`${id}-q`} value={filters.query} onChange={(v) => onChange({ query: v })} />
         </div>
-        <button
-          type="button"
-          onClick={() => setSheetOpen(true)}
-          aria-haspopup="dialog"
-          className="relative inline-flex h-14 shrink-0 items-center gap-2 rounded-full border border-dc-line-strong bg-dc-white px-4 text-sm font-semibold text-dc-ink shadow-soft transition-colors hover:border-dc-ink"
-        >
-          <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-            <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
-            <circle cx="16" cy="7" r="2" />
-            <circle cx="10" cy="17" r="2" />
-          </svg>
-          <span className="max-[359px]:sr-only">Filter</span>
-          {activeCount > 0 && (
-            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-dc-ink px-1.5 text-xs font-bold text-dc-on-dark">
-              <span className="sr-only">, aktif </span>
-              {activeCount}
-            </span>
-          )}
-        </button>
+        <FilterButton count={activeCount} onClick={() => setOpen(true)} />
       </div>
-
       <Sheet
-        open={sheetOpen}
-        onClose={() => setSheetOpen(false)}
+        open={open}
+        onClose={() => setOpen(false)}
         title="Saring vendor"
         description="Hasil berubah langsung setiap kali kamu memilih."
         footer={
           <div className="flex items-center gap-3">
-            <Button variant="ghost" onClick={onReset} disabled={activeCount === 0}>
+            <button type="button" onClick={onReset} disabled={activeCount === 0} className={wdButton({ variant: "outline" })}>
               Hapus semua
-            </Button>
-            <Button block onClick={() => setSheetOpen(false)}>
+            </button>
+            <button type="button" onClick={() => setOpen(false)} className={wdButton({ variant: "gold", className: "flex-1" })}>
               {ready ? `Lihat ${resultCount} vendor` : "Lihat vendor"}
-            </Button>
+            </button>
           </div>
         }
       >
-        <div className="flex flex-col gap-7">
-          <ChoiceGroup
-            legend="Kategori"
-            value={category}
-            onPick={onCategory}
-            options={[{ value: "", label: "Semua" }, ...VENDOR_CATEGORIES]}
-          />
+        <div className="wd flex flex-col gap-7">
+          <ChoiceChips legend="Kategori" value={category} onPick={onCategory} options={[{ value: "", label: "Semua" }, ...VENDOR_CATEGORIES]} />
           <div className="flex flex-col gap-2.5">
-            <p className="text-sm font-semibold text-dc-ink">Kota</p>
-            <Picker
-              label="Kota"
-              value={filters.city}
-              onChange={(v) => onChange({ city: v })}
-              options={cityOpts}
-              searchPlaceholder="Cari kota atau provinsi"
-              sheetDescription="Semua kabupaten dan kota di Indonesia."
-            />
+            <p className="text-base font-semibold text-wd-ink">Kota</p>
+            <CityField value={filters.city} onChange={(v) => onChange({ city: v })} cities={cities} />
+            <CityQuickChips counts={cityCounts} value={filters.city} onPick={(v) => onChange({ city: v })} />
           </div>
-          <ChoiceGroup
-            legend="Budget mulai dari"
-            value={filters.budget}
-            onPick={(v) => onChange({ budget: v })}
-            options={BUDGETS.map((b) => ({ value: b.value, label: b.value ? b.label : "Semua budget" }))}
-            hint="Vendor yang harganya ditanyakan lewat chat tidak ikut tampil saat budget dipilih."
-          />
-          <ChoiceGroup legend="Urutkan" value={filters.sort} onPick={(v) => onChange({ sort: v as Sort })} options={SORTS} />
+          <ChoiceChips legend="Budget mulai dari" value={filters.budget} onPick={(v) => onChange({ budget: v })} options={BUDGETS.map((b) => ({ value: b.value, label: b.value ? b.label : "Semua budget" }))} hint={BUDGET_HINT} />
+          <ChoiceChips legend="Urutkan" value={filters.sort} onPick={(v) => onChange({ sort: v as Sort })} options={SORTS} />
         </div>
       </Sheet>
     </>
-  );
-}
-
-function Segment({ wide = false, children }: { wide?: boolean; children: React.ReactNode }) {
-  return <div className={`${SEGMENT} ${wide ? "w-[13rem]" : "w-[11.5rem]"} shrink-0 border-l border-dc-line`}>{children}</div>;
-}
-
-/** Single-choice chips for the sheet (44px targets, aria-pressed). */
-function ChoiceGroup({
-  legend,
-  value,
-  onPick,
-  options,
-  hint,
-}: {
-  legend: string;
-  value: string;
-  onPick: (value: string) => void;
-  options: { value: string; label: string }[];
-  hint?: string;
-}) {
-  return (
-    <fieldset>
-      <legend className="font-heading text-2xl leading-tight text-dc-ink">{legend}</legend>
-      {hint && <p className="mt-1 text-sm text-dc-text-3">{hint}</p>}
-      <div className="mt-3 flex flex-wrap gap-2">
-        {options.map((o) => {
-          const on = o.value === value;
-          return (
-            <button
-              key={o.value || "all"}
-              type="button"
-              aria-pressed={on}
-              onClick={() => onPick(o.value)}
-              className={`min-h-11 rounded-full border px-4 text-sm font-semibold transition-colors ${
-                on ? "border-dc-ink bg-dc-ink text-dc-on-dark" : "border-dc-line-strong bg-dc-white text-dc-ink hover:border-dc-ink"
-              }`}
-            >
-              {o.label}
-            </button>
-          );
-        })}
-      </div>
-    </fieldset>
   );
 }

@@ -1,10 +1,10 @@
 "use client";
 
-// Kirana's composer: frosted glass, a gold ring that travels while it is
-// focused or Kirana is working, a specular light under the pointer, example
-// questions typed into the empty field. Used on the landing (big, the door
-// to /kirana) and at the foot of the chat on /kirana.
-import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type PointerEvent } from "react";
+// Kirana's composer, Putih style: a white pill with a hairline that turns
+// gold on focus, a gold send button with ink text (a stop button while
+// Kirana answers), example questions typed into the empty field (big
+// variant only). Used at the foot of the chat on /kirana and by AskAI.
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 
 import { useReducedMotion } from "@/lib/motion";
 
@@ -29,7 +29,7 @@ export const MAX_CHARS = 1000;
 export function ExampleIcon({ kind }: { kind: (typeof EXAMPLES)[number]["icon"] }) {
   const p = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
   return (
-    <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" className="shrink-0 text-dc-clay">
+    <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" className="shrink-0 text-wd-accent-ink">
       {kind === "budget" && (
         <>
           <circle cx="12" cy="12" r="8.5" {...p} />
@@ -123,21 +123,6 @@ export function Composer({
   const [focused, setFocused] = useState(false);
   const [inView, setInView] = useState(false);
   const specRef = useRef<HTMLDivElement>(null);
-  const specRaf = useRef(0);
-  // Pointer position into --mx/--my for the specular light (no React state).
-  const onSpecMove = useCallback((e: PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType !== "mouse") return;
-    const x = e.clientX;
-    const y = e.clientY;
-    cancelAnimationFrame(specRaf.current);
-    specRaf.current = requestAnimationFrame(() => {
-      const el = specRef.current;
-      if (!el) return;
-      const r = el.getBoundingClientRect();
-      el.style.setProperty("--mx", `${x - r.left}px`);
-      el.style.setProperty("--my", `${y - r.top}px`);
-    });
-  }, []);
   const typed = useTypedPlaceholder(big && value === "" && !focused && inView);
   const filling = useRef(false);
 
@@ -196,7 +181,9 @@ export function Composer({
     if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.(8);
   }
   function onKey(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+    // IME-safe: Enter that confirms a composition (Japanese, Chinese,
+    // Android keyboards report keyCode 229) must not send.
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && e.keyCode !== 229) {
       e.preventDefault();
       submit();
     }
@@ -205,11 +192,16 @@ export function Composer({
   const over = value.length > MAX_CHARS;
   return (
     <div>
-      <div ref={specRef} onPointerMove={onSpecMove} data-busy={busy} className={`dc-glow-ring dc-specular relative rounded-[28px] ${big ? "shadow-float" : ""}`}>
-        <form onSubmit={submit} className={`dc-glass relative flex items-end gap-2 rounded-[28px] p-2 ${big ? "pl-5 sm:p-2.5 sm:pl-6" : "pl-4"}`}>
+      <div ref={specRef} data-busy={busy} className="relative">
+        <form
+          onSubmit={submit}
+          className={`relative flex items-end gap-2 rounded-[28px] border bg-white p-1.5 transition-[border-color,box-shadow] duration-300 ${
+            over ? "border-wd-danger" : focused ? "border-wd-accent-ink shadow-[0_0_0_4px_var(--wd-accent-soft)]" : "border-wd-line-2 hover:border-wd-muted"
+          } ${big ? "pl-5 shadow-wd-lift sm:p-2 sm:pl-6" : "pl-4 sm:pl-5"}`}
+        >
           <div className="relative min-w-0 flex-1 py-2.5">
             {value === "" && (
-              <span aria-hidden className={`pointer-events-none absolute inset-x-0 top-2.5 truncate text-dc-text-3 ${big ? "text-lg" : "text-base"}`}>
+              <span aria-hidden className={`pointer-events-none absolute inset-x-0 top-2.5 truncate text-wd-muted ${big ? "text-lg" : "text-base"}`}>
                 {focused || !big ? "Tulis pertanyaanmu untuk Kirana…" : typed}
                 {big && !focused && !reduced && <span className="dc-ask-caret is-thin" />}
               </span>
@@ -224,10 +216,14 @@ export function Composer({
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
               aria-label="Tulis pertanyaan untuk Kirana"
-              aria-describedby={big ? "tanya-hint" : undefined}
+              aria-describedby={big ? "tanya-hint" : "kirana-hint"}
               aria-invalid={over || undefined}
               maxLength={MAX_CHARS + 200}
-              className={`relative block w-full resize-none bg-transparent leading-relaxed text-dc-ink outline-none ${big ? "text-lg" : "text-base"}`}
+              enterKeyHint="send"
+              // The pill around it shows focus (gold border + ring); the global
+              // .wd :focus-visible outline would draw a second box inside it.
+              style={{ outline: "none" }}
+              className={`relative block w-full resize-none bg-transparent leading-relaxed text-wd-ink outline-none focus-visible:outline-none ${big ? "text-lg" : "text-base"}`}
             />
           </div>
           {/* One button that changes role, so focus never falls off the page. */}
@@ -235,18 +231,18 @@ export function Composer({
             type={busy ? "button" : "submit"}
             onClick={busy ? onStop : undefined}
             disabled={!busy && (!value.trim() || over)}
-            aria-label={busy ? "Hentikan jawaban Kirana" : "Tanya Kirana"}
-            className={`group relative flex h-12 shrink-0 items-center justify-center gap-2 rounded-full font-bold transition-[transform,box-shadow,opacity,background-color] duration-300 ease-dc active:scale-95 disabled:opacity-40 ${
-              busy ? "w-12 bg-dc-ink text-dc-on-dark" : `bg-linear-135 from-[#e2c27f] via-[#c39c52] to-[#a17d36] text-[#1a140c] hover:shadow-gold ${big ? "px-4 sm:px-5" : "w-12"}`
+            aria-label={busy ? "Hentikan jawaban Kirana" : "Kirim pertanyaan ke Kirana"}
+            className={`group relative flex h-12 shrink-0 items-center justify-center gap-2 rounded-full font-semibold transition-[transform,background-color,color] duration-300 active:scale-95 disabled:bg-wd-blush disabled:text-wd-muted ${
+              busy ? "w-12 bg-wd-ink text-white hover:bg-black" : `bg-wd-accent text-wd-ink hover:bg-wd-accent-deep ${big ? "px-4 sm:px-5" : "w-12"}`
             }`}
           >
             {busy ? (
-              <span className="h-3.5 w-3.5 rounded-[3px] bg-current" />
+              <span aria-hidden className="h-3.5 w-3.5 rounded-[3px] bg-current" />
             ) : (
               <>
                 {big && <span className="hidden sm:inline">Tanya Kirana</span>}
-                <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-300 motion-safe:group-enabled:group-hover:-translate-y-0.5 motion-safe:group-enabled:group-hover:translate-x-0.5">
-                  <path d="M5 12h13M12 5l7 7-7 7" />
+                <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-300 motion-safe:group-enabled:group-hover:-translate-y-0.5">
+                  <path d="M12 19V5M5 12l7-7 7 7" />
                 </svg>
               </>
             )}
@@ -254,11 +250,19 @@ export function Composer({
         </form>
       </div>
       {big && (
-        <p id="tanya-hint" className={`mt-2 px-4 text-xs ${over ? "font-semibold text-dc-danger" : "text-dc-text-2"}`}>
+        <p id="tanya-hint" className={`mt-2 px-4 text-xs ${over ? "font-semibold text-wd-danger" : "text-wd-muted"}`}>
           {over ? `Pesan terlalu panjang (${value.length}/${MAX_CHARS} karakter)` : "Enter untuk kirim. Kirana bisa keliru, cek lagi detailnya di profil vendor."}
         </p>
       )}
-      {!big && over && <p className="mt-1.5 px-4 text-xs font-semibold text-dc-danger">Pesan terlalu panjang ({value.length}/{MAX_CHARS} karakter)</p>}
+      {!big && (
+        <p id="kirana-hint" className={`mt-1.5 px-4 text-center text-[0.75rem] ${over ? "font-semibold text-wd-danger" : "text-wd-muted"}`}>
+          {over ? `Pesan terlalu panjang (${value.length}/${MAX_CHARS} karakter)` : (
+            <>
+              <span className="hidden sm:inline">Enter untuk kirim, Shift+Enter untuk baris baru. </span>Kirana bisa keliru, cek lagi detailnya di profil vendor.
+            </>
+          )}
+        </p>
+      )}
       <span role="status" className="sr-only">
         {over ? `Pesan terlalu panjang, maksimal ${MAX_CHARS} karakter` : ""}
       </span>

@@ -6,7 +6,9 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 
-import { ButtonLink } from "@/components/ui/Button";
+import Link from "next/link";
+
+import { wdButton } from "@/components/home/ui";
 import { EASE, useReducedMotion } from "@/lib/motion";
 
 import { BlockView } from "./blocks";
@@ -38,7 +40,7 @@ function AssistantTurnView({ turn, last, onAsk, onRetry }: { turn: AssistantTurn
     <motion.div initial={reduced ? { opacity: 0 } : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, ease: EASE }} className="space-y-4">
       <div className="flex items-center gap-2.5">
         <KiranaFace size={40} mood={live ? "thinking" : last && turn.state === "done" ? "happy" : "idle"} />
-        <span className="text-sm font-bold text-dc-ink">Kirana</span>
+        <span className="text-sm font-semibold text-wd-ink">Kirana</span>
       </div>
 
       {(live || turn.steps.length > 0) && <Steps steps={turn.steps} finished={!live} />}
@@ -46,7 +48,7 @@ function AssistantTurnView({ turn, last, onAsk, onRetry }: { turn: AssistantTurn
       {turn.parts.map((p, i) =>
         p.kind === "text" ? (
           p.text.trim() ? (
-            <div key={i} className="max-w-[68ch] rounded-2xl rounded-tl-md border border-dc-line/70 bg-dc-white/92 px-4 py-3 shadow-soft sm:px-5">
+            <div key={i} className="max-w-[68ch] rounded-[20px] rounded-tl-md border border-wd-line bg-wd-paper px-4 py-3 sm:px-5">
               <RichText text={p.text} live={live && i === lastText && i === turn.parts.length - 1} />
             </div>
           ) : null
@@ -57,10 +59,10 @@ function AssistantTurnView({ turn, last, onAsk, onRetry }: { turn: AssistantTurn
 
       {turn.state === "error" && (
         <>
-          <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dc-danger/20 bg-dc-danger-soft px-4 py-3 text-sm text-dc-danger">
+          <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-wd-danger/20 bg-[#fbeceb] px-4 py-3 text-sm text-wd-danger">
             <span className="font-semibold">{turn.error}</span>
             {last && (
-              <button type="button" onClick={onRetry} className="inline-flex min-h-11 items-center rounded-full bg-dc-white px-4 font-semibold text-dc-ink shadow-soft hover:bg-dc-cream">
+              <button type="button" onClick={onRetry} className={wdButton({ variant: "outline", size: "sm" })}>
                 Coba lagi
               </button>
             )}
@@ -86,7 +88,7 @@ function AssistantTurnView({ turn, last, onAsk, onRetry }: { turn: AssistantTurn
                 key={q}
                 type="button"
                 onClick={() => onAsk(q)}
-                className="dc-glass inline-flex min-h-11 items-center rounded-full px-4 text-left text-sm font-semibold text-dc-ink transition-[transform,border-color] duration-300 ease-dc hover:border-dc-gold active:scale-[0.98] motion-safe:hover:-translate-y-0.5"
+                className="inline-flex min-h-11 items-center rounded-full border border-wd-accent-line bg-white px-4 text-left text-sm font-medium text-wd-ink transition-[background-color,border-color,transform] duration-300 hover:border-wd-accent-ink hover:bg-wd-accent-wash active:scale-[0.98]"
               >
                 {q}
               </button>
@@ -161,14 +163,14 @@ export function ChatPanel({
 
   return (
     <div className="relative flex h-full flex-col">
-      {sheet && <span aria-hidden className="absolute left-1/2 top-0 h-1.5 w-11 -translate-x-1/2 rounded-full bg-dc-ink/20" />}
-      <div className="flex items-center justify-between gap-3 border-b border-dc-gold/20 px-4 pb-2.5 pt-3 sm:px-6">
+      {sheet && <span aria-hidden className="absolute left-1/2 top-0 h-1.5 w-11 -translate-x-1/2 rounded-full bg-wd-ink/20" />}
+      <div className="flex items-center justify-between gap-3 border-b border-wd-line px-4 pb-2.5 pt-3 sm:px-6">
         <div className="flex min-w-0 items-center gap-2.5">
           <KiranaFace size={42} mood={busy ? "thinking" : "idle"} />
           <div className="min-w-0 leading-tight">
-            <p className="text-sm font-bold text-dc-ink">Kirana</p>
-            <p className="flex items-center gap-1.5 truncate text-xs font-semibold text-dc-success">
-              <span className={`h-1.5 w-1.5 shrink-0 rounded-full bg-dc-success ${busy ? "motion-safe:animate-pulse" : ""}`} />
+            <p className="text-[0.95rem] font-semibold text-wd-ink">Kirana</p>
+            <p className="flex items-center gap-1.5 truncate text-xs font-medium text-wd-muted">
+              <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${busy ? "bg-wd-accent-deep motion-safe:animate-pulse" : "bg-wd-ok"}`} />
               {busy ? "Sedang mengetik" : "Asisten AI DuaCincin"}
             </p>
           </div>
@@ -176,23 +178,23 @@ export function ChatPanel({
         <div className="flex shrink-0 items-center gap-1">
           {confirmReset ? (
             <span className="flex items-center gap-1 text-sm">
-              <span className="hidden font-semibold text-dc-text-2 sm:inline">Hapus percakapan?</span>
+              <span className="hidden font-medium text-wd-text sm:inline">Hapus percakapan?</span>
               <button
                 type="button"
                 onClick={() => {
                   setConfirmReset(false);
                   onReset();
                 }}
-                className="inline-flex min-h-11 items-center rounded-full px-3 font-semibold text-dc-danger hover:bg-dc-danger-soft"
+                className="inline-flex min-h-11 items-center rounded-full px-3 font-semibold text-wd-danger hover:bg-[#fbeceb]"
               >
                 Hapus
               </button>
-              <button type="button" onClick={() => setConfirmReset(false)} className="inline-flex min-h-11 items-center rounded-full px-3 font-semibold text-dc-text-2 hover:bg-dc-cream">
+              <button type="button" onClick={() => setConfirmReset(false)} className="inline-flex min-h-11 items-center rounded-full px-3 font-semibold text-wd-text hover:bg-wd-blush">
                 Batal
               </button>
             </span>
           ) : (
-            <button type="button" onClick={() => setConfirmReset(true)} className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-dc-text-2 transition-colors hover:bg-dc-cream hover:text-dc-ink">
+            <button type="button" onClick={() => setConfirmReset(true)} disabled={turns.length === 0} className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-wd-text transition-colors hover:bg-wd-blush hover:text-wd-ink disabled:opacity-40 disabled:hover:bg-transparent">
               <svg aria-hidden width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
                 <path d="M3 3v5h5" />
@@ -201,7 +203,7 @@ export function ChatPanel({
             </button>
           )}
           {sheet && (
-            <button type="button" onClick={onMinimize} aria-label="Kecilkan percakapan" className="flex h-11 w-11 items-center justify-center rounded-full text-dc-text-2 hover:bg-dc-cream hover:text-dc-ink">
+            <button type="button" onClick={onMinimize} aria-label="Kecilkan percakapan" className="flex h-11 w-11 items-center justify-center rounded-full text-wd-text hover:bg-wd-blush hover:text-wd-ink">
               <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
                 <path d="m6 9 6 6 6-6" />
               </svg>
@@ -223,7 +225,7 @@ export function ChatPanel({
               style={{ originX: 1, originY: 1 }}
               className="flex justify-end"
             >
-              <p className="max-w-[min(82%,560px)] whitespace-pre-wrap rounded-[22px] rounded-br-md bg-dc-ink px-4 py-3 text-[0.98rem] leading-relaxed text-dc-on-dark shadow-soft">{t.text}</p>
+              <p className="max-w-[min(82%,560px)] whitespace-pre-wrap break-words rounded-[20px] rounded-br-md bg-wd-accent-soft px-4 py-3 text-[0.98rem] leading-relaxed text-wd-ink">{t.text}</p>
             </motion.div>
           ) : (
             <AssistantTurnView key={t.id} turn={t} last={i === turns.length - 1} onAsk={ask} onRetry={onRetry} />
@@ -237,17 +239,17 @@ export function ChatPanel({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.5, delay: 0.5, ease: EASE }}
-              className="dc-on-dark flex flex-col gap-4 rounded-2xl bg-dc-ink p-5 text-dc-on-dark sm:flex-row sm:items-center sm:justify-between sm:p-6"
+              className="flex flex-col gap-4 rounded-[22px] border border-wd-accent-line bg-wd-accent-wash p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"
             >
               <div>
-                <p className="font-heading text-2xl font-semibold leading-tight">
-                  Suka rencananya? <span className="dc-em-light">Simpan di akunmu.</span>
+                <p className="wd-display text-[1.6rem] leading-tight">
+                  Suka rencananya? <em>Simpan di akunmu.</em>
                 </p>
-                <p className="mt-1.5 text-sm leading-relaxed text-dc-on-dark/80">Percakapan ini ikut pindah ke akunmu, plus Budget Planner, checklist, chat vendor, dan Wedding Consultant. Gratis.</p>
+                <p className="mt-1.5 text-sm leading-relaxed text-wd-text">Percakapan ini ikut pindah ke akunmu, plus Budget Planner, checklist, chat vendor, dan Wedding Consultant. Gratis.</p>
               </div>
-              <ButtonLink href="/register?role=client" variant="gold" className="shrink-0">
+              <Link href="/register?role=client" className={wdButton({ className: "shrink-0" })}>
                 Buat akun client
-              </ButtonLink>
+              </Link>
             </motion.div>
           )}
         </AnimatePresence>
@@ -256,7 +258,7 @@ export function ChatPanel({
         {announce}
       </p>
 
-      <div className="border-t border-dc-gold/20 px-3 pb-[max(8px,env(safe-area-inset-bottom))] pt-3 sm:px-6 sm:pb-4">
+      <div className="border-t border-wd-line bg-white px-3 pb-[max(8px,env(safe-area-inset-bottom))] pt-3 sm:px-6 sm:pb-4">
         <Composer big={false} busy={busy} onSend={ask} onStop={onStop} onTyping={onTyping} inputRef={input} />
       </div>
     </div>

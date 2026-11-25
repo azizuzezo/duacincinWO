@@ -1,21 +1,19 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 
-import { AskAISection, fetchAskEnabled } from "@/components/landing/ask/AskAISection";
-import { AdatMarquee } from "@/components/landing/AdatMarquee";
-import { BudgetDemo } from "@/components/landing/BudgetDemo";
-import { CategoryMosaic } from "@/components/landing/CategoryMosaic";
-import { ConsultantBlock } from "@/components/landing/ConsultantBlock";
-import { CTABanner } from "@/components/landing/CTABanner";
-import { EscrowCoin } from "@/components/landing/EscrowCoin";
-import { FeaturedVendors } from "@/components/landing/FeaturedVendors";
-import { Footer } from "@/components/landing/Footer";
-import { HeroScene } from "@/components/landing/HeroScene";
-import { InspirationTeaser } from "@/components/landing/InspirationTeaser";
-import { InvitationLink } from "@/components/landing/InvitationLink";
-import { Navbar } from "@/components/landing/Navbar";
-import { ProductShowcase } from "@/components/landing/ProductShowcase";
-import { VendorRecruit } from "@/components/landing/VendorRecruit";
-import { WhyDuaCincin } from "@/components/landing/WhyDuaCincin";
+import { Articles } from "@/components/home/Articles";
+import { Banners } from "@/components/home/Banners";
+import { BudgetTool } from "@/components/home/BudgetTool";
+import { Categories } from "@/components/home/Categories";
+import { Features } from "@/components/home/Features";
+import { ForVendors } from "@/components/home/ForVendors";
+import { HomeFooter } from "@/components/home/HomeFooter";
+import { HomeNav } from "@/components/home/HomeNav";
+import { Inspiration } from "@/components/home/Inspiration";
+import { PromoInvitation } from "@/components/home/PromoInvitation";
+import { QuickTiles } from "@/components/home/QuickTiles";
+import { CategoryRows, VendorPicks } from "@/components/home/Vendors";
+import { fetchAskEnabled } from "@/components/landing/ask/AskAISection";
+import { KiranaLauncher } from "@/components/landing/ask/KiranaLauncher";
 import { JsonLd, ORGANIZATION_LD } from "@/components/seo/JsonLd";
 import { SITE_URL } from "@/lib/site";
 
@@ -40,17 +38,16 @@ const SITE_LD = {
   ],
 };
 
-// Narrative: search (the door) -> or just ask the assistant (real data as
-// cards, hidden when the server has no AI configured) -> what you can find (categories as photos,
-// real vendors) -> the app itself, screen by screen -> where your money is ->
-// the invitation that fills itself from your plan -> try the budget ->
-// ideas to save -> a human to ask -> vendors join -> close.
-// Show, don't tell: every section below the hero carries real imagery, real
-// API data or real captures of the product. Backgrounds alternate scene,
-// paper, cream, white, cream, ink (the one ink block), paper, white, cream,
-// paper, photo, so no two neighbours share a ground. Investor-facing
-// additions: the adat type band (white), the usual way vs DuaCincin
-// (ivory + one ink panel) (founders live on /tentang-kami).
+// "Putih" design system (src/app/wd.css), laid out like the big wedding
+// marketplaces (Bridestory, WeddingMarket): two-row header with search ->
+// banner carousel -> quick tiles -> the H1 with
+// vendor picks by category -> category circles -> vendor rows per top
+// category -> invitation promo strip -> why DuaCincin (escrow, chat, planner,
+// invitation, consultant) -> live budget split -> one more vendor row -> inspiration -> guides ->
+// vendor recruitment -> pink footer. Vendors, counts and the gallery come
+// from the API and show loading / retry / empty states; nothing is invented.
+// Kirana (AI) appears as a banner and the floating launcher only when the
+// assistant is configured.
 // Home: the brand plus the search people type ("vendor pernikahan"), with
 // a description short enough to show whole in results.
 export const metadata: Metadata = {
@@ -60,29 +57,30 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
+export const viewport: Viewport = { themeColor: "#ffffff" };
+
 export default async function Page() {
   const askEnabled = await fetchAskEnabled();
   return (
-    <>
-      <Navbar overlay />
+    <div className="wd flex flex-1 flex-col">
+      <HomeNav />
       <main id="konten" className="flex-1">
         <JsonLd data={SITE_LD} />
-        <HeroScene askEnabled={askEnabled} />
-        <AskAISection enabled={askEnabled} />
-        <CategoryMosaic />
-        <AdatMarquee />
-        <WhyDuaCincin />
-        <FeaturedVendors />
-        <ProductShowcase />
-        <EscrowCoin />
-        <InvitationLink />
-        <BudgetDemo />
-        <InspirationTeaser />
-        <ConsultantBlock />
-        <VendorRecruit />
-        <CTABanner />
+        <Banners kirana={askEnabled} />
+        <QuickTiles kirana={askEnabled} />
+        <VendorPicks />
+        <Categories />
+        <CategoryRows max={2} />
+        <PromoInvitation />
+        <Features />
+        <BudgetTool />
+        <CategoryRows max={1} skip={2} />
+        <Inspiration />
+        <Articles />
+        <ForVendors />
       </main>
-      <Footer />
-    </>
+      <HomeFooter />
+      {askEnabled && <KiranaLauncher />}
+    </div>
   );
 }

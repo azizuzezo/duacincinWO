@@ -43,7 +43,7 @@ export function InvitationCard({ className = "" }: { className?: string }) {
   if (state.kind === "error") {
     return (
       <Card className={`p-5 ${className}`}>
-        <p className="dc-eyebrow mb-2">Undangan digital</p>
+        <p className="dc-eyebrow mb-2">Digital Invitation</p>
         <p className="font-heading text-2xl leading-tight text-dc-ink">Status undangan belum termuat</p>
         <p className="mt-1.5 text-sm leading-relaxed text-dc-text-2">{state.message}</p>
         <ButtonLink href="/client/undangan" variant="ghost" size="sm" className="mt-4">
@@ -65,16 +65,16 @@ export function InvitationCard({ className = "" }: { className?: string }) {
           </figcaption>
         </figure>
         <div className="p-5">
-          <p className="dc-eyebrow mb-2">Undangan digital</p>
+          <p className="dc-eyebrow mb-2">Digital Invitation</p>
           <p className="font-heading text-[1.7rem] leading-tight text-dc-ink">
             Undangan dari data kalian, <em className="dc-em">tanpa ketik ulang</em>
           </p>
           <p className="mt-2 text-sm leading-relaxed text-dc-text-2">
-            Tanggal, tempat, dan daftar tamu langsung terisi di DuaCincin Undangan. Tinggal pilih tema.
+            Tanggal, tempat, dan daftar tamu langsung terisi di DuaCincin Digital Invitation. Tinggal pilih tema.
           </p>
           <div className="mt-4 flex flex-col gap-1">
             <Button variant="primary" size="sm" block loading={opening} onClick={handleOpen}>
-              Buat undangan digital
+              Buat Digital Invitation
             </Button>
             <ButtonLink href="/client/undangan" variant="quiet" size="sm" className="self-center">
               Lihat contohnya dulu
@@ -89,7 +89,7 @@ export function InvitationCard({ className = "" }: { className?: string }) {
   return (
     <Card className={`p-5 ${className}`}>
       <div className="flex items-start justify-between gap-3">
-        <p className="dc-eyebrow">Undangan digital</p>
+        <p className="dc-eyebrow">Digital Invitation</p>
         <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold leading-5 ${paid ? "bg-dc-gold-soft text-dc-clay" : "bg-dc-cream text-dc-text-2"}`}>
           {packageLabel(status.package_type)}
         </span>

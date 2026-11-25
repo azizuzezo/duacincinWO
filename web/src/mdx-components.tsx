@@ -1,15 +1,14 @@
 import type { MDXComponents } from "mdx/types";
 import Link from "next/link";
 
+import { ArticleH2 } from "@/components/public/artikel/Heading";
+
 // Typography for the articles in src/content/artikel (required by @next/mdx).
 // One readable column (~68 characters), the same rhythm as the legal pages.
 // Internal links go through next/link; external ones open in a new tab.
 const components: MDXComponents = {
-  h2: ({ children }) => (
-    <h2 className="mt-12 font-heading text-[clamp(1.75rem,3.2vw,2.15rem)] leading-tight text-dc-ink first:mt-0">
-      {children}
-    </h2>
-  ),
+  // Section headings carry an anchor and a "copy link" button (ArticleH2).
+  h2: ({ children }) => <ArticleH2 className="mt-12 font-heading text-[clamp(1.75rem,3.2vw,2.15rem)] leading-tight text-dc-ink first:mt-0">{children}</ArticleH2>,
   h3: ({ children }) => <h3 className="mt-8 text-lg font-semibold text-dc-ink">{children}</h3>,
   p: ({ children }) => <p className="mt-4 text-[1.0625rem] leading-[1.8] text-dc-text-2">{children}</p>,
   ul: ({ children }) => <ul className="mt-4 list-disc space-y-2 pl-6 text-[1.0625rem] leading-[1.75] text-dc-text-2 marker:text-dc-gold">{children}</ul>,

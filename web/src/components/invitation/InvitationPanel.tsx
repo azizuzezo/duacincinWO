@@ -23,7 +23,7 @@ const FILLED = [
 ];
 
 const AFTER = [
-  "Tab baru terbuka di DuaCincin Undangan dan kamu langsung masuk dengan akun ini.",
+  "Tab baru terbuka di DuaCincin Digital Invitation dan kamu langsung masuk dengan akun ini.",
   "Data pernikahan sudah terisi. Pilih tema, foto, dan paket di sana.",
   "Jawaban RSVP tamu kembali tampil di halaman ini.",
 ];
@@ -49,8 +49,8 @@ export function InvitationPanel() {
   if (state.kind === "unavailable") {
     return (
       <EmptyState
-        title="Undangan digital segera hadir"
-        body="Sebentar lagi kamu bisa membuat undangan digital langsung dari data pernikahan di sini."
+        title="Digital Invitation segera hadir"
+        body="Sebentar lagi kamu bisa membuat Digital Invitation langsung dari data pernikahan di sini."
         actionHref="/client/wedding-planner/guests"
         actionLabel="Rapikan daftar tamu dulu"
       />
@@ -91,12 +91,12 @@ function NotLinked({ link }: { link: LinkApi }) {
   return (
     <div className="grid gap-x-12 gap-y-8 pb-24 md:pb-0 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
       <div className="min-w-0 animate-fade-up lg:col-start-1 lg:row-start-1">
-        <p className="dc-eyebrow mb-3">DuaCincin Undangan</p>
+        <p className="dc-eyebrow mb-3">DuaCincin Digital Invitation</p>
         <h2 className="max-w-xl font-heading text-[2.4rem] leading-[1.04] text-dc-ink sm:text-[3.2rem]">
           Undangan kalian, <em className="dc-em">sudah setengah jadi.</em>
         </h2>
         <p className="mt-4 max-w-xl text-[1.05rem] leading-relaxed text-dc-text-2">
-          Data pernikahan yang kalian susun di sini langsung mengisi undangan digital di DuaCincin Undangan. Kalian tinggal memilih tema dan foto.
+          Data pernikahan yang kalian susun di sini langsung mengisi DuaCincin Digital Invitation. Kalian tinggal memilih tema dan foto.
         </p>
       </div>
 
@@ -135,10 +135,10 @@ function NotLinked({ link }: { link: LinkApi }) {
               {error && <p className="text-sm font-medium text-dc-danger">{error}</p>}
             </div>
             <Button type="submit" variant="gold" size="lg" loading={link.opening} className="mt-2 hidden md:inline-flex">
-              Buat undangan digital
+              Buat Digital Invitation
             </Button>
             <p className="mt-3 text-xs leading-relaxed text-dc-text-3">
-              Terbuka di tab baru. Paket undangan dibayar di DuaCincin Undangan, terpisah dari booking vendor.
+              Terbuka di tab baru. Paket undangan dibayar di DuaCincin Digital Invitation, terpisah dari booking vendor.
             </p>
           </form>
         </Card>
@@ -161,7 +161,7 @@ function NotLinked({ link }: { link: LinkApi }) {
       <div className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-30 border-t border-dc-line bg-dc-ivory/95 px-4 py-3 md:hidden">
         <div aria-live="polite">{error && <p className="mx-auto mb-2 max-w-md text-sm font-medium text-dc-danger">{error}</p>}</div>
         <Button type="submit" form="undangan-form" variant="gold" block loading={link.opening} className="mx-auto max-w-md">
-          Buat undangan digital
+          Buat Digital Invitation
         </Button>
       </div>
     </div>
@@ -207,7 +207,7 @@ function Linked({ status, link }: { status: InvitationStatus; link: LinkApi }) {
         <Rings className="pointer-events-none absolute -right-16 -top-10 h-64 w-96 opacity-25" stroke="var(--dc-gold-antique)" strokeWidth={0.6} />
         <div className="relative flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="dc-eyebrow is-light mb-3">Undangan digital</p>
+            <p className="dc-eyebrow is-light mb-3">Digital Invitation</p>
             <h2 className="font-heading text-[2.2rem] leading-[1.05] sm:text-[2.8rem]">
               Undangan kalian <em className="dc-em-light">sudah terhubung.</em>
             </h2>

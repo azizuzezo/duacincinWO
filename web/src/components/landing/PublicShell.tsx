@@ -1,17 +1,17 @@
-import { Footer } from "@/components/landing/Footer";
-import { Navbar } from "@/components/landing/Navbar";
+import { HomeFooter } from "@/components/home/HomeFooter";
+import { HomeNav } from "@/components/home/HomeNav";
 
-/** Navbar + footer around a public page. `overlay` (default): the navbar is
- * transparent over the page's PageHero and turns ivory on scroll. Pages that
- * open on paper instead of a photo pass `overlay={false}` for a solid bar. */
-export function PublicShell({ children, overlay = true }: { children: React.ReactNode; overlay?: boolean }) {
+/** Marketplace header + champagne footer around a public page ("Putih"
+ * system). `overlay` is accepted for older callers and ignored: the header is
+ * always solid white now. */
+export function PublicShell({ children }: { children: React.ReactNode; overlay?: boolean }) {
   return (
-    <div className="flex min-h-screen flex-col bg-dc-ivory">
-      <Navbar overlay={overlay} />
+    <div className="flex min-h-screen flex-col bg-white">
+      <HomeNav />
       <main id="konten" className="flex-1">
         {children}
       </main>
-      <Footer />
+      <HomeFooter />
     </div>
   );
 }

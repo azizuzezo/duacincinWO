@@ -60,7 +60,7 @@ function Stagecraft({ stages, index, onJump, reduced }: { stages: Stage[]; index
   return (
     <div className="flex items-start gap-7 xl:gap-9">
       <div className="relative w-[248px] shrink-0 xl:w-[270px]">
-        <div aria-hidden className="absolute -inset-x-16 -inset-y-10 -z-10 bg-[radial-gradient(closest-side,rgba(234,215,174,0.75),rgba(243,236,223,0.4)_60%,transparent)]" />
+        <div aria-hidden className="absolute -inset-x-16 -inset-y-10 -z-10 bg-[radial-gradient(closest-side,rgba(245,236,217,0.9),rgba(251,247,239,0.5)_60%,transparent)]" />
         <div className="relative" style={{ aspectRatio: PHONE_FRAME_RATIO }}>
           <AnimatePresence initial={false}>
             <motion.div
@@ -79,7 +79,7 @@ function Stagecraft({ stages, index, onJump, reduced }: { stages: Stage[]; index
 
       <div className="min-w-0 flex-1 pt-6">
         <p className="text-sm text-dc-text-3">
-          Tahap <span className="font-heading text-2xl text-dc-ink">{index + 1}</span> dari {stages.length}
+          Tahap <span className="text-xl font-semibold text-wd-ink">{index + 1}</span> dari {stages.length}
         </p>
         <p className="mt-1 text-sm font-semibold text-dc-text-2">Posisi uangmu</p>
         <ol className="relative mt-4 flex flex-col gap-5">
@@ -92,7 +92,7 @@ function Stagecraft({ stages, index, onJump, reduced }: { stages: Stage[]; index
                   {here && <Coin id="journey-coin" reduced={reduced} />}
                 </span>
                 <span className="min-w-0">
-                  <span className={`block font-heading text-[1.3rem] leading-tight transition-colors duration-500 ${here ? "text-dc-ink" : "text-dc-text-3"}`}>{s.label}</span>
+                  <span className={`block text-[1.05rem] font-semibold leading-tight transition-colors duration-500 ${here ? "text-dc-ink" : "text-dc-text-3"}`}>{s.label}</span>
                   <span className="block text-xs text-dc-text-3">{s.sub}</span>
                 </span>
               </li>
@@ -119,7 +119,7 @@ function Stagecraft({ stages, index, onJump, reduced }: { stages: Stage[]; index
               aria-current={i === index ? "step" : undefined}
               className={`inline-flex h-11 items-center justify-center rounded-full border text-sm font-semibold tabular-nums transition-[background-color,border-color,color,transform] duration-300 active:scale-95 ${
                 i === index
-                  ? "border-dc-ink bg-dc-ink text-dc-on-dark"
+                  ? "border-wd-accent bg-wd-accent text-wd-ink"
                   : i < index
                     ? "border-dc-gold/60 bg-dc-cream text-dc-clay hover:border-dc-ink"
                     : "border-dc-line-strong text-dc-text-3 hover:border-dc-ink hover:text-dc-ink"
@@ -164,10 +164,10 @@ export function JourneyStory({ stages }: { stages: Stage[] }) {
   const stage = stages[active];
 
   return (
-    <section aria-labelledby="tahap-judul" className="relative bg-dc-ivory">
+    <section aria-labelledby="tahap-judul" className="relative bg-white">
       {/* Phone: where the money is rides along under the navbar. */}
-      <div className="sticky top-[72px] z-30 border-b border-dc-line bg-dc-ivory/95 backdrop-blur-sm lg:hidden">
-        <div className="dc-container flex min-h-14 items-center justify-between gap-3 py-2">
+      <div className="sticky top-[121px] z-30 border-b border-wd-line bg-white/95 backdrop-blur-sm lg:hidden">
+        <div className="wd-container flex min-h-14 items-center justify-between gap-3 py-2">
           <p className="text-sm text-dc-text-2">
             Tahap <span className="font-semibold text-dc-ink">{active + 1}</span>/{stages.length}
           </p>
@@ -184,18 +184,17 @@ export function JourneyStory({ stages }: { stages: Stage[] }) {
         </div>
       </div>
 
-      <div className="dc-container py-14 sm:py-20 lg:py-24">
+      <div className="wd-container py-12 sm:py-16 lg:py-20">
         <div className="max-w-2xl">
-          <p className="dc-eyebrow">Tujuh tahap, layar aslinya</p>
-          <h2 id="tahap-judul" className="mt-4 font-heading text-[clamp(2.2rem,4vw,3.4rem)] leading-[1.02] text-dc-ink">
-            Ikuti koin emasnya, <span className="dc-em">di situlah uangmu.</span>
+          <h2 id="tahap-judul" className="wd-title text-[clamp(1.55rem,2.6vw,2.05rem)] leading-tight">
+            Ikuti koin emasnya, <em>di situlah uangmu.</em>
           </h2>
-          <p className="mt-4 max-w-lg leading-relaxed text-dc-text-2">Setiap tahap disertai layar aslinya, persis yang kamu lihat di DuaCincin.</p>
+          <p className="mt-1.5 text-[0.95rem] text-wd-muted">Setiap tahap dengan layar aslinya di DuaCincin.</p>
         </div>
 
         <div className="mt-10 grid gap-10 lg:mt-14 lg:grid-cols-12 lg:gap-14">
           <div className="hidden lg:col-span-6 lg:block">
-            <div className="sticky top-24">
+            <div className="sticky top-[140px]">
               <Stagecraft stages={stages} index={active} onJump={jump} reduced={reduced} />
             </div>
           </div>
@@ -209,7 +208,7 @@ export function JourneyStory({ stages }: { stages: Stage[] }) {
               return (
                 <li key={s.title} className="relative">
                   {firstOfChapter && (
-                    <p className={`relative font-heading text-2xl italic text-dc-clay sm:pl-16 ${i === 0 ? "" : "pt-10"}`}>{CHAPTER[s.station]}</p>
+                    <p className={`relative wd-kicker !text-[1.25rem] sm:pl-16 ${i === 0 ? "" : "pt-10"}`}>{CHAPTER[s.station]}</p>
                   )}
                   <article
                     id={`tahap-${i + 1}`}
@@ -219,23 +218,23 @@ export function JourneyStory({ stages }: { stages: Stage[] }) {
                     data-i={i}
                     tabIndex={-1}
                     aria-labelledby={`tahap-${i + 1}-judul`}
-                    className="relative grid scroll-mt-40 gap-4 py-6 outline-none sm:grid-cols-[2.75rem_1fr] sm:gap-5 lg:min-h-[44vh] lg:content-center lg:py-10"
+                    className="relative grid scroll-mt-48 gap-4 py-6 outline-none sm:grid-cols-[2.75rem_1fr] sm:gap-5 lg:min-h-[44vh] lg:content-center lg:py-10"
                   >
                     <span
                       aria-hidden
-                      className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full border font-heading text-xl tabular-nums transition-[background-color,border-color,color,transform] duration-500 ${
-                        on ? "scale-110 border-dc-gold bg-dc-ink text-dc-gold-antique" : i < active ? "border-dc-gold bg-dc-cream text-dc-clay" : "border-dc-line-strong bg-dc-ivory text-dc-text-3"
+                      className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full border text-base font-semibold tabular-nums transition-[background-color,border-color,color,transform] duration-500 ${
+                        on ? "scale-110 border-wd-accent bg-wd-accent text-wd-ink" : i < active ? "border-wd-accent-line bg-wd-accent-wash text-wd-accent-ink" : "border-wd-line-2 bg-white text-wd-muted"
                       }`}
                     >
                       {i + 1}
                     </span>
                     <div
                       className={`overflow-hidden rounded-2xl border transition-[background-color,border-color,box-shadow,opacity] duration-500 ${
-                        on ? "border-dc-line bg-dc-white shadow-lift" : "border-dc-line/70 bg-dc-white/50"
+                        on ? "border-wd-line-2 bg-white shadow-wd-card" : "border-wd-line bg-white"
                       }`}
                     >
                       <div className="p-5 sm:p-7">
-                        <h3 id={`tahap-${i + 1}-judul`} className="font-heading text-[clamp(1.7rem,3vw,2.3rem)] leading-tight text-dc-ink">
+                        <h3 id={`tahap-${i + 1}-judul`} className="wd-title text-[clamp(1.2rem,2vw,1.4rem)] leading-snug">
                           <span className="sr-only">Tahap {i + 1}: </span>
                           {s.title}
                         </h3>
@@ -257,8 +256,10 @@ export function JourneyStory({ stages }: { stages: Stage[] }) {
                         </div>
                       </div>
                       {/* Phones and tablets: the stage's own screen, top part. */}
-                      <div className="relative flex justify-center bg-[radial-gradient(90%_70%_at_50%_100%,#ead7ae_0%,#f3ecdf_55%,#faf6ef_100%)] px-6 pt-6 lg:hidden">
-                        <PhoneFrame src={s.screen.src} alt={s.screen.alt} sizes="260px" crop="390 / 560" fade="from-dc-cream" className="w-[min(72%,260px)]" />
+                      {/* The full phone runs past the card's bottom edge, so it reads
+                          as a phone continuing off-card (never a cut-down frame). */}
+                      <div className="relative flex h-[380px] justify-center overflow-hidden bg-wd-paper px-6 pt-6 lg:hidden">
+                        <PhoneFrame src={s.screen.src} alt={s.screen.alt} sizes="240px" className="w-[min(70%,240px)] shrink-0" />
                       </div>
                     </div>
                   </article>

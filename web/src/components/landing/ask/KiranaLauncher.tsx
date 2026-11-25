@@ -1,6 +1,6 @@
 "use client";
 
-// The always-visible door to Kirana on the landing: a dark glass pill in the
+// The always-visible door to Kirana on the landing: a white pill in the
 // bottom-right corner with her face, on phones and desktops. On phones it
 // stays a round button while the hero (with its own search and "Tanya
 // Kirana" link) fills the screen, and opens into the pill once the visitor
@@ -124,15 +124,15 @@ export function KiranaLauncher({ name }: { name?: string }) {
                 exit={{ opacity: 0, y: 6, transition: { duration: 0.18 } }}
                 transition={{ duration: 0.4, ease: EASE }}
                 style={{ originX: 1, originY: 1 }}
-                className="dc-glass relative mr-1 max-w-[260px] rounded-2xl rounded-br-sm py-3 pl-4 pr-12 text-sm leading-snug text-dc-black"
+                className="relative mr-1 max-w-[260px] rounded-2xl rounded-br-sm border border-wd-line bg-white py-3 pl-4 pr-12 text-sm leading-snug text-wd-text shadow-wd-pop"
               >
                 {name ? (
                   <>
-                    <span className="font-semibold text-dc-ink">Halo lagi, Kak {name}!</span> Mau lanjut ngobrol soal persiapan pernikahanmu?
+                    <span className="font-semibold text-wd-ink">Halo lagi, Kak {name}!</span> Mau lanjut ngobrol soal persiapan pernikahanmu?
                   </>
                 ) : (
                   <>
-                    <span className="font-semibold text-dc-ink">Hai, aku Kirana!</span> Mau dibantu hitung budget atau cari vendor di kotamu?
+                    <span className="font-semibold text-wd-ink">Hai, aku Kirana!</span> Mau dibantu hitung budget atau cari vendor di kotamu?
                   </>
                 )}
                 <button
@@ -142,7 +142,7 @@ export function KiranaLauncher({ name }: { name?: string }) {
                     writeStore("local", DISMISSED);
                   }}
                   aria-label="Tutup sapaan Kirana"
-                  className="absolute right-0.5 top-0.5 flex h-11 w-11 items-center justify-center rounded-full text-dc-text-3 hover:bg-dc-cream hover:text-dc-ink"
+                  className="absolute right-0.5 top-0.5 flex h-11 w-11 items-center justify-center rounded-full text-wd-muted hover:bg-wd-blush hover:text-wd-ink"
                 >
                   <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
                     <path d="M6 6l12 12M18 6 6 18" />
@@ -165,25 +165,25 @@ export function KiranaLauncher({ name }: { name?: string }) {
             }}
             style={{ x, y }}
             aria-label="Tanya Kirana, asisten AI DuaCincin"
-            className={`dc-glass is-ink group relative flex h-[62px] items-center gap-2.5 rounded-full p-1 text-dc-on-dark shadow-float transition-[box-shadow] duration-300 hover:shadow-gold focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-dc-gold active:scale-95 sm:h-16 ${
+            className={`group relative flex h-[62px] items-center gap-2.5 rounded-full border border-wd-accent-line bg-white p-1 text-wd-ink shadow-wd-pop transition-[border-color,box-shadow] duration-300 hover:border-wd-accent-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wd-accent-ink active:scale-95 sm:h-16 ${
               compact ? "max-sm:pr-1 sm:pr-5" : "pr-5"
             }`}
           >
             {!reduced && (
               <motion.span
                 aria-hidden
-                className="absolute inset-0 rounded-full border-2 border-dc-gold-antique"
+                className="absolute inset-0 rounded-full border-2 border-wd-accent"
                 initial={{ opacity: 0.8, scale: 1 }}
                 animate={{ opacity: 0, scale: 1.4 }}
                 transition={{ duration: 1.6, repeat: 2, repeatDelay: 0.7, delay: 0.9, ease: "easeOut" }}
               />
             )}
-            <span className="relative rounded-full bg-linear-135 from-[#e8cb8c] via-[#c39c52] to-[#9c7731] p-[2px]">
+            <span className="relative rounded-full bg-wd-accent p-[2px]">
               <KiranaFace size={52} mood={hover ? "happy" : "idle"} />
             </span>
             <span className={`text-left leading-tight ${compact ? "max-sm:sr-only" : ""}`}>
-              <span className="block text-[0.95rem] font-extrabold text-dc-gold-antique">Tanya Kirana</span>
-              <span className="block text-[0.72rem] font-semibold text-dc-on-dark/80">Asisten AI · gratis</span>
+              <span className="block text-[0.95rem] font-semibold text-wd-ink">Tanya Kirana</span>
+              <span className="block text-[0.75rem] font-medium text-wd-muted">Asisten AI · gratis</span>
             </span>
           </motion.button>
         </motion.div>

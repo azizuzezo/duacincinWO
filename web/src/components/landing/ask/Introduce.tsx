@@ -7,6 +7,7 @@
 import { motion } from "framer-motion";
 import { useState, type FormEvent } from "react";
 
+import { wdButton } from "@/components/home/ui";
 import { EASE, useReducedMotion } from "@/lib/motion";
 
 import { KiranaFace } from "./Kirana3D";
@@ -45,52 +46,53 @@ export function Introduce({ onSave, onSkip }: { onSave: (name: string, age: numb
     >
       <div className="flex items-center gap-2.5">
         <KiranaFace size={40} mood="happy" />
-        <span className="text-sm font-bold text-dc-ink">Kirana</span>
+        <span className="text-sm font-semibold text-wd-ink">Kirana</span>
       </div>
-      <form onSubmit={submit} className="mt-3 rounded-[22px] rounded-tl-md border border-dc-line/70 bg-dc-white/92 p-4 shadow-soft sm:p-5">
-        <p className="text-[1rem] leading-relaxed text-dc-black">
-          Hai, aku <strong className="font-semibold text-dc-ink">Kirana</strong>! Sebelum mulai, boleh kenalan dulu? Biar nanti aku bisa sapa kamu dengan nama.
+      <form onSubmit={submit} noValidate className="mt-3 rounded-[22px] rounded-tl-md border border-wd-line bg-wd-paper p-4 sm:p-5">
+        <p className="text-[1rem] leading-relaxed text-wd-text">
+          Hai, aku <strong className="font-semibold text-wd-ink">Kirana</strong>! Sebelum mulai, boleh kenalan dulu? Biar nanti aku bisa sapa kamu dengan nama.
         </p>
         <div className="mt-4 grid grid-cols-[1fr_96px] gap-2.5">
           <label className="block">
-            <span className="text-xs font-semibold text-dc-text-2">Nama panggilan</span>
+            <span className="text-[0.82rem] font-semibold text-wd-ink">Nama panggilan</span>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={40}
               autoComplete="given-name"
               placeholder="Misalnya Rina"
-              className="mt-1 block min-h-12 w-full rounded-md border border-dc-line-strong bg-dc-white px-3.5 text-base text-dc-ink outline-none transition-[border-color,box-shadow] focus:border-dc-gold focus:shadow-[0_0_0_4px_rgb(184_146_74_/_0.15)]"
+              className="mt-1.5 block min-h-12 w-full rounded-[14px] border border-wd-line-2 bg-white px-3.5 text-base text-wd-ink outline-none transition-[border-color,box-shadow] placeholder:text-wd-muted hover:border-wd-muted focus:border-wd-accent-ink focus:shadow-[0_0_0_4px_var(--wd-accent-soft)] focus-visible:outline-none aria-[invalid=true]:border-wd-danger"
             />
           </label>
           <label className="block">
-            <span className="text-xs font-semibold text-dc-text-2">Umur</span>
+            <span className="text-[0.82rem] font-semibold text-wd-ink">Umur</span>
             <input
               value={age}
               onChange={(e) => setAge(e.target.value.replace(/\D/g, "").slice(0, 2))}
               inputMode="numeric"
               placeholder="25"
               aria-describedby="umur-opsional"
-              className="mt-1 block min-h-12 w-full rounded-md border border-dc-line-strong bg-dc-white px-3.5 text-base text-dc-ink outline-none transition-[border-color,box-shadow] focus:border-dc-gold focus:shadow-[0_0_0_4px_rgb(184_146_74_/_0.15)]"
+              className="mt-1.5 block min-h-12 w-full rounded-[14px] border border-wd-line-2 bg-white px-3.5 text-base text-wd-ink outline-none transition-[border-color,box-shadow] placeholder:text-wd-muted hover:border-wd-muted focus:border-wd-accent-ink focus:shadow-[0_0_0_4px_var(--wd-accent-soft)] focus-visible:outline-none aria-[invalid=true]:border-wd-danger"
             />
           </label>
         </div>
-        <p id="umur-opsional" className="mt-1.5 text-xs text-dc-text-3">
+        <p id="umur-opsional" className="mt-2 text-[0.8rem] leading-relaxed text-wd-muted">
           Umur boleh dikosongkan. Hanya dipakai Kirana untuk menyapamu.
         </p>
         {error && (
-          <p role="alert" className="mt-2 text-sm font-semibold text-dc-danger">
+          <p id="kenalan-galat" role="alert" className="mt-2 rounded-xl bg-[#fbeceb] px-3 py-2 text-sm text-wd-danger">
             {error}
           </p>
         )}
         <div className="mt-4 flex items-center justify-between gap-3">
-          <button type="button" onClick={onSkip} className="inline-flex min-h-11 items-center rounded-full px-2 text-sm font-semibold text-dc-text-2 hover:text-dc-ink">
+          <button type="button" onClick={onSkip} className="inline-flex min-h-11 items-center rounded-full px-3 text-sm font-medium text-wd-text underline decoration-wd-line-2 underline-offset-4 hover:text-wd-ink">
             Lewati
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="inline-flex min-h-12 items-center gap-2 rounded-full bg-linear-135 from-[#e2c27f] via-[#c39c52] to-[#a17d36] px-6 text-[0.95rem] font-bold text-[#1a140c] transition-[transform,box-shadow] duration-300 ease-dc hover:shadow-gold active:scale-95 disabled:opacity-60"
+            aria-busy={saving || undefined}
+            className={wdButton({ className: "px-7" })}
           >
             {saving ? "Menyimpan…" : "Kenalan"}
           </button>

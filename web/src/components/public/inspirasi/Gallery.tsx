@@ -10,6 +10,8 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { apiGet, ApiError, type InspirationItem } from "@/lib/api";
 import { DURATION, EASE, motionSafe, useReducedMotion } from "@/lib/motion";
 
+import { CopyButton } from "@/components/public/shared/CopyButton";
+
 import { ADAT, adatOf, CATEGORY_THUMB, matchesQuery, vendorCategory } from "./adat";
 import { Lightbox } from "./Lightbox";
 import { MoodCard, moodRatio } from "./MoodCard";
@@ -41,14 +43,10 @@ function readParams() {
   return { adat: p.get("adat") ?? "", kategori: p.get("kategori") ?? "", q: p.get("q") ?? "" };
 }
 
-const CHIP =
-  "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-[background-color,border-color,color] duration-300";
-const storyClass = (on: boolean) =>
-  `group relative flex min-w-[76px] shrink-0 flex-col items-center gap-1.5 rounded-xl px-1.5 py-1.5 transition-colors duration-300 active:scale-[0.97] ${on ? "text-dc-ink" : "text-dc-text-2 hover:text-dc-ink"}`;
-const ringClass = (on: boolean) =>
-  `block h-16 w-16 rounded-full p-[3px] transition-[background-color,box-shadow] duration-300 ${on ? "bg-[conic-gradient(from_200deg,#c39c52,#f3dc9f,#8a682b,#c39c52)] shadow-gold" : "bg-dc-line-strong"}`;
 const chipClass = (on: boolean) =>
-  `${CHIP} ${on ? "border-dc-ink bg-dc-ink text-dc-on-dark" : "border-dc-line-strong bg-dc-white text-dc-ink hover:border-dc-ink"}`;
+  `inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-colors duration-300 ${
+    on ? "border-wd-accent bg-wd-accent text-wd-ink" : "border-wd-line-2 bg-white text-wd-ink hover:border-wd-ink"
+  }`;
 
 export function InspirationGallery() {
   const [items, setItems] = useState<InspirationItem[]>([]);
@@ -123,96 +121,89 @@ export function InspirationGallery() {
     setKategori("");
     setQ("");
   };
+  const semuaChip = (
+    <button type="button" aria-pressed={!adat && !kategori} onClick={() => { setAdat(""); setKategori(""); }} className={chipClass(!adat && !kategori)}>
+      Semua
+    </button>
+  );
   const close = useCallback(() => setOpen(null), []);
   const move = useCallback((n: number) => setOpen(n), []);
 
   return (
-    <section aria-labelledby="galeri-judul" className="bg-dc-cream pb-20 pt-10 sm:pt-12 lg:pb-28">
+    <section aria-labelledby="galeri-judul" className="bg-white pb-16 pt-8 sm:pt-10 lg:pb-24">
       <h2 id="galeri-judul" className="sr-only">
         Galeri foto
       </h2>
 
       {!loading && !error && items.length > 0 && (
-        <div className="z-30 border-b lg:sticky lg:top-[72px] border-dc-line bg-dc-cream/95 backdrop-blur-sm">
-          <div className="dc-container flex flex-col gap-3 py-3 lg:flex-row lg:items-start lg:gap-8">
-            <div className="min-w-0 flex-1">
-              {/* Adat as round photo stories: the couple's own look is the label. */}
-              <div role="group" aria-label="Saring menurut adat" className="-mx-4 flex gap-1 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:px-0">
-                <button type="button" aria-pressed={!adat && !kategori} onClick={() => { setAdat(""); setKategori(""); }} className={storyClass(!adat && !kategori)}>
-                  <span className={ringClass(!adat && !kategori)}>
-                    <span className="flex h-full w-full items-center justify-center rounded-full bg-dc-ink">
-                      <svg aria-hidden width="34" height="22" viewBox="0 0 34 22" fill="none" stroke="var(--dc-gold-antique)" strokeWidth="1.4">
-                        <circle cx="12" cy="11" r="9" />
-                        <circle cx="22" cy="11" r="9" />
-                      </svg>
+        <div className="wd-container flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
+          <div className="min-w-0 flex-1">
+            {adatChips.length > 0 && (
+            <div role="group" aria-label="Saring menurut adat" className="wd-rail -mx-4 mb-2 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+              {semuaChip}
+              {adatChips.map((a) => (
+                <button key={a.key} type="button" aria-pressed={adat === a.key} onClick={() => setAdat(adat === a.key ? "" : a.key)} className={`${chipClass(adat === a.key)} ${a.photo ? "pl-1.5" : ""}`}>
+                  {a.photo && (
+                    <span className="relative h-8 w-8 overflow-hidden rounded-full bg-wd-blush">
+                      <Image src={a.photo} alt="" fill sizes="32px" className="object-cover object-[50%_15%]" />
                     </span>
-                  </span>
-                  <span className="text-sm font-semibold">Semua</span>
+                  )}
+                  {a.label}
+                  <span className="sr-only">, {adatCounts.get(a.key)} foto</span>
                 </button>
-                {adatChips.map((a) => (
-                  <button key={a.key} type="button" aria-pressed={adat === a.key} onClick={() => setAdat(adat === a.key ? "" : a.key)} className={storyClass(adat === a.key)}>
-                    <span className={ringClass(adat === a.key)}>
-                      <span className="relative block h-full w-full overflow-hidden rounded-full bg-[radial-gradient(120%_90%_at_50%_100%,#ead7ae_0%,#f3ecdf_70%)]">
-                        {a.photo ? (
-                          <Image src={a.photo} alt="" fill sizes="64px" className="object-cover object-[50%_12%] transition-transform duration-500 ease-dc group-hover:scale-110 motion-reduce:transition-none" />
-                        ) : (
-                          <span className="flex h-full w-full items-center justify-center font-heading text-xl text-dc-clay">{a.label.slice(0, 1)}</span>
-                        )}
+              ))}
+            </div>
+            )}
+            {catChips.length > 0 && (
+              <div role="group" aria-label="Saring menurut kategori vendor" className="wd-rail -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+                {adatChips.length === 0 && semuaChip}
+                {catChips.map((c) => (
+                  <button key={c.value} type="button" aria-pressed={kategori === c.value} onClick={() => setKategori(kategori === c.value ? "" : c.value)} className={`${chipClass(kategori === c.value)} pl-1.5`}>
+                    {CATEGORY_THUMB[c.value] && (
+                      <span className="relative h-8 w-8 overflow-hidden rounded-full bg-wd-blush">
+                        <Image src={CATEGORY_THUMB[c.value]} alt="" fill sizes="32px" className="object-cover" />
                       </span>
-                    </span>
-                    <span className="text-sm font-semibold">{a.label}</span>
-                    <span className="sr-only">, {adatCounts.get(a.key)} foto</span>
+                    )}
+                    {c.label}
                   </button>
                 ))}
               </div>
-              {catChips.length > 0 && (
-                <div role="group" aria-label="Saring menurut kategori vendor" className="-mx-4 mt-2 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
-                  {catChips.map((c) => (
-                    <button key={c.value} type="button" aria-pressed={kategori === c.value} onClick={() => setKategori(kategori === c.value ? "" : c.value)} className={`${chipClass(kategori === c.value)} pl-1.5`}>
-                      {CATEGORY_THUMB[c.value] && (
-                        <span className="relative h-8 w-8 overflow-hidden rounded-full bg-dc-paper-3">
-                          <Image src={CATEGORY_THUMB[c.value]} alt="" fill sizes="32px" className="object-cover" />
-                        </span>
-                      )}
-                      {c.label}
-                    </button>
-                  ))}
-                </div>
-              )}
+            )}
+          </div>
+          <div className="flex shrink-0 items-center gap-3 lg:w-72">
+            <label htmlFor="cari-inspirasi" className="sr-only">
+              Cari inspirasi
+            </label>
+            <div className="relative flex-1">
+              <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-wd-muted">
+                <circle cx="11" cy="11" r="7" />
+                <path d="M20 20l-3.5-3.5" />
+              </svg>
+              <input
+                id="cari-inspirasi"
+                type="search"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Cari: siger, pelaminan, kebaya"
+                className="min-h-11 w-full rounded-full border border-wd-line-2 bg-white pl-10 pr-4 text-sm text-wd-ink placeholder:text-wd-muted focus:border-wd-accent-ink focus:outline-none"
+              />
             </div>
-            <div className="flex shrink-0 items-center gap-3 lg:w-72 lg:flex-col lg:items-stretch lg:gap-1">
-              <label htmlFor="cari-inspirasi" className="sr-only">
-                Cari inspirasi
-              </label>
-              <div className="relative flex-1 lg:flex-none">
-                <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-dc-text-3">
-                  <circle cx="11" cy="11" r="7" />
-                  <path d="M20 20l-3.5-3.5" />
-                </svg>
-                <input
-                  id="cari-inspirasi"
-                  type="search"
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder="Cari: siger, pelaminan, kebaya"
-                  className="min-h-11 w-full rounded-full border border-dc-line-strong bg-dc-white pl-10 pr-4 text-sm text-dc-black placeholder:text-dc-text-3 focus:border-dc-gold focus:shadow-[0_0_0_4px_rgba(184,146,74,0.18)] focus:outline-none"
-                />
-              </div>
-              <p className="shrink-0 text-sm text-dc-text-3 lg:pl-4" aria-live="polite">
-                {shown.length} foto
-              </p>
-            </div>
+            <p className="shrink-0 text-sm text-wd-muted" aria-live="polite">
+              {shown.length} foto
+            </p>
+            {/* The filter lives in the address, so a filtered board can be sent as is. */}
+            {filtered && <CopyButton hash="" label="Salin tautan galeri dengan saringan ini" />}
           </div>
         </div>
       )}
 
-      <div className="dc-container pt-8">
+      <div className="wd-container pt-8">
         {loading && (
           <div role="status" aria-label="Memuat inspirasi" className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">
             {[0, 1, 2, 3].map((c) => (
               <div key={c} className={`flex flex-col gap-3 sm:gap-5 ${c >= 2 ? "hidden md:flex" : ""} ${c === 3 ? "md:hidden xl:flex" : ""}`}>
                 {[0, 1, 2].map((r) => (
-                  <div key={r} style={{ aspectRatio: moodRatio(r * 4 + c) }} className="dc-skeleton rounded-2xl" />
+                  <div key={r} style={{ aspectRatio: moodRatio(r * 4 + c) }} className="dc-skeleton rounded-[16px]" />
                 ))}
               </div>
             ))}
@@ -227,7 +218,7 @@ export function InspirationGallery() {
             title="Belum ada inspirasi"
             body="Kurasi foto sedang disiapkan. Sambil menunggu, lihat papan Pinterest kami langsung."
             action={
-              <a href={PINTEREST_BOARD_URL} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center rounded-full bg-dc-ink px-5 text-sm font-semibold text-dc-on-dark hover:bg-dc-ink-2">
+              <a href={PINTEREST_BOARD_URL} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center rounded-full bg-wd-ink px-5 text-sm font-semibold text-white hover:bg-black">
                 Buka papan Pinterest
               </a>
             }
@@ -280,14 +271,14 @@ export function InspirationGallery() {
         )}
 
         {!loading && !error && items.length > 0 && (
-          <p className="mt-14 text-center text-sm text-dc-text-2">
+          <p className="mt-14 text-center text-sm text-wd-text">
             {filtered ? "Ingin lihat semuanya? " : "Ada lebih banyak di "}
             {filtered ? (
-              <button type="button" onClick={clear} className="inline-flex min-h-11 items-center font-semibold text-dc-clay underline underline-offset-4 hover:text-dc-ink">
+              <button type="button" onClick={clear} className="inline-flex min-h-11 items-center font-semibold text-wd-accent-ink underline underline-offset-4 hover:text-wd-ink">
                 Tampilkan semua foto
               </button>
             ) : (
-              <a href={PINTEREST_BOARD_URL} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center font-semibold text-dc-clay underline underline-offset-4 hover:text-dc-ink">
+              <a href={PINTEREST_BOARD_URL} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center font-semibold text-wd-accent-ink underline underline-offset-4 hover:text-wd-ink">
                 papan Pinterest DuaCincin
               </a>
             )}

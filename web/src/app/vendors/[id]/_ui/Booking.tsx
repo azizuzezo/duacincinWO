@@ -1,12 +1,16 @@
 "use client";
 
-import { Button, ButtonLink } from "@/components/ui/Button";
+import { AnimatePresence, motion } from "framer-motion";
+import Link from "next/link";
+
+import { Shield, wdButton } from "@/components/home/ui";
 import { Input } from "@/components/ui/Field";
 import { Sheet } from "@/components/ui/Sheet";
-import { Skeleton } from "@/components/ui/Skeleton";
 import { formatRupiah, type VendorPackage, type VendorProfile } from "@/lib/api";
+import { EASE, useReducedMotion } from "@/lib/motion";
 
 import { TanggalPicker, todayIso } from "./TanggalPicker";
+import { Pulse, WdButton } from "./wd";
 
 /** "Rp8.500.000" -> "Rp8,5 jt" for the narrow mobile bar only. */
 function shortRupiah(v: number): string {
@@ -14,10 +18,9 @@ function shortRupiah(v: number): string {
   return formatRupiah(v);
 }
 
-/** The escrow path as three stations, same dot language as FundStatus, so
- * the promise reads the same before and after booking. */
-export function EscrowSteps({ tone = "paper" }: { tone?: "paper" | "ink" }) {
-  const dark = tone === "ink";
+/** The escrow path as three stations. Same wording as before the redesign,
+ * so the promise reads the same before and after booking. */
+export function EscrowSteps() {
   const steps = [
     { t: "Kamu bayar lewat DuaCincin", d: "DP lalu pelunasan, tidak ke rekening pribadi vendor." },
     { t: "Dana ditahan", d: "Disimpan aman selama persiapan." },
@@ -25,18 +28,13 @@ export function EscrowSteps({ tone = "paper" }: { tone?: "paper" | "ink" }) {
   ];
   return (
     <ol className="relative grid gap-4">
-      <span aria-hidden className={`absolute bottom-3 left-[5px] top-3 w-px ${dark ? "bg-dc-on-dark/20" : "bg-dc-line-strong"}`} />
+      <span aria-hidden className="absolute bottom-3 left-[5px] top-3 w-px bg-wd-line-2" />
       {steps.map((s, i) => (
         <li key={s.t} className="relative flex gap-3">
-          <span
-            aria-hidden
-            className={`relative mt-1.5 h-[11px] w-[11px] shrink-0 rounded-full ${
-              i === 2 ? (dark ? "bg-dc-gold-antique" : "bg-dc-success") : dark ? "border-2 border-dc-gold-antique bg-dc-ink" : "border-2 border-dc-gold bg-dc-white"
-            }`}
-          />
+          <span aria-hidden className={`relative mt-1.5 h-[11px] w-[11px] shrink-0 rounded-full ${i === 2 ? "bg-wd-ok" : "border-2 border-wd-accent bg-white"}`} />
           <div>
-            <p className={`text-sm font-semibold ${dark ? "text-dc-on-dark" : "text-dc-ink"}`}>{s.t}</p>
-            <p className={`text-sm leading-relaxed ${dark ? "text-dc-on-dark/80" : "text-dc-text-3"}`}>{s.d}</p>
+            <p className="text-sm font-semibold text-wd-ink">{s.t}</p>
+            <p className="text-sm leading-relaxed text-wd-muted">{s.d}</p>
           </div>
         </li>
       ))}
@@ -51,22 +49,24 @@ type Common = {
   starting: boolean;
   onChat: () => void;
   onBook: () => void;
+  /** Login link that brings the visitor back to this profile. */
+  loginHref: string;
 };
 
-function PriceBlock({ profile }: { profile: VendorProfile }) {
-  return (
-    <div>
-      <p className="text-sm text-dc-text-2">Harga mulai dari</p>
-      <p className="mt-0.5 text-[2rem] font-bold leading-tight tracking-tight text-dc-ink tabular-nums">
-        {profile.price_min > 0 ? formatRupiah(profile.price_min) : "Lewat diskusi"}
-      </p>
-      {profile.price_max > profile.price_min && <p className="mt-0.5 text-sm text-dc-text-2">hingga {formatRupiah(profile.price_max)}, tergantung paket</p>}
-    </div>
-  );
+const textLink =
+  "-mr-2 inline-flex min-h-11 shrink-0 items-center rounded-md px-2 text-sm font-semibold text-wd-accent-ink underline-offset-4 hover:underline";
+
+function swap(reduced: boolean | null) {
+  return {
+    initial: reduced ? { opacity: 0 } : { opacity: 0, y: 8 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: reduced ? 0 : -6 },
+    transition: { duration: reduced ? 0.01 : 0.28, ease: EASE },
+  } as const;
 }
 
-/** Desktop: sticky decision card. Mobile: same card inline under the intro,
- * while MobileActionBar keeps the two actions under the thumb. */
+/** Desktop only: the sticky decision card in the right column. On phones the
+ * same actions live in MobileActionBar. */
 export function BookingCard({
   profile,
   isClient,
@@ -80,6 +80,7 @@ export function BookingCard({
   onClearPackage,
   onSeePackages,
   error,
+  loginHref,
 }: Common & {
   eventDate: string;
   setEventDate: (v: string) => void;
@@ -88,105 +89,127 @@ export function BookingCard({
   onSeePackages: () => void;
   error: string | null;
 }) {
+  const reduced = useReducedMotion();
   return (
-    <div className="rounded-2xl border border-dc-line bg-dc-white p-5 shadow-lift sm:p-6">
-      <PriceBlock profile={profile} />
+    <div className="rounded-[20px] border border-wd-line bg-white p-6 shadow-wd-card">
+      {profile.price_min > 0 ? (
+        <div>
+          <p className="text-sm text-wd-muted">Mulai dari</p>
+          <p className="mt-0.5 text-[1.75rem] font-semibold leading-tight tracking-tight text-wd-ink tabular-nums">{formatRupiah(profile.price_min)}</p>
+          {profile.price_max > profile.price_min && <p className="mt-0.5 text-sm text-wd-muted">hingga {formatRupiah(profile.price_max)}, tergantung paket</p>}
+        </div>
+      ) : (
+        <div>
+          <p className="text-lg font-semibold text-wd-ink">Tanya harga lewat chat</p>
+          <p className="mt-0.5 text-sm text-wd-muted">Vendor ini menyesuaikan harga dengan kebutuhanmu.</p>
+        </div>
+      )}
 
-      <div className="my-5 h-px bg-dc-line" />
+      <div className="my-5 h-px bg-wd-line" />
 
       {checkingUser ? (
         <div className="grid gap-3" aria-hidden>
-          <Skeleton className="h-12" />
-          <Skeleton className="h-12 rounded-full" />
-          <Skeleton className="h-12 rounded-full" />
+          <Pulse className="h-12" />
+          <Pulse className="h-12 rounded-full" />
+          <Pulse className="h-12 rounded-full" />
         </div>
       ) : isClient ? (
         <div className="grid gap-4">
           <TanggalPicker label="Tanggal acara" min={todayIso()} value={eventDate} onChange={setEventDate} hint={eventDate ? undefined : "Bisa diubah lagi saat mengajukan booking."} />
-          <div className="rounded-lg bg-dc-cream px-4 py-3">
-            {selected ? (
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-xs text-dc-text-3">Paket dipilih</p>
-                  <p className="break-words font-semibold text-dc-ink">{selected.name}</p>
-                  {selected.price > 0 && <p className="text-sm tabular-nums text-dc-text-2">{formatRupiah(selected.price)}</p>}
-                </div>
-                <button
-                  type="button"
-                  onClick={onClearPackage}
-                  className="-mr-2 -mt-1 inline-flex min-h-11 shrink-0 items-center rounded-md px-2 text-sm font-semibold text-dc-clay underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold"
-                >
-                  Hapus
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm text-dc-text-2">Belum memilih paket</p>
-                <button
-                  type="button"
-                  onClick={onSeePackages}
-                  className="-mr-2 inline-flex min-h-11 shrink-0 items-center rounded-md px-2 text-sm font-semibold text-dc-clay underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold"
-                >
-                  Lihat paket
-                </button>
-              </div>
-            )}
+          {/* The chosen package swaps in place (crossfade + slight rise) so
+              picking one in the Paket section visibly lands here. */}
+          <div className={`overflow-hidden rounded-[14px] px-4 py-3 transition-colors duration-300 ${selected ? "bg-wd-accent-wash ring-1 ring-wd-accent-line" : "bg-wd-paper"}`}>
+            <AnimatePresence initial={false} mode="popLayout">
+              {selected ? (
+                <motion.div key={selected.id} {...swap(reduced)} className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs text-wd-muted">Paket dipilih</p>
+                    <p className="break-words font-semibold text-wd-ink">{selected.name}</p>
+                    {selected.price > 0 && <p className="text-sm tabular-nums text-wd-text">{formatRupiah(selected.price)}</p>}
+                  </div>
+                  <button type="button" onClick={onClearPackage} className={`${textLink} -mt-1`}>
+                    Hapus<span className="sr-only"> paket {selected.name}</span>
+                  </button>
+                </motion.div>
+              ) : (
+                <motion.div key="none" {...swap(reduced)} className="flex items-center justify-between gap-3">
+                  <p className="text-sm text-wd-text">Belum memilih paket</p>
+                  <button type="button" onClick={onSeePackages} className={textLink}>
+                    Lihat paket
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-          <Button variant="gold" block onClick={onChat} loading={starting}>
+          <WdButton block onClick={onChat} loading={starting}>
             Chat dengan vendor
-          </Button>
-          <Button variant="ghost" block onClick={onBook} aria-haspopup="dialog">
+          </WdButton>
+          <WdButton variant="outline" block onClick={onBook} aria-haspopup="dialog">
             Ajukan booking
-          </Button>
-          <p className="text-center text-xs leading-relaxed text-dc-text-3">Sepakati paket dan harga lewat chat dulu. Kamu belum membayar apa pun saat mengajukan.</p>
+          </WdButton>
+          <p className="text-center text-xs leading-relaxed text-wd-muted">Sepakati paket dan harga lewat chat dulu. Kamu belum membayar apa pun saat mengajukan.</p>
         </div>
       ) : (
         <div>
-          <p className="text-sm leading-relaxed text-dc-text-2">Masuk sebagai Client untuk chat dan mengajukan booking ke vendor ini.</p>
-          <ButtonLink href="/login" variant="gold" block className="mt-4">
+          <p className="text-sm leading-relaxed text-wd-text">Masuk sebagai Client untuk chat dan mengajukan booking ke vendor ini.</p>
+          <Link href={loginHref} className={wdButton({ className: "mt-4 w-full" })}>
             Masuk untuk chat
-          </ButtonLink>
+          </Link>
         </div>
       )}
 
       {error && (
-        <p role="alert" className="mt-4 rounded-md bg-dc-danger/[0.06] px-3 py-2 text-sm text-dc-danger">
+        <p role="alert" className="mt-4 rounded-lg bg-wd-danger/[0.06] px-3 py-2 text-sm text-wd-danger">
           {error}
         </p>
       )}
 
-      <div className="mt-6 rounded-xl border border-dc-line p-4">
-        <p className="mb-3 text-sm font-semibold text-dc-ink">Uangmu dijaga escrow DuaCincin</p>
-        <EscrowSteps />
+      <div className="mt-5 flex gap-3 rounded-[14px] bg-wd-accent-wash p-4">
+        <Shield size={20} className="mt-0.5 shrink-0 text-wd-accent-ink" />
+        <div>
+          <p className="text-sm font-semibold text-wd-ink">Uangmu dijaga escrow DuaCincin</p>
+          <p className="mt-0.5 text-sm leading-relaxed text-wd-text">Dana ditahan dan baru diteruskan ke vendor setelah kamu mengonfirmasi acara selesai.</p>
+        </div>
       </div>
     </div>
   );
 }
 
-/** Mobile only: price + the two actions, always under the thumb. */
-export function MobileActionBar({ profile, isClient, checkingUser, starting, onChat, onBook }: Common) {
+/** Phones and tablets: price + the actions, always under the thumb. */
+export function MobileActionBar({ profile, isClient, checkingUser, starting, onChat, onBook, error, loginHref }: Common & { error: string | null }) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-dc-line bg-dc-white px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-float lg:hidden">
-      <div className="mx-auto flex max-w-xl items-center gap-3">
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-wd-line bg-white px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-8px_24px_-12px_rgba(35,31,29,0.12)] lg:hidden">
+      {error && (
+        <p role="alert" className="mx-auto mb-2 max-w-xl rounded-lg bg-wd-danger/[0.06] px-3 py-2 text-sm text-wd-danger">
+          {error}
+        </p>
+      )}
+      <div className="mx-auto flex max-w-xl items-center gap-2">
         <div className="min-w-0 flex-1">
-          <p className="text-xs text-dc-text-3">Mulai dari</p>
-          <p className="truncate font-bold tabular-nums text-dc-ink">{profile.price_min > 0 ? shortRupiah(profile.price_min) : "Lewat diskusi"}</p>
+          {profile.price_min > 0 ? (
+            <>
+              <p className="text-xs text-wd-muted">Mulai dari</p>
+              <p className="truncate font-semibold tabular-nums text-wd-ink">{shortRupiah(profile.price_min)}</p>
+            </>
+          ) : (
+            <p className="text-sm leading-tight text-wd-text">Tanya harga lewat chat</p>
+          )}
         </div>
         {checkingUser ? (
-          <Skeleton className="h-11 w-40 rounded-full" />
+          <Pulse className="h-11 w-40 rounded-full" />
         ) : isClient ? (
           <>
-            <Button variant="ghost" size="sm" onClick={onBook} aria-haspopup="dialog" aria-label="Ajukan booking">
+            <WdButton variant="outline" size="sm" onClick={onBook} aria-haspopup="dialog" aria-label="Ajukan booking">
               Booking
-            </Button>
-            <Button variant="gold" size="sm" onClick={onChat} loading={starting} aria-label="Chat dengan vendor">
+            </WdButton>
+            <WdButton size="sm" onClick={onChat} loading={starting} aria-label="Chat dengan vendor">
               Chat vendor
-            </Button>
+            </WdButton>
           </>
         ) : (
-          <ButtonLink href="/login" variant="gold" size="sm">
+          <Link href={loginHref} className={wdButton({ size: "sm", className: "!min-h-11" })}>
             Masuk untuk chat
-          </ButtonLink>
+          </Link>
         )}
       </div>
     </div>
@@ -234,9 +257,9 @@ export function BookingSheet({
       title="Ajukan booking"
       description="Vendor akan mengonfirmasi sebelum kamu membayar DP."
       footer={
-        <Button type="submit" form="booking-form" variant="gold" block loading={saving}>
+        <WdButton type="submit" form="booking-form" block loading={saving}>
           Kirim pengajuan booking
-        </Button>
+        </WdButton>
       }
     >
       <form id="booking-form" onSubmit={onSubmit} className="grid gap-5">
@@ -244,7 +267,7 @@ export function BookingSheet({
 
         {packages.length > 0 && (
           <fieldset>
-            <legend className="text-sm font-semibold text-dc-ink">Pilih dari paket vendor</legend>
+            <legend className="text-sm font-semibold text-wd-ink">Pilih dari paket vendor</legend>
             <div className="mt-2 grid gap-2">
               {packages.map((p) => {
                 const active = packageDescription === p.name;
@@ -254,12 +277,12 @@ export function BookingSheet({
                     type="button"
                     aria-pressed={active}
                     onClick={() => onPickPackage(p)}
-                    className={`flex min-h-12 items-center justify-between gap-3 rounded-lg border px-4 py-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold ${
-                      active ? "border-dc-gold bg-dc-gold/10" : "border-dc-line-strong hover:border-dc-text-3"
+                    className={`flex min-h-12 items-center justify-between gap-3 rounded-[14px] border px-4 py-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wd-accent-ink ${
+                      active ? "border-wd-accent-line bg-wd-accent-soft" : "border-wd-line-2 hover:border-wd-ink"
                     }`}
                   >
-                    <span className="min-w-0 break-words text-sm font-semibold text-dc-ink">{p.name}</span>
-                    <span className="shrink-0 text-sm tabular-nums text-dc-text-2">{p.price > 0 ? formatRupiah(p.price) : "Lewat chat"}</span>
+                    <span className="min-w-0 break-words text-sm font-semibold text-wd-ink">{p.name}</span>
+                    <span className="shrink-0 text-sm tabular-nums text-wd-text">{p.price > 0 ? formatRupiah(p.price) : "Lewat chat"}</span>
                   </button>
                 );
               })}
@@ -280,13 +303,13 @@ export function BookingSheet({
           hint="Isi harga yang sudah kamu sepakati di chat. Harga di DuaCincin sudah termasuk biaya layanan."
         />
 
-        <div className="rounded-xl bg-dc-cream p-4">
-          <p className="mb-3 text-sm font-semibold text-dc-ink">Setelah vendor mengonfirmasi</p>
+        <div className="rounded-[14px] bg-wd-paper p-4">
+          <p className="mb-3 text-sm font-semibold text-wd-ink">Setelah vendor mengonfirmasi</p>
           <EscrowSteps />
         </div>
 
         {error && (
-          <p role="alert" className="rounded-md bg-dc-danger/[0.06] px-3 py-2 text-sm text-dc-danger">
+          <p role="alert" className="rounded-lg bg-wd-danger/[0.06] px-3 py-2 text-sm text-wd-danger">
             {error}
           </p>
         )}

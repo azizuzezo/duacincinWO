@@ -27,7 +27,7 @@ export function OrbitRings({ size = 28, spinning = true }: { size?: number; spin
         animate={turn ? { rotate: 360 } : { rotate: 0 }}
         transition={turn ? { duration: 2.4, ease: "linear", repeat: Infinity } : { duration: 0.3 }}
       >
-        <circle cx="12" cy="16" r="7.5" fill="none" stroke="var(--color-dc-gold)" strokeWidth="2.2" />
+        <circle cx="12" cy="16" r="7.5" fill="none" stroke="var(--wd-accent)" strokeWidth="2.2" />
       </motion.svg>
       <motion.svg
         viewBox="0 0 32 32"
@@ -35,7 +35,7 @@ export function OrbitRings({ size = 28, spinning = true }: { size?: number; spin
         animate={turn ? { rotate: -360 } : { rotate: 0 }}
         transition={turn ? { duration: 3.2, ease: "linear", repeat: Infinity } : { duration: 0.3 }}
       >
-        <circle cx="20" cy="16" r="7.5" fill="none" stroke="var(--color-dc-ink)" strokeWidth="2.2" />
+        <circle cx="20" cy="16" r="7.5" fill="none" stroke="var(--wd-ink)" strokeWidth="2.2" />
       </motion.svg>
     </span>
   );
@@ -55,11 +55,11 @@ function Check({ done }: { done: boolean }) {
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.3, ease: EASE }}
           >
-            <circle cx="10" cy="10" r="9" fill="var(--color-dc-gold-soft)" />
+            <circle cx="10" cy="10" r="9" fill="var(--wd-accent-soft)" />
             <motion.path
               d="m6 10.2 2.6 2.6L14 7.4"
               fill="none"
-              stroke="var(--color-dc-clay)"
+              stroke="var(--wd-accent-ink)"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -69,7 +69,7 @@ function Check({ done }: { done: boolean }) {
             />
           </motion.svg>
         ) : (
-          <motion.span key="run" exit={{ opacity: 0, transition: { duration: 0.1 } }} className="h-2 w-2 rounded-full bg-dc-gold motion-safe:animate-pulse" />
+          <motion.span key="run" exit={{ opacity: 0, transition: { duration: 0.1 } }} className="h-2 w-2 rounded-full bg-wd-accent-deep motion-safe:animate-pulse" />
         )}
       </AnimatePresence>
     </span>
@@ -84,8 +84,8 @@ export function Steps({ steps, finished }: { steps: Step[]; finished: boolean })
 
   if (steps.length === 0) {
     return finished ? null : (
-      <div className="flex items-center gap-3 text-sm text-dc-text-2">
-        <span className="dc-typing-dots inline-flex items-center rounded-full border border-dc-line/70 bg-dc-white/90 px-3 py-2.5 shadow-soft" aria-hidden>
+      <div className="flex items-center gap-3 text-sm text-wd-text">
+        <span className="dc-typing-dots inline-flex items-center rounded-full border border-wd-line bg-wd-paper px-3 py-2.5" aria-hidden>
           <span />
           <span />
           <span />
@@ -102,7 +102,7 @@ export function Steps({ steps, finished }: { steps: Step[]; finished: boolean })
         onClick={() => finished && setOpen((o) => !o)}
         aria-expanded={finished ? open : undefined}
         disabled={!finished}
-        className="group -ml-1 flex min-h-11 items-center gap-3 rounded-full pl-1 pr-3 text-left text-dc-text-2 transition-colors enabled:hover:bg-dc-cream disabled:cursor-default"
+        className="group -ml-1 flex min-h-11 items-center gap-3 rounded-full pl-1 pr-3 text-left text-wd-text transition-colors enabled:hover:bg-wd-blush disabled:cursor-default"
       >
         <OrbitRings spinning={working} />
         {finished ? (
@@ -124,7 +124,7 @@ export function Steps({ steps, finished }: { steps: Step[]; finished: boolean })
             animate={reduced ? { opacity: 1 } : { height: "auto", opacity: 1 }}
             exit={reduced ? { opacity: 0 } : { height: 0, opacity: 0, transition: { duration: 0.32, ease: EASE } }}
             transition={{ duration: 0.4, ease: EASE }}
-            className="ml-[13px] overflow-hidden border-l border-dc-line-strong pl-5"
+            className="ml-[13px] overflow-hidden border-l border-wd-line-2 pl-5"
           >
             {steps.map((s) => (
               <motion.li
@@ -136,7 +136,7 @@ export function Steps({ steps, finished }: { steps: Step[]; finished: boolean })
                 className="flex min-h-8 items-center gap-2.5 py-0.5"
               >
                 <Check done={s.done} />
-                <span className={s.done ? "text-dc-text-3" : "font-semibold text-dc-ink"}>{s.label}</span>
+                <span className={s.done ? "text-wd-muted" : "font-semibold text-wd-ink"}>{s.label}</span>
               </motion.li>
             ))}
           </motion.ol>

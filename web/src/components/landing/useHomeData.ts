@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 
 import { apiGet, type DirectoryCard, type InspirationItem } from "@/lib/api";
 
-export type Remote<T> = { status: "loading" } | { status: "ready"; data: T } | { status: "error" };
+export type Remote<T> = { status: "loading" } | { status: "ready"; data: T } | { status: "error"; retry: () => void };
 
 const cache = new Map<string, Promise<unknown>>();
 
@@ -26,15 +26,27 @@ function load<T>(path: string): Promise<T> {
 
 function useRemote<T>(path: string): Remote<T> {
   const [state, setState] = useState<Remote<T>>({ status: "loading" });
+  // Bumped by retry(): the failed request was already dropped from the cache.
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let alive = true;
     load<T>(path)
       .then((data) => alive && setState({ status: "ready", data }))
-      .catch(() => alive && setState({ status: "error" }));
+      .catch(
+        () =>
+          alive &&
+          setState({
+            status: "error",
+            retry: () => {
+              setState({ status: "loading" });
+              setAttempt((n) => n + 1);
+            },
+          }),
+      );
     return () => {
       alive = false;
     };
-  }, [path]);
+  }, [path, attempt]);
   return state;
 }
 

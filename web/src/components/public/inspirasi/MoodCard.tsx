@@ -14,8 +14,9 @@ export const moodRatio = (i: number) => MOOD_RATIOS[i % MOOD_RATIOS.length];
 
 /** One photo on the mood board. The photo is a button that opens the
  * lightbox; it shares a layoutId with the lightbox image so the picture that
- * was tapped is the one that grows. Motion purpose: hover lifts the print a
- * little and the photo leans in (depth), the photo fades in when loaded. */
+ * was tapped is the one that grows. Motion purpose: on hover the card lifts
+ * and the photo leans in a little (it can be opened), and it fades in when
+ * loaded. */
 export function MoodCard({
   src,
   alt,
@@ -53,16 +54,16 @@ export function MoodCard({
   }, []);
 
   return (
-    <figure className="group relative overflow-hidden rounded-2xl bg-dc-paper-3 shadow-soft transition-[box-shadow,transform] duration-500 ease-dc hover:shadow-lift motion-safe:hover:-translate-y-1">
+    <figure className="group relative overflow-hidden rounded-[16px] bg-wd-blush transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:shadow-wd-lift focus-within:shadow-wd-lift motion-reduce:transition-none motion-reduce:hover:translate-y-0">
       <div className="relative" style={{ aspectRatio: ratio }}>
         {broken ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-dc-cream px-6 text-center text-sm text-dc-text-2">Foto ini belum bisa dimuat</div>
+          <div className="absolute inset-0 flex items-center justify-center bg-wd-blush px-6 text-center text-sm text-wd-text">Foto ini belum bisa dimuat</div>
         ) : (
           <button
             type="button"
             onClick={onOpen}
             aria-label={`Perbesar foto: ${alt}`}
-            className="absolute inset-0 block cursor-zoom-in overflow-hidden focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-dc-gold"
+            className="absolute inset-0 block cursor-zoom-in overflow-hidden focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-wd-accent-ink"
           >
             {!loaded && <span aria-hidden className="dc-skeleton absolute inset-0" />}
             <motion.img
@@ -81,16 +82,16 @@ export function MoodCard({
         {tags.length > 0 && (
           <span className="pointer-events-none absolute left-3 top-3 flex flex-wrap gap-1.5">
             {tags.map((t) => (
-              <span key={t} className="rounded-full bg-dc-ink/80 px-2.5 py-1 text-xs font-semibold text-dc-on-dark">
+              <span key={t} className="rounded-full bg-white/95 px-2.5 py-1 text-xs font-semibold text-wd-ink">
                 {t}
               </span>
             ))}
           </span>
         )}
         {vendorCount > 0 && (
-          <span className="pointer-events-none absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-dc-white/95 py-1 pl-1.5 pr-2.5 text-xs font-semibold text-dc-ink shadow-soft transition-opacity duration-300 lg:group-hover:opacity-0">
-            <span aria-hidden className="flex h-5 w-5 items-center justify-center rounded-full bg-dc-ink">
-              <svg width="13" height="9" viewBox="0 0 34 22" fill="none" stroke="var(--dc-gold-antique)" strokeWidth="2.6">
+          <span className="pointer-events-none absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-white/95 py-1 pl-1.5 pr-2.5 text-xs font-semibold text-wd-ink transition-opacity duration-300 lg:group-hover:opacity-0">
+            <span aria-hidden className="flex h-5 w-5 items-center justify-center rounded-full bg-wd-accent">
+              <svg width="13" height="9" viewBox="0 0 34 22" fill="none" stroke="var(--wd-ink)" strokeWidth="2.6">
                 <circle cx="12" cy="11" r="9" />
                 <circle cx="22" cy="11" r="9" />
               </svg>
@@ -110,7 +111,7 @@ export function MoodCard({
         target="_blank"
         rel="noopener noreferrer"
         aria-label={`Lihat di Pinterest${caption ? `: ${caption}` : ""} (tab baru)`}
-        className="absolute right-2 top-2 inline-flex h-11 w-11 items-center justify-center rounded-full bg-dc-white/90 text-dc-ink shadow-soft transition-[opacity,transform] duration-300 hover:text-dc-clay focus-visible:opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
+        className="absolute right-2 top-2 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-wd-ink transition-[opacity,transform] duration-300 hover:text-wd-accent-ink focus-visible:opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
       >
         <PinterestMark />
       </a>

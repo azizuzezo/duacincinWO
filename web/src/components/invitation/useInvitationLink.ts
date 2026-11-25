@@ -103,7 +103,7 @@ export function useInvitationLink() {
       return null;
     } catch (err) {
       tab?.close();
-      if (err instanceof ApiError && err.status === 503) return "Fitur undangan digital belum aktif. Coba lagi nanti.";
+      if (err instanceof ApiError && err.status === 503) return "Fitur Digital Invitation belum aktif. Coba lagi nanti.";
       if (err instanceof ApiError && err.status === 429) return "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.";
       return "Undangan belum bisa dibuka. Periksa koneksi internetmu, lalu coba lagi.";
     } finally {

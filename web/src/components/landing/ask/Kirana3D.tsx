@@ -91,7 +91,7 @@ export function Kirana3D({ mood = "idle", className = "", label = "Kirana, asist
 export function KiranaFace({ mood = "idle", size = 40, className = "" }: { mood?: "idle" | "happy" | "thinking"; size?: number; className?: string }) {
   return (
     <span aria-hidden className={`relative inline-flex shrink-0 items-center justify-center ${className}`} style={{ width: size, height: size }}>
-      <span className="absolute inset-0 rounded-full bg-linear-to-b from-dc-ink-2 to-dc-ink" />
+      <span className="absolute inset-0 rounded-full bg-linear-to-b from-wd-accent-soft to-wd-champagne ring-1 ring-wd-accent-line/70" />
       {mood === "thinking" && <span className="dc-kirana-orbit absolute -inset-[3px] rounded-full" />}
       {/* eslint-disable-next-line @next/next/no-img-element -- tiny local sprite */}
       <img src={mood === "happy" ? "/kirana/kirana-face-happy.webp" : "/kirana/kirana-face-idle.webp"} alt="" draggable={false} className="relative h-[92%] w-[92%] translate-y-[4%] object-contain" />

@@ -1,0 +1,219 @@
+/* ==========================================================================
+   DuaCincin "Putih" design system (Nov 2026).
+   Clean white base, Bridestory-style marketplace layout, soft gold as the one
+   accent (the DuaCincin identity, echoing the logo). Prefix: wd-.
+   Used by the home page and /login first; other pages still run on the
+   older dc- layer until they are moved over. See web/DESIGN-PUTIH.md.
+   ========================================================================== */
+
+:root {
+  --wd-white: #ffffff;
+  --wd-paper: #fbf9f7; /* soft off-white band */
+  --wd-blush: #f5f0e8; /* warm neutral surface: chips, tracks, image wells */
+  --wd-ink: #231f1d; /* headings, dark CTA */
+  --wd-text: #4b4542; /* body (9.5:1 on white) */
+  --wd-muted: #756d68; /* meta (5:1 on white) */
+  --wd-line: #eee8e4;
+  --wd-line-2: #ddd4ce;
+  /* Soft gold: the one accent (DuaCincin identity, echoing the logo). Fills
+     carry ink text (9:1); gold TEXT uses accent-ink (5.3:1 on white). */
+  --wd-accent: #dcbd80; /* button / chip fill, with ink text */
+  --wd-accent-deep: #cfa965; /* fill hover */
+  --wd-accent-ink: #85662b; /* gold text, links, active labels */
+  --wd-accent-line: #d6bc87; /* gold outlines */
+  --wd-accent-soft: #f5ecd9; /* selected wash, badges */
+  --wd-accent-wash: #fbf7ef; /* soft panels */
+  --wd-champagne: #f3e7cf; /* footer ground */
+  --wd-gold: #c9a45c; /* stars and tiny ornaments only, never text */
+  --wd-ok: #2f6a47;
+  --wd-danger: #a3362a;
+}
+
+@theme inline {
+  --color-wd-white: var(--wd-white);
+  --color-wd-paper: var(--wd-paper);
+  --color-wd-blush: var(--wd-blush);
+  --color-wd-ink: var(--wd-ink);
+  --color-wd-text: var(--wd-text);
+  --color-wd-muted: var(--wd-muted);
+  --color-wd-line: var(--wd-line);
+  --color-wd-line-2: var(--wd-line-2);
+  --color-wd-accent: var(--wd-accent);
+  --color-wd-accent-deep: var(--wd-accent-deep);
+  --color-wd-accent-ink: var(--wd-accent-ink);
+  --color-wd-accent-line: var(--wd-accent-line);
+  --color-wd-accent-soft: var(--wd-accent-soft);
+  --color-wd-accent-wash: var(--wd-accent-wash);
+  --color-wd-champagne: var(--wd-champagne);
+  --color-wd-gold: var(--wd-gold);
+  --color-wd-ok: var(--wd-ok);
+  --color-wd-danger: var(--wd-danger);
+
+  --font-wd-display: var(--font-wd-display-face);
+  --font-wd-sans: var(--font-wd-sans-face);
+
+  --shadow-wd-card: 0 1px 2px rgba(35, 31, 29, 0.04), 0 8px 24px -12px rgba(35, 31, 29, 0.1);
+  --shadow-wd-lift: 0 2px 6px rgba(35, 31, 29, 0.05), 0 24px 48px -18px rgba(35, 31, 29, 0.2);
+  --shadow-wd-pop: 0 6px 16px rgba(35, 31, 29, 0.06), 0 40px 80px -28px rgba(35, 31, 29, 0.28);
+}
+
+/* Page scope: everything inside .wd reads in the new type. */
+.wd {
+  font-family: var(--font-wd-sans-face), ui-sans-serif, system-ui, sans-serif;
+  color: var(--wd-text);
+  background: var(--wd-white);
+  font-feature-settings: "kern", "liga";
+}
+
+.wd-container {
+  width: 100%;
+  max-width: 1280px;
+  margin-inline: auto;
+  padding-inline: clamp(16px, 4vw, 40px);
+}
+
+/* Display headings: the serif carries the romance, the sans does the work. */
+.wd-display {
+  font-family: var(--font-wd-display-face), ui-serif, Georgia, serif;
+  font-weight: 400;
+  color: var(--wd-ink);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.wd-display em {
+  font-style: italic;
+  color: var(--wd-accent-ink);
+}
+
+/* Small label above a heading: a short phrase in the display italic, gold,
+   sentence case. Same voice as the <em> accent in titles, so the italic
+   becomes the page's motif instead of a tracked uppercase label. */
+.wd-kicker {
+  font-family: var(--font-wd-display-face), ui-serif, Georgia, serif;
+  font-style: italic;
+  font-size: 1.08rem;
+  color: var(--wd-accent-ink);
+}
+
+/* Horizontal rails: native scroll with snap, no visible bar. */
+.wd-rail {
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.wd-rail::-webkit-scrollbar {
+  display: none;
+}
+.wd-rail > * {
+  scroll-snap-align: start;
+}
+
+/* Feature tab progress bar (auto-advance). */
+@keyframes wd-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.wd-progress {
+  transform-origin: left;
+  animation: wd-progress var(--wd-progress-ms, 7000ms) linear forwards;
+}
+.wd-progress[data-paused="true"] {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wd-progress {
+    animation: none;
+    transform: scaleX(0);
+  }
+}
+
+/* Default focus ring, in the base layer so a component's own focus style
+   (e.g. focus-visible:outline-none + a gold ring on inputs) wins over it. */
+@layer base {
+  .wd :focus-visible {
+    outline: 2px solid var(--wd-accent-ink);
+    outline-offset: 3px;
+  }
+}
+
+/* Section titles, marketplace style (Bridestory-like): a confident sans,
+   so the serif stays special for banner headlines and the login greeting. */
+.wd-title {
+  font-family: var(--font-wd-sans-face), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 650;
+  color: var(--wd-ink);
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+/* The two-row sticky header must not cover focused elements or anchor targets. */
+html:has(.wd) {
+  scroll-padding-top: 140px;
+}
+@media (max-width: 1023px) {
+  html:has(.wd) {
+    scroll-padding-top: 80px;
+  }
+}
+
+/* Banner carousel track: each slide is a snap point centered in view. */
+.wd-banners {
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.wd-banners::-webkit-scrollbar {
+  display: none;
+}
+.wd-banners > * {
+  scroll-snap-align: center;
+}
+.wd-title em {
+  font-family: var(--font-wd-display-face), ui-serif, Georgia, serif;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--wd-accent-ink);
+}
+
+/* ── Public pages still built on the older dc- tokens ─────────────────
+   Every public page renders the new header (HomeNav carries
+   data-wd-public; auth pages put it on their root). While it is on the
+   page, the dc- paper/ink/gold tokens and the two font variables resolve to
+   the Putih values, so inner pages, and their popovers, sheets and toasts
+   that portal to <body>, read as one system. Dashboards (.dc-app) never
+   render the public header, so they are untouched. */
+:root:has([data-wd-public]) {
+  --dc-ivory: #ffffff;
+  --dc-white: #ffffff;
+  --dc-cream: var(--wd-paper);
+  --dc-paper-3: var(--wd-blush);
+  --dc-ink: var(--wd-ink);
+  --dc-ink-2: #302925;
+  --dc-ink-3: #48403a;
+  --dc-black: var(--wd-ink);
+  --dc-text-2: var(--wd-text);
+  --dc-text-3: var(--wd-muted);
+  --dc-line: var(--wd-line);
+  --dc-line-strong: var(--wd-line-2);
+  --dc-gold: var(--wd-gold);
+  --dc-gold-antique: #e3c78c;
+  --dc-clay: var(--wd-accent-ink);
+  --dc-gold-soft: var(--wd-accent-soft);
+  --dc-gold-wash: var(--wd-accent-wash);
+  --font-display: var(--font-wd-display-face);
+  --font-body: var(--font-wd-sans-face);
+}
+
+/* Native radios and checkboxes on public pages tick in the brand gold. */
+:root:has([data-wd-public]) {
+  accent-color: var(--wd-accent-ink);
+}
+
+/* No blurred pictures or text on public pages: scroll reveals only fade and rise. */
+:root:has([data-wd-public]) .dc-reveal[data-reveal="hidden"] {
+  filter: none;
+}

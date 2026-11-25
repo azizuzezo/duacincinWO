@@ -11,7 +11,7 @@ import { useRef, useState } from "react";
 
 import { EASE, SPRING_SNAPPY, useReducedMotion } from "@/lib/motion";
 
-import { BrowserFrame, PhoneFrame } from "@/components/ui/DeviceFrame";
+import { BrowserFrame, PHONE_FRAME_RATIO, PhoneFrame } from "@/components/ui/DeviceFrame";
 
 export type ShowcaseItem = { id: string; title: string; body: string; src: string; alt: string; address: string; /** Same screen on a phone, shown below lg. */ phoneSrc: string };
 
@@ -61,7 +61,7 @@ export function VendorShowcase({ items }: { items: ShowcaseItem[] }) {
               tabIndex={on ? 0 : -1}
               onClick={() => setValue(t.id)}
               className={`group relative min-h-11 shrink-0 rounded-xl px-4 py-3 text-left transition-colors duration-300 lg:py-4 lg:pl-6 ${
-                on ? "bg-dc-white shadow-soft" : "hover:bg-dc-white/60"
+                on ? "bg-white shadow-wd-card" : "hover:bg-white/70"
               }`}
             >
               {on && (
@@ -69,10 +69,10 @@ export function VendorShowcase({ items }: { items: ShowcaseItem[] }) {
                   layoutId={reduced ? undefined : "vs-bar"}
                   transition={SPRING_SNAPPY}
                   aria-hidden
-                  className="absolute inset-x-4 bottom-0 h-0.5 rounded-full bg-dc-gold lg:inset-x-auto lg:bottom-3 lg:left-0 lg:top-3 lg:h-auto lg:w-1"
+                  className="absolute inset-x-4 bottom-0 h-0.5 rounded-full bg-wd-accent lg:inset-x-auto lg:bottom-3 lg:left-0 lg:top-3 lg:h-auto lg:w-1"
                 />
               )}
-              <span className={`block whitespace-nowrap font-heading text-[1.35rem] leading-tight lg:text-[1.6rem] ${on ? "text-dc-ink" : "text-dc-text-2"}`}>{t.title}</span>
+              <span className={`block whitespace-nowrap text-[1rem] font-semibold leading-tight lg:text-[1.1rem] ${on ? "text-wd-ink" : "text-wd-text"}`}>{t.title}</span>
               <span className="mt-1 hidden text-sm leading-relaxed text-dc-text-2 lg:block">{t.body}</span>
             </button>
           );
@@ -102,8 +102,9 @@ export function VendorShowcase({ items }: { items: ShowcaseItem[] }) {
           </AnimatePresence>
         </div>
         {/* Phones and tablets: the same screen as it looks on a phone. */}
-        <div className="relative flex justify-center overflow-hidden rounded-2xl bg-[radial-gradient(90%_70%_at_50%_100%,#ead7ae_0%,#f3ecdf_55%,#faf6ef_100%)] px-6 pt-8 lg:hidden">
-          <div className="relative w-[min(78%,300px)]" style={{ aspectRatio: "300 / 552" }}>
+        {/* Full phone, running off the bottom of the panel. */}
+        <div className="relative flex h-[440px] justify-center overflow-hidden rounded-2xl bg-wd-blush px-6 pt-8 lg:hidden">
+          <div className="relative w-[min(72%,270px)] shrink-0 self-start" style={{ aspectRatio: PHONE_FRAME_RATIO }}>
             <AnimatePresence initial={false}>
               <motion.div
                 key={item.id}
@@ -113,7 +114,7 @@ export function VendorShowcase({ items }: { items: ShowcaseItem[] }) {
                 exit={reduced ? { opacity: 0 } : { opacity: 0, x: -40 }}
                 transition={{ duration: reduced ? 0.2 : 0.45, ease: EASE }}
               >
-                <PhoneFrame src={item.phoneSrc} alt={item.alt} sizes="300px" crop="390 / 700" fade="from-dc-cream" />
+                <PhoneFrame src={item.phoneSrc} alt={item.alt} sizes="270px" />
               </motion.div>
             </AnimatePresence>
           </div>

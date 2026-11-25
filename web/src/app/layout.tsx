@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, Great_Vibes, Plus_Jakarta_Sans } from "next/font/google";
+import { Cormorant_Garamond, Figtree, Great_Vibes, Newsreader, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
 import { RingsLoader } from "@/components/motion/RingsLoader";
@@ -18,7 +18,9 @@ const bodyFont = Plus_Jakarta_Sans({
 
 // Display serif for every heading, with its italic for the accent phrase (.dc-em).
 const displayFont = Cormorant_Garamond({
-  variable: "--font-display",
+  // Exposed as --font-cormorant; --font-display points at it (globals.css), so
+  // public pages can swap their display face while the logo wordmark keeps this one.
+  variable: "--font-cormorant",
   subsets: ["latin"],
   weight: ["500", "600"],
   style: ["normal", "italic"],
@@ -33,6 +35,25 @@ const scriptFont = Great_Vibes({
   weight: "400",
   display: "swap",
   preload: false,
+});
+
+// "Putih" design system (wd.css, home + /login): Newsreader, an editorial
+// serif with an optical-size axis, for headings and its italic for the one
+// accent phrase; Figtree, the same clean sans as Bridestory, for text and UI.
+const wdDisplay = Newsreader({
+  variable: "--font-wd-display-face",
+  subsets: ["latin"],
+  weight: "variable",
+  style: ["normal", "italic"],
+  axes: ["opsz"],
+  display: "swap",
+});
+
+const wdSans = Figtree({
+  variable: "--font-wd-sans-face",
+  subsets: ["latin"],
+  weight: "variable",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -59,7 +80,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       data-scroll-behavior="smooth"
       // The intro script below may add "dc-no-intro" before hydration.
       suppressHydrationWarning
-      className={`${bodyFont.variable} ${displayFont.variable} ${scriptFont.variable} h-full antialiased`}
+      className={`${bodyFont.variable} ${displayFont.variable} ${scriptFont.variable} ${wdDisplay.variable} ${wdSans.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-dc-ivory text-dc-black">
         {/* Intro: once per session, public pages only. Decided before paint. */}

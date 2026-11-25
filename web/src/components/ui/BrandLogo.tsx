@@ -35,8 +35,9 @@ export function BrandLogo({
       />
       {withWordmark ? (
         <span
-          className={`font-heading whitespace-nowrap ${tone === "light" ? "text-dc-on-dark" : "text-dc-ink"}`}
-          style={{ fontSize: size * 0.95, fontWeight: 600, letterSpacing: "0.01em" }}
+          className={`whitespace-nowrap ${tone === "light" ? "text-dc-on-dark" : "text-dc-ink"}`}
+          // The wordmark is part of the logo: always Cormorant, whatever the page's display face.
+          style={{ fontFamily: "var(--font-cormorant), Georgia, serif", fontSize: size * 0.95, fontWeight: 600, letterSpacing: "0.01em" }}
         >
           DuaCincin
         </span>

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 
 import { PublicShell } from "@/components/landing/PublicShell";
-import { ArticleCard } from "@/components/public/artikel/ArticleCard";
+import { PageHero } from "@/components/landing/PageHero";
+import { FeaturedArticle } from "@/components/public/artikel/ArticleCard";
+import { ArticleGrid } from "@/components/public/artikel/ArticleGrid";
 import { JsonLd, ORGANIZATION_LD } from "@/components/seo/JsonLd";
 import { ARTICLES } from "@/content/artikel/registry";
 import { OPEN_GRAPH_BASE, SITE_URL } from "@/lib/site";
@@ -33,29 +35,22 @@ export default function ArtikelIndexPage() {
     })),
   };
 
+  const [lead, ...rest] = ARTICLES;
+
   return (
-    <PublicShell overlay={false}>
+    <PublicShell>
       <JsonLd data={listLd} />
-      <header className="dc-grain border-b border-dc-line bg-dc-cream">
-        <div className="dc-container py-12 sm:py-16">
-          <p className="dc-eyebrow">Artikel</p>
-          <h1 className="mt-4 max-w-3xl font-heading text-[clamp(2.4rem,5vw,4rem)] leading-[1.02] text-dc-ink">
-            Panduan menyiapkan <span className="dc-em">pernikahan</span>
-          </h1>
-          <p className="mt-5 max-w-2xl text-lg leading-relaxed text-dc-text-2">
-            Checklist, anggaran, memilih venue dan vendor, sampai rangkaian adat. Ditulis dari pertanyaan yang paling sering diajukan calon pengantin.
-          </p>
-        </div>
-      </header>
-      <section aria-label="Daftar artikel" className="dc-container py-12 sm:py-16">
-        <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {ARTICLES.map((a, i) => (
-            <li key={a.slug}>
-              <ArticleCard article={a} priority={i < 3} />
-            </li>
-          ))}
-        </ul>
-      </section>
+      <div className="wd">
+        <PageHero image="/banner/artikel.webp" focus="70% 50%" crumbs={[{ name: "Artikel" }]} title="Artikel persiapan pernikahan" sub="Checklist, anggaran, venue, vendor, sampai ragam adat." />
+        {lead && (
+          <section aria-label="Artikel terbaru" className="wd-container pt-10 sm:pt-12">
+            <FeaturedArticle article={lead} />
+          </section>
+        )}
+        <section aria-label="Daftar artikel" className="wd-container py-12 sm:py-16">
+          <ArticleGrid articles={rest} />
+        </section>
+      </div>
     </PublicShell>
   );
 }

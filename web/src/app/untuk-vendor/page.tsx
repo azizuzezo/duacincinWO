@@ -2,15 +2,21 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
+import { SectionHead, wdButton } from "@/components/home/ui";
+import { PageHero } from "@/components/landing/PageHero";
 import { PublicShell } from "@/components/landing/PublicShell";
-import { Reveal } from "@/components/landing/Reveal";
-import { CountUp } from "@/components/public/untuk-vendor/CountUp";
-import { JoinPath, type JoinStep } from "@/components/public/untuk-vendor/JoinPath";
+import {
+  JoinPath,
+  type JoinStep,
+} from "@/components/public/untuk-vendor/JoinPath";
+import { Percent } from "@/components/public/untuk-vendor/Percent";
 import { PayoutCalculator } from "@/components/public/untuk-vendor/PayoutCalculator";
-import { VendorHeroVisual } from "@/components/public/untuk-vendor/VendorHeroVisual";
-import { VendorShowcase, type ShowcaseItem } from "@/components/public/untuk-vendor/VendorShowcase";
-import { ButtonLink } from "@/components/ui/Button";
-import { Rings } from "@/components/ui/Rings";
+import {
+  VendorShowcase,
+  type ShowcaseItem,
+} from "@/components/public/untuk-vendor/VendorShowcase";
+import { Reveal } from "@/components/landing/Reveal";
+import { LIFT, ZOOM } from "@/components/public/shared/styles";
 import { VENDOR_CATEGORIES } from "@/lib/api";
 
 export const metadata: Metadata = {
@@ -29,19 +35,31 @@ const SIGNUP: JoinStep[] = [
     title: "Buat akun vendor",
     body: "Isi nama usaha, email, dan kata sandi, lalu centang persetujuan Perjanjian Kemitraan.",
     result: "Satu formulir pendek",
-    screen: { src: `${SHOT}/v-daftar.webp`, alt: "Formulir daftar sebagai vendor: nama usaha, email, kata sandi, dan persetujuan perjanjian", kind: "phone" },
+    screen: {
+      src: `${SHOT}/v-daftar.webp`,
+      alt: "Formulir daftar sebagai vendor: nama usaha, email, kata sandi, dan persetujuan perjanjian",
+      kind: "phone",
+    },
   },
   {
     title: "Lengkapi etalase",
     body: "Kategori, kota, kisaran harga, cerita usaha, foto karya, dan paket. Ada penanda kelengkapannya.",
     result: "Profil, portofolio, paket",
-    screen: { src: `${SHOT}/v-etalase.webp`, alt: "Editor etalase vendor dengan identitas usaha dan daftar kelengkapan etalase", kind: "desk" },
+    screen: {
+      src: `${SHOT}/v-etalase.webp`,
+      alt: "Editor etalase vendor dengan identitas usaha dan daftar kelengkapan etalase",
+      kind: "desk",
+    },
   },
   {
     title: "Ditinjau Admin, lalu tampil",
     body: "Setelah disetujui Admin DuaCincin, usahamu muncul di direktori dan halaman kategori.",
     result: "Statusnya terlihat di dashboard",
-    screen: { src: `${SHOT}/k1-direktori.webp`, alt: "Kartu vendor Sanggar Rias Kencana tampil di direktori DuaCincin", kind: "phone" },
+    screen: {
+      src: `${SHOT}/k1-direktori.webp`,
+      alt: "Kartu vendor Sanggar Rias Kencana tampil di direktori DuaCincin",
+      kind: "phone",
+    },
   },
 ];
 
@@ -86,187 +104,265 @@ const SHOWCASE: ShowcaseItem[] = [
 
 // Category photos shared with the home mosaic and /kategori (DuaCincin
 // Pinterest board, credited on /kredit).
-const CATEGORY_PHOTO: Record<string, { src: string; studio?: boolean; note: string }> = {
-  venue: { src: "/photos/pinterest/venue-joglo.webp", note: "Gedung, ballroom, taman" },
-  catering: { src: "/photos/pinterest/katering-jajanan.webp", note: "Prasmanan, gubukan, menu adat" },
-  decor: { src: "/photos/pinterest/dekorasi-taman.webp", note: "Pelaminan, gapura, bunga" },
-  mua_attire: { src: "/photos/pinterest/rias-hijab.webp", note: "Rias, busana adat, gaun" },
-  photo_video: { src: "/photos/pinterest/foto-gapura.webp", note: "Foto, video, prewedding" },
-  entertainment: { src: "/photos/pinterest/kirab-malam.webp", note: "Musik, band, hiburan adat" },
-  invitation_souvenir: { src: "/photos/pinterest/suvenir-anggrek.webp", note: "Undangan cetak, suvenir" },
-  hantaran: { src: "/photos/pinterest/penutup-lilin.webp", note: "Seserahan, hantaran, mahar hias" },
-  mc: { src: "/photos/pinterest/pendopo-kursi-tamu.webp", note: "MC akad, resepsi, acara adat" },
-  content_creator: { src: "/photos/pinterest/pasangan-sofa-bunga.webp", note: "Konten Reels, TikTok, behind the scene" },
-  wedding_car: { src: "/photos/pinterest/kirab-malam.webp", note: "Mobil pengantin, sopir, hiasan" },
-  wedding_cake: { src: "/photos/pinterest/resepsi-taman.webp", note: "Kue pengantin, dessert table" },
+const CATEGORY_PHOTO: Record<
+  string,
+  { src: string; studio?: boolean; note: string }
+> = {
+  venue: {
+    src: "/photos/pinterest/venue-joglo.webp",
+    note: "Gedung, ballroom, taman",
+  },
+  catering: {
+    src: "/photos/pinterest/katering-jajanan.webp",
+    note: "Prasmanan, gubukan, menu adat",
+  },
+  decor: {
+    src: "/photos/pinterest/dekorasi-taman.webp",
+    note: "Pelaminan, gapura, bunga",
+  },
+  mua_attire: {
+    src: "/photos/pinterest/rias-hijab.webp",
+    note: "Rias, busana adat, gaun",
+  },
+  photo_video: {
+    src: "/photos/pinterest/foto-gapura.webp",
+    note: "Foto, video, prewedding",
+  },
+  entertainment: {
+    src: "/photos/pinterest/kirab-malam.webp",
+    note: "Musik, band, hiburan adat",
+  },
+  invitation_souvenir: {
+    src: "/photos/pinterest/suvenir-anggrek.webp",
+    note: "Undangan cetak, suvenir",
+  },
+  hantaran: {
+    src: "/photos/pinterest/penutup-lilin.webp",
+    note: "Seserahan, hantaran, mahar hias",
+  },
+  mc: {
+    src: "/photos/pinterest/pendopo-kursi-tamu.webp",
+    note: "MC akad, resepsi, acara adat",
+  },
+  content_creator: {
+    src: "/photos/pinterest/pasangan-sofa-bunga.webp",
+    note: "Konten Reels, TikTok, behind the scene",
+  },
+  wedding_car: {
+    src: "/photos/pinterest/kirab-malam.webp",
+    note: "Mobil pengantin, sopir, hiasan",
+  },
+  wedding_cake: {
+    src: "/photos/pinterest/resepsi-taman.webp",
+    note: "Kue pengantin, dessert table",
+  },
 };
 
-const FACTS = [
-  { v: <CountUp to={10} suffix="%" />, k: "Komisi standar", d: "Ditambahkan di atas hargamu, jadi kamu menerima harga paketmu utuh." },
-  { v: <CountUp to={30} suffix="%" />, k: "DP dari client", d: "Ditahan escrow bersama pelunasannya." },
-  { v: "Setelah acara", k: "Dana cair", d: "Begitu client mengonfirmasi acara selesai." },
+const FACTS: { v: string | number; k: string; d: string }[] = [
+  {
+    v: 10,
+    k: "Komisi standar",
+    d: "Ditambahkan di atas hargamu. Harga paketmu diterima utuh.",
+  },
+  { v: 30, k: "DP dari client", d: "Ditahan escrow bersama pelunasannya." },
+  {
+    v: "Setelah acara",
+    k: "Dana cair",
+    d: "Begitu client mengonfirmasi acara selesai.",
+  },
 ];
 
 export default function UntukVendorPage() {
   return (
-    <PublicShell overlay={false}>
-      {/* Paper hero: the visual is the vendor's own workspace (real dashboard
-          and booking screens) in front of the gold arch ornament. */}
-      <section className="dc-grain relative overflow-hidden bg-dc-ivory">
-        <div className="dc-container grid items-center gap-10 pb-14 pt-10 sm:pt-14 lg:grid-cols-12 lg:gap-10 lg:pb-20 lg:pt-16">
-          <div className="lg:col-span-6">
-            <p className="dc-eyebrow animate-fade-up">Untuk vendor</p>
-            <h1 className="mt-5 animate-fade-up font-heading text-[clamp(2.6rem,5.4vw,4.75rem)] leading-[0.98] text-dc-ink">
-              Punya usaha pernikahan? <span className="dc-em">Tampilkan karyamu.</span>
-            </h1>
-            <p className="mt-6 max-w-xl animate-fade-up text-lg leading-relaxed text-dc-text-2">
-              Calon pengantin mencari, berdiskusi, dan membayar di satu tempat. Kamu fokus mengerjakan acara.
-            </p>
-            <div className="mt-8 flex animate-fade-up flex-col gap-3 sm:flex-row">
-              <ButtonLink href="/register?role=vendor" variant="gold" size="lg">
+    <PublicShell>
+      <div className="wd">
+        <PageHero
+          crumbs={[{ name: "Untuk vendor" }]}
+          title="Punya usaha pernikahan? Tampilkan karyamu."
+          sub="Calon pengantin mencari, berdiskusi, dan membayar di satu tempat. Kamu fokus mengerjakan acara."
+          image="/banner/vendor.webp"
+          focus="65% 50%"
+          actions={
+            <>
+              <Link
+                href="/register?role=vendor"
+                className={wdButton({ size: "lg" })}
+              >
                 Daftar sebagai vendor
-              </ButtonLink>
-              <ButtonLink href="#yang-kamu-dapat" variant="ghost" size="lg">
+              </Link>
+              <Link
+                href="#yang-kamu-dapat"
+                className={wdButton({ variant: "outline", size: "lg" })}
+              >
                 Lihat dashboard vendor
-              </ButtonLink>
-            </div>
-          </div>
-          <div className="lg:col-span-6">
-            <VendorHeroVisual />
-          </div>
-        </div>
-        <div className="dc-container pb-14 lg:pb-20">
-          <dl className="grid animate-fade-up gap-px overflow-hidden rounded-2xl border border-dc-line bg-dc-line sm:grid-cols-3">
+              </Link>
+            </>
+          }
+        >
+          <dl className="mt-8 grid gap-px overflow-hidden rounded-[18px] border border-wd-line bg-wd-line grid-cols-3">
             {FACTS.map((f) => (
-              <div key={f.k} className="bg-dc-white px-6 py-5">
-                <dt className="text-sm font-semibold text-dc-ink">{f.k}</dt>
-                <dd>
-                  <span className="block font-heading text-[2.4rem] leading-tight text-dc-clay">{f.v}</span>
-                  <span className="block text-sm leading-relaxed text-dc-text-3">{f.d}</span>
+              <div
+                key={f.k}
+                className="flex flex-col bg-white px-3 py-3 sm:px-5 sm:py-4"
+              >
+                <dt className="order-2 text-xs font-semibold text-wd-ink sm:text-sm">
+                  {f.k}
+                </dt>
+                <dd className="order-1 text-[1.05rem] font-semibold leading-tight text-wd-accent-ink tabular-nums sm:text-[1.35rem]">
+                  {typeof f.v === "number" ? <Percent value={f.v} /> : f.v}
+                </dd>
+                <dd className="order-3 mt-1 hidden text-xs leading-relaxed text-wd-muted sm:block">
+                  {f.d}
                 </dd>
               </div>
             ))}
           </dl>
-        </div>
-      </section>
+        </PageHero>
 
-      <section id="yang-kamu-dapat" aria-labelledby="dapat-judul" className="scroll-mt-20 bg-dc-cream">
-        <div className="dc-container py-16 sm:py-24 lg:py-28">
-          <Reveal className="max-w-2xl">
-            <p className="dc-eyebrow">Yang kamu dapat</p>
-            <h2 id="dapat-judul" className="mt-4 font-heading text-[clamp(2.2rem,4.2vw,3.5rem)] leading-[1.02] text-dc-ink">
-              Satu dashboard, <span className="dc-em">dari permintaan sampai pencairan.</span>
-            </h2>
-            <p className="mt-4 max-w-lg leading-relaxed text-dc-text-2">Ini layar aslinya. Pilih untuk melihat lebih dekat.</p>
-          </Reveal>
-          <Reveal delay={0.08} className="mt-10 lg:mt-14">
-            <VendorShowcase items={SHOWCASE} />
-          </Reveal>
-        </div>
-      </section>
+        <section
+          id="yang-kamu-dapat"
+          aria-labelledby="dapat-judul"
+          className="scroll-mt-36 bg-wd-paper py-14 sm:py-20"
+        >
+          <div className="wd-container">
+            <SectionHead
+              id="dapat-judul"
+              title="Satu dashboard, dari permintaan sampai pencairan"
+              sub="Layar aslinya. Pilih untuk melihat lebih dekat."
+            />
+            <div className="mt-10">
+              <VendorShowcase items={SHOWCASE} />
+            </div>
+          </div>
+        </section>
 
-      <section aria-labelledby="dana-judul" className="bg-dc-ivory">
-        <div className="dc-container grid items-center gap-12 py-16 sm:py-24 lg:grid-cols-12 lg:gap-16 lg:py-28">
-          <Reveal className="lg:col-span-5">
-            <p className="dc-eyebrow">Alur pembayaran</p>
-            <h2 id="dana-judul" className="mt-4 font-heading text-[clamp(2.2rem,4.2vw,3.5rem)] leading-[1.02] text-dc-ink">
-              Uang client sudah aman <span className="dc-em">sebelum kamu mulai bekerja.</span>
-            </h2>
-            <p className="mt-5 max-w-md leading-relaxed text-dc-text-2">
-              DP dan pelunasan dibayar ke akun penampung DuaCincin. Setelah client mengonfirmasi acara selesai, dana diteruskan ke rekeningmu sebesar harga yang kamu tetapkan.
-            </p>
-            <p className="mt-4 max-w-md text-sm leading-relaxed text-dc-text-3">Geser harga paket untuk melihat contohnya.</p>
-          </Reveal>
-          <Reveal delay={0.08} className="lg:col-span-7">
-            <PayoutCalculator />
-          </Reveal>
-        </div>
-      </section>
+        <section aria-labelledby="dana-judul" className="py-14 sm:py-20">
+          <div className="wd-container grid items-center gap-10 lg:grid-cols-12 lg:gap-16">
+            <div className="lg:col-span-5">
+              <SectionHead
+                id="dana-judul"
+                title="Uang client aman sebelum kamu bekerja"
+              />
+              <p className="mt-4 max-w-md leading-relaxed text-wd-text">
+                DP dan pelunasan dibayar ke akun penampung DuaCincin. Setelah
+                client mengonfirmasi acara selesai, dana diteruskan ke
+                rekeningmu sebesar harga yang kamu tetapkan.
+              </p>
+              <p className="mt-3 text-sm text-wd-muted">
+                Geser harga paket untuk melihat contohnya.
+              </p>
+            </div>
+            <div className="lg:col-span-7">
+              <PayoutCalculator />
+            </div>
+          </div>
+        </section>
 
-      <section aria-labelledby="daftar-judul" className="bg-dc-cream">
-        <div className="dc-container py-16 sm:py-24 lg:py-28">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <section
+          aria-labelledby="daftar-judul"
+          className="bg-wd-paper py-14 sm:py-20"
+        >
+          <div className="wd-container">
+            <SectionHead
+              id="daftar-judul"
+              title="Cara bergabung"
+              sub="Dari formulir pendek sampai tampil di direktori."
+              action={
+                <Link
+                  href="/register?role=vendor"
+                  className={wdButton({ variant: "ink" })}
+                >
+                  Mulai daftar
+                </Link>
+              }
+            />
+            <div className="mt-10">
+              <JoinPath steps={SIGNUP} />
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="kategori-judul" className="py-14 sm:py-20">
+          <div className="wd-container">
+            <SectionHead
+              id="kategori-judul"
+              title="Kategori yang dicari calon pengantin"
+            />
             <Reveal>
-              <p className="dc-eyebrow">Cara bergabung</p>
-              <h2 id="daftar-judul" className="mt-4 max-w-2xl font-heading text-[clamp(2.2rem,4.2vw,3.5rem)] leading-[1.02] text-dc-ink">
-                Dari formulir pendek <span className="dc-em">sampai tampil di direktori.</span>
-              </h2>
+              <ul className="dc-stagger mt-8 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-6">
+                {VENDOR_CATEGORIES.map((c) => {
+                  const photo = CATEGORY_PHOTO[c.value];
+                  return (
+                    <li key={c.value}>
+                      <Link
+                        href={`/kategori/${c.value}`}
+                        className="group block"
+                      >
+                        <span
+                          className={`relative block aspect-[4/3] overflow-hidden rounded-[16px] bg-wd-blush ${LIFT} group-hover:-translate-y-1 group-hover:shadow-wd-lift`}
+                        >
+                          {photo && (
+                            <Image
+                              src={photo.src}
+                              alt=""
+                              fill
+                              sizes="(min-width: 1024px) 200px, (min-width: 640px) 30vw, 45vw"
+                              className={ZOOM}
+                            />
+                          )}
+                        </span>
+                        <span className="mt-3 block font-semibold text-wd-ink transition-colors group-hover:text-wd-accent-ink">
+                          {c.label}
+                        </span>
+                        {photo && (
+                          <span className="mt-0.5 block text-sm text-wd-muted">
+                            {photo.note}
+                          </span>
+                        )}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
             </Reveal>
-            <ButtonLink href="/register?role=vendor" variant="primary" size="md" className="self-start lg:self-auto">
-              Mulai daftar
-            </ButtonLink>
           </div>
-          <div className="mt-12">
-            <JoinPath steps={SIGNUP} />
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <section aria-labelledby="kategori-judul" className="bg-dc-ivory">
-        <div className="dc-container py-16 sm:py-24">
-          <Reveal className="max-w-2xl">
-            <p className="dc-eyebrow">Kategori</p>
-            <h2 id="kategori-judul" className="mt-4 font-heading text-[clamp(2rem,3.8vw,3.1rem)] leading-[1.04] text-dc-ink">
-              Dua belas kategori <span className="dc-em">yang dicari calon pengantin.</span>
-            </h2>
-          </Reveal>
-          <ul className="dc-stagger -mx-4 mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 md:grid-cols-3 lg:grid-cols-4">
-            {VENDOR_CATEGORIES.map((c, i) => {
-              const photo = CATEGORY_PHOTO[c.value];
-              return (
-                <li key={c.value} className={`w-[72%] shrink-0 snap-start sm:w-auto ${i === 0 ? "lg:col-span-2 lg:row-span-2" : i === 5 ? "lg:col-span-2" : ""}`}>
-                  <Link
-                    href={`/kategori/${c.value}`}
-                    className="group relative block h-full overflow-hidden rounded-2xl border border-dc-line bg-dc-cream shadow-soft transition-shadow duration-500 hover:shadow-lift"
-                  >
-                    <div className={`relative ${i === 0 ? "aspect-[4/5] lg:aspect-auto lg:h-full lg:min-h-[420px]" : i === 5 ? "aspect-[4/5] lg:aspect-[2/1]" : "aspect-[4/5]"} ${photo?.studio ? "bg-[radial-gradient(120%_80%_at_50%_100%,#ead7ae_0%,#f3ecdf_60%,#faf6ef_100%)]" : ""}`}>
-                      {photo && (
-                        <Image
-                          src={photo.src}
-                          alt=""
-                          fill
-                          sizes={i === 0 ? "(min-width: 1024px) 560px, 72vw" : "(min-width: 1024px) 280px, (min-width: 640px) 45vw, 72vw"}
-                          className={`transition-transform duration-700 ease-dc group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100 ${photo.studio ? "object-contain p-6" : "object-cover"}`}
-                        />
-                      )}
-                      <span aria-hidden className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-dc-ink/95 via-dc-ink/60 to-transparent" />
-                      <span className="absolute inset-x-0 bottom-0 p-5">
-                        <span className="block font-heading text-[1.7rem] leading-tight text-dc-on-dark">{c.label}</span>
-                        {photo && <span className="mt-1 block text-sm text-dc-on-dark/85">{photo.note}</span>}
-                      </span>
-                    </div>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      </section>
-
-      <section className="dc-on-dark relative isolate overflow-hidden bg-dc-ink">
-        <Rings className="absolute -right-24 -top-16 -z-10 h-[360px] w-[580px] opacity-[0.12]" stroke="var(--dc-gold-antique)" strokeWidth={0.4} />
-        <div className="dc-container grid gap-8 py-16 sm:py-20 lg:grid-cols-12 lg:items-end">
-          <div className="lg:col-span-8">
-            <h2 className="max-w-3xl font-heading text-[clamp(2rem,4vw,3.25rem)] leading-[1.05] text-dc-on-dark">
-              Aturan mainnya jelas sejak awal: <span className="dc-em-light">transaksi tetap di dalam platform.</span>
-            </h2>
-            <p className="mt-5 max-w-2xl leading-relaxed text-dc-on-dark/80">
-              Setiap vendor terikat Perjanjian Kemitraan yang melarang transaksi di luar DuaCincin. Nomor telepon, email, dan tautan luar di chat ditandai untuk ditinjau Admin.
-            </p>
-            <Link
-              href="/legal/vendor-agreement"
-              className="mt-5 inline-flex min-h-11 items-center text-sm font-semibold text-dc-gold-antique underline decoration-dc-gold-antique/40 underline-offset-4 hover:decoration-dc-gold-antique"
-            >
-              Baca Perjanjian Kemitraan Vendor
-            </Link>
+        <section aria-labelledby="aturan-judul" className="pb-14 sm:pb-20">
+          <div className="wd-container">
+            <div className="flex flex-col gap-6 rounded-[24px] bg-wd-accent-wash p-7 ring-1 ring-wd-accent-soft sm:p-10 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h2
+                  id="aturan-judul"
+                  className="wd-title text-[clamp(1.4rem,2.4vw,1.85rem)]"
+                >
+                  Transaksi tetap di dalam platform
+                </h2>
+                <p className="mt-2 max-w-2xl leading-relaxed text-wd-text">
+                  Setiap vendor terikat Perjanjian Kemitraan yang melarang
+                  transaksi di luar DuaCincin. Nomor telepon, email, dan tautan
+                  luar di chat ditandai untuk ditinjau Admin.
+                </p>
+                <Link
+                  href="/legal/vendor-agreement"
+                  className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-wd-accent-ink underline underline-offset-4 hover:text-wd-ink"
+                >
+                  Baca Perjanjian Kemitraan Vendor
+                </Link>
+              </div>
+              <Link
+                href="/register?role=vendor"
+                className={wdButton({
+                  size: "lg",
+                  className: "self-start lg:self-auto",
+                })}
+              >
+                Daftar sebagai vendor
+              </Link>
+            </div>
           </div>
-          <div className="lg:col-span-4 lg:justify-self-end">
-            <ButtonLink href="/register?role=vendor" variant="gold" size="lg">
-              Daftar sebagai vendor
-            </ButtonLink>
-          </div>
-        </div>
-      </section>
+        </section>
+      </div>
     </PublicShell>
   );
 }

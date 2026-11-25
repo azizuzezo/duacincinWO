@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { wdButton } from "@/components/home/ui";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import { EASE, useReducedMotion } from "@/lib/motion";
 
@@ -103,8 +104,8 @@ export function KiranaChatPage() {
   const ask = useCallback((t: string) => void send(t), [send]);
 
   const welcome = (
-    <div className="mx-auto max-w-xl py-4 text-center lg:py-10">
-      <div className="mx-auto h-[150px] w-[140px] lg:hidden">
+    <div className="mx-auto max-w-xl py-2 text-center lg:py-8">
+      <div className="mx-auto h-[140px] w-[130px] lg:hidden">
         <Kirana3D mood={mood} className="h-full w-full" />
       </div>
       {askIntro ? (
@@ -113,36 +114,38 @@ export function KiranaChatPage() {
         </div>
       ) : (
         <>
-      <p className="mt-2 font-heading text-[2rem] font-semibold leading-tight text-dc-ink">
-        {profile ? (
-          <>
-            Halo <span className="dc-em">Kak {profile.name}</span>!
-          </>
-        ) : (
-          <>
-            Hai, aku <span className="dc-em">Kirana</span>.
-          </>
-        )}
-      </p>
-      <p className="mx-auto mt-2 max-w-[42ch] text-[0.98rem] leading-relaxed text-dc-text-2">
-        {profile ? "Senang ketemu lagi. " : ""}Ceritakan rencana pernikahanmu. Aku carikan vendor yang terdaftar di DuaCincin, hitung budget, dan susun persiapannya.
-      </p>
-      <ul className="mt-6 grid gap-2.5 text-left sm:grid-cols-2">
-        {EXAMPLES.map((ex, i) => (
-          <motion.li key={ex.text} initial={reduced ? { opacity: 0 } : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, ease: EASE, delay: 0.1 + i * 0.06 }}>
-            <button
-              type="button"
-              onClick={() => ask(ex.text)}
-              className="dc-glass group flex min-h-16 w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-[0.92rem] font-semibold text-dc-ink transition-[transform,box-shadow,border-color] duration-300 ease-dc hover:border-dc-gold/70 hover:shadow-lift active:scale-[0.99] motion-safe:hover:-translate-y-0.5"
-            >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-dc-white/80 group-hover:bg-dc-gold-soft">
-                <ExampleIcon kind={ex.icon} />
-              </span>
-              <span className="min-w-0 flex-1">{ex.text}</span>
-            </button>
-          </motion.li>
-        ))}
-      </ul>
+          <p className="wd-kicker mt-2">Asisten AI pernikahan</p>
+          <p className="wd-display mt-1 text-[clamp(2rem,4vw,2.6rem)] leading-[1.08]">
+            {profile ? (
+              <>
+                Halo, <em>Kak {profile.name}</em>!
+              </>
+            ) : (
+              <>
+                Hai, aku <em>Kirana</em>.
+              </>
+            )}
+          </p>
+          <p className="mx-auto mt-3 max-w-[44ch] text-[0.98rem] leading-relaxed text-wd-text">
+            {profile ? "Senang ketemu lagi. " : ""}Ceritakan rencana pernikahanmu. Aku carikan vendor yang terdaftar di DuaCincin, hitung budget, dan susun persiapannya.
+          </p>
+          <p className="mt-7 text-left text-sm font-semibold text-wd-ink">Coba tanyakan</p>
+          <ul className="mt-2.5 grid gap-2.5 text-left sm:grid-cols-2">
+            {EXAMPLES.map((ex, i) => (
+              <motion.li key={ex.text} initial={reduced ? { opacity: 0 } : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, ease: EASE, delay: 0.1 + i * 0.06 }}>
+                <button
+                  type="button"
+                  onClick={() => ask(ex.text)}
+                  className="group flex min-h-16 w-full items-center gap-3 rounded-[16px] border border-wd-line bg-white px-4 py-3 text-left text-[0.92rem] font-medium leading-snug text-wd-ink transition-[border-color,box-shadow,transform] duration-300 hover:border-wd-accent-line hover:shadow-wd-card active:scale-[0.99]"
+                >
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-wd-accent-wash transition-colors group-hover:bg-wd-accent-soft">
+                    <ExampleIcon kind={ex.icon} />
+                  </span>
+                  <span className="min-w-0 flex-1">{ex.text}</span>
+                </button>
+              </motion.li>
+            ))}
+          </ul>
         </>
       )}
     </div>
@@ -153,44 +156,60 @@ export function KiranaChatPage() {
       initial={reduced ? { opacity: 0 } : { opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: EASE }}
-      className="mx-auto flex w-fit items-center gap-2 rounded-full border border-dc-gold/30 bg-dc-gold-wash/80 px-3.5 py-1.5 text-sm font-semibold text-dc-ink"
+      className="mx-auto flex w-fit items-center gap-2 rounded-full border border-wd-accent-line bg-wd-accent-wash py-1 pl-1 pr-3.5 text-sm font-medium text-wd-ink"
     >
-      <KiranaFace size={24} mood="happy" />
+      <KiranaFace size={28} mood="happy" />
       Halo lagi, Kak {profile.name}! Lanjut dari obrolan sebelumnya ya.
     </motion.div>
   ) : null;
 
   return (
-    <div className="relative isolate flex h-[100dvh] flex-col overflow-hidden bg-dc-ivory">
-      {/* The scene behind the glass: a real wedding photo, softened and warm. */}
-      <div aria-hidden className="absolute inset-0 -z-10">
-        {/* eslint-disable-next-line @next/next/no-img-element -- decorative, heavily blurred backdrop */}
-        <img src="/photos/pinterest/pelaminan-kristal-sm.webp" alt="" className="h-full w-full scale-110 object-cover opacity-70 blur-2xl" />
-        <div className="absolute inset-0 bg-linear-to-br from-dc-ivory/85 via-dc-ivory/50 to-dc-ivory/80" />
-        <div className="dc-aurora is-a left-[-10%] top-[5%] h-[460px] w-[460px] bg-[#f3d2b8]/60" />
-        <div className="dc-aurora is-b bottom-[-10%] right-[-5%] h-[520px] w-[520px] bg-[#e8cb8c]/45" />
-      </div>
-
-      {/* Slim top bar: home, title, account. */}
-      <header className="relative z-10 flex h-16 shrink-0 items-center justify-between gap-3 px-4 sm:px-6">
-        <Link href="/" className="inline-flex min-h-11 items-center gap-2 rounded-full pr-2 text-dc-ink" aria-label="Kembali ke beranda DuaCincin">
-          <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="m15 6-6 6 6 6" />
-          </svg>
-          <BrandLogo size={30} />
-        </Link>
-        <p className="font-heading text-lg font-semibold text-dc-ink sm:text-xl">
-          Kirana <span className="hidden text-sm font-sans font-semibold text-dc-text-2 sm:inline">· asisten AI</span>
-        </p>
-        <Link href="/register?role=client" className="inline-flex min-h-11 items-center rounded-full bg-dc-ink px-4 text-sm font-semibold text-dc-on-dark hover:bg-dc-ink-2">
-          Buat akun
-        </Link>
+    <div data-wd-public className="wd relative isolate flex h-[100dvh] flex-col overflow-hidden bg-wd-paper">
+      <a href="#kirana-chat" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-full focus:bg-wd-ink focus:px-4 focus:py-2 focus:text-white">
+        Langsung ke percakapan
+      </a>
+      {/* Compact bar: the chat is the page, so no marketplace header here.
+          Logo goes home, "Beranda" says so in words, then the account door. */}
+      <header className="relative z-10 shrink-0 border-b border-wd-line bg-white">
+        <div className="mx-auto flex h-16 w-full max-w-[1320px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-1 sm:gap-4">
+            <Link href="/" aria-label="DuaCincin, ke beranda" className="inline-flex min-h-11 shrink-0 items-center rounded-md">
+              <BrandLogo size={23} priority />
+            </Link>
+            <span aria-hidden className="hidden h-6 w-px bg-wd-line-2 sm:block" />
+            <p className="hidden items-center gap-2 text-[0.95rem] font-semibold text-wd-ink sm:flex">
+              Tanya Kirana
+              <span className="rounded-full bg-wd-accent-soft px-2 py-0.5 text-[0.72rem] font-semibold text-wd-accent-ink">Asisten AI</span>
+            </p>
+          </div>
+          <nav aria-label="Kirana" className="flex shrink-0 items-center gap-1 sm:gap-2">
+            <Link href="/" className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-wd-text transition-colors hover:bg-wd-blush hover:text-wd-ink">
+              <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                <path d="M19 12H5M11 18l-6-6 6-6" />
+              </svg>
+              Beranda
+            </Link>
+            <Link href="/register?role=client" className={wdButton({ size: "sm", className: "px-5" })}>
+              Buat akun
+            </Link>
+          </nav>
+        </div>
       </header>
 
-      <main id="konten" className="relative mx-auto grid min-h-0 w-full max-w-[1320px] flex-1 gap-6 px-0 pb-0 sm:px-4 sm:pb-4 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-8 lg:px-8 lg:pb-6">
+      <main id="konten" className="relative mx-auto grid min-h-0 w-full max-w-[1320px] flex-1 gap-6 px-0 pb-0 sm:px-4 sm:pb-4 sm:pt-4 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-8 lg:px-8 lg:pb-6 lg:pt-6">
         {/* Kirana, live, beside the conversation (desktop) */}
-        <aside className="relative hidden min-h-0 flex-col items-center justify-center lg:flex">
-          <div className="relative z-10 h-[min(62vh,560px)] w-full">
+        <aside aria-label="Kirana" className="relative hidden min-h-0 flex-col overflow-hidden rounded-[28px] border border-wd-line bg-white lg:flex">
+          {/* Soft champagne light behind her: the one warm spot on the page. */}
+          <div aria-hidden className="absolute inset-x-0 bottom-0 h-2/3 bg-[radial-gradient(60%_55%_at_50%_75%,var(--wd-accent-soft),transparent)]" />
+          <div className="relative px-6 pt-6">
+            <p className="wd-kicker">Kenalan dengan</p>
+            <p className="wd-display text-[2rem] leading-none">
+              <em>Kirana</em>
+            </p>
+            <p className="mt-2 max-w-[30ch] text-sm leading-relaxed text-wd-muted">Kirana mencari dari vendor terdaftar dan galeri inspirasi DuaCincin, lalu menyusunnya untukmu.</p>
+          </div>
+          <div className="relative flex min-h-0 flex-1 flex-col items-center justify-center">
+          <div className="relative z-10 h-[min(48vh,440px)] w-full">
             <Kirana3D mood={mood} className="h-full w-full" />
             <AnimatePresence>
               {(cheer || typing || busy || hello) && (
@@ -201,7 +220,7 @@ export function KiranaChatPage() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, transition: { duration: 0.2 } }}
                   transition={{ duration: 0.35, ease: EASE }}
-                  className="dc-glass absolute right-[6%] top-[8%] whitespace-nowrap rounded-2xl rounded-bl-sm px-3.5 py-2 text-sm font-semibold text-dc-ink"
+                  className="absolute right-[6%] top-[4%] whitespace-nowrap rounded-2xl rounded-bl-sm border border-wd-line bg-white px-3.5 py-2 text-sm font-medium text-wd-ink shadow-wd-card"
                 >
                   {cheer ? "Sudah siap!" : busy ? (streamingText ? "Ini dia…" : "Sebentar, aku carikan…") : typing ? "Aku dengarkan…" : `Halo Kak ${profile?.name ?? ""}!`}
                 </motion.p>
@@ -212,7 +231,7 @@ export function KiranaChatPage() {
               Drawn as a real object: the back halves sit behind Kirana, the
               front halves in front of her, so she stands inside the rings
               instead of being cut through by them. */}
-          <div aria-hidden className="relative -mt-[150px] h-28 w-[min(400px,86%)]">
+          <div aria-hidden className="relative -mt-[130px] mb-4 h-28 w-[min(360px,86%)]">
             <div className="absolute inset-x-[8%] bottom-6 h-16 rounded-[50%] bg-[radial-gradient(closest-side,rgb(220_187_118_/_0.55),transparent)] blur-xl" />
             {(["back", "front"] as const).map((layer) => (
               <svg key={layer} viewBox="0 0 420 110" className={`absolute inset-0 h-full w-full ${layer === "front" ? "z-20" : "z-0"}`}>
@@ -239,6 +258,7 @@ export function KiranaChatPage() {
               <span key={i} className="dc-sparkle absolute z-20 h-1.5 w-1.5 rounded-full bg-[#f0d79c]" style={{ left: `${14 + i * 18}%`, top: `${i % 2 ? 18 : 42}%`, animationDelay: `${i * 0.9}s` }} />
             ))}
           </div>
+          </div>
         </aside>
 
         {/* The conversation */}
@@ -247,10 +267,12 @@ export function KiranaChatPage() {
           initial={reduced ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.985 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.6, ease: EASE }}
-          className="dc-glass relative min-h-0 overflow-hidden rounded-t-[28px] sm:rounded-[32px]"
+          id="kirana-chat"
+          tabIndex={-1}
+          className="relative min-h-0 overflow-hidden bg-white outline-none sm:rounded-[28px] sm:border sm:border-wd-line sm:shadow-wd-card"
         >
           {!loaded ? (
-            <div className="flex h-full items-center justify-center gap-3 text-sm font-semibold text-dc-text-2">
+            <div role="status" className="flex h-full items-center justify-center gap-3 text-sm font-medium text-wd-muted">
               <KiranaFace size={40} mood="thinking" />
               Membuka percakapanmu…
             </div>
