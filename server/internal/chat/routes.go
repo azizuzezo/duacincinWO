@@ -9,6 +9,8 @@ import (
 
 // Mount registers /conversations/* routes onto r, all requiring a session.
 func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
+	r.With(auth.RequireAuth(cfg), auth.RequireRole(auth.RoleClient)).Post("/briefs", SendBrief(deps))
+
 	r.Route("/conversations", func(r chi.Router) {
 		r.Use(auth.RequireAuth(cfg))
 

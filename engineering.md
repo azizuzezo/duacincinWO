@@ -38,6 +38,22 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 
 ## Changelog
 
+### 2026-11-25 — Brief → Vendor: Kirana menyiapkan brief, client mengirim ke maksimal 5 vendor sekaligus
+- **Fase:** — (fitur Kirana + chat, Fase 2)
+- **Apa yang berubah:** Alat Kirana baru `siapkan_brief` merapikan cerita pengguna (kategori, kota, tanggal, jumlah tamu, gaya/adat, budget vendor, catatan) menjadi kartu **Brief** berisi vendor yang cocok (pencarian direktori biasa, tanpa AI). Pengguna melengkapi isian, memilih vendor (default semua, maks 5) lalu menekan kirim. Brief masuk ke tiap vendor sebagai pesan pertama chat vendor biasa, jadi balasan, notifikasi in-app, email, dan relay WhatsApp memakai jalur yang sudah ada. Kalau tidak ada vendor yang cocok, tampil kartu Wedding Consultant seperti `cari_vendor`.
+- **Backend:** `POST /api/v1/briefs` (khusus role client, `chat.SendBrief`). Teks pesan selalu dirangkai server dari kolom terstruktur (`internal/briefs`), tidak pernah dari klien. Isian bebas yang berisi nomor HP/email/tautan ditolak (400). Batas: maks 5 vendor per brief, 10 brief per client per 24 jam (429), dan brief kategori yang sama tidak dikirim ulang ke vendor yang sama dalam 14 hari (409). Vendor harus `approved` dan menyediakan kategorinya. Bagian akhir `SendMessage` dipecah jadi `deliver()` yang dipakai bersama. Migrasi `000033_wedding_briefs` (`wedding_briefs`, `wedding_brief_recipients`) mencatat pengirim, penerima, dan chat-nya, untuk batas harian, anti-ulang, dan nanti mengukur brief yang jadi booking.
+- **Frontend:** `web/src/components/landing/ask/BriefBlock.tsx`. Belum login (401): draf disimpan di sessionStorage tab, pengguna diarahkan ke `/register?role=client&next=<halaman ini>` dan kembali ke kartu yang sama (riwayat Kirana ikut pindah ke akun).
+- **File/komponen utama:** `server/internal/briefs`, `server/internal/chat/handlers_brief.go`, `server/internal/repository/briefs.go`, `server/internal/aiassist/tools.go` + `prompt.go`, `server/migrations/000033_*`, `e2e/api.mjs` (12 pemeriksaan baru).
+- **Keputusan/asumsi:** Satu brief untuk satu kategori. Brief dikirim sebagai pesan chat biasa, bukan fitur baru di dashboard vendor. Kirana tidak pernah mengirim sendiri; pengguna yang menekan tombol.
+- **Status:** Done
+
+### 2026-11-21 — Verifikasi WhatsApp manual: Serabox.id & Syava Annisa
+- **Fase:** — (operasional data produksi; fitur verifikasi WA dari Fase 1)
+- **Apa yang berubah:** Nomor WhatsApp dua vendor ditandai terverifikasi di DB produksi karena kode OTP berulang kali tidak terkirim: Serabox.id (`riyan.riyadi10@gmail.com`) → `6281803001191` dan Syava Annisa (`syavaikaannisa16@gmail.com`) → `6289685257330`. Keduanya sekarang punya satu baris `whatsapp_links` dengan `link_state = 'linked'`; `whatsapp_verifications` untuk kedua akun dikosongkan dan `vendor_profiles.whatsapp_number` disamakan.
+- **File/komponen utama:** tanpa perubahan kode. Transaksi dijalankan lewat tool sementara `server/cmd/wa_manual_verify` (sudah dihapus setelah dipakai) yang meniru persis `WhatsAppLinkRepo.LinkVerified` di `server/internal/repository/whatsapp_verify.go`, termasuk `jid`, pelepasan nomor lama, dan pengecekan nomor tidak dipakai akun lain.
+- **Keputusan/asumsi:** Nomor `6281803001191` sebelumnya terverifikasi di akun client lama `riyanerje31@gmail.com` (Riyan Riyadi, sama orangnya, tidak punya booking maupun percakapan). Atas izin pemilik, nomor itu dilepaskan dari akun client lalu dipindah ke akun vendor Serabox dalam satu transaksi; akun client lama sekarang tidak punya nomor terverifikasi dan akan diminta verifikasi bila dipakai lagi. Nomor Syava tidak bentrok dengan akun lain. Pemilik mengonfirmasi kedua nomor sudah benar sebelum penulisan.
+- **Status:** Done — diverifikasi ulang setelah transaksi: masing-masing nomor hanya terikat ke vendor yang benar, akun client lama tidak punya link, tidak ada verifikasi tertunda.
+
 ### 2026-11-21 — SEO tahap 2 (audit claude-seo + marketingskills)
 
 Audit 6 agen claude-seo (teknis, konten, schema, GEO, SXO, performa) pada situs live; laporan di scratchpad sesi. Yang diterapkan:

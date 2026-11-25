@@ -27,6 +27,7 @@ import { ARTICLES } from "@/content/artikel/registry";
 import { categoryLabel, formatRupiah } from "@/lib/api";
 import { EASE, MOTION, useReducedMotion } from "@/lib/motion";
 
+import { BriefBlock } from "./BriefBlock";
 import type { Block, VendorItem } from "./useAsk";
 
 const RATING = new Intl.NumberFormat("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -691,6 +692,8 @@ export function BlockView({ block }: { block: Block }) {
     switch (block.type) {
       case "vendors":
         return <VendorsBlock data={block.data} />;
+      case "brief":
+        return <BriefBlock data={block.data} />;
       case "budget":
         return <BudgetBlock data={block.data} />;
       case "inspirations":

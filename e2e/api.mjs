@@ -179,6 +179,8 @@ r = await new Client("anon").call("GET", "/vendors?max_price=38500000"); ok("bud
 
 // 5. chat + contact-info filter
 r = await client.call("POST", `/conversations/vendor/${vendorId}`, {}); ok("client starts vendor chat", r.status < 300 && r.data?.id, JSON.stringify(r)); const conv = r.data;
+
+
 r = await client.call("POST", `/conversations/${conv.id}/messages`, { body: "Halo, apakah tanggal 14 Maret tersedia?" }); ok("client sends message", r.status < 300, JSON.stringify(r));
 r = await client.call("POST", `/conversations/${conv.id}/messages`, { body: "WA saya 081234567890 ya" }); ok("phone number message is flagged", r.data?.flagged === true, JSON.stringify(r));
 r = await vendor.call("GET", `/conversations/${conv.id}/messages`); ok("vendor reads thread (2 messages)", r.status === 200 && r.data.length >= 2, JSON.stringify(r));
@@ -249,6 +251,22 @@ r = await client.call("POST", `/conversations/admin-vendor/${vendorId}`, {}); ok
 r = await admin.call("POST", `/conversations/admin-vendor/${vendorId}`, {}); const av = r.data;
 ok("admin starts a chat with the vendor", r.status === 200 && av?.type === "admin_vendor" && av?.vendor_id === vendorId && !!av?.admin_id && av?.client_id === "", JSON.stringify(r));
 r = await admin.call("POST", `/conversations/admin-vendor/${vendorId}`, {}); ok("starting again reuses the thread", r.data?.id === av?.id, JSON.stringify(r));
+// Brief -> Vendor: one structured brief goes to approved vendors as the first chat message.
+const brief = { category: "venue", city: "Jakarta Selatan", event_date: "Oktober 2027", guests: 300, style: "adat Jawa", budget_max: 90000000, notes: "Butuh parkir luas." };
+r = await new Client("anon").call("POST", "/briefs", { ...brief, vendor_ids: [vendorId] }); ok("anonymous cannot send a brief (401)", r.status === 401, JSON.stringify(r));
+r = await vendor.call("POST", "/briefs", { ...brief, vendor_ids: [vendorId] }); ok("vendor cannot send a brief (403)", r.status === 403, JSON.stringify(r));
+r = await client.call("POST", "/briefs", { ...brief, vendor_ids: [] }); ok("brief without vendors is refused (400)", r.status === 400, JSON.stringify(r));
+r = await client.call("POST", "/briefs", { ...brief, vendor_ids: [vendorId, "a", "b", "c", "d", "e"] }); ok("brief to more than 5 vendors is refused (400)", r.status === 400, JSON.stringify(r));
+r = await client.call("POST", "/briefs", { ...brief, category: "nope", vendor_ids: [vendorId] }); ok("brief with an unknown category is refused (400)", r.status === 400, JSON.stringify(r));
+r = await client.call("POST", "/briefs", { ...brief, notes: "hubungi saya di 081234567890", vendor_ids: [vendorId] }); ok("brief with a phone number is refused (400)", r.status === 400, JSON.stringify(r));
+r = await client.call("POST", "/briefs", { ...brief, vendor_ids: [vendor2Id] }); ok("brief to a pending vendor is refused (409)", r.status === 409 && r.data?.skipped?.length === 1, JSON.stringify(r));
+r = await client.call("POST", "/briefs", { ...brief, category: "decor", vendor_ids: [vendorId] }); ok("brief for a category the vendor does not offer is refused (409)", r.status === 409, JSON.stringify(r));
+r = await client.call("POST", "/briefs", { ...brief, vendor_ids: [vendorId, vendorId] }); ok("brief reaches the approved vendor once (duplicates collapsed)", r.status === 201 && r.data?.sent?.length === 1 && r.data.sent[0].conversation_id === conv.id, JSON.stringify(r));
+r = await vendor.call("GET", `/conversations/${conv.id}/messages`);
+ok("vendor reads the brief as a chat message", r.status === 200 && r.data?.some((m) => m.body.includes("mencari Venue") && m.body.includes("Jumlah tamu: 300") && m.body.includes("sampai Rp90.000.000") && !m.flagged), JSON.stringify(r.data?.slice(-1)));
+ok("the brief is recorded with its recipient", psql(`select count(*) from wedding_brief_recipients where vendor_id = '${vendorId}'`) === "1");
+r = await client.call("POST", "/briefs", { ...brief, vendor_ids: [vendorId] }); ok("the same brief is not sent twice to a vendor (409)", r.status === 409, JSON.stringify(r));
+
 r = await admin.call("POST", `/conversations/admin-vendor/${vendor2Id}`, {}); ok("admin can reach a vendor still pending review", r.status === 200, JSON.stringify(r));
 r = await admin.call("POST", `/conversations/${av.id}/messages`, { body: "Halo, mohon konfirmasi nomor 081234567890 untuk verifikasi." }); ok("admin sends; contact details are not flagged in an admin chat", r.status === 201 && r.data?.flagged === false, JSON.stringify(r));
 

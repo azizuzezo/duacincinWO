@@ -9,7 +9,9 @@ import (
 	"sort"
 	"strings"
 
+	"duacincin/server/internal/briefs"
 	"duacincin/server/internal/budget"
+	"duacincin/server/internal/chat"
 	"duacincin/server/internal/repository"
 	"duacincin/server/internal/vendors"
 	"duacincin/server/internal/wilayah"
@@ -40,20 +42,7 @@ const (
 	maxPortfolio    = 5
 )
 
-var vendorCategoryLabels = map[string]string{
-	"venue":               "Venue",
-	"catering":            "Catering",
-	"decor":               "Dekorasi",
-	"mua_attire":          "MUA & Attire",
-	"photo_video":         "Foto & Video",
-	"entertainment":       "Entertainment",
-	"invitation_souvenir": "Undangan & Souvenir",
-	"hantaran":            "Hantaran & Seserahan",
-	"mc":                  "MC",
-	"content_creator":     "Wedding Content Creator",
-	"wedding_car":         "Mobil Pengantin",
-	"wedding_cake":        "Kue Pengantin",
-}
+var vendorCategoryLabels = briefs.CategoryLabels
 
 var budgetLabels = map[string]string{
 	"venue_catering":      "Venue & Catering",
@@ -159,6 +148,19 @@ func toolDefs() []toolDef {
 			}, "judul", "langkah"),
 		}},
 		{Type: "function", Function: toolDefFunc{
+			Name:        "siapkan_brief",
+			Description: "Siapkan brief kebutuhan vendor yang bisa dikirim pengguna ke beberapa vendor DuaCincin sekaligus (vendor lalu membalas lewat chat). Pakai kalau pengguna ingin menghubungi, menanyakan ketersediaan, atau minta penawaran dari vendor, dan kategori serta kotanya sudah jelas. Satu brief untuk satu kategori. Hasilnya tampil sebagai kartu Brief dengan vendor yang cocok; pengguna sendiri yang menekan tombol kirim. Kamu tidak mengirim apa pun sendiri.",
+			Parameters: obj(map[string]any{
+				"kategori":      map[string]any{"type": "string", "enum": categoryEnum(), "description": "Jenis vendor yang dibutuhkan."},
+				"kota":          map[string]any{"type": "string", "description": "Kota acara, tanpa awalan Kota/Kabupaten. \"Jabodetabek\" kalau disebut."},
+				"tanggal_acara": map[string]any{"type": "string", "description": "Tanggal atau perkiraan waktu acara sebagaimana disebut pengguna, misalnya \"Oktober 2027\". Kosongkan kalau belum disebut."},
+				"jumlah_tamu":   map[string]any{"type": "integer", "description": "Perkiraan jumlah tamu. Kosongkan kalau belum disebut."},
+				"gaya":          map[string]any{"type": "string", "description": "Adat, tema, atau gaya yang diinginkan, singkat, misalnya \"adat Jawa, nuansa sage\"."},
+				"budget_maks":   map[string]any{"type": "integer", "description": "Batas budget untuk vendor kategori ini saja, dalam rupiah penuh. Bukan total budget pernikahan."},
+				"catatan":       map[string]any{"type": "string", "description": "Kebutuhan khusus, satu atau dua kalimat. Jangan masukkan nomor HP, email, atau tautan."},
+			}, "kategori"),
+		}},
+		{Type: "function", Function: toolDefFunc{
 			Name:        "hubungi_konsultan",
 			Description: "Tampilkan kartu untuk chat dengan Wedding Consultant DuaCincin (staf manusia). HANYA dipanggil kalau pengguna secara jelas meminta bicara/chat dengan Wedding Consultant, konsultan, admin, CS, atau manusia.",
 			Parameters:  obj(map[string]any{}),
@@ -195,6 +197,11 @@ func statusFor(name, rawArgs string) string {
 			return "Membuka galeri inspirasi “" + k + "”"
 		}
 		return "Membuka galeri inspirasi"
+	case "siapkan_brief":
+		if l, ok := vendorCategoryLabels[str("kategori")]; ok {
+			return "Menyiapkan brief " + l
+		}
+		return "Menyiapkan brief untuk vendor"
 	case "hitung_budget":
 		return "Menghitung pembagian budget"
 	case "tampilkan_timeline":
@@ -245,6 +252,8 @@ func (d *Deps) dispatch(ctx context.Context, name, rawArgs string) (toolOutput, 
 			return toolOutput{}, fmt.Errorf("argumen tidak valid")
 		}
 		return d.findVendors(ctx, a.Kategori, a.Kota, int64(a.BudgetMaks))
+	case "siapkan_brief":
+		return d.prepareBrief(ctx, rawArgs)
 	case "cari_inspirasi":
 		var a struct {
 			KataKunci string `json:"kata_kunci"`
@@ -788,6 +797,8 @@ func blockNote(b *block) string {
 			}
 		}
 		return fmt.Sprintf("kartu vendor %v: %s", data["label"], strings.Join(names, ", "))
+	case "brief":
+		return fmt.Sprintf("kartu brief %v (belum tentu terkirim, pengguna yang menekan kirim)", data["label"])
 	case "budget":
 		note := fmt.Sprintf("pembagian budget total %v", data["total"])
 		if ex, ok := data["excluded"].([]string); ok && len(ex) > 0 {
@@ -897,4 +908,70 @@ func parseBudgetAdds(raw json.RawMessage) []budgetAdd {
 		out = append(out, budgetAdd{Name: n, Percent: pct})
 	}
 	return out
+}
+
+// prepareBrief builds the Brief card: the couple's need as structured fields
+// plus the vendors that match it. Matching is the ordinary directory search;
+// the model only tidies what the visitor said. Sending is the visitor's own
+// action (POST /api/v1/briefs), never the model's. When no vendor matches,
+// the visitor gets the Wedding Consultant card, same as cari_vendor.
+func (d *Deps) prepareBrief(ctx context.Context, rawArgs string) (toolOutput, error) {
+	var a struct {
+		Kategori   string          `json:"kategori"`
+		Kota       string          `json:"kota"`
+		Tanggal    string          `json:"tanggal_acara"`
+		Tamu       json.RawMessage `json:"jumlah_tamu"`
+		Gaya       string          `json:"gaya"`
+		BudgetMaks json.RawMessage `json:"budget_maks"`
+		Catatan    string          `json:"catatan"`
+	}
+	if err := json.Unmarshal([]byte(rawArgs), &a); err != nil {
+		return toolOutput{}, fmt.Errorf("argumen tidak valid")
+	}
+	b := briefs.Brief{
+		Category:  a.Kategori,
+		City:      normalizeCity(a.Kota),
+		EventDate: a.Tanggal,
+		Guests:    int(digitsOnly(strings.Trim(string(a.Tamu), `"`))),
+		Style:     a.Gaya,
+		BudgetMax: amountFromText(strings.Trim(string(a.BudgetMaks), `"`), true),
+		Notes:     a.Catatan,
+	}
+	if err := b.Normalize(); err != nil {
+		return toolOutput{}, err
+	}
+	if chat.ContainsContactInfo(b.FreeText()) {
+		// Contact details never travel in a brief (the send endpoint refuses them too).
+		b.Notes, b.Style = "", ""
+	}
+
+	found, err := d.findVendors(ctx, b.Category, b.City, b.BudgetMax)
+	if err != nil {
+		return toolOutput{}, err
+	}
+	if found.Block == nil || found.Block.Type != "vendors" {
+		return found, nil // nobody matches: consultant card
+	}
+	vd, _ := found.Block.Data.(map[string]any)
+	items, _ := vd["items"].([]vendorCardDTO)
+	if len(items) > briefs.MaxVendors {
+		items = items[:briefs.MaxVendors]
+	}
+	names := make([]string, 0, len(items))
+	for _, v := range items {
+		names = append(names, v.BusinessName)
+	}
+	js, _ := json.Marshal(map[string]any{
+		"ok":      true,
+		"vendor":  names,
+		"catatan": "Kartu Brief sudah tampil dengan vendor yang cocok. Pengguna yang menekan tombol kirim (perlu akun client gratis); kamu tidak mengirim apa pun. Sebutkan field yang masih kosong (tanggal, jumlah tamu, gaya) dan tawarkan melengkapinya, lalu bilang brief bisa diedit sebelum dikirim.",
+	})
+	return toolOutput{ForModel: string(js), Block: &block{Type: "brief", Data: map[string]any{
+		"label":   vendorCategoryLabels[b.Category],
+		"brief":   b,
+		"preview": b.Message(),
+		"max":     briefs.MaxVendors,
+		"total":   vd["total"],
+		"items":   items,
+	}}}, nil
 }

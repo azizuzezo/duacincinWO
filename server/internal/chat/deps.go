@@ -25,11 +25,13 @@ type Notifier interface {
 }
 
 type Deps struct {
-	Chat          *repository.ChatRepo
-	Vendors       *repository.VendorRepo
-	Disputes      *repository.DisputeRepo
-	Users         *repository.UserRepo
-	Hub           *Hub
+	Chat     *repository.ChatRepo
+	Vendors  *repository.VendorRepo
+	Disputes *repository.DisputeRepo
+	Users    *repository.UserRepo
+	Hub      *Hub
+	// Briefs records briefs sent to vendors (SendBrief).
+	Briefs        *repository.BriefRepo
 	Notifications *repository.NotificationRepo
 	Storage       *storage.Client
 	// Notifier is optional (nil-safe) — set once the WhatsApp relay's Deps

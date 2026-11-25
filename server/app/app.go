@@ -135,6 +135,7 @@ func New(ctx context.Context, opts Options) (*App, error) {
 	// wired to the relay here so a new message sent from the web app also
 	// gets forwarded to WhatsApp when the other participant is linked.
 	chatDeps.Notifier = whatsappDeps
+	chatDeps.Briefs = repository.NewBriefRepo(pool)
 	whatsappDeps.Notifications = notificationRepo
 	whatsappDeps.AuditLog = auditLogRepo
 	chatDeps.Mailer, chatDeps.Cfg = mailer, cfg

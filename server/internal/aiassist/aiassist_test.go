@@ -440,3 +440,21 @@ func TestSplitBudgetAddAndStack(t *testing.T) {
 		t.Fatal(blockNote(out.Block))
 	}
 }
+
+func TestBriefToolIsRegistered(t *testing.T) {
+	found := false
+	for _, td := range toolDefs() {
+		if td.Function.Name == "siapkan_brief" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("siapkan_brief tool missing")
+	}
+	if got := statusFor("siapkan_brief", `{"kategori":"decor"}`); got != "Menyiapkan brief Dekorasi" {
+		t.Fatalf("status = %q", got)
+	}
+	if got := blockNote(&block{Type: "brief", Data: map[string]any{"label": "Dekorasi"}}); !strings.Contains(got, "Dekorasi") {
+		t.Fatalf("blockNote = %q", got)
+	}
+}

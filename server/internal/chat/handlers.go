@@ -409,16 +409,23 @@ func SendMessage(deps *Deps) http.HandlerFunc {
 			_ = deps.Disputes.Create(r.Context(), *conv.VendorID, &message.ID, "Pesan chat terdeteksi berisi kontak eksternal")
 		}
 
-		dto := toMessageDTOWithReply(deps, r.Context(), message)
-		deps.Hub.Broadcast(conv.ID, map[string]any{"type": "message.new", "message": dto})
-		notifyOtherParticipant(deps, r.Context(), conv, claims.UserID, req.Body)
-		emailRecipient(deps, conv, claims.UserID, message.ID)
-		if deps.Notifier != nil {
-			deps.Notifier.NotifyNewMessage(r.Context(), conv, claims.UserID, message)
-		}
-
+		dto := deliver(deps, r.Context(), conv, claims.UserID, message)
 		httpx.JSON(w, http.StatusCreated, dto)
 	}
+}
+
+// deliver announces a stored message: live push to open chats, in-app
+// notification, email and the WhatsApp relay. Shared by SendMessage and
+// SendBrief so a brief reaches a vendor exactly like a typed message.
+func deliver(deps *Deps, ctx context.Context, conv *repository.Conversation, senderID string, message *repository.Message) messageDTO {
+	dto := toMessageDTOWithReply(deps, ctx, message)
+	deps.Hub.Broadcast(conv.ID, map[string]any{"type": "message.new", "message": dto})
+	notifyOtherParticipant(deps, ctx, conv, senderID, message.Body)
+	emailRecipient(deps, conv, senderID, message.ID)
+	if deps.Notifier != nil {
+		deps.Notifier.NotifyNewMessage(ctx, conv, senderID, message)
+	}
+	return dto
 }
 
 // recipientOf returns the one person a message from senderID is for, and
