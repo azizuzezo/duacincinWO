@@ -7,13 +7,13 @@
 // here explains a change (what moved, what is new, what is chosen) and drops
 // to an instant swap under prefers-reduced-motion.
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { ArrowRight, Shield, Star } from "@/components/home/ui";
 import { categoryLabel, formatRupiah, type DirectoryCard, vendorCities } from "@/lib/api";
 import { EASE, SPRING_SNAPPY, useReducedMotion } from "@/lib/motion";
+import { FitPhoto } from "@/components/ui/FitPhoto";
 
 import { GRID } from "./ListingParts";
 import { useShareLink } from "./useShareLink";
@@ -48,16 +48,14 @@ export function ListingCard({ card, priority = false }: { card: DirectoryCard; p
       href={`/vendors/${card.id}`}
       className="group block h-full rounded-[16px] outline-offset-4 focus-visible:outline-2 focus-visible:outline-wd-accent-ink"
     >
-      <span className="@container relative block aspect-[4/3] overflow-hidden rounded-[14px] bg-wd-blush shadow-none transition-[box-shadow,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover/c:-translate-y-1 group-hover/c:shadow-wd-lift group-focus-visible:-translate-y-1 group-focus-visible:shadow-wd-lift motion-reduce:transition-none motion-reduce:group-hover/c:translate-y-0 motion-reduce:group-focus-visible:translate-y-0">
+      <span className="@container relative block aspect-square overflow-hidden rounded-[14px] bg-wd-blush shadow-none transition-[box-shadow,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover/c:-translate-y-1 group-hover/c:shadow-wd-lift group-focus-visible:-translate-y-1 group-focus-visible:shadow-wd-lift motion-reduce:transition-none motion-reduce:group-hover/c:translate-y-0 motion-reduce:group-focus-visible:translate-y-0">
         {card.sample_image ? (
-          <Image
+          <FitPhoto
             src={card.sample_image}
             alt={`Portofolio ${card.business_name}`}
-            fill
-            unoptimized
             priority={priority}
             sizes="(min-width: 1280px) 260px, (min-width: 1024px) 30vw, (min-width: 480px) 45vw, 90vw"
-            className="object-cover transition-transform duration-[1.1s] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.06] group-focus-visible:scale-[1.06] motion-reduce:transition-none motion-reduce:group-hover:scale-100 motion-reduce:group-focus-visible:scale-100"
+            className="transition-transform duration-[1.1s] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.06] group-focus-visible:scale-[1.06] motion-reduce:transition-none motion-reduce:group-hover:scale-100 motion-reduce:group-focus-visible:scale-100"
           />
         ) : (
           <span className="flex h-full items-center justify-center text-sm text-wd-muted">Belum ada foto</span>
@@ -69,7 +67,7 @@ export function ListingCard({ card, priority = false }: { card: DirectoryCard; p
         {/* Quick look: slides up from the photo's bottom edge on hover/focus. */}
         <span
           aria-hidden
-          className="absolute inset-x-2.5 bottom-2.5 flex translate-y-2 items-center justify-between gap-2 rounded-full bg-white/95 py-1.5 pl-3.5 pr-1.5 text-[0.8rem] opacity-0 shadow-wd-card transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 motion-reduce:translate-y-0 motion-reduce:transition-opacity"
+          className="absolute inset-x-2.5 bottom-2.5 hidden translate-y-2 items-center justify-between [@media(hover:hover)]:flex gap-2 rounded-full bg-white/95 py-1.5 pl-3.5 pr-1.5 text-[0.8rem] opacity-0 shadow-wd-card transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 motion-reduce:translate-y-0 motion-reduce:transition-opacity"
         >
           <span className="min-w-0 truncate tabular-nums text-wd-text">
             {range ? rangeLabel(card.price_min, card.price_max) : card.price_min > 0 ? `Mulai ${shortRupiah(card.price_min)}` : "Harga lewat chat"}

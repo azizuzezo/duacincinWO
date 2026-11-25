@@ -275,7 +275,7 @@ export function GridSkeleton({ count = 8 }: { count?: number }) {
     <div role="status" aria-label="Memuat vendor" className={GRID}>
       {Array.from({ length: count }, (_, i) => (
         <div key={i} aria-hidden>
-          <div className="relative aspect-[4/3] animate-pulse rounded-[14px] bg-wd-blush motion-reduce:animate-none">
+          <div className="relative aspect-square animate-pulse rounded-[14px] bg-wd-blush motion-reduce:animate-none">
             <span className="absolute left-2.5 top-2.5 h-5 w-16 rounded-full bg-white/80" />
           </div>
           <div className={`mt-3 h-4 w-4/5 ${bar}`} />

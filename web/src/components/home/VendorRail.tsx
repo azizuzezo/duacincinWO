@@ -4,13 +4,13 @@
 // Card content follows the directory rules: price only when the vendor set
 // one, rating only when there are reviews (reviews come from completed
 // bookings), the escrow chip on every card (true for every booking).
-import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRef, type ReactNode } from "react";
 
 import { categoryLabel, formatRupiah, type DirectoryCard } from "@/lib/api";
 import { EASE, useReducedMotion } from "@/lib/motion";
+import { FitPhoto } from "@/components/ui/FitPhoto";
 
 import { RailArrows } from "./RailArrows";
 import { SectionHead, SeeAll, Shield, Star } from "./ui";
@@ -27,15 +27,13 @@ export function rankVendors(cards: DirectoryCard[]) {
 export function VendorCard({ card }: { card: DirectoryCard }) {
   return (
     <Link href={`/vendors/${card.id}`} className="group block h-full rounded-[14px]">
-      <span className="relative block aspect-[4/3] overflow-hidden rounded-[14px] bg-wd-blush">
+      <span className="relative block aspect-square overflow-hidden rounded-[14px] bg-wd-blush">
         {card.sample_image ? (
-          <Image
+          <FitPhoto
             src={card.sample_image}
             alt={`Portofolio ${card.business_name}`}
-            fill
-            unoptimized
             sizes="(min-width: 1024px) 240px, 70vw"
-            className="object-cover transition-transform duration-[1.1s] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.05] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+            className="transition-transform duration-[1.1s] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.05] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
           />
         ) : (
           <span className="flex h-full items-center justify-center text-sm text-wd-muted">Belum ada foto</span>
@@ -47,7 +45,7 @@ export function VendorCard({ card }: { card: DirectoryCard }) {
         {/* Hover / focus reveal: says what the click does. */}
         <span
           aria-hidden
-          className="absolute inset-x-2.5 bottom-2.5 flex translate-y-2 items-center justify-center rounded-full bg-white/95 py-2 text-[0.8rem] font-semibold text-wd-ink opacity-0 shadow-wd-card transition-[opacity,transform] duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 motion-reduce:transition-none"
+          className="absolute inset-x-2.5 bottom-2.5 hidden translate-y-2 items-center justify-center [@media(hover:hover)]:flex rounded-full bg-white/95 py-2 text-[0.8rem] font-semibold text-wd-ink opacity-0 shadow-wd-card transition-[opacity,transform] duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 motion-reduce:transition-none"
         >
           Lihat profil
         </span>
@@ -85,7 +83,7 @@ export function VendorCard({ card }: { card: DirectoryCard }) {
 function SkeletonCard() {
   return (
     <div aria-hidden>
-      <div className="aspect-[4/3] animate-pulse rounded-[14px] bg-wd-blush" />
+      <div className="aspect-square animate-pulse rounded-[14px] bg-wd-blush" />
       <div className="mt-3 h-4 w-3/4 animate-pulse rounded bg-wd-blush" />
       <div className="mt-2 h-3 w-1/2 animate-pulse rounded bg-wd-blush" />
     </div>

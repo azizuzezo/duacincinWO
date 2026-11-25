@@ -112,6 +112,18 @@ function Gallery({ v }: { v: VendorItem }) {
       >
         {imgs.map((src, i) => (
           <div key={src + i} className="relative h-full w-full shrink-0 snap-center">
+            {/* Blurred copy of the photo fills the frame; the photo itself is
+                shown whole on top, so no part of it is cropped away. */}
+            {/* eslint-disable-next-line @next/next/no-img-element -- vendor portfolio on remote storage */}
+            <img
+              src={src}
+              alt=""
+              aria-hidden
+              loading="lazy"
+              draggable={false}
+              onLoad={() => setLoaded((s) => new Set(s).add(i))}
+              className={`absolute inset-0 h-full w-full scale-125 object-cover blur-2xl transition-opacity duration-[1.1s] ${loaded.has(i) ? "opacity-100" : "opacity-0"}`}
+            />
             {/* eslint-disable-next-line @next/next/no-img-element -- vendor portfolio on remote storage */}
             <img
               src={src}
@@ -119,7 +131,7 @@ function Gallery({ v }: { v: VendorItem }) {
               loading="lazy"
               draggable={false}
               onLoad={() => setLoaded((s) => new Set(s).add(i))}
-              className={`h-full w-full object-cover transition-[transform,opacity,filter] duration-[1.1s] ease-dc group-hover/g:scale-[1.05] motion-reduce:transition-none motion-reduce:group-hover/g:scale-100 ${loaded.has(i) ? "opacity-100 blur-0" : "opacity-0 blur-md"}`}
+              className={`h-full w-full object-contain transition-[transform,opacity,filter] duration-[1.1s] ease-dc group-hover/g:scale-[1.05] motion-reduce:transition-none motion-reduce:group-hover/g:scale-100 ${loaded.has(i) ? "opacity-100 blur-0" : "opacity-0 blur-md"}`}
             />
           </div>
         ))}
