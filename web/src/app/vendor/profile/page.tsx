@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CityCombobox } from "@/components/ui/CityCombobox";
 import { JABODETABEK } from "@/lib/wilayah";
+import { useAIEnabled } from "@/lib/useAIEnabled";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Input, Textarea } from "@/components/ui/Field";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -59,6 +60,22 @@ export default function VendorProfilePage() {
 
 function VendorProfileContent({ user }: { user: CurrentUser }) {
   const toast = useToast();
+  const aiOn = useAIEnabled();
+  const [aiBusy, setAiBusy] = useState(false);
+  // What the description said before the AI draft replaced it, to undo.
+  const [descBeforeAI, setDescBeforeAI] = useState<string | null>(null);
+  async function writeWithAI() {
+    setAiBusy(true);
+    try {
+      const r = await apiPost<{ draft: string }>("/api/v1/vendor/ai/describe", { notes: description });
+      setDescBeforeAI(description);
+      setDescription(r.draft);
+    } catch (err) {
+      toast.show(err instanceof Error && err.message ? err.message : "Draf belum bisa dibuat, coba lagi.", "danger");
+    } finally {
+      setAiBusy(false);
+    }
+  }
   const reduced = useReducedMotion();
 
   // undefined = loading, null = no profile yet (404 is normal for a new vendor).
@@ -312,6 +329,27 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
                       </span>
                     }
                   />
+                  {aiOn && (
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <Button type="button" variant="quiet" size="sm" loading={aiBusy} onClick={writeWithAI}>
+                        {description.trim() ? "Rapikan dengan AI" : "Bantu tulis dengan AI"}
+                      </Button>
+                      {descBeforeAI !== null && (
+                        <Button
+                          type="button"
+                          variant="quiet"
+                          size="sm"
+                          onClick={() => {
+                            setDescription(descBeforeAI);
+                            setDescBeforeAI(null);
+                          }}
+                        >
+                          Kembalikan tulisanku
+                        </Button>
+                      )}
+                      <p className="text-xs text-dc-text-3">Draf memakai data profil yang sudah tersimpan dan tulisanmu di atas. Periksa dulu sebelum menyimpan.</p>
+                    </div>
+                  )}
                 </FormSection>
 
                 {showSummary && (

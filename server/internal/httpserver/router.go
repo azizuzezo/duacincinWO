@@ -102,6 +102,7 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config, deps Deps) http.Handler {
 		// (aiassist.requestDeadline) instead of the 15s route timeout.
 		r.Group(func(r chi.Router) {
 			aiassist.Mount(r, deps.AIAssist)
+			aiassist.MountVendor(r, deps.AIAssist, cfg)
 		})
 
 		// The chat websocket upgrade route stays outside every request

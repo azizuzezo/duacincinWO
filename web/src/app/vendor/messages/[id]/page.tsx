@@ -9,11 +9,14 @@ import { ChatSessionButton, useChatSession } from "@/components/messages/ChatSes
 import { VENDOR_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
 import { WithUser } from "@/components/WithUser";
+import { apiPost } from "@/lib/api";
+import { useAIEnabled } from "@/lib/useAIEnabled";
 
 export default function VendorMessageThreadPage({
   params,
 }: PageProps<"/vendor/messages/[id]">) {
   const { id } = use(params);
+  const aiOn = useAIEnabled();
 
   return (
     <WithUser allowedRoles={["vendor"]} loginPath="/login">
@@ -37,7 +40,12 @@ export default function VendorMessageThreadPage({
                 Booking masuk
               </Link>
             </div>
-            <ChatThread conversationId={id} currentUserId={user.id} header={<VendorThreadHeader />} />
+            <ChatThread
+              conversationId={id}
+              currentUserId={user.id}
+              header={<VendorThreadHeader />}
+              draftAssist={aiOn ? () => apiPost<{ draft: string }>("/api/v1/vendor/ai/reply-draft", { conversation_id: id }).then((r) => r.draft) : undefined}
+            />
           </div>
         </Shell>
       )}

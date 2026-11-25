@@ -88,12 +88,16 @@ export function ChatThread({
   variant = "card",
   header,
   notice,
+  draftAssist,
 }: {
   conversationId: string;
   currentUserId: string;
   variant?: "card" | "fill";
   header?: React.ReactNode;
   notice?: React.ReactNode | false;
+  /** Fetches a suggested reply for the composer (vendor AI copilot). The
+   * draft only fills the text box; the person edits and sends it. */
+  draftAssist?: () => Promise<string>;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [body, setBody] = useState("");
@@ -105,6 +109,7 @@ export function ChatThread({
   const [confirmClose, setConfirmClose] = useState(false);
   const [sessionBusy, setSessionBusy] = useState(false);
   const [visible, setVisible] = useState(true);
+  const [drafting, setDrafting] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
@@ -327,6 +332,22 @@ export function ChatThread({
     }
   }
 
+  async function suggestReply() {
+    if (!draftAssist || drafting) return;
+    setError(null);
+    setDrafting(true);
+    try {
+      const text = await draftAssist();
+      setBody(text);
+      focusComposerRef.current = true;
+      requestAnimationFrame(() => textRef.current?.focus());
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : "Saran balasan belum bisa dibuat, coba lagi.");
+    } finally {
+      setDrafting(false);
+    }
+  }
+
   function startReply(m: ChatMessage) {
     setReplyingTo(m);
     textRef.current?.focus();
@@ -520,6 +541,23 @@ export function ChatThread({
                       <path d="M6 6l12 12M18 6 6 18" />
                     </svg>
                   </button>
+                </div>
+              )}
+              {draftAssist && !body.trim() && messages.length > 0 && messages[messages.length - 1].sender_id !== currentUserId && (
+                <div className="px-3 pt-3">
+                  <button
+                    type="button"
+                    onClick={suggestReply}
+                    disabled={drafting || sending}
+                    aria-busy={drafting || undefined}
+                    className={`inline-flex min-h-11 items-center gap-2 rounded-full border border-dc-gold-antique/60 bg-dc-gold-wash px-4 text-sm font-semibold text-dc-ink transition-colors hover:bg-dc-cream disabled:opacity-60 ${FOCUS}`}
+                  >
+                    <svg aria-hidden width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={drafting ? "animate-pulse" : ""}>
+                      <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" />
+                    </svg>
+                    {drafting ? "Menyusun saran…" : "Saran balasan AI"}
+                  </button>
+                  <span className="sr-only" role="status">{drafting ? "Menyusun saran balasan" : ""}</span>
                 </div>
               )}
               <form onSubmit={handleSend} className="flex items-end gap-1.5 p-2.5 sm:gap-2 sm:p-3">

@@ -267,6 +267,13 @@ ok("vendor reads the brief as a chat message", r.status === 200 && r.data?.some(
 ok("the brief is recorded with its recipient", psql(`select count(*) from wedding_brief_recipients where vendor_id = '${vendorId}'`) === "1");
 r = await client.call("POST", "/briefs", { ...brief, vendor_ids: [vendorId] }); ok("the same brief is not sent twice to a vendor (409)", r.status === 409, JSON.stringify(r));
 
+// Vendor AI copilot: vendor-only; with no AI configured it says so instead of failing.
+r = await new Client("anon").call("POST", "/vendor/ai/reply-draft", { conversation_id: conv.id }); ok("anonymous cannot ask for a reply draft (401)", r.status === 401, JSON.stringify(r));
+r = await client.call("POST", "/vendor/ai/reply-draft", { conversation_id: conv.id }); ok("client cannot use the vendor copilot (403)", r.status === 403, JSON.stringify(r));
+r = await client.call("POST", "/vendor/ai/describe", { notes: "x" }); ok("client cannot ask for a description draft (403)", r.status === 403, JSON.stringify(r));
+r = await vendor.call("POST", "/vendor/ai/reply-draft", { conversation_id: conv.id }); ok("reply draft says the assistant is off when AI is not configured (503)", r.status === 503, JSON.stringify(r));
+r = await vendor.call("POST", "/vendor/ai/describe", { notes: "MUA adat Sunda" }); ok("description draft says the assistant is off when AI is not configured (503)", r.status === 503, JSON.stringify(r));
+r = await vendor.call("POST", "/vendor/ai/reply-draft", {}); ok("reply draft without a conversation is refused (400)", r.status === 400, JSON.stringify(r));
 r = await admin.call("POST", `/conversations/admin-vendor/${vendor2Id}`, {}); ok("admin can reach a vendor still pending review", r.status === 200, JSON.stringify(r));
 r = await admin.call("POST", `/conversations/${av.id}/messages`, { body: "Halo, mohon konfirmasi nomor 081234567890 untuk verifikasi." }); ok("admin sends; contact details are not flagged in an admin chat", r.status === 201 && r.data?.flagged === false, JSON.stringify(r));
 

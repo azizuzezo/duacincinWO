@@ -38,6 +38,14 @@ Dokumen ini adalah **living tracker** untuk pengerjaan teknis DuaCincin. Mengacu
 
 ## Changelog
 
+### 2026-11-25 — Vendor AI Copilot: saran balasan chat dan bantu tulis deskripsi usaha
+- **Fase:** — (fitur AI sisi vendor, Fase 2)
+- **Apa yang berubah:** Dua bantuan AI untuk vendor, keduanya berupa draf yang diedit dan dikirim/disimpan vendor sendiri, tidak pernah otomatis. (1) Di chat dengan calon pengantin muncul tombol **Saran balasan AI** (hanya saat pesan terakhir dari calon pengantin dan kotak tulis kosong); draf masuk ke kotak pesan. (2) Di profil vendor, tombol **Bantu tulis / Rapikan dengan AI** menyusun deskripsi usaha dari data profil, paket, dan tulisan vendor, dengan tombol "Kembalikan tulisanku". Tombol hanya tampil kalau AI aktif (`GET /ai/status`).
+- **Backend:** `POST /api/v1/vendor/ai/reply-draft` `{conversation_id}` dan `POST /api/v1/vendor/ai/describe` `{notes}` (`server/internal/aiassist/vendor_copilot.go`, khusus role vendor, memakai LLM dari panel admin yang sama dengan Kirana). Model hanya melihat fakta milik vendor itu: profil, paket, dan 14 pesan terakhir percakapannya (tanpa nama calon pengantin). Prompt melarang mengarang harga/promo/pengalaman dan menyatakan tanggal tersedia. Draf yang memuat nomor HP/email/tautan diulang sekali, lalu ditolak. Batas 40 panggilan per vendor per 24 jam (429). Tanpa AI aktif: 503. Tidak ada migrasi.
+- **Frontend:** `ChatThread` menerima prop `draftAssist`; halaman `/vendor/messages/[id]` dan `/vendor/profile`; hook `lib/useAIEnabled.ts`.
+- **Keputusan/asumsi:** Draf, bukan aksi: tidak ada auto-balas. Sengaja belum menyentuh data booking atau jadwal vendor, jadi AI tidak pernah menjanjikan ketersediaan.
+- **Status:** Done (kode + 6 pemeriksaan e2e + tes unit dengan LLM tiruan; belum dicoba dengan model sungguhan)
+
 ### 2026-11-25 — Brief → Vendor: Kirana menyiapkan brief, client mengirim ke maksimal 5 vendor sekaligus
 - **Fase:** — (fitur Kirana + chat, Fase 2)
 - **Apa yang berubah:** Alat Kirana baru `siapkan_brief` merapikan cerita pengguna (kategori, kota, tanggal, jumlah tamu, gaya/adat, budget vendor, catatan) menjadi kartu **Brief** berisi vendor yang cocok (pencarian direktori biasa, tanpa AI). Pengguna melengkapi isian, memilih vendor (default semua, maks 5) lalu menekan kirim. Brief masuk ke tiap vendor sebagai pesan pertama chat vendor biasa, jadi balasan, notifikasi in-app, email, dan relay WhatsApp memakai jalur yang sudah ada. Kalau tidak ada vendor yang cocok, tampil kartu Wedding Consultant seperti `cari_vendor`.

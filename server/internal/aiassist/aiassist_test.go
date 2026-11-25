@@ -458,3 +458,69 @@ func TestBriefToolIsRegistered(t *testing.T) {
 		t.Fatalf("blockNote = %q", got)
 	}
 }
+
+func TestCleanDraft(t *testing.T) {
+	got := cleanDraft("  \"Halo **Kak** — siap dibantu\"  ", 100)
+	if got != "Halo Kak, siap dibantu" {
+		t.Fatalf("cleanDraft = %q", got)
+	}
+	if n := len([]rune(cleanDraft(strings.Repeat("a", 50), 10))); n != 10 {
+		t.Fatalf("cleanDraft must cap length, got %d", n)
+	}
+}
+
+func TestVendorFactsAndCopilotPrompts(t *testing.T) {
+	f := &vendorFacts{
+		profile:  &repository.VendorProfile{BusinessName: "Rias Ayu", Categories: []string{"mua_attire"}, City: "Bandung", PriceMin: 3500000, Description: "MUA adat Sunda"},
+		packages: []repository.VendorPackage{{Name: "Akad", Price: 3500000, Description: "3 jam"}},
+	}
+	txt := f.text()
+	for _, want := range []string{"Rias Ayu", "MUA & Attire", "Bandung", "Rp3.500.000", "Paket: Akad"} {
+		if !strings.Contains(txt, want) {
+			t.Errorf("facts missing %q:\n%s", want, txt)
+		}
+	}
+	for name, p := range map[string]string{"reply": replySystem, "describe": describeSystem} {
+		if strings.Contains(p, "—") {
+			t.Errorf("%s prompt has a long dash", name)
+		}
+	}
+}
+
+func TestDraftRetriesWhenTheModelLeaksContactDetails(t *testing.T) {
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req chatRequest
+		_ = json.NewDecoder(r.Body).Decode(&req)
+		calls++
+		answer := "Halo Kak, hubungi kami di 081234567890 ya."
+		if strings.Contains(req.Messages[len(req.Messages)-1].Content, "Tulis ulang") {
+			answer = "Halo Kak, **boleh** info tanggalnya? Kami cek dulu ya."
+		}
+		w.Header().Set("Content-Type", "text/event-stream")
+		b, _ := json.Marshal(map[string]any{"choices": []any{map[string]any{"delta": map[string]any{"content": answer}}}})
+		fmt.Fprintf(w, "data: %s\n\ndata: [DONE]\n\n", b)
+	}))
+	defer srv.Close()
+
+	d := &Deps{cached: &llmClient{baseURL: srv.URL, apiKey: "k", model: "m", http: srv.Client()}, cachedAt: time.Now()}
+	got, err := d.draft(context.Background(), "sys", "user", 500)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if calls != 2 || got != "Halo Kak, boleh info tanggalnya? Kami cek dulu ya." {
+		t.Fatalf("calls=%d draft=%q", calls, got)
+	}
+
+	// A model that keeps leaking is refused rather than shown.
+	calls = 0
+	d2 := &Deps{cached: &llmClient{baseURL: srv.URL, apiKey: "k", model: "m", http: srv.Client()}, cachedAt: time.Now()}
+	srv.Config.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprint(w, "data: {\"choices\":[{\"delta\":{\"content\":\"wa.me/6281234567890\"}}]}\n\ndata: [DONE]\n\n")
+	})
+	if _, err := d2.draft(context.Background(), "sys", "user", 500); err == nil || calls != 2 {
+		t.Fatalf("expected a refusal after 2 tries, err=%v calls=%d", err, calls)
+	}
+}

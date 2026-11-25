@@ -45,6 +45,9 @@ type Deps struct {
 	Cfg         *config.Config
 	// Settings is the admin-edited LLM configuration (the AI_* env vars are ignored).
 	Settings *repository.AISettingsRepo
+	// Chat and Packages feed the vendor copilot (vendor_copilot.go).
+	Chat     *repository.ChatRepo
+	Packages *repository.PackageRepo
 
 	mu       sync.Mutex
 	cached   *llmClient
