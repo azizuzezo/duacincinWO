@@ -256,6 +256,11 @@ html:has(.wd) {
 /* Negative delay: the resting frame is "coin already entering the shield". */
 .wd-drop { animation: wd-drop 1.4s ease-in -0.95s infinite; }
 .wd-pop { animation: wd-pop 1.2s ease-in-out infinite; }
+@keyframes wd-float {
+  0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
+  50% { transform: translateY(-7px) rotate(var(--r, 0deg)); }
+}
+.wd-float { animation: wd-float 3.2s ease-in-out infinite; }
 .wd-anim { animation-play-state: paused; }
 .group:hover .wd-anim,
 .group:focus-within .wd-anim {
