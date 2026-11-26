@@ -51,27 +51,28 @@ export function VendorCard({ card }: { card: DirectoryCard }) {
         </span>
       </span>
       <span className="block pt-3">
-        {/* Price first and bold, like a marketplace shelf: it is what people compare. */}
-        <span className="block text-[1.08rem] font-bold leading-tight tabular-nums text-wd-ink">
+        <span className="line-clamp-2 break-words text-[1rem] font-semibold leading-snug text-wd-ink transition-colors group-hover:text-wd-accent-ink">{card.business_name}</span>
+        <span className="mt-1 block truncate text-[0.85rem] text-wd-muted">
+          {categoryLabel(card.category)} · {card.city}
+        </span>
+        {card.review_count > 0 && (
+          <span className="mt-1.5 flex items-center gap-1 text-[0.85rem]">
+            <span className="flex text-wd-gold">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <Star key={i} size={13} className={i < Math.round(card.average_rating) ? "" : "opacity-30"} />
+              ))}
+            </span>
+            <span className="font-semibold tabular-nums text-wd-ink">{RATING.format(card.average_rating)}</span>
+            <span className="text-wd-muted">({card.review_count})</span>
+          </span>
+        )}
+        <span className="mt-1.5 block text-[0.85rem] text-wd-text">
           {card.price_min > 0 ? (
             <>
-              {formatRupiah(card.price_min)} <span className="hidden text-[0.76rem] font-normal text-wd-muted sm:inline">mulai dari</span>
+              Mulai <span className="font-semibold tabular-nums text-wd-ink">{formatRupiah(card.price_min)}</span>
             </>
           ) : (
-            <span className="text-[0.95rem] font-semibold">Tanya harga lewat chat</span>
-          )}
-        </span>
-        <span className="mt-1.5 line-clamp-2 break-words text-[0.95rem] font-medium leading-snug text-wd-ink transition-colors group-hover:text-wd-accent-ink">{card.business_name}</span>
-        <span className="mt-1 flex items-center gap-1.5 text-[0.82rem] text-wd-muted">
-          <span className="truncate">
-            {categoryLabel(card.category)} · {card.city}
-          </span>
-          {card.review_count > 0 && (
-            <span className="ml-auto flex shrink-0 items-center gap-0.5 font-semibold tabular-nums text-wd-ink">
-              <Star size={13} className="text-wd-gold" />
-              {RATING.format(card.average_rating)}
-              <span className="font-normal text-wd-muted">({card.review_count})</span>
-            </span>
+            "Tanya harga lewat chat"
           )}
         </span>
       </span>
@@ -79,7 +80,7 @@ export function VendorCard({ card }: { card: DirectoryCard }) {
   );
 }
 
-export function SkeletonCard() {
+function SkeletonCard() {
   return (
     <div aria-hidden>
       <div className="aspect-[4/5] animate-pulse rounded-[14px] bg-wd-blush" />
