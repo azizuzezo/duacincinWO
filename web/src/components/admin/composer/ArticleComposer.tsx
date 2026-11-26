@@ -8,6 +8,7 @@
 // when the admin presses Perbarui, so the live page never changes by accident.
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import Link from "next/link";
+import { createPortal } from "react-dom";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Pill } from "@/components/admin/adm";
@@ -52,7 +53,7 @@ function Btn({ label, on, disabled, onClick, children }: { label: string; on?: b
       disabled={disabled}
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
-      className={`inline-flex h-11 w-11 items-center justify-center rounded-lg text-[0.95rem] transition-colors disabled:opacity-35 sm:h-10 sm:w-10 ${on ? "bg-wd-accent text-wd-ink" : "text-wd-ink hover:bg-wd-blush"} ${FOCUS}`}
+      className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-[0.95rem] transition-colors disabled:opacity-35 sm:h-10 sm:w-10 ${on ? "bg-wd-accent text-wd-ink" : "text-wd-ink hover:bg-wd-blush"} ${FOCUS}`}
     >
       {children}
     </button>
@@ -76,10 +77,35 @@ function Icon({ d, size = 18 }: { d: string[]; size?: number }) {
 /** A button that opens a small panel (color pickers, link). Closes on Escape or an outside press. */
 function Pop({ label, icon, active, children }: { label: string; icon: React.ReactNode; active?: boolean; children: (close: () => void) => React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  // The panel is fixed to the viewport, so a horizontally scrolling toolbar on a phone never clips it.
+  const [at, setAt] = useState<{ top: number; left: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
+  const anchor = useRef<HTMLButtonElement>(null);
+  function toggle() {
+    if (!open && anchor.current) {
+      const r = anchor.current.getBoundingClientRect();
+      setAt({ top: r.bottom + 6, left: Math.max(8, Math.min(r.left, window.innerWidth - 280)) });
+    }
+    setOpen((v) => !v);
+  }
   useEffect(() => {
     if (!open) return;
-    const down = (e: PointerEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    // Close when the button that opened it has moved away (page or toolbar scrolled), not on every tiny scroll
+    // (focusing the input inside the panel can nudge the page).
+    const start = anchor.current?.getBoundingClientRect();
+    const moved = () => {
+      const r = anchor.current?.getBoundingClientRect();
+      if (start && r && (Math.abs(r.top - start.top) > 24 || Math.abs(r.left - start.left) > 24)) setOpen(false);
+    };
+    // No resize handler: on a phone the on-screen keyboard resizes the viewport the moment the
+    // panel's input is focused, which must not close the panel.
+    window.addEventListener("scroll", moved, { passive: true, capture: true });
+    return () => window.removeEventListener("scroll", moved, { capture: true });
+  }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    const down = (e: PointerEvent) => !ref.current?.contains(e.target as Node) && !panel.current?.contains(e.target as Node) && setOpen(false);
     const key = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     document.addEventListener("pointerdown", down);
     document.addEventListener("keydown", key);
@@ -89,24 +115,29 @@ function Pop({ label, icon, active, children }: { label: string; icon: React.Rea
     };
   }, [open]);
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative shrink-0">
       <button
+        ref={anchor}
         type="button"
         title={label}
         aria-label={label}
         aria-haspopup="dialog"
         aria-expanded={open}
         onMouseDown={(e) => e.preventDefault()}
-        onClick={() => setOpen((v) => !v)}
-        className={`inline-flex h-11 w-11 items-center justify-center rounded-lg transition-colors sm:h-10 sm:w-10 ${active || open ? "bg-wd-accent text-wd-ink" : "text-wd-ink hover:bg-wd-blush"} ${FOCUS}`}
+        onClick={toggle}
+        className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg transition-colors sm:h-10 sm:w-10 ${active || open ? "bg-wd-accent text-wd-ink" : "text-wd-ink hover:bg-wd-blush"} ${FOCUS}`}
       >
         {icon}
       </button>
-      {open && (
-        <div role="dialog" aria-label={label} className="absolute left-0 top-full z-40 mt-1.5 rounded-2xl bg-white p-3 shadow-wd-pop ring-1 ring-wd-line">
-          {children(() => setOpen(false))}
-        </div>
-      )}
+      {open &&
+        at &&
+        createPortal(
+          // In the body, outside the toolbar's scroll area: focusing the input inside must not scroll the toolbar.
+          <div ref={panel} role="dialog" aria-label={label} style={{ top: at.top, left: at.left }} className="fixed z-[60] rounded-2xl bg-white p-3 shadow-wd-pop ring-1 ring-wd-line">
+            {children(() => setOpen(false))}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
@@ -159,13 +190,30 @@ export function ArticleComposer({ id: initialId }: { id?: string }) {
   const [linkHref, setLinkHref] = useState("");
   const imageInput = useRef<HTMLInputElement>(null);
   const coverInput = useRef<HTMLInputElement>(null);
+  // Pasted or dropped photos go through the same upload as the toolbar button.
+  const uploadRef = useRef<((f: File, as: "cover" | "image") => Promise<void>) | null>(null);
 
   const editor = useEditor({
     extensions: buildExtensions(),
     content: EMPTY_DOC,
     immediatelyRender: false,
     shouldRerenderOnTransaction: false,
-    editorProps: { attributes: { class: "cmp-prose", role: "textbox", "aria-multiline": "true", "aria-label": "Isi artikel" } },
+    editorProps: {
+      attributes: { class: "cmp-prose", role: "textbox", "aria-multiline": "true", "aria-label": "Isi artikel" },
+      handlePaste: (_view, event) => {
+        const f = [...(event.clipboardData?.files ?? [])].find((x) => IMAGE_TYPES.includes(x.type));
+        if (!f) return false;
+        void uploadRef.current?.(f, "image");
+        return true;
+      },
+      handleDrop: (_view, event) => {
+        const f = [...((event as DragEvent).dataTransfer?.files ?? [])].find((x) => IMAGE_TYPES.includes(x.type));
+        if (!f) return false;
+        event.preventDefault();
+        void uploadRef.current?.(f, "image");
+        return true;
+      },
+    },
     onUpdate: () => setDirty(true),
   });
 
@@ -358,7 +406,8 @@ export function ArticleComposer({ id: initialId }: { id?: string }) {
         setCoverUrl(res.url);
         setDirty(true);
       } else {
-        editor?.chain().focus().setImage({ src: res.url, alt: "" }).run();
+        // After the current selection, so a photo never replaces the one (or the text) the admin has selected.
+        if (editor) editor.chain().focus().insertContentAt(editor.state.selection.to, { type: "image", attrs: { src: res.url, alt: "" } }).run();
         setDirty(true);
       }
     } catch (err) {
@@ -367,6 +416,10 @@ export function ArticleComposer({ id: initialId }: { id?: string }) {
       setUploading(null);
     }
   }
+
+  useEffect(() => {
+    uploadRef.current = upload;
+  });
 
   function applyLink(close: () => void) {
     const v = linkHref.trim();
@@ -420,7 +473,7 @@ export function ArticleComposer({ id: initialId }: { id?: string }) {
       <div className="mt-4 grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-10">
         {/* Writing column */}
         <div className="min-w-0">
-          <div role="toolbar" aria-label="Pemformatan teks" aria-controls="cmp-editor" className="sticky top-16 z-30 -mx-1 flex flex-wrap items-center gap-x-0.5 gap-y-1 rounded-2xl bg-white/95 p-1.5 ring-1 ring-wd-line backdrop-blur md:top-[7.25rem]">
+          <div role="toolbar" aria-label="Pemformatan teks" aria-controls="cmp-editor" className="sticky top-16 z-30 -mx-1 flex flex-nowrap items-center gap-x-0.5 overflow-x-auto rounded-2xl bg-white/95 p-1.5 ring-1 ring-wd-line backdrop-blur [scrollbar-width:none] md:top-[7.25rem] md:flex-wrap md:gap-y-1 md:overflow-visible">
             <Btn label="Urungkan" disabled={!ui?.canUndo} onClick={() => editor?.chain().focus().undo().run()}>
               <Icon d={["M9 14 4 9l5-5", "M4 9h10a6 6 0 0 1 0 12h-3"]} />
             </Btn>
@@ -441,7 +494,7 @@ export function ArticleComposer({ id: initialId }: { id?: string }) {
                 if (v === "p") c.setParagraph().run();
                 else c.setHeading({ level: Number(v) as 2 | 3 | 4 }).run();
               }}
-              className={`h-11 rounded-lg border border-wd-line-2 bg-white px-2 text-sm font-semibold sm:h-10 ${FOCUS}`}
+              className={`h-11 shrink-0 rounded-lg border border-wd-line-2 bg-white px-2 text-sm font-semibold sm:h-10 ${FOCUS}`}
             >
               <option value="p">Paragraf</option>
               <option value="2">Judul bagian</option>
@@ -455,7 +508,7 @@ export function ArticleComposer({ id: initialId }: { id?: string }) {
               id="cmp-font"
               value={ui?.font ?? ""}
               onChange={(e) => (e.target.value ? editor?.chain().focus().setFontFamily(e.target.value).run() : editor?.chain().focus().unsetFontFamily().run())}
-              className={`h-11 max-w-[9.5rem] rounded-lg border border-wd-line-2 bg-white px-2 text-sm sm:h-10 ${FOCUS}`}
+              className={`h-11 max-w-[9.5rem] shrink-0 rounded-lg border border-wd-line-2 bg-white px-2 text-sm sm:h-10 ${FOCUS}`}
             >
               <option value="">Huruf bawaan</option>
               {FONT_OPTIONS.map((f) => (
@@ -471,7 +524,7 @@ export function ArticleComposer({ id: initialId }: { id?: string }) {
               id="cmp-size"
               value={ui?.size ?? ""}
               onChange={(e) => (e.target.value ? editor?.chain().focus().setFontSize(e.target.value).run() : editor?.chain().focus().unsetFontSize().run())}
-              className={`h-11 rounded-lg border border-wd-line-2 bg-white px-2 text-sm sm:h-10 ${FOCUS}`}
+              className={`h-11 shrink-0 rounded-lg border border-wd-line-2 bg-white px-2 text-sm sm:h-10 ${FOCUS}`}
             >
               <option value="">Ukuran</option>
               {SIZE_OPTIONS.map((s) => (

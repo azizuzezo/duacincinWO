@@ -150,7 +150,8 @@ function renderNode(node: RichNode, path: string): ReactNode {
       return <hr key={path} className="my-10 border-wd-line" />;
     case "image": {
       const src = node.attrs?.src;
-      if (typeof src !== "string" || !/^(https:\/\/|\/)/.test(src)) return null;
+      // https, a site path, or plain http on this machine (a local storage emulator in development).
+      if (typeof src !== "string" || !/^(https:\/\/|\/(?!\/)|http:\/\/(localhost|127\.0\.0\.1)[:/])/.test(src)) return null;
       const alt = typeof node.attrs?.alt === "string" ? node.attrs.alt : "";
       const w = Number(node.attrs?.width);
       const width = w >= 10 && w <= 100 ? `${w}%` : "100%";

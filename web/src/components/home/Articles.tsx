@@ -80,10 +80,10 @@ function Card({ a }: { a: Article }) {
   );
 }
 
-export function Articles() {
+export function Articles({ articles = ARTICLES }: { articles?: Article[] } = {}) {
   const rail = useRef<HTMLUListElement>(null);
   useDragScroll(rail);
-  const list = ARTICLES.slice(0, COUNT);
+  const list = articles.slice(0, COUNT);
   if (list.length === 0) return null;
   return (
     <section aria-labelledby="artikel-judul" className="bg-wd-paper py-12 sm:py-16">

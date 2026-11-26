@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 
 import { Articles } from "@/components/home/Articles";
+import { allArticles } from "@/lib/articles";
 import { Banners } from "@/components/home/Banners";
 import { BudgetTool } from "@/components/home/BudgetTool";
 import { Categories } from "@/components/home/Categories";
@@ -61,6 +62,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { themeColor: "#ffffff" };
 
 export default async function Page() {
+  const articles = await allArticles();
   const askEnabled = await fetchAskEnabled();
   return (
     <div className="wd flex flex-1 flex-col">
@@ -78,7 +80,7 @@ export default async function Page() {
         <BudgetTool />
         <CategoryRows max={1} skip={2} />
         <Inspiration />
-        <Articles />
+        <Articles articles={articles} />
         <ForVendors />
       </main>
       <HomeFooter />
