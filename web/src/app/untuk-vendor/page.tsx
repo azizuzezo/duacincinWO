@@ -3,13 +3,13 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { SectionHead, wdButton } from "@/components/home/ui";
-import { PageHero } from "@/components/landing/PageHero";
 import { PublicShell } from "@/components/landing/PublicShell";
 import {
   JoinPath,
   type JoinStep,
 } from "@/components/public/untuk-vendor/JoinPath";
-import { Percent } from "@/components/public/untuk-vendor/Percent";
+import { VendorHero } from "@/components/public/untuk-vendor/VendorHero";
+import { VendorPerks } from "@/components/public/untuk-vendor/VendorPerks";
 import { PayoutCalculator } from "@/components/public/untuk-vendor/PayoutCalculator";
 import {
   VendorShowcase,
@@ -158,66 +158,20 @@ const CATEGORY_PHOTO: Record<
   },
 };
 
-const FACTS: { v: string | number; k: string; d: string }[] = [
-  {
-    v: 10,
-    k: "Komisi standar",
-    d: "Ditambahkan di atas hargamu. Harga paketmu diterima utuh.",
-  },
-  { v: 30, k: "DP dari client", d: "Ditahan DuaCincin bersama pelunasannya." },
-  {
-    v: "Setelah acara",
-    k: "Dana cair",
-    d: "Begitu client mengonfirmasi acara selesai.",
-  },
-];
-
 export default function UntukVendorPage() {
   return (
     <PublicShell>
       <div className="wd">
-        <PageHero
-          crumbs={[{ name: "Untuk vendor" }]}
-          title="Punya usaha pernikahan? Tampilkan karyamu."
-          sub="Calon pengantin mencari, berdiskusi, dan membayar di satu tempat. Kamu fokus mengerjakan acara."
-          image="/banner/foto-venue-taman.webp"
-          focus="55% 72%"
-          actions={
-            <>
-              <Link
-                href="/register?role=vendor"
-                className={wdButton({ size: "lg" })}
-              >
-                Daftar sebagai vendor
-              </Link>
-              <Link
-                href="#yang-kamu-dapat"
-                className={wdButton({ variant: "outline", size: "lg" })}
-              >
-                Lihat dashboard vendor
-              </Link>
-            </>
-          }
-        >
-          <dl className="mt-8 grid gap-px overflow-hidden rounded-[18px] border border-wd-line bg-wd-line grid-cols-3">
-            {FACTS.map((f) => (
-              <div
-                key={f.k}
-                className="flex flex-col bg-white px-3 py-3 sm:px-5 sm:py-4"
-              >
-                <dt className="order-2 text-xs font-semibold text-wd-ink sm:text-sm">
-                  {f.k}
-                </dt>
-                <dd className="order-1 text-[1.05rem] font-semibold leading-tight text-wd-accent-ink tabular-nums sm:text-[1.35rem]">
-                  {typeof f.v === "number" ? <Percent value={f.v} /> : f.v}
-                </dd>
-                <dd className="order-3 mt-1 hidden text-xs leading-relaxed text-wd-muted sm:block">
-                  {f.d}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </PageHero>
+        <VendorHero />
+
+        <section aria-labelledby="perks-judul" className="py-14 sm:py-20">
+          <div className="wd-container">
+            <SectionHead id="perks-judul" title="Yang kamu dapat di DuaCincin" sub="Empat hal yang bikin kamu fokus mengerjakan acara." />
+            <div className="mt-10">
+              <VendorPerks />
+            </div>
+          </div>
+        </section>
 
         <section
           id="yang-kamu-dapat"
@@ -293,13 +247,13 @@ export default function UntukVendorPage() {
                 {VENDOR_CATEGORIES.map((c) => {
                   const photo = CATEGORY_PHOTO[c.value];
                   return (
-                    <li key={c.value}>
+                    <li key={c.value} className="text-center">
                       <Link
                         href={`/kategori/${c.value}`}
                         className="group block"
                       >
                         <span
-                          className={`relative block aspect-[4/3] overflow-hidden rounded-[16px] bg-wd-blush ${LIFT} group-hover:-translate-y-1 group-hover:shadow-wd-lift`}
+                          className={`relative block aspect-[4/5] overflow-hidden rounded-t-[999px] rounded-b-[16px] bg-wd-blush ${LIFT} group-hover:-translate-y-1 group-hover:shadow-wd-lift`}
                         >
                           {photo && (
                             <Image
