@@ -41,6 +41,10 @@ import { EmptyNote, Pulse, RetryNote, WdButton } from "./wd";
 type Load = "loading" | "ok" | "error";
 type Section = "tentang" | "foto" | "paket" | "ulasan";
 
+/** The hero mosaic already shows this many photos; the grid below is only for the rest. */
+const HERO_PHOTOS = 5;
+const CITY_PREVIEW = 4;
+
 const RATING = new Intl.NumberFormat("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 /** The public vendor profile, Bridestory layout in the "Putih" system:
@@ -84,6 +88,7 @@ export function VendorDetail({
   const [bookingSaving, setBookingSaving] = useState(false);
   const [lightbox, setLightbox] = useState<number | null>(null);
   const [active, setActive] = useState<Section>("tentang");
+  const [allCities, setAllCities] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [pkgKey, setPkgKey] = useState(0);
   const [revKey, setRevKey] = useState(0);
@@ -208,7 +213,7 @@ export function VendorDetail({
 
   const sections: { id: Section; label: string; count?: number }[] = [
     { id: "tentang", label: "Tentang" },
-    ...(portfolio.length > 0 ? [{ id: "foto" as const, label: "Foto", count: portfolio.length }] : []),
+    ...(portfolio.length > HERO_PHOTOS ? [{ id: "foto" as const, label: "Foto", count: portfolio.length }] : []),
     { id: "paket", label: "Paket", count: pkgLoad === "ok" ? packages.length : undefined },
     { id: "ulasan", label: "Ulasan", count: revLoad === "ok" ? reviews.length : undefined },
   ];
@@ -314,7 +319,7 @@ export function VendorDetail({
                       </div>
                     </div>
                     <p className="mt-1.5 text-wd-muted">
-                      {[categoriesLabel(profile), profile.city].filter(Boolean).join(" · ")}
+                      {[categoriesLabel(profile), cities.length > 1 ? `${cities.length} kota` : profile.city].filter(Boolean).join(" · ")}
                     </p>
                     <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
                       {profile.review_count > 0 && (
@@ -341,16 +346,26 @@ export function VendorDetail({
                       <p className="mt-2 flex flex-wrap items-center gap-x-1 text-sm text-wd-text">
                         <span className="mr-1 text-wd-muted">Melayani</span>
                         {cities.map((city, i) => (
-                          <span key={city} className="inline-flex items-center">
+                          <span key={city} className={`items-center ${i >= CITY_PREVIEW && !allCities ? "hidden" : "inline-flex"}`}>
                             <Link
                               href={`/kategori/${profile.category}/${citySlug(city)}`}
                               className="inline-flex min-h-11 items-center rounded-md px-0.5 underline decoration-wd-line-2 underline-offset-4 hover:text-wd-accent-ink hover:decoration-wd-accent-ink"
                             >
                               {city}
                             </Link>
-                            {i < cities.length - 1 && <span aria-hidden>,</span>}
+                            {i < cities.length - 1 && (i < CITY_PREVIEW - 1 || allCities) && <span aria-hidden>,</span>}
                           </span>
                         ))}
+                        {cities.length > CITY_PREVIEW && (
+                          <button
+                            type="button"
+                            aria-expanded={allCities}
+                            onClick={() => setAllCities((v) => !v)}
+                            className="ml-1 inline-flex min-h-11 items-center rounded-full bg-wd-blush px-3 text-sm font-semibold text-wd-ink hover:bg-wd-accent-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wd-accent-ink"
+                          >
+                            {allCities ? "Ringkas" : `+${cities.length - CITY_PREVIEW} kota`}
+                          </button>
+                        )}
                       </p>
                     )}
                   </motion.header>
@@ -371,7 +386,7 @@ export function VendorDetail({
                     </div>
                   </section>
 
-                  {portfolio.length > 0 && (
+                  {portfolio.length > HERO_PHOTOS && (
                     <section id="foto" aria-labelledby="foto-judul" className="scroll-mt-4 pt-12 lg:scroll-mt-14">
                       <h2 id="foto-judul" className="wd-title text-[1.35rem]">
                         Foto portofolio

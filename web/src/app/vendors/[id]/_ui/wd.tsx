@@ -40,7 +40,7 @@ export function Pulse({ className = "" }: { className?: string }) {
 /** Quiet panel for a section with nothing to show yet. */
 export function EmptyNote({ title, body }: { title: string; body: ReactNode }) {
   return (
-    <div className="rounded-[14px] border border-dashed border-wd-line-2 bg-wd-paper px-5 py-8 text-center">
+    <div className="rounded-[14px] bg-wd-blush px-5 py-8 text-center">
       <p className="font-semibold text-wd-ink">{title}</p>
       <p className="mx-auto mt-1 max-w-md text-[0.95rem] leading-relaxed text-wd-muted">{body}</p>
     </div>
