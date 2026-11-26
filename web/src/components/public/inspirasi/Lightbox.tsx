@@ -11,6 +11,7 @@ import type { InspirationItem } from "@/lib/api";
 import { EASE, useReducedMotion } from "@/lib/motion";
 
 import { ADAT, adatOf, vendorCategory } from "./adat";
+import { shortCaption } from "./caption";
 
 const PINTEREST_BOARD_URL = "https://id.pinterest.com/2cincinid/inspirasi-nikah-indonesia-venue-decor-mua-artis/";
 
@@ -82,7 +83,9 @@ export function Lightbox({
 
   const adat = adatOf(item).map((k) => ADAT.find((a) => a.key === k)!.label);
   const cat = vendorCategory(item.category);
-  const title = item.caption || item.alt_text || "Inspirasi pernikahan";
+  const title = shortCaption(item.caption || item.alt_text);
+  // The whole caption (credits, tags) stays available behind a "Caption lengkap" toggle.
+  const fullCaption = (item.caption ?? "").trim();
   const vendors = item.vendors ?? [];
 
   return (
@@ -201,6 +204,12 @@ export function Lightbox({
           </p>
         )}
         <p className="mt-3 line-clamp-3 font-heading text-2xl leading-snug text-dc-on-dark lg:mt-4 lg:line-clamp-none lg:text-[1.9rem]">{title}</p>
+        {fullCaption && fullCaption !== title && (
+          <details className="mt-2 text-sm text-dc-on-dark/85 [&_summary::-webkit-details-marker]:hidden">
+            <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-dc-gold-antique underline-offset-4 hover:underline">Caption lengkap</summary>
+            <p className="max-h-40 overflow-y-auto whitespace-pre-line break-words pb-2 leading-relaxed">{fullCaption}</p>
+          </details>
+        )}
         {vendors.length > 0 && (
           <div className="mt-4 lg:mt-8">
             <h3 className="text-sm font-semibold text-dc-on-dark/80">Vendor di foto ini</h3>

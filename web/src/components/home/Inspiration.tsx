@@ -9,6 +9,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useMemo, useState } from "react";
 
 import { Reveal } from "@/components/landing/Reveal";
+import { shortCaption } from "@/components/public/inspirasi/caption";
 import { Lightbox } from "@/components/public/inspirasi/Lightbox";
 import { useInspiration } from "@/components/landing/useHomeData";
 import { categoryLabel, type InspirationItem } from "@/lib/api";
@@ -21,7 +22,7 @@ const MAX = 10;
 function Tile({ item, onOpen }: { item: InspirationItem; onOpen: () => void }) {
   const [broken, setBroken] = useState(false);
   if (broken) return null;
-  const label = item.caption || item.alt_text || "Inspirasi pernikahan";
+  const label = shortCaption(item.caption || item.alt_text);
   const vendor = item.vendors?.[0];
   return (
     <li>
@@ -35,8 +36,8 @@ function Tile({ item, onOpen }: { item: InspirationItem; onOpen: () => void }) {
         onError={() => setBroken(true)}
         className="block min-h-24 w-full transition-transform duration-[1.1s] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
       />
-      <span className="pointer-events-none absolute inset-x-2 bottom-2 translate-y-2 rounded-2xl bg-white/95 p-3 opacity-0 shadow-wd-card backdrop-blur transition-[opacity,transform] duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">
-        <span className="line-clamp-2 block text-sm font-medium leading-snug text-wd-ink">{label}</span>
+      <span className="pointer-events-none absolute inset-x-2 bottom-2 hidden translate-y-2 [@media(hover:hover)]:block rounded-2xl bg-white/95 p-3 opacity-0 shadow-wd-card backdrop-blur transition-[opacity,transform] duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">
+        <span className="line-clamp-2 text-sm font-medium leading-snug text-wd-ink">{label}</span>
         {vendor && <span className="mt-1 block truncate text-xs text-wd-muted">oleh {vendor.business_name}</span>}
       </span>
     </button>

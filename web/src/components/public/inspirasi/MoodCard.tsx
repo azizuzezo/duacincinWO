@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 
 import { PinterestMark } from "@/components/PinterestImageCard";
+import { shortCaption } from "./caption";
 
 /** The API does not send image sizes, so every tile gets a stable ratio from
  * its position: the board still reads as a varied mood board, and the box is
@@ -102,7 +103,7 @@ export function MoodCard({
         {/* Caption rises over the photo on hover (desktop); phones read it in the lightbox. */}
         {caption && (
           <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 hidden translate-y-2 bg-gradient-to-t from-dc-ink/90 via-dc-ink/60 to-transparent px-4 pb-4 pt-12 opacity-0 invisible transition-[opacity,transform,visibility] duration-500 ease-dc group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 lg:block">
-            <span className="line-clamp-2 text-sm font-semibold leading-snug text-dc-on-dark">{caption}</span>
+            <span className="line-clamp-2 text-sm font-semibold leading-snug text-dc-on-dark">{shortCaption(caption)}</span>
           </span>
         )}
       </div>
@@ -110,7 +111,7 @@ export function MoodCard({
         href={pinUrl}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label={`Lihat di Pinterest${caption ? `: ${caption}` : ""} (tab baru)`}
+        aria-label={`Lihat di Pinterest${caption ? `: ${shortCaption(caption)}` : ""} (tab baru)`}
         className="absolute right-2 top-2 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-wd-ink transition-[opacity,transform] duration-300 hover:text-wd-accent-ink focus-visible:opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
       >
         <PinterestMark />
