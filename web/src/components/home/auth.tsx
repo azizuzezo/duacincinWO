@@ -117,6 +117,7 @@ export function AuthLayout({
   panel = CLIENT_PANEL,
   mascot = "rings",
   aside,
+  wide = false,
 }: {
   title: ReactNode;
   sub?: ReactNode;
@@ -126,12 +127,14 @@ export function AuthLayout({
   mascot?: Mascot;
   /** Replaces the mascot and the photo (e.g. the reset-password scene). */
   aside?: ReactNode;
+  /** Roomier card with the heading in one row and a two-column form, so a long form fits one screen. */
+  wide?: boolean;
 }) {
   const chip = "inline-flex min-h-11 items-center rounded-full bg-white/92 px-4 shadow-wd-card backdrop-blur-sm";
   return (
-    <div data-wd-public className="wd relative isolate flex min-h-svh flex-1 flex-col">
+    <div data-wd-public className="wd relative isolate flex min-h-svh flex-1 flex-col lg:h-svh lg:flex-none lg:overflow-hidden">
       {aside ? <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_20%,#ffffff_0%,#fbf5e6_55%,#f3e8cc_100%)]" /> : <PhotoBackdrop panel={panel} />}
-      <main id="konten" className="relative flex flex-1 flex-col px-4 py-5 sm:px-8">
+      <main id="konten" className="relative flex min-h-0 flex-1 flex-col px-4 py-5 sm:px-8">
         <div className="flex items-center justify-between">
           <Link href="/" aria-label="DuaCincin, ke beranda" className={chip}>
             <BrandLogo size={22} priority />
@@ -143,8 +146,8 @@ export function AuthLayout({
             Beranda
           </Link>
         </div>
-        <div className="mx-auto flex w-full max-w-[460px] flex-1 flex-col justify-center py-8">
-          <div className="group/card relative overflow-hidden rounded-[28px] bg-white px-6 pb-7 pt-12 shadow-wd-pop sm:px-9">
+        <div className={`mx-auto flex min-h-0 w-full flex-1 flex-col justify-center py-6 lg:py-3 ${wide ? "max-w-[640px]" : "max-w-[460px]"}`}>
+          <div data-compact={wide ? "" : undefined} className={`group/card relative overflow-hidden rounded-[28px] bg-white px-6 shadow-wd-pop sm:px-9 lg:max-h-full lg:overflow-y-auto [scrollbar-width:thin] ${wide ? "pb-4 pt-9" : "pb-7 pt-12"}`}>
             {/* Shop awning along the card's top edge. */}
             <div
               aria-hidden
@@ -155,27 +158,29 @@ export function AuthLayout({
                 backgroundRepeat: "repeat-x",
               }}
             />
+            <div className={wide ? "flex items-center gap-4" : ""}>
             {aside ?? (
-              <span className="block h-14 w-14 transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover/card:-rotate-6 group-hover/card:scale-110 motion-reduce:transition-none motion-reduce:group-hover/card:transform-none">
+              <span className={`block shrink-0 ${wide ? "h-12 w-12" : "h-14 w-14"} transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover/card:-rotate-6 group-hover/card:scale-110 motion-reduce:transition-none motion-reduce:group-hover/card:transform-none`}>
                 <MascotIcon kind={mascot} />
               </span>
             )}
-            <h1 className="wd-display mt-4 text-[clamp(2rem,3.6vw,2.6rem)] leading-[1.06]">{title}</h1>
+            <h1 className={`wd-display ${wide ? "text-[clamp(1.7rem,2.6vw,2.2rem)]" : "mt-4 text-[clamp(2rem,3.6vw,2.6rem)]"} leading-[1.06]`}>{title}</h1>
+            </div>
             {sub && <p className="mt-3 leading-relaxed text-wd-text">{sub}</p>}
-            <div className="mt-7">{children}</div>
-            {footer && <div className="mt-6 border-t border-wd-line pt-5 text-center text-[0.95rem] text-wd-text">{footer}</div>}
+            <div className={wide ? "mt-4" : "mt-7"}>{children}</div>
+            {footer && <div className="mt-5 border-t border-wd-line pt-4 text-center text-[0.95rem] text-wd-text group-data-[compact]/card:mt-3 group-data-[compact]/card:pt-3 group-data-[compact]/card:text-[0.88rem]">{footer}</div>}
           </div>
         </div>
-        {!aside && <p className="pointer-events-none pb-1 text-center text-sm text-white/90 drop-shadow [&_em]:text-[#f1dcaa]">{panel.headline}</p>}
+        {!aside && <p className="pointer-events-none pb-1 text-center text-sm text-white/90 drop-shadow [&_em]:text-[#f1dcaa] [@media(max-height:720px)]:hidden">{panel.headline}</p>}
       </main>
     </div>
   );
 }
 
 const FIELD =
-  "peer block h-14 w-full rounded-[14px] border border-wd-line-2 bg-white px-4 pt-5 text-[0.98rem] text-wd-ink outline-none transition-[border-color,box-shadow] placeholder:text-transparent hover:border-wd-muted focus:border-wd-accent-ink focus:shadow-[0_0_0_4px_var(--wd-accent-soft)] focus-visible:outline-none aria-[invalid=true]:border-wd-danger";
+  "peer block h-14 w-full group-data-[compact]/card:h-12 group-data-[compact]/card:pt-[18px] group-data-[compact]/card:text-[0.93rem] rounded-[14px] border border-wd-line-2 bg-white px-4 pt-5 text-[0.98rem] text-wd-ink outline-none transition-[border-color,box-shadow] placeholder:text-transparent hover:border-wd-muted focus:border-wd-accent-ink focus:shadow-[0_0_0_4px_var(--wd-accent-soft)] focus-visible:outline-none aria-[invalid=true]:border-wd-danger";
 const FLOAT =
-  "pointer-events-none absolute left-4 top-[18px] origin-left text-[0.98rem] leading-5 text-wd-muted transition-transform duration-200 peer-focus:-translate-y-[9px] peer-focus:scale-[0.78] peer-[:not(:placeholder-shown)]:-translate-y-[9px] peer-[:not(:placeholder-shown)]:scale-[0.78] motion-reduce:transition-none";
+  "pointer-events-none absolute left-4 top-[18px] group-data-[compact]/card:top-[14px] group-data-[compact]/card:text-[0.93rem] origin-left text-[0.98rem] leading-5 text-wd-muted transition-transform duration-200 peer-focus:-translate-y-[9px] peer-focus:scale-[0.78] group-data-[compact]/card:peer-focus:-translate-y-[8px] group-data-[compact]/card:peer-[:not(:placeholder-shown)]:-translate-y-[8px] peer-[:not(:placeholder-shown)]:-translate-y-[9px] peer-[:not(:placeholder-shown)]:scale-[0.78] motion-reduce:transition-none";
 
 type FieldProps = {
   label: string;
@@ -223,7 +228,7 @@ export function AuthField({ label, name, type = "text", value, onChange, autoCom
         {trailing}
       </div>
       {hint && (
-        <p id={hintId} className="mt-1.5 px-1 text-[0.82rem] leading-relaxed text-wd-muted">
+        <p id={hintId} className="mt-1 px-1 text-[0.82rem] leading-snug text-wd-muted group-data-[compact]/card:text-[0.76rem]">
           {hint}
         </p>
       )}
@@ -245,7 +250,7 @@ export function AuthPassword(props: Omit<FieldProps, "type" | "trailing" | "name
           onClick={() => setShow((v) => !v)}
           aria-label={show ? "Sembunyikan password" : "Tampilkan password"}
           aria-pressed={show}
-          className="absolute right-2 top-[28px] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-wd-muted transition-colors hover:bg-wd-blush hover:text-wd-ink"
+          className="absolute right-2 top-[28px] group-data-[compact]/card:top-[24px] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-wd-muted transition-colors hover:bg-wd-blush hover:text-wd-ink"
         >
           <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
             <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
@@ -278,7 +283,7 @@ export function useFocusOnError(error: string | null) {
 
 export function AuthSubmit({ loading, disabled, children, busyLabel = "Memproses…" }: { loading: boolean; disabled?: boolean; children: ReactNode; busyLabel?: string }) {
   return (
-    <button type="submit" disabled={loading || disabled} aria-busy={loading || undefined} className={wdButton({ size: "lg", className: "w-full" })}>
+    <button type="submit" disabled={loading || disabled} aria-busy={loading || undefined} className={wdButton({ size: "lg", className: "w-full group-data-[compact]/card:min-h-12" })}>
       {loading && <span aria-hidden className="h-4 w-4 animate-spin rounded-full border-2 border-wd-ink/30 border-t-wd-ink motion-reduce:animate-none" />}
       {loading ? busyLabel : children}
     </button>

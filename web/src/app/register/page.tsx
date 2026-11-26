@@ -44,7 +44,7 @@ const ROLE_CONFIG: Record<
     agreementLabel: "Ketentuan Layanan Client",
     cardTitle: "Calon pengantin",
     cardDescription: "Cari vendor, atur budget, dan susun rencana pernikahan.",
-    waHint: "Untuk notifikasi pesan dari vendor lewat WhatsApp resmi DuaCincin. Diverifikasi setelah daftar, hanya admin yang bisa melihatnya.",
+    waHint: "Notifikasi pesan dari vendor lewat WhatsApp resmi DuaCincin. Hanya admin yang bisa melihat nomor ini.",
   },
   vendor: {
     endpoint: "/api/v1/auth/vendor/register",
@@ -55,7 +55,7 @@ const ROLE_CONFIG: Record<
     agreementLabel: "Perjanjian Kemitraan Vendor DuaCincin",
     cardTitle: "Vendor",
     cardDescription: "Terima booking dari calon pengantin lewat DuaCincin.",
-    waHint: "Untuk notifikasi pesan dari calon pengantin lewat WhatsApp resmi DuaCincin. Diverifikasi dengan kode setelah daftar.",
+    waHint: "Notifikasi pesan dari calon pengantin lewat WhatsApp resmi DuaCincin.",
   },
 };
 
@@ -182,6 +182,7 @@ function RegisterContent() {
 
   return (
     <AuthLayout
+      wide={!!role && !ticket}
       mascot={role === "vendor" ? "shop" : "rings"} panel={role === "vendor" ? VENDOR_PANEL : CLIENT_PANEL}
       title={
         ticket ? (
@@ -207,7 +208,8 @@ function RegisterContent() {
       }
     >
       {role && (
-        <ol aria-label="Langkah daftar" className="-mt-2 mb-6 flex items-center gap-2 text-[0.8rem] font-semibold">
+        <div className="-mt-2 mb-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+        <ol aria-label="Langkah daftar" className="flex items-center gap-2 text-[0.8rem] font-semibold">
           {["Isi data", "Kode email"].map((t, i) => {
             const cur = (ticket ? 1 : 0) === i;
             const done = ticket && i === 0;
@@ -220,6 +222,15 @@ function RegisterContent() {
             );
           })}
         </ol>
+        {!ticket && (
+          <button type="button" onClick={resetChoice} className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-wd-accent-ink underline-offset-4 hover:underline">
+            <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <path d="M15 6l-6 6 6 6" />
+            </svg>
+            Ganti peran
+          </button>
+        )}
+        </div>
       )}
       {!role ? (
         <div className="flex flex-col gap-3">
@@ -283,12 +294,6 @@ function RegisterContent() {
         </form>
       ) : (
         <>
-          <button type="button" onClick={resetChoice} className="-mt-3 mb-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-wd-accent-ink underline-offset-4 hover:underline">
-            <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-              <path d="M15 6l-6 6 6 6" />
-            </svg>
-            Ganti peran
-          </button>
           {role === "client" && (
             <div className="mb-5">
               <AgreementNotice href={ROLE_CONFIG.client.agreementHref} label={ROLE_CONFIG.client.agreementLabel} role="calon pengantin" />
@@ -298,18 +303,20 @@ function RegisterContent() {
             <GoogleSignIn text="signup_with" acceptTerms={role === "vendor" ? acceptTerms : true} role={role} />
           </div>
           <AuthOr />
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <form onSubmit={handleSubmit} className="grid gap-x-3 gap-y-2.5 sm:grid-cols-2">
             <AuthField label={ROLE_CONFIG[role].nameLabel} name="name" autoComplete={ROLE_CONFIG[role].nameAutoComplete} value={name} onChange={setName} />
             <AuthField label="Email" name="email" type="email" autoComplete="email" spellCheck={false} value={email} onChange={setEmail} invalid={!!error} describedBy={describedBy} />
             <AuthField label="Nomor WhatsApp" name="whatsapp" type="tel" inputMode="tel" autoComplete="tel" value={whatsapp} onChange={setWhatsapp} hint={ROLE_CONFIG[role].waHint} />
             <AuthPassword label="Password" autoComplete="new-password" value={password} onChange={setPassword} minLength={8} hint="Minimal 8 karakter." />
-            {role === "vendor" && (
-              <AgreementCheckbox checked={acceptTerms} onChange={setAcceptTerms} href={ROLE_CONFIG.vendor.agreementHref} label={ROLE_CONFIG.vendor.agreementLabel} />
-            )}
-            {errorBox}
-            <AuthSubmit loading={loading} disabled={role === "vendor" && !acceptTerms}>
-              Lanjut, kirim kode ke email
-            </AuthSubmit>
+            <div className="flex flex-col gap-3 sm:col-span-2">
+              {role === "vendor" && (
+                <AgreementCheckbox checked={acceptTerms} onChange={setAcceptTerms} href={ROLE_CONFIG.vendor.agreementHref} label={ROLE_CONFIG.vendor.agreementLabel} />
+              )}
+              {errorBox}
+              <AuthSubmit loading={loading} disabled={role === "vendor" && !acceptTerms}>
+                Lanjut, kirim kode ke email
+              </AuthSubmit>
+            </div>
           </form>
         </>
       )}
