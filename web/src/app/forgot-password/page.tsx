@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { AUTH_LINK, AuthError, AuthField, AuthLayout, AuthPassword, AuthSubmit, useFocusOnError } from "@/components/home/auth";
+import { ResetStage } from "@/components/home/ResetStage";
 import { wdButton } from "@/components/home/ui";
 import { SuccessPop } from "@/components/ui/Motion";
 import { OtpInput } from "@/components/ui/OtpInput";
@@ -67,7 +68,9 @@ export default function ForgotPasswordPage() {
   );
 
   return (
-    <AuthLayout mascot="lock"
+    <AuthLayout
+      mascot="lock"
+      aside={<ResetStage step={step} />}
       title={
         step === "request" ? (
           <>

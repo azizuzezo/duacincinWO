@@ -19,14 +19,16 @@ import { Check, wdButton } from "./ui";
 export type AuthPanel = { headline: ReactNode; bullets: string[]; photos: string[]; stickers: { title: string; sub: string }[] };
 
 const INK = "#231f1d";
+/** Eyes shut while a password field has focus (no peeking), open again when "show" is on. */
+const BLINK = "origin-center [transform-box:fill-box] transition-transform duration-200 group-has-[input[type=password]:focus]/card:scale-y-[0.12] motion-reduce:transition-none";
 
 /** Little face-icon above the form title; wiggles on hover, never under reduced motion. */
 export type Mascot = "rings" | "lock" | "shop";
-function MascotIcon({ kind }: { kind: Mascot }) {
+export function MascotIcon({ kind }: { kind: Mascot }) {
   const face = (y: number) => (
     <>
-      <circle cx="19" cy={y} r="1.7" fill={INK} />
-      <circle cx="29" cy={y} r="1.7" fill={INK} />
+      <circle cx="19" cy={y} r="1.7" fill={INK} className={BLINK} />
+      <circle cx="29" cy={y} r="1.7" fill={INK} className={BLINK} />
       <path d={`M19 ${y + 6}c1.5 1.9 3.2 2.7 5 2.700s3.5-.8 5-2.7`} fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" />
     </>
   );
@@ -103,7 +105,7 @@ function PhotoPanel({ panel }: { panel: AuthPanel }) {
   const src = panel.photos[Math.min(shot, n - 1)];
 
   return (
-    <aside aria-hidden className="group relative hidden bg-wd-champagne p-4 pl-0 lg:block">
+    <aside aria-hidden className="group relative hidden bg-wd-paper p-4 pl-0 lg:block">
       <div className="relative h-full min-h-[640px] overflow-hidden rounded-[32px] bg-wd-blush">
         <AnimatePresence initial={false}>
           <motion.div key={src} className="absolute inset-0" {...fade}>
@@ -158,6 +160,7 @@ export function AuthLayout({
   footer,
   panel = CLIENT_PANEL,
   mascot = "rings",
+  aside,
 }: {
   title: ReactNode;
   sub?: ReactNode;
@@ -165,11 +168,13 @@ export function AuthLayout({
   footer?: ReactNode;
   panel?: AuthPanel;
   mascot?: Mascot;
+  /** Replaces the photo panel (e.g. the reset-password stage). */
+  aside?: ReactNode;
 }) {
   return (
     <div data-wd-public className="wd flex min-h-svh flex-1">
       <div className="grid w-full lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-        <main id="konten" className="flex flex-col bg-wd-champagne px-5 py-6 sm:px-10 lg:px-14 lg:py-8">
+        <main id="konten" className="flex flex-col bg-wd-paper px-5 py-6 sm:px-10 lg:px-14 lg:py-8">
           <div className="flex items-center justify-between">
             <Link href="/" aria-label="DuaCincin, ke beranda" className="inline-flex min-h-11 items-center rounded-md">
               <BrandLogo size={24} priority />
@@ -182,13 +187,13 @@ export function AuthLayout({
             </Link>
           </div>
           <div className="mx-auto flex w-full max-w-[460px] flex-1 flex-col justify-center py-8">
-            <div className="group/card relative overflow-hidden rounded-[28px] bg-white px-6 pb-8 pt-12 shadow-wd-card ring-1 ring-[#e8d9b6] sm:px-9">
+            <div className="group/card relative overflow-hidden rounded-[28px] bg-white px-6 pb-8 pt-12 shadow-wd-card ring-1 ring-wd-line sm:px-9">
               {/* Shop awning along the card's top edge. */}
               <div
                 aria-hidden
                 className="pointer-events-none absolute inset-x-0 top-0 h-5"
                 style={{
-                  backgroundImage: "radial-gradient(circle at 18px 0, #dcbd80 17px, transparent 18px), radial-gradient(circle at 54px 0, #f5ecd9 17px, transparent 18px)",
+                  backgroundImage: "radial-gradient(circle at 18px 0, #dcbd80 17px, transparent 18px), radial-gradient(circle at 54px 0, #f3ead6 17px, transparent 18px)",
                   backgroundSize: "72px 20px",
                   backgroundRepeat: "repeat-x",
                 }}
@@ -203,7 +208,13 @@ export function AuthLayout({
             {footer && <div className="mt-6 text-center text-[0.95rem] text-wd-text">{footer}</div>}
           </div>
         </main>
-        <PhotoPanel panel={panel} />
+        {aside ? (
+          <aside aria-hidden className="relative hidden bg-wd-paper p-4 pl-0 lg:block">
+            <div className="relative h-full min-h-[640px] overflow-hidden rounded-[32px] bg-[radial-gradient(ellipse_at_70%_25%,#ffffff_0%,#fbf5e6_55%,#f3e8cc_100%)]">{aside}</div>
+          </aside>
+        ) : (
+          <PhotoPanel panel={panel} />
+        )}
       </div>
     </div>
   );

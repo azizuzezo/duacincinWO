@@ -13,7 +13,7 @@ import { Suspense, useEffect, useState } from "react";
 import { AgreementCheckbox, AgreementNotice } from "@/components/AgreementCheckbox";
 import { GoogleSignIn } from "@/components/auth/GoogleSignIn";
 import { nextFromLocation } from "@/components/auth/redirect";
-import { AUTH_LINK, AuthError, AuthField, AuthLayout, AuthOr, AuthPassword, AuthSubmit, CLIENT_PANEL, useFocusOnError, VENDOR_PANEL } from "@/components/home/auth";
+import { AUTH_LINK, AuthError, AuthField, AuthLayout, AuthOr, AuthPassword, AuthSubmit, CLIENT_PANEL, MascotIcon, useFocusOnError, VENDOR_PANEL } from "@/components/home/auth";
 import { OtpInput } from "@/components/ui/OtpInput";
 import { apiPost, ApiError } from "@/lib/api";
 
@@ -59,21 +59,6 @@ const ROLE_CONFIG: Record<
   },
 };
 
-const ROLE_ICON: Record<Role, ReactIcon> = {
-  client: (
-    <svg aria-hidden width="22" height="22" viewBox="0 0 64 40" fill="none" stroke="currentColor" strokeWidth="3">
-      <circle cx="24" cy="20" r="14" />
-      <circle cx="40" cy="20" r="14" />
-    </svg>
-  ),
-  vendor: (
-    <svg aria-hidden width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 10h16l-1-5H5l-1 5Z" />
-      <path d="M5 10v9h14v-9M9 19v-5h6v5" />
-    </svg>
-  ),
-};
-type ReactIcon = React.ReactNode;
 
 export default function RegisterPage() {
   return (
@@ -221,23 +206,45 @@ function RegisterContent() {
         </>
       }
     >
+      {role && (
+        <ol aria-label="Langkah daftar" className="-mt-2 mb-6 flex items-center gap-2 text-[0.8rem] font-semibold">
+          {["Isi data", "Kode email"].map((t, i) => {
+            const cur = (ticket ? 1 : 0) === i;
+            const done = ticket && i === 0;
+            return (
+              <li key={t} aria-current={cur ? "step" : undefined} className="flex items-center gap-2">
+                {i > 0 && <span aria-hidden className="h-px w-6 bg-wd-line-2" />}
+                <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[0.72rem] ${cur || done ? "bg-wd-accent text-wd-ink" : "bg-wd-blush text-wd-muted"}`}>{done ? "✓" : i + 1}</span>
+                <span className={cur ? "text-wd-ink" : "text-wd-muted"}>{t}</span>
+              </li>
+            );
+          })}
+        </ol>
+      )}
       {!role ? (
         <div className="flex flex-col gap-3">
-          {(Object.keys(ROLE_CONFIG) as Role[]).map((r) => (
+          {(Object.keys(ROLE_CONFIG) as Role[]).map((r, i) => (
             <button
               key={r}
               type="button"
               onClick={() => setRole(r)}
-              className="group flex min-h-11 items-center gap-4 rounded-[18px] border border-wd-line-2 bg-white p-5 text-left transition-[border-color,background-color] duration-300 hover:border-wd-accent-ink hover:bg-wd-accent-wash"
+              className={`group relative flex min-h-11 items-center gap-4 overflow-hidden rounded-[22px] p-4 pr-5 text-left ring-1 ring-wd-line transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:-translate-y-1 hover:shadow-wd-lift motion-reduce:transition-none motion-reduce:hover:transform-none ${i === 0 ? "bg-white" : "bg-wd-accent-wash"}`}
             >
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-wd-accent-soft text-wd-accent-ink">{ROLE_ICON[r]}</span>
-              <span className="flex-1">
-                <span className="block text-[1.08rem] font-semibold text-wd-ink">{ROLE_CONFIG[r].cardTitle}</span>
-                <span className="mt-0.5 block text-sm leading-relaxed text-wd-muted">{ROLE_CONFIG[r].cardDescription}</span>
+              <span className="block h-[72px] w-[72px] shrink-0 rounded-2xl bg-wd-accent-wash p-2 transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:-rotate-6 group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:transform-none">
+                <MascotIcon kind={r === "vendor" ? "shop" : "rings"} />
               </span>
-              <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="shrink-0 text-wd-accent-ink transition-transform duration-300 group-hover:translate-x-1">
-                <path d="M9 6l6 6-6 6" />
-              </svg>
+              <span className="flex-1">
+                <span className="flex items-center gap-2 text-[1.1rem] font-semibold text-wd-ink">
+                  {ROLE_CONFIG[r].cardTitle}
+                  {r === "client" && <span className="rounded-full bg-wd-accent px-2 py-0.5 text-[0.7rem] font-semibold">Gratis</span>}
+                </span>
+                <span className="mt-1 block text-sm leading-relaxed text-wd-text">{ROLE_CONFIG[r].cardDescription}</span>
+              </span>
+              <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-wd-ink transition-transform duration-300 group-hover:translate-x-1">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M9 6l6 6-6 6" />
+                </svg>
+              </span>
             </button>
           ))}
         </div>
