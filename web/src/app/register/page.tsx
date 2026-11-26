@@ -299,6 +299,11 @@ function RegisterContent() {
               <AgreementNotice href={ROLE_CONFIG.client.agreementHref} label={ROLE_CONFIG.client.agreementLabel} role="calon pengantin" />
             </div>
           )}
+          {role === "vendor" && (
+            <p className="mb-5 rounded-2xl bg-wd-accent-wash px-4 py-3 text-[0.85rem] leading-relaxed text-wd-text">
+              <span className="font-semibold text-wd-ink">Setelah daftar:</span> lengkapi profil usaha, tim DuaCincin memverifikasi, lalu usahamu tampil di direktori dan siap terima booking.
+            </p>
+          )}
           <div className="empty:hidden">
             <GoogleSignIn text="signup_with" acceptTerms={role === "vendor" ? acceptTerms : true} role={role} />
           </div>
