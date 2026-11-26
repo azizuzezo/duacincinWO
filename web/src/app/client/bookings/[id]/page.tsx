@@ -64,7 +64,13 @@ function ClientBookingDetailContent({ id, user }: { id: string; user: CurrentUse
 
   function load() {
     setError(null);
-    apiGet<Booking>(`/api/v1/bookings/${id}`).then(setBooking).catch(() => setError("Booking tidak ditemukan."));
+    apiGet<Booking>(`/api/v1/bookings/${id}`)
+      .then((b) => {
+        // A reply without an id or a known status is not a booking: show the not-found state, not a crash.
+        if (!b?.id || !b.status || !(b.status in BOOKING_STATUS_LABEL)) throw new Error("bad booking");
+        setBooking(b);
+      })
+      .catch(() => setError("Booking tidak ditemukan."));
     apiGet<Meeting[]>(`/api/v1/bookings/${id}/meetings`)
       .then((data) => setMeetings(data ?? []))
       .catch(() => {});

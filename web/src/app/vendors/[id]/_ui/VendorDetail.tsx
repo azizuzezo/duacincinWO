@@ -170,6 +170,7 @@ export function VendorDetail({
         package_description: packageDescription,
         agreed_price: Number(agreedPrice) || 0,
       });
+      if (!booking?.id) throw new ApiError(500, "Booking belum tercatat. Coba lagi sebentar.");
       router.push(`/client/bookings/${booking.id}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Gagal mengajukan booking.");
