@@ -54,15 +54,15 @@ export function ListingHeader({ id, crumbs, title, sub, image, focus = "50% 28%"
     return (
       <div className="pt-2 sm:pt-3">
         <Breadcrumb items={crumbs} />
-        <div className="relative mt-1 h-[170px] overflow-hidden rounded-[24px] bg-wd-blush sm:h-[230px] lg:h-[260px]">
+        <div className="relative mt-1 h-[120px] overflow-hidden rounded-[24px] bg-wd-blush sm:h-[230px] lg:h-[260px]">
           <Image src={image} alt="" fill priority sizes="(min-width: 1280px) 1200px, 100vw" className="object-cover" style={{ objectPosition: focus }} />
           <div aria-hidden className="absolute inset-0 bg-linear-to-t from-black/15 via-transparent to-transparent" />
         </div>
-        <div className="relative z-10 -mt-12 mx-3 max-w-[720px] rounded-[22px] bg-white p-5 shadow-wd-pop sm:-mt-16 sm:ml-8 sm:p-7">
-          <h1 id={id} className="wd-title text-[clamp(1.6rem,3vw,2.2rem)] leading-tight">
+        <div className="relative z-10 -mt-9 mx-3 max-w-[720px] rounded-[22px] bg-white p-4 shadow-wd-pop sm:-mt-16 sm:ml-8 sm:p-7">
+          <h1 id={id} className="wd-title text-[clamp(1.4rem,3vw,2.2rem)] leading-tight">
             {title}
           </h1>
-          {sub && <p className="mt-1.5 text-[0.95rem] text-wd-muted">{sub}</p>}
+          {sub && <p className="mt-1 text-[0.9rem] text-wd-muted sm:mt-1.5 sm:text-[0.95rem]">{sub}</p>}
         </div>
       </div>
     );
