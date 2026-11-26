@@ -194,7 +194,7 @@ export default function BantuanPage() {
                 <h2 className="wd-title text-[1.1rem]">Kamu vendor?</h2>
                 <p className="mt-2 text-sm leading-relaxed text-wd-text">Booking dan pencairan ada di dashboard vendor.</p>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <Link href="/vendor/dashboard" className={wdButton({ variant: "outline", size: "sm" })}>
+                  <Link href="/vendor/dashboard" rel="nofollow" className={wdButton({ variant: "outline", size: "sm" })}>
                     Dashboard vendor
                   </Link>
                   <Link href="/legal/vendor-agreement" className={wdButton({ variant: "outline", size: "sm" })}>

@@ -4,9 +4,12 @@ import { wdButton } from "@/components/home/ui";
 import { Footer } from "@/components/landing/Footer";
 import { Navbar } from "@/components/landing/Navbar";
 import { artFor } from "@/components/vendor/directory/categoryArt";
+import { CATEGORY_GUIDES } from "@/components/vendor/directory/categoryGuides";
 import { CategoryResults } from "@/components/vendor/directory/CategoryResults";
 import { CategoryStrip, ListingEmpty, ListingHeader, SideLinks, SideSection, TEXT_LINK } from "@/components/vendor/directory/ListingParts";
 import { categoryLabel, formatRupiah, VENDOR_CATEGORIES, type DirectoryCard, vendorCities } from "@/lib/api";
+import { ARTICLES } from "@/content/artikel/registry";
+import { MIN_VENDORS_TO_INDEX } from "@/lib/seo";
 import { citySlug } from "@/lib/server-api";
 import { SITE_URL as SITE } from "@/lib/site";
 
@@ -42,6 +45,8 @@ export function CategoryListing({
     { name: label, path: `/kategori/${category}` },
     ...(cityName ? [{ name: cityName, path: `/kategori/${category}/${citySlug(cityName)}` }] : []),
   ];
+  const guide = CATEGORY_GUIDES[category];
+  const related = ARTICLES.filter((a) => a.categories.includes(category)).slice(0, 3);
   const faq = buildFaq({ label, cityName, cards, cities, ask: art.ask, failed });
   const pagePath = crumbs[crumbs.length - 1].path;
   // The listed vendors (ItemList) and the FAQ below, both mirroring what is on the page.
@@ -67,9 +72,10 @@ export function CategoryListing({
     itemListElement: crumbs.map((c, i) => ({ "@type": "ListItem", position: i + 1, name: c.name, item: `${SITE}${c.path}` })),
   };
 
-  const cityLinks: { key: string; href: string; label: string; count?: number }[] = [
+  // City pages with fewer than MIN_VENDORS_TO_INDEX vendors are noindex, so their links are marked nofollow: still handy for a visitor, but not a crawl path.
+  const cityLinks: { key: string; href: string; label: string; count?: number; nofollow?: boolean }[] = [
     { key: "", href: `/kategori/${category}`, label: "Semua kota" },
-    ...cities.map((c) => ({ key: c, href: `/kategori/${category}/${citySlug(c)}`, label: c, count: counts.get(c) })),
+    ...cities.map((c) => ({ key: c, href: `/kategori/${category}/${citySlug(c)}`, label: c, count: counts.get(c), nofollow: (counts.get(c) ?? 0) < MIN_VENDORS_TO_INDEX })),
   ];
 
   return (
@@ -100,7 +106,7 @@ export function CategoryListing({
                 title="Daftar vendor belum bisa dimuat"
                 body="Muat ulang halaman ini sebentar lagi, atau cari langsung di direktori lengkap."
                 actions={
-                  <Link href={directoryHref} className={wdButton({ size: "sm" })}>
+                  <Link href={directoryHref} rel="nofollow" className={wdButton({ size: "sm" })}>
                     Buka direktori {label}
                   </Link>
                 }
@@ -146,6 +152,7 @@ export function CategoryListing({
                             <li key={c.key || "semua"} className="shrink-0">
                               <Link
                                 href={c.href}
+                                rel={c.nofollow ? "nofollow" : undefined}
                                 aria-current={on ? "page" : undefined}
                                 className={`inline-flex min-h-11 items-center gap-1.5 rounded-full border px-4 text-[0.88rem] transition-colors ${
                                   on ? "border-wd-accent bg-wd-accent font-semibold text-wd-ink" : "border-wd-accent-line text-wd-accent-ink hover:bg-wd-accent-wash"
@@ -190,7 +197,7 @@ export function CategoryListing({
                 </>
               )}
               <p className="mt-6 text-[0.9rem]">
-                <Link href={directoryHref} className={`inline-flex min-h-11 items-center ${TEXT_LINK}`}>
+                <Link href={directoryHref} rel="nofollow" className={`inline-flex min-h-11 items-center ${TEXT_LINK}`}>
                   Saring dengan kata kunci di direktori
                 </Link>
               </p>
@@ -210,6 +217,44 @@ export function CategoryListing({
             </div>
           </div>
         </section>
+
+        {!cityName && guide && (
+          <section aria-labelledby="panduan-lengkap" className="border-t border-wd-line">
+            <div className="wd-container py-12 lg:py-14">
+              <h2 id="panduan-lengkap" className="wd-title text-[1.4rem] leading-tight">
+                {guide.heading}
+              </h2>
+              <div className="mt-6 grid gap-x-12 gap-y-8 md:grid-cols-2">
+                {guide.blocks.map((b) => (
+                  <div key={b.title}>
+                    <h3 className="text-[1rem] font-semibold text-wd-ink">{b.title}</h3>
+                    <p className="mt-2 text-[0.95rem] leading-relaxed text-wd-text">{b.body}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {!cityName && related.length > 0 && (
+          <section aria-labelledby="baca-terkait" className="border-t border-wd-line bg-wd-paper">
+            <div className="wd-container py-10">
+              <h2 id="baca-terkait" className="wd-title text-[1.25rem] leading-tight">
+                Baca juga seputar {label.toLowerCase()}
+              </h2>
+              <ul className="mt-4 grid gap-3 md:grid-cols-3">
+                {related.map((a) => (
+                  <li key={a.slug}>
+                    <Link href={`/artikel/${a.slug}`} className="group block rounded-2xl p-3 transition-colors hover:bg-white">
+                      <span className="block text-[0.95rem] font-semibold leading-snug text-wd-ink group-hover:text-wd-accent-ink">{a.title}</span>
+                      <span className="mt-1 line-clamp-2 block text-[0.88rem] leading-relaxed text-wd-text">{a.description}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        )}
       </main>
       <Footer />
     </div>

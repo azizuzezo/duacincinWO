@@ -51,7 +51,7 @@ export async function generateMetadata({
   const a = found.a;
   const url = `/artikel/${a.slug}`;
   return {
-    title: a.title,
+    title: a.metaTitle ?? a.title,
     description: a.description,
     alternates: { canonical: url },
     // The share image is ./opengraph-image.tsx (the article photo in the brand card).

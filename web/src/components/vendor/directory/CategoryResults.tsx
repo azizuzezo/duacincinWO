@@ -115,7 +115,7 @@ export function CategoryResults({
         <div className="wd flex flex-col gap-7">
           <ChoiceChips legend="Budget mulai dari" value={budget} onPick={setBudget} options={BUDGETS.map((b) => ({ value: b.value, label: b.value ? b.label : "Semua budget" }))} hint={BUDGET_HINT} />
           <ChoiceChips legend="Urutkan" value={sort} onPick={(v) => setSort(v as Sort)} options={SORTS} />
-          <Link href={directoryHref} className={`inline-flex min-h-11 items-center text-[0.9rem] ${TEXT_LINK}`}>
+          <Link href={directoryHref} rel="nofollow" className={`inline-flex min-h-11 items-center text-[0.9rem] ${TEXT_LINK}`}>
             Cari dengan kata kunci di direktori lengkap
           </Link>
         </div>

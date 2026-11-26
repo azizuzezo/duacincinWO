@@ -36,7 +36,7 @@ export function KiranaOffline() {
             Tapi kamu tetap bisa dibantu: Wedding Consultant DuaCincin (orang sungguhan) siap menemani rencana pernikahanmu, gratis.
           </p>
           <div className="mt-7 flex flex-col gap-2.5 sm:flex-row sm:justify-center">
-            <Link href="/client/consultation?chat=1" className={wdButton()}>
+            <Link href="/client/consultation?chat=1" rel="nofollow" className={wdButton()}>
               Chat Wedding Consultant
             </Link>
             <Link href="/vendors" className={wdButton({ variant: "outline" })}>

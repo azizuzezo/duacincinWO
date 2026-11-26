@@ -198,7 +198,7 @@ export function HeroScene({ askEnabled = false }: { askEnabled?: boolean }) {
             {POPULAR.map((v) => (
               <Link
                 key={v}
-                href={`/vendors?category=${v}`}
+                href={`/kategori/${v}`}
                 className="inline-flex min-h-11 items-center rounded-full px-3 font-semibold text-[#fbf6ec] underline decoration-dc-gold-antique/50 underline-offset-[6px] transition-colors hover:text-dc-gold-antique hover:decoration-dc-gold-antique"
               >
                 {VENDOR_CATEGORIES.find((c) => c.value === v)?.label}

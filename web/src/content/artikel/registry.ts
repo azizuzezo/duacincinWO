@@ -7,6 +7,8 @@
 export type Article = {
   slug: string;
   title: string;
+  /** Shorter <title> for search results (the headline stays `title`). Aim for 48 characters or fewer: the site name is added after it. */
+  metaTitle?: string;
   /** Meta description and card text, about 150 characters. */
   description: string;
   /** Short label above the title. */
@@ -25,6 +27,7 @@ export const ARTICLES: Article[] = [
   {
     slug: "biaya-nikah-di-kua",
     title: "Biaya nikah di KUA: Rp0 atau Rp600 ribu, cara bayar, pungli",
+    metaTitle: "Biaya Nikah di KUA: Rp0 atau Rp600 Ribu",
     description:
       "Tarif Rp0 untuk akad di KUA pada jam kerja, Rp600.000 di luar KUA atau di luar jam kerja (PP 59/2018). Cara bayar lewat kode billing dan pungutan tidak sah.",
     topic: "Legal",
@@ -37,6 +40,7 @@ export const ARTICLES: Article[] = [
   {
     slug: "syarat-nikah-di-kua",
     title: "Syarat nikah di KUA: dokumen, alur, dan batas waktu daftar",
+    metaTitle: "Syarat Nikah di KUA: Dokumen dan Alur",
     description:
       "Daftar dokumen nikah di KUA menurut PMA 30/2024, syarat usia 19 tahun, izin orang tua, janda/duda, TNI/Polri, WNA, alur SIMKAH, dan batas 10 hari kerja.",
     topic: "Legal",
@@ -49,6 +53,7 @@ export const ARTICLES: Article[] = [
   {
     slug: "biaya-pernikahan-jakarta",
     title: "Biaya pernikahan di Jakarta: kisaran per pos dan contohnya",
+    metaTitle: "Biaya Pernikahan di Jakarta per Pos",
     description:
       "Kisaran biaya nikah di Jakarta per pos (gedung, katering per pax, dekorasi, MUA, foto-video, WO) dengan sumber, plus contoh hitungan 300 tamu.",
     topic: "Anggaran",
@@ -61,6 +66,7 @@ export const ARTICLES: Article[] = [
   {
     slug: "biaya-pernikahan-sederhana-50-juta",
     title: "Biaya pernikahan sederhana 50 juta: rincian dan jumlah tamu",
+    metaTitle: "Biaya Pernikahan Sederhana 50 Juta",
     description:
       "Rincian biaya nikah 50 juta: berapa tamu yang muat, pilihan di rumah, gedung kecil, atau resepsi siang, pos yang boleh dipangkas, dan checklist anggaran.",
     topic: "Anggaran",

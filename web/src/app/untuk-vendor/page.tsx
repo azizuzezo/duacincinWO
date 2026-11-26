@@ -21,7 +21,7 @@ import { artFor } from "@/components/vendor/directory/categoryArt";
 import { VENDOR_CATEGORIES } from "@/lib/api";
 
 export const metadata: Metadata = {
-  title: "Untuk vendor: terima booking dan pembayaran lewat Dana Aman",
+  title: "Jadi vendor: terima booking lewat Dana Aman",
   description:
     "Daftarkan profil dan portofolio usaha pernikahanmu di DuaCincin, terima booking lewat chat, dan terima pembayaran setelah acara selesai dikonfirmasi.",
   alternates: { canonical: "/untuk-vendor" },

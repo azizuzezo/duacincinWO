@@ -211,7 +211,7 @@ export function RadioList({
 }
 
 /** A link list in the sidebar (categories and cities on /kategori pages). */
-export function SideLinks({ items, active }: { items: { href: string; label: string; count?: number; key: string }[]; active: string }) {
+export function SideLinks({ items, active }: { items: { href: string; label: string; count?: number; key: string; nofollow?: boolean }[]; active: string }) {
   return (
     <ul className="flex flex-col">
       {items.map((it) => {
@@ -220,6 +220,7 @@ export function SideLinks({ items, active }: { items: { href: string; label: str
           <li key={it.key}>
             <Link
               href={it.href}
+              rel={it.nofollow ? "nofollow" : undefined}
               aria-current={on ? "page" : undefined}
               className={`flex min-h-11 items-center justify-between gap-3 rounded-xl px-2 text-[0.92rem] transition-colors ${
                 on ? "bg-wd-accent-soft font-semibold text-wd-ink" : "text-wd-text hover:bg-wd-paper hover:text-wd-ink"

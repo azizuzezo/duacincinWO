@@ -237,7 +237,7 @@ export function Lightbox({
         )}
         <div className="mt-4 flex flex-wrap items-center gap-2 lg:mt-auto lg:flex-col lg:items-stretch">
           {cat && vendors.length === 0 && (
-            <Link href={`/vendors?category=${cat.value}`} className={buttonClasses({ variant: "light", size: "sm" })}>
+            <Link href={`/kategori/${cat.value}`} className={buttonClasses({ variant: "light", size: "sm" })}>
               Cari vendor {cat.label}
             </Link>
           )}

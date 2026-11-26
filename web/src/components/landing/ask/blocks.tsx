@@ -651,6 +651,7 @@ function ConsultantBlock({ data }: { data: Extract<Block, { type: "consultant" }
         </div>
         <Link
           href="/client/consultation?chat=1"
+          rel="nofollow"
           className={wdButton({ size: "sm", className: "min-h-11 shrink-0" })}
         >
           <span className="sm:hidden">Chat</span>

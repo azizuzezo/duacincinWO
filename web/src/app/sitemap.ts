@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 import { allArticles } from "@/lib/articles";
 import { VENDOR_CATEGORIES, vendorCategoryList, vendorCities } from "@/lib/api";
 import { cityFromSlug, citySlug, fetchAllVendors } from "@/lib/server-api";
-import { MIN_VENDORS_TO_INDEX } from "@/lib/seo";
+import { categoryIsIndexable, MIN_VENDORS_TO_INDEX } from "@/lib/seo";
 import { JABODETABEK, JABODETABEK_AREA } from "@/lib/wilayah";
 import { SITE_URL as SITE } from "@/lib/site";
 
@@ -15,7 +15,8 @@ export const revalidate = 3600;
 // has at least one vendor (empty city pages are left out on purpose). If the
 // API is down the static part is still served.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const fixed = ["", "/vendors", "/artikel", "/cara-kerja", "/untuk-vendor", "/bantuan", "/inspirasi", "/tentang-kami", "/kirana", "/legal/client-tos", "/legal/vendor-agreement"];
+  // /kirana is a chat app with almost no text, so it stays out of the sitemap (it still works and can be found by link).
+  const fixed = ["", "/vendors", "/artikel", "/cara-kerja", "/untuk-vendor", "/bantuan", "/inspirasi", "/tentang-kami", "/legal/client-tos", "/legal/vendor-agreement"];
   const ARTICLES = await allArticles();
   const vendors = (await fetchAllVendors()) ?? [];
   // Category x city pages with at least MIN_VENDORS_TO_INDEX vendors (the
@@ -37,7 +38,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const cityPages = [...cityCounts].filter(([, n]) => n >= MIN_VENDORS_TO_INDEX).map(([p]) => p);
   return [
     ...fixed.map((p) => ({ url: `${SITE}${p}`, changeFrequency: "weekly" as const, priority: p === "" ? 1 : 0.7 })),
-    ...VENDOR_CATEGORIES.map((c) => ({ url: `${SITE}/kategori/${c.value}`, changeFrequency: "weekly" as const, priority: 0.6 })),
+    // Only categories that have a vendor (or a guide of their own); an empty template page would just sit in "crawled, not indexed".
+    ...VENDOR_CATEGORIES.filter((c) => categoryIsIndexable(c.value, vendors.filter((v) => vendorCategoryList(v).includes(c.value)).length)).map((c) => ({ url: `${SITE}/kategori/${c.value}`, changeFrequency: "weekly" as const, priority: 0.6 })),
     ...cityPages.sort().map((p) => ({ url: `${SITE}${p}`, changeFrequency: "weekly" as const, priority: 0.5 })),
     ...ARTICLES.map((a) => ({ url: `${SITE}/artikel/${a.slug}`, lastModified: new Date(a.updated ?? a.published), changeFrequency: "monthly" as const, priority: 0.6 })),
     ...vendors.map((v) => ({ url: `${SITE}/vendors/${v.id}`, changeFrequency: "weekly" as const, priority: 0.5 })),
