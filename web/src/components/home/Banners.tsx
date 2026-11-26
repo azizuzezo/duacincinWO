@@ -79,8 +79,8 @@ const BASE: Banner[] = [
   {
     id: "vendor",
     href: "/register?role=vendor",
-    img: "/banner/foto-venue-taman",
-    pos: "object-[55%_70%]",
+    img: "/banner/foto-inspirasi",
+    pos: "object-[70%_50%]",
     tone: "dark",
     kicker: "Untuk vendor",
     title: "Punya usaha pernikahan? Terima booking di sini",
