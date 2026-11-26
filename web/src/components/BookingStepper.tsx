@@ -96,8 +96,8 @@ const STEPS: StepDef[] = [
 
 const MONEY_LABEL: Record<Money, string> = {
   none: "Belum ada pembayaran",
-  held_dp: "DP ditahan escrow",
-  held_full: "Seluruh dana ditahan escrow",
+  held_dp: "DP ditahan Dana Aman",
+  held_full: "Seluruh dana ditahan Dana Aman",
   released: "Dana diteruskan ke vendor",
 };
 

@@ -67,7 +67,7 @@ const ICON_BTN = `inline-flex h-11 w-11 shrink-0 items-center justify-center rou
 /** True notice about what the chat does (server flags contact details for
  * review; it does not hide them), shown once at the top of every thread. */
 const DEFAULT_NOTICE =
-  "Simpan kesepakatan dan pembayaran di DuaCincin supaya danamu tetap dilindungi escrow. Pesan berisi nomor telepon, email, atau tautan luar akan ditandai untuk ditinjau tim DuaCincin.";
+  "Simpan kesepakatan dan pembayaran di DuaCincin supaya danamu tetap dilindungi Dana Aman. Pesan berisi nomor telepon, email, atau tautan luar akan ditandai untuk ditinjau tim DuaCincin.";
 
 /**
  * One conversation as a messenger: day separators, grouped bubbles (mine in

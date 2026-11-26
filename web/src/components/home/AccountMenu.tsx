@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import { openChat } from "@/components/messages/ChatDock";
 import { CLIENT_NAV } from "@/components/shell/navConfig";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -104,7 +105,7 @@ export function AccountMenu({ user }: { user: CurrentUser }) {
         <NotificationBell />
       </div>
       {messages && (
-        <Link href={messages.href} aria-label="Pesan" className={`${ICON_BTN} hidden sm:flex`}>
+        <Link href={messages.href} aria-label="Pesan" onClick={(e) => openChat() && e.preventDefault()} className={`${ICON_BTN} hidden sm:flex`}>
           <Icon paths={messages.icon} size={20} />
         </Link>
       )}

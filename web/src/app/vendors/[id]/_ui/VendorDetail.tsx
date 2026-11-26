@@ -7,6 +7,7 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import { Shield, wdButton } from "@/components/home/ui";
 import { Footer } from "@/components/landing/Footer";
+import { ChatDock, openChat } from "@/components/messages/ChatDock";
 import { Navbar } from "@/components/landing/Navbar";
 import { Stars } from "@/components/vendor/Reviews";
 import {
@@ -140,7 +141,9 @@ export function VendorDetail({
     setStarting(true);
     try {
       const conv = await apiPost<Conversation>(`/api/v1/conversations/vendor/${id}`, {});
-      router.push(`/client/messages/${conv.id}`);
+      // Desktop: the chat popup opens right here. Phones: the full chat page.
+      if (openChat(conv.id)) setStarting(false);
+      else router.push(`/client/messages/${conv.id}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Gagal memulai chat.");
       setStarting(false);
@@ -488,6 +491,8 @@ export function VendorDetail({
       <Footer />
       {/* Room under the footer so the fixed mobile bar never covers it. */}
       {profile && <div aria-hidden className="h-24 lg:hidden" />}
+
+      {isClient && user && <ChatDock user={user} />}
 
       {isClient && (
         <BookingSheet

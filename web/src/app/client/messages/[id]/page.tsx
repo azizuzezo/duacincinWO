@@ -25,14 +25,14 @@ function ThreadContent({ id, user }: { id: string; user: CurrentUser }) {
 
   return (
     <ClientShell user={user}>
-      <div className="md:mx-auto md:max-w-6xl md:px-6 md:py-8">
+      <div className="wd-container md:py-8">
         {/* Desktop: inbox list beside the open thread. Mobile: the thread alone, full screen. */}
-        <div className="md:grid md:h-[calc(100dvh-4rem)] md:min-h-[560px] md:grid-cols-[300px_minmax(0,1fr)] md:gap-5 lg:grid-cols-[340px_minmax(0,1fr)]">
+        <div className="md:grid md:h-[calc(100dvh-11rem)] md:min-h-[520px] md:grid-cols-[320px_minmax(0,1fr)] md:gap-8 lg:grid-cols-[360px_minmax(0,1fr)]">
           <InboxPane userId={user.id} activeId={id} onLoaded={setConversations} />
           <section
             ref={sectionRef}
             aria-label="Percakapan"
-            className="fixed inset-0 z-50 bg-dc-ivory md:static md:z-auto md:min-h-0 md:overflow-hidden md:rounded-xl md:border md:border-dc-line md:shadow-soft"
+            className="fixed inset-0 z-50 bg-white md:static md:z-auto md:min-h-0 md:overflow-hidden md:rounded-[22px] md:ring-1 md:ring-wd-line md:shadow-wd-card"
           >
             <ChatThread
               conversationId={id}

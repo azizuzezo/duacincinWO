@@ -5,6 +5,7 @@
 // client area feels like the marketplace, not a separate admin panel. Same
 // props as the old Shell, so every client page only swaps the component.
 import { HomeFooter } from "@/components/home/HomeFooter";
+import { ChatDock } from "@/components/messages/ChatDock";
 import { HomeNav } from "@/components/home/HomeNav";
 import type { CurrentUser } from "@/lib/api";
 
@@ -16,6 +17,7 @@ export function ClientShell({ user, children }: { user: CurrentUser; children: R
         <div className="dc-page-enter">{children}</div>
       </main>
       <HomeFooter />
+      <ChatDock user={user} />
     </div>
   );
 }

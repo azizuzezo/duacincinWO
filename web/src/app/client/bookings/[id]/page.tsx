@@ -104,7 +104,7 @@ function ClientBookingDetailContent({ id, user }: { id: string; user: CurrentUse
     try {
       await apiPost(`/api/v1/bookings/${id}/dev-simulate-payment`, { type });
       setDevPending(null);
-      show(type === "dp" ? "DP tercatat dan ditahan escrow." : "Pelunasan tercatat dan ditahan escrow.", "success");
+      show(type === "dp" ? "DP tercatat dan ditahan Dana Aman." : "Pelunasan tercatat dan ditahan Dana Aman.", "success");
       load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Gagal simulasi pembayaran.");
@@ -480,7 +480,7 @@ function MobileActionBar(props: PayProps) {
     };
   }, [b.status]);
   const label =
-    b.status === "confirmed" ? "DP 30%" : b.status === "dp_paid" ? "Sisa pelunasan" : b.status === "full_paid" ? "Ditahan escrow" : null;
+    b.status === "confirmed" ? "DP 30%" : b.status === "dp_paid" ? "Sisa pelunasan" : b.status === "full_paid" ? "Ditahan Dana Aman" : null;
   const amount = b.status === "confirmed" ? b.dp_amount : b.status === "dp_paid" ? b.agreed_price - b.dp_amount : b.agreed_price;
   if (!label) return null;
   return (
