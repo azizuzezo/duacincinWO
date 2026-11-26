@@ -14,9 +14,9 @@ import { forwardRef, useEffect, useId, useRef, useState, type ReactNode } from "
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import { dissolve, useReducedMotion } from "@/lib/motion";
 
-import { Check, wdButton } from "./ui";
+import { wdButton } from "./ui";
 
-export type AuthPanel = { headline: ReactNode; bullets: string[]; photos: string[]; stickers: { title: string; sub: string }[] };
+export type AuthPanel = { headline: ReactNode; bullets: string[]; photos: string[] };
 
 const INK = "#231f1d";
 /** Eyes shut while a password field has focus (no peeking), open again when "show" is on. */
@@ -66,11 +66,6 @@ export const CLIENT_PANEL: AuthPanel = {
     </>
   ),
   bullets: ["Vendor diverifikasi tim DuaCincin", "Chat dan booking di satu tempat", "Dana ditahan DuaCincin sampai acara selesai"],
-  stickers: [
-    { title: "Vendor terverifikasi", sub: "Ditinjau tim DuaCincin" },
-    { title: "DP masuk Dana Aman", sub: "Ditahan DuaCincin" },
-    { title: "Balasan baru", sub: "Dari vendor pilihanmu" },
-  ],
   photos: ["/photos/pinterest/pasangan-sofa-bunga.webp", "/photos/pinterest/dekorasi-taman.webp", "/photos/pinterest/rias-hijab.webp"],
 };
 
@@ -81,11 +76,6 @@ export const VENDOR_PANEL: AuthPanel = {
     </>
   ),
   bullets: ["Profil dan portofolio tampil di direktori setelah diverifikasi", "Chat dan booking dengan calon pengantin di satu tempat", "Dana cair setelah acara selesai, harga paketmu diterima utuh"],
-  stickers: [
-    { title: "Permintaan booking baru", sub: "Menunggu jawabanmu" },
-    { title: "DP masuk Dana Aman", sub: "Ditahan DuaCincin" },
-    { title: "Dana cair", sub: "Setelah acara selesai" },
-  ],
   photos: ["/photos/pinterest/pendopo-kursi-tamu.webp", "/photos/pinterest/pelaminan-kristal.webp", "/photos/kategori-vendor/catering-meja.webp"],
 };
 
@@ -112,38 +102,11 @@ function PhotoPanel({ panel }: { panel: AuthPanel }) {
             <Image src={src} alt="" fill priority={shot === 0} sizes="50vw" className="object-cover" />
           </motion.div>
         </AnimatePresence>
-        <div className="absolute inset-0 bg-linear-to-t from-black/45 via-transparent to-transparent" />
-        {panel.stickers.map((st, i) => (
-          <div key={st.title} className={["left-8 top-10", "right-8 top-[26%]", "left-12 top-[44%]"][i]} style={{ position: "absolute" }}>
-            <div
-              className="wd-anim wd-float flex items-center gap-2.5 rounded-2xl bg-white py-2 pl-2 pr-4 text-wd-ink shadow-wd-pop ring-1 ring-black/5"
-              style={{ "--r": ["-4deg", "3deg", "-2deg"][i], animationDelay: `${i * 0.35}s` } as React.CSSProperties}
-            >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-wd-accent text-wd-ink">
-                <Check size={14} />
-              </span>
-              <span className="leading-tight">
-                <span className="block text-[0.82rem] font-semibold">{st.title}</span>
-                <span className="block text-[0.72rem] text-wd-muted">{st.sub}</span>
-              </span>
-            </div>
-          </div>
-        ))}
-        <div className="absolute inset-x-8 bottom-8 rounded-[24px] bg-white/92 p-6 shadow-wd-pop backdrop-blur-md">
-          <p className="wd-display text-[1.6rem] leading-snug">{panel.headline}</p>
-          <ul className="mt-4 grid gap-2 text-sm text-wd-text">
-            {panel.bullets.map((t) => (
-              <li key={t} className="flex items-center gap-2.5">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-wd-accent-soft text-wd-accent-ink">
-                  <Check size={11} />
-                </span>
-                {t}
-              </li>
-            ))}
-          </ul>
+        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/60 via-black/25 to-transparent px-9 pb-8 pt-24 text-white">
+          <p className="wd-display text-[clamp(1.8rem,2.6vw,2.4rem)] leading-[1.1] !text-white [&_em]:!text-[#f1dcaa]">{panel.headline}</p>
           <div className="mt-5 flex gap-1.5">
             {panel.photos.map((p, i) => (
-              <span key={p} className={`h-1 rounded-full transition-[width,background-color] duration-500 ${i === shot ? "w-8 bg-wd-accent" : "w-3 bg-wd-line-2"}`} />
+              <span key={p} className={`h-1 rounded-full transition-[width,background-color] duration-500 ${i === shot ? "w-8 bg-white" : "w-3 bg-white/40"}`} />
             ))}
           </div>
         </div>

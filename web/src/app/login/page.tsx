@@ -81,18 +81,12 @@ export default function LoginPage() {
         <AuthSubmit loading={loading}>Masuk</AuthSubmit>
       </form>
 
-      <Link
-        href="/register?role=vendor"
-        className="group mt-8 flex items-center justify-between gap-4 rounded-2xl border border-wd-line bg-wd-paper px-5 py-4 transition-colors hover:border-wd-line-2"
-      >
-        <span>
-          <span className="block text-sm font-semibold text-wd-ink">Punya usaha pernikahan?</span>
-          <span className="block text-sm text-wd-muted">Daftarkan bisnismu sebagai vendor</span>
-        </span>
-        <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="text-wd-accent-ink transition-transform group-hover:translate-x-1">
-          <path d="M5 12h14M13 6l6 6-6 6" />
-        </svg>
-      </Link>
+      <p className="mt-6 text-center text-sm text-wd-muted">
+        Punya usaha pernikahan?{" "}
+        <Link href="/register?role=vendor" className={AUTH_LINK}>
+          Daftar sebagai vendor
+        </Link>
+      </p>
     </AuthLayout>
   );
 }
