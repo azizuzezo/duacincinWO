@@ -17,6 +17,7 @@ import {
 } from "@/components/public/untuk-vendor/VendorShowcase";
 import { Reveal } from "@/components/landing/Reveal";
 import { LIFT, ZOOM } from "@/components/public/shared/styles";
+import { artFor } from "@/components/vendor/directory/categoryArt";
 import { VENDOR_CATEGORIES } from "@/lib/api";
 
 export const metadata: Metadata = {
@@ -101,62 +102,6 @@ const SHOWCASE: ShowcaseItem[] = [
     phoneSrc: `${SHOT}/v-pencairan-m.webp`,
   },
 ];
-
-// Category photos shared with the home mosaic and /kategori (DuaCincin
-// Pinterest board, credited on /kredit).
-const CATEGORY_PHOTO: Record<
-  string,
-  { src: string; studio?: boolean; note: string }
-> = {
-  venue: {
-    src: "/photos/pinterest/venue-joglo.webp",
-    note: "Gedung, ballroom, taman",
-  },
-  catering: {
-    src: "/photos/kategori-vendor/catering-meja.webp",
-    note: "Prasmanan, gubukan, menu adat",
-  },
-  decor: {
-    src: "/photos/pinterest/dekorasi-taman.webp",
-    note: "Pelaminan, gapura, bunga",
-  },
-  mua_attire: {
-    src: "/photos/pinterest/rias-hijab.webp",
-    note: "Rias, busana adat, gaun",
-  },
-  photo_video: {
-    src: "/photos/pinterest/foto-gapura.webp",
-    note: "Foto, video, prewedding",
-  },
-  entertainment: {
-    src: "/photos/pinterest/kirab-malam.webp",
-    note: "Musik, band, hiburan adat",
-  },
-  invitation_souvenir: {
-    src: "/photos/pinterest/suvenir-anggrek.webp",
-    note: "Undangan cetak, suvenir",
-  },
-  hantaran: {
-    src: "/photos/pinterest/penutup-lilin.webp",
-    note: "Seserahan, hantaran, mahar hias",
-  },
-  mc: {
-    src: "/photos/pinterest/pendopo-kursi-tamu.webp",
-    note: "MC akad, resepsi, acara adat",
-  },
-  content_creator: {
-    src: "/photos/pinterest/pasangan-sofa-bunga.webp",
-    note: "Konten Reels, TikTok, behind the scene",
-  },
-  wedding_car: {
-    src: "/photos/pinterest/kirab-malam.webp",
-    note: "Mobil pengantin, sopir, hiasan",
-  },
-  wedding_cake: {
-    src: "/photos/pinterest/resepsi-taman.webp",
-    note: "Kue pengantin, dessert table",
-  },
-};
 
 export default function UntukVendorPage() {
   return (
@@ -245,7 +190,7 @@ export default function UntukVendorPage() {
             <Reveal>
               <ul className="dc-stagger mt-8 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-6">
                 {VENDOR_CATEGORIES.map((c) => {
-                  const photo = CATEGORY_PHOTO[c.value];
+                  const art = artFor(c.value);
                   return (
                     <li key={c.value} className="text-center">
                       <Link
@@ -255,24 +200,21 @@ export default function UntukVendorPage() {
                         <span
                           className={`relative block aspect-[4/5] overflow-hidden rounded-t-[999px] rounded-b-[16px] bg-wd-blush ${LIFT} group-hover:-translate-y-1 group-hover:shadow-wd-lift`}
                         >
-                          {photo && (
-                            <Image
-                              src={photo.src}
-                              alt=""
-                              fill
-                              sizes="(min-width: 1024px) 200px, (min-width: 640px) 30vw, 45vw"
-                              className={ZOOM}
-                            />
-                          )}
+                          <Image
+                            src={art.src}
+                            alt=""
+                            fill
+                            sizes="(min-width: 1024px) 200px, (min-width: 640px) 30vw, 45vw"
+                            style={{ objectPosition: art.focus ?? "50% 28%" }}
+                            className={ZOOM}
+                          />
                         </span>
                         <span className="mt-3 block font-semibold text-wd-ink transition-colors group-hover:text-wd-accent-ink">
                           {c.label}
                         </span>
-                        {photo && (
-                          <span className="mt-0.5 block text-sm text-wd-muted">
-                            {photo.note}
-                          </span>
-                        )}
+                        <span className="mt-0.5 block text-sm text-wd-muted">
+                          {art.covers}
+                        </span>
                       </Link>
                     </li>
                   );
