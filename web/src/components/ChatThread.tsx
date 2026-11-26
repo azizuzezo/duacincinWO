@@ -5,7 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { chatDayLabel, formatJam, sameDay } from "@/components/booking/format";
 import { describeConversation } from "@/components/ConversationList";
 import { AttachmentView } from "@/components/messages/AttachmentView";
-import { ATTACHMENT_ACCEPT, checkFile, uploadAttachment } from "@/components/messages/attachments";
+import { ATTACHMENT_ACCEPT, checkFile, formatBytes, kindOfMime, uploadAttachment } from "@/components/messages/attachments";
 import { ChatSessionContext, ClosedMarker, ClosedNotice, MessageTicks } from "@/components/messages/ChatSession";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -125,6 +125,14 @@ export function ChatThread({
   // A file on its way to storage.
   const [upload, setUpload] = useState<{ name: string; progress: number } | null>(null);
   const uploadAbort = useRef<AbortController | null>(null);
+  // A picked file waits here until the person sends (Enter or the send button); nothing is uploaded before that.
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const pendingPreview = useMemo(() => (pendingFile && kindOfMime(pendingFile.type) === "image" ? URL.createObjectURL(pendingFile) : null), [pendingFile]);
+  useEffect(() => {
+    return () => {
+      if (pendingPreview) URL.revokeObjectURL(pendingPreview);
+    };
+  }, [pendingPreview]);
   // Re-evaluated every 30s so "Edit" disappears once its window has passed.
   const [nowMs, setNowMs] = useState(() => Date.now());
   useEffect(() => {
@@ -327,9 +335,13 @@ export function ChatThread({
 
   async function handleSend(e?: React.FormEvent) {
     e?.preventDefault();
-    if (!body.trim() || sending) return;
+    if ((!body.trim() && !pendingFile) || sending) return;
     if (editing) {
       await saveEdit();
+      return;
+    }
+    if (pendingFile) {
+      await sendWithAttachment(pendingFile);
       return;
     }
     setSending(true);
@@ -349,7 +361,8 @@ export function ChatThread({
     }
   }
 
-  async function handleAttachmentSelected(e: React.ChangeEvent<HTMLInputElement>) {
+  /** Picking only queues the file as a preview above the composer. */
+  function handleAttachmentSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
@@ -358,7 +371,13 @@ export function ChatThread({
       setError(problem);
       return;
     }
+    setError(null);
+    setPendingFile(file);
+    textRef.current?.focus();
+  }
 
+  /** Upload the queued file, then send the message with it (the text box becomes its caption). */
+  async function sendWithAttachment(file: File) {
     setSending(true);
     setError(null);
     setUpload({ name: file.name, progress: 0 });
@@ -377,7 +396,9 @@ export function ChatThread({
       setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
       setBody("");
       setReplyingTo(null);
+      setPendingFile(null);
     } catch (err) {
+      // The file stays queued so a retry is one more Enter.
       if (!abort.signal.aborted) handleSendError(err, "Gagal mengunggah lampiran.");
     } finally {
       uploadAbort.current = null;
@@ -690,6 +711,27 @@ export function ChatThread({
                   </button>
                 </div>
               )}
+              {pendingFile && !upload && (
+                <div className="mx-3 mt-3 flex items-center gap-3 rounded-lg bg-dc-cream py-1.5 pl-1.5 pr-1">
+                  {pendingPreview ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- local preview of the picked file
+                    <img src={pendingPreview} alt="" className="h-12 w-12 shrink-0 rounded-md object-cover" />
+                  ) : (
+                    <span aria-hidden className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-dc-gold/30 text-[0.62rem] font-bold text-dc-clay">
+                      {(pendingFile.name.split(".").pop() ?? "file").slice(0, 4).toUpperCase()}
+                    </span>
+                  )}
+                  <div className="min-w-0 flex-1 text-xs">
+                    <p className="truncate font-semibold text-dc-ink">{pendingFile.name}</p>
+                    <p className="text-dc-text-2">{formatBytes(pendingFile.size)}. Tekan Enter untuk mengirim.</p>
+                  </div>
+                  <button type="button" onClick={() => setPendingFile(null)} aria-label="Hapus lampiran" className={ICON_BTN}>
+                    <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <path d="M6 6l12 12M18 6 6 18" />
+                    </svg>
+                  </button>
+                </div>
+              )}
               {upload && (
                 <div role="status" className="mx-3 mt-3 flex items-center gap-3 rounded-lg bg-dc-cream py-1 pl-3 pr-1">
                   <div className="min-w-0 flex-1 text-xs">
@@ -762,14 +804,14 @@ export function ChatThread({
                       handleSend();
                     }
                   }}
-                  placeholder={editing ? "Ubah pesan" : "Tulis pesan"}
+                  placeholder={editing ? "Ubah pesan" : pendingFile ? "Tambah keterangan (opsional)" : "Tulis pesan"}
                   aria-label={editing ? "Ubah pesan" : "Tulis pesan"}
                   className="max-h-33 min-h-11 min-w-0 flex-1 resize-none rounded-[22px] border border-dc-line-strong bg-dc-ivory px-3.5 py-2 text-[0.875rem] leading-snug text-dc-black transition-[border-color,box-shadow] placeholder:text-dc-text-3 focus:border-dc-gold focus:shadow-[0_0_0_4px_rgba(184,146,74,0.18)] focus:outline-none"
                 />
                 <button
                   type="submit"
                   aria-label={editing ? "Simpan perubahan" : "Kirim pesan"}
-                  disabled={sending || !body.trim()}
+                  disabled={sending || (!body.trim() && !pendingFile)}
                   aria-busy={sending || undefined}
                   className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-dc-ink text-dc-on-dark transition-[background-color,transform] hover:bg-dc-ink-2 disabled:bg-dc-ink/40 motion-safe:active:scale-95 ${FOCUS}`}
                 >

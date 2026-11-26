@@ -8,6 +8,7 @@ import { CheckIcon, friendlyError, RupiahInput } from "@/components/etalase/shar
 import { wdButton } from "@/components/home/ui";
 import { PasswordSection } from "@/components/PasswordSection";
 import { VENDOR_NAV } from "@/components/shell/navConfig";
+import { AvatarEditor } from "@/components/client/AvatarEditor";
 import { VendorShell } from "@/components/shell/VendorShell";
 import { CityCombobox } from "@/components/ui/CityCombobox";
 import { JABODETABEK } from "@/lib/wilayah";
@@ -253,6 +254,10 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
               <div className="mt-6 grid gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-14">
                 <form id="profile-form" onSubmit={handleSave} noValidate className="flex min-w-0 flex-col">
                   <FormSection n={1} title="Usaha" note="Nama usaha yang dilihat calon pengantin.">
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                      <AvatarEditor user={user} />
+                      <p className="max-w-xs text-sm leading-relaxed text-wd-text">Foto profil tampil di pojok akunmu di Pusat vendor. Pakai foto yang jelas, bisa wajahmu atau logo usahamu.</p>
+                    </div>
                     {profile ? (
                       <div className="rounded-[20px] bg-wd-paper px-5 py-4">
                         <p className="text-sm text-wd-muted">Nama usaha</p>
