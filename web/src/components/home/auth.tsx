@@ -66,7 +66,7 @@ export const CLIENT_PANEL: AuthPanel = {
     </>
   ),
   bullets: ["Vendor diverifikasi tim DuaCincin", "Chat dan booking di satu tempat", "Dana ditahan DuaCincin sampai acara selesai"],
-  photos: ["/photos/pinterest/pasangan-sofa-bunga.webp", "/photos/pinterest/dekorasi-taman.webp", "/photos/pinterest/rias-hijab.webp"],
+  photos: ["/banner/foto-inspirasi.webp", "/banner/foto-venue-taman.webp", "/banner/foto-escrow.webp"],
 };
 
 export const VENDOR_PANEL: AuthPanel = {
@@ -76,46 +76,39 @@ export const VENDOR_PANEL: AuthPanel = {
     </>
   ),
   bullets: ["Profil dan portofolio tampil di direktori setelah diverifikasi", "Chat dan booking dengan calon pengantin di satu tempat", "Dana cair setelah acara selesai, harga paketmu diterima utuh"],
-  photos: ["/photos/pinterest/pendopo-kursi-tamu.webp", "/photos/pinterest/pelaminan-kristal.webp", "/photos/kategori-vendor/catering-meja.webp"],
+  photos: ["/banner/foto-venue-taman.webp", "/banner/foto-inspirasi.webp", "/banner/foto-escrow.webp"],
 };
 
-function PhotoPanel({ panel }: { panel: AuthPanel }) {
+/** Full-page photo behind the centred card. One slow pass through the photos, then it rests. */
+function useShots(n: number) {
   const reduced = useReducedMotion();
   const [shot, setShot] = useState(0);
-  const n = panel.photos.length;
-
   useEffect(() => {
-    // One slow pass through the photos, then rest on the last one.
     if (reduced || shot >= n - 1) return;
     const t = window.setTimeout(() => setShot((i) => i + 1), 5000);
     return () => window.clearTimeout(t);
   }, [reduced, shot, n]);
+  return { shot, reduced };
+}
 
+function PhotoBackdrop({ panel }: { panel: AuthPanel }) {
+  const { shot, reduced } = useShots(panel.photos.length);
   const fade = dissolve(reduced, 1.2);
-  const src = panel.photos[Math.min(shot, n - 1)];
-
+  const src = panel.photos[Math.min(shot, panel.photos.length - 1)];
   return (
-    <aside aria-hidden className="relative hidden lg:block">
-      <div className="absolute inset-0 overflow-hidden bg-wd-blush">
-        <AnimatePresence initial={false}>
-          <motion.div key={src} className="absolute inset-0" {...fade}>
-            <Image src={src} alt="" fill priority={shot === 0} sizes="50vw" className="object-cover" />
-          </motion.div>
-        </AnimatePresence>
-        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/60 via-black/25 to-transparent px-12 pb-12 pt-32 text-white">
-          <p className="wd-display text-[clamp(1.8rem,2.6vw,2.4rem)] leading-[1.1] !text-white [&_em]:!text-[#f1dcaa]">{panel.headline}</p>
-          <div className="mt-5 flex gap-1.5">
-            {panel.photos.map((p, i) => (
-              <span key={p} className={`h-1 rounded-full transition-[width,background-color] duration-500 ${i === shot ? "w-8 bg-white" : "w-3 bg-white/40"}`} />
-            ))}
-          </div>
-        </div>
-      </div>
-    </aside>
+    <div aria-hidden className="absolute inset-0 overflow-hidden bg-wd-blush">
+      <AnimatePresence initial={false}>
+        <motion.div key={src} className="absolute inset-0" {...fade}>
+          <Image src={src} alt="" fill priority={shot === 0} sizes="100vw" className="object-cover" />
+        </motion.div>
+      </AnimatePresence>
+      <div className="absolute inset-0 bg-black/30" />
+      <div className="absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-black/50 to-transparent" />
+    </div>
   );
 }
 
-/** Split auth page: logo + back link, title (an <em> turns gold italic), optional sub, the form, then the footer line. */
+/** Centred auth page: a full-bleed wedding photo, and the form as one card in the middle (an <em> in the title turns gold italic). */
 export function AuthLayout({
   title,
   sub,
@@ -131,54 +124,50 @@ export function AuthLayout({
   footer?: ReactNode;
   panel?: AuthPanel;
   mascot?: Mascot;
-  /** Replaces the photo panel (e.g. the reset-password stage). */
+  /** Replaces the mascot and the photo (e.g. the reset-password scene). */
   aside?: ReactNode;
 }) {
+  const chip = "inline-flex min-h-11 items-center rounded-full bg-white/92 px-4 shadow-wd-card backdrop-blur-sm";
   return (
-    <div data-wd-public className="wd flex min-h-svh flex-1">
-      <div className="grid w-full lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-        <main id="konten" className="flex flex-col bg-wd-paper px-5 py-6 sm:px-10 lg:px-14 lg:py-8">
-          <div className="flex items-center justify-between">
-            <Link href="/" aria-label="DuaCincin, ke beranda" className="inline-flex min-h-11 items-center rounded-md">
-              <BrandLogo size={24} priority />
-            </Link>
-            <Link href="/" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-medium text-wd-muted transition-colors hover:text-wd-ink">
-              <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                <path d="M19 12H5M11 18l-6-6 6-6" />
-              </svg>
-              Beranda
-            </Link>
-          </div>
-          <div className="mx-auto flex w-full max-w-[460px] flex-1 flex-col justify-center py-8">
-            <div className="group/card relative overflow-hidden rounded-[28px] bg-white px-6 pb-8 pt-12 shadow-wd-card ring-1 ring-wd-line sm:px-9">
-              {/* Shop awning along the card's top edge. */}
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-x-0 top-0 h-5"
-                style={{
-                  backgroundImage: "radial-gradient(circle at 18px 0, #dcbd80 17px, transparent 18px), radial-gradient(circle at 54px 0, #f3ead6 17px, transparent 18px)",
-                  backgroundSize: "72px 20px",
-                  backgroundRepeat: "repeat-x",
-                }}
-              />
+    <div data-wd-public className="wd relative isolate flex min-h-svh flex-1 flex-col">
+      {aside ? <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_20%,#ffffff_0%,#fbf5e6_55%,#f3e8cc_100%)]" /> : <PhotoBackdrop panel={panel} />}
+      <main id="konten" className="relative flex flex-1 flex-col px-4 py-5 sm:px-8">
+        <div className="flex items-center justify-between">
+          <Link href="/" aria-label="DuaCincin, ke beranda" className={chip}>
+            <BrandLogo size={22} priority />
+          </Link>
+          <Link href="/" className={`${chip} gap-1.5 text-sm font-medium text-wd-ink`}>
+            <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <path d="M19 12H5M11 18l-6-6 6-6" />
+            </svg>
+            Beranda
+          </Link>
+        </div>
+        <div className="mx-auto flex w-full max-w-[460px] flex-1 flex-col justify-center py-8">
+          <div className="group/card relative overflow-hidden rounded-[28px] bg-white px-6 pb-7 pt-12 shadow-wd-pop sm:px-9">
+            {/* Shop awning along the card's top edge. */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 top-0 h-5"
+              style={{
+                backgroundImage: "radial-gradient(circle at 18px 0, #dcbd80 17px, transparent 18px), radial-gradient(circle at 54px 0, #f3ead6 17px, transparent 18px)",
+                backgroundSize: "72px 20px",
+                backgroundRepeat: "repeat-x",
+              }}
+            />
+            {aside ?? (
               <span className="block h-14 w-14 transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover/card:-rotate-6 group-hover/card:scale-110 motion-reduce:transition-none motion-reduce:group-hover/card:transform-none">
                 <MascotIcon kind={mascot} />
               </span>
-              <h1 className="wd-display mt-4 text-[clamp(2rem,3.6vw,2.6rem)] leading-[1.06]">{title}</h1>
-              {sub && <p className="mt-3 leading-relaxed text-wd-text">{sub}</p>}
-              <div className="mt-7">{children}</div>
-            </div>
-            {footer && <div className="mt-6 text-center text-[0.95rem] text-wd-text">{footer}</div>}
+            )}
+            <h1 className="wd-display mt-4 text-[clamp(2rem,3.6vw,2.6rem)] leading-[1.06]">{title}</h1>
+            {sub && <p className="mt-3 leading-relaxed text-wd-text">{sub}</p>}
+            <div className="mt-7">{children}</div>
+            {footer && <div className="mt-6 border-t border-wd-line pt-5 text-center text-[0.95rem] text-wd-text">{footer}</div>}
           </div>
-        </main>
-        {aside ? (
-          <aside aria-hidden className="relative hidden lg:block">
-            <div className="absolute inset-0 overflow-hidden bg-[radial-gradient(ellipse_at_70%_25%,#ffffff_0%,#fbf5e6_55%,#f3e8cc_100%)]">{aside}</div>
-          </aside>
-        ) : (
-          <PhotoPanel panel={panel} />
-        )}
-      </div>
+        </div>
+        {!aside && <p className="pointer-events-none pb-1 text-center text-sm text-white/90 drop-shadow [&_em]:text-[#f1dcaa]">{panel.headline}</p>}
+      </main>
     </div>
   );
 }

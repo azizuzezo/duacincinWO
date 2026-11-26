@@ -1,6 +1,6 @@
 "use client";
 
-// Aside for /forgot-password: instead of a photo, a little stage where the
+// Scene at the top of the /forgot-password card: the
 // padlock mascot acts out the current step (asleep and waiting for mail, the
 // mail arrives with a 6-digit code, the lock opens for the new key, happy
 // again when done). Decorative; the same state is spoken by the form itself.
@@ -14,13 +14,6 @@ const INK = "#231f1d";
 const GOLD = "#dcbd80";
 const CREAM = "#f5ecd9";
 const SHACKLE = "#c9a45c";
-
-const CAPTION: Record<ResetStep, { head: string; sub: string }> = {
-  request: { head: "Tenang, ini sering terjadi", sub: "Kami kirim kode 6 digit ke emailmu." },
-  verify: { head: "Surat sudah sampai", sub: "Masukkan kode dari emailmu." },
-  reset: { head: "Gemboknya terbuka", sub: "Pasang password baru yang mudah kamu ingat." },
-  done: { head: "Aman lagi", sub: "Silakan masuk dengan password barumu." },
-};
 
 function Lock({ open, happy, sleepy }: { open?: boolean; happy?: boolean; sleepy?: boolean }) {
   return (
@@ -94,80 +87,48 @@ function Sparkles() {
 export function ResetStage({ step }: { step: ResetStep }) {
   const reduced = useReducedMotion();
   const spring = reduced ? { duration: 0 } : { type: "spring" as const, stiffness: 180, damping: 16 };
-  const steps: ResetStep[] = ["request", "verify", "reset", "done"];
 
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center px-10 text-center text-wd-ink">
-      {/* Awning. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-7"
-        style={{
-          backgroundImage: "radial-gradient(circle at 24px 0, #dcbd80 23px, transparent 24px), radial-gradient(circle at 72px 0, #ffffff 23px, transparent 24px)",
-          backgroundSize: "96px 28px",
-          backgroundRepeat: "repeat-x",
-        }}
-      />
-      <svg aria-hidden viewBox="0 0 64 40" fill="none" className="pointer-events-none absolute -bottom-10 -left-16 h-[300px] w-[480px] text-[#c9a45c] opacity-30">
-        <circle cx="24" cy="20" r="16" stroke="currentColor" strokeWidth="0.5" />
-        <circle cx="40" cy="20" r="16" stroke="currentColor" strokeWidth="0.5" />
-      </svg>
-
-      <motion.svg viewBox="0 0 240 240" className="relative h-[320px] w-[320px]" animate={reduced ? undefined : { y: [0, -8, 0] }} transition={{ duration: 3.4, repeat: Infinity, ease: "easeInOut" }}>
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.g key={step} initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} transition={spring} style={{ transformOrigin: "120px 130px" }}>
-            {step === "request" && (
-              <>
-                <Lock sleepy />
-                <g transform="translate(150 6) rotate(10)">
-                  <Envelope />
-                </g>
-                <text x="22" y="92" fill={INK} fontSize="18" fontWeight="700">
-                  z z
-                </text>
-              </>
-            )}
-            {step === "verify" && (
-              <>
-                <g transform="translate(60 138) scale(0.5)">
-                  <Lock />
-                </g>
-                <g transform="translate(57 14) scale(1.5)">
-                  <Envelope open />
-                </g>
-              </>
-            )}
-            {step === "reset" && (
-              <>
-                <Lock open />
-                <g transform="translate(124 160) rotate(-8) scale(0.6)">
-                  <Key />
-                </g>
-              </>
-            )}
-            {step === "done" && (
-              <>
-                <Lock happy />
-                <Sparkles />
-              </>
-            )}
-          </motion.g>
-        </AnimatePresence>
-      </motion.svg>
-
-      <div className="relative mt-4 min-h-[88px]">
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div key={step} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: reduced ? 0 : 0.3 }}>
-            <p className="wd-display text-[1.9rem] leading-tight ">{CAPTION[step].head}</p>
-            <p className="mt-2 text-[1rem] text-wd-text">{CAPTION[step].sub}</p>
-          </motion.div>
-        </AnimatePresence>
-      </div>
-      <div className="relative mt-6 flex gap-2" aria-hidden>
-        {steps.map((st) => (
-          <span key={st} className={`h-1.5 rounded-full transition-[width,background-color] duration-500 ${st === step ? "w-9 bg-[#dcbd80]" : "w-3 bg-wd-line-2"}`} />
-        ))}
-      </div>
-    </div>
+    <motion.svg aria-hidden viewBox="0 0 240 240" className="mx-auto -mt-3 block h-[170px] w-[170px]" animate={reduced ? undefined : { y: [0, -5, 0] }} transition={{ duration: 3.4, repeat: Infinity, ease: "easeInOut" }}>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.g key={step} initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} transition={spring} style={{ transformOrigin: "120px 130px" }}>
+          {step === "request" && (
+            <>
+              <Lock sleepy />
+              <g transform="translate(150 6) rotate(10)">
+                <Envelope />
+              </g>
+              <text x="22" y="92" fill={INK} fontSize="18" fontWeight="700">
+                z z
+              </text>
+            </>
+          )}
+          {step === "verify" && (
+            <>
+              <g transform="translate(60 138) scale(0.5)">
+                <Lock />
+              </g>
+              <g transform="translate(57 14) scale(1.5)">
+                <Envelope open />
+              </g>
+            </>
+          )}
+          {step === "reset" && (
+            <>
+              <Lock open />
+              <g transform="translate(124 160) rotate(-8) scale(0.6)">
+                <Key />
+              </g>
+            </>
+          )}
+          {step === "done" && (
+            <>
+              <Lock happy />
+              <Sparkles />
+            </>
+          )}
+        </motion.g>
+      </AnimatePresence>
+    </motion.svg>
   );
 }
