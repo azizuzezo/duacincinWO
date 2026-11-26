@@ -21,7 +21,7 @@ export function PlannerFrame({
 }) {
   return (
     <ClientShell user={user}>
-      <div className={`mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10 ${bottomBar ? "pb-28 md:pb-10" : ""}`}>
+      <div className={`wd-container pb-16 pt-8 sm:pt-10 ${bottomBar ? "pb-28 md:pb-16" : ""}`}>
         <WeddingPlannerTabs />
         {children}
       </div>
@@ -43,11 +43,12 @@ export function PlannerTitle({
 }) {
   return (
     <div className="mb-8 flex flex-wrap items-end justify-between gap-x-8 gap-y-5">
-      <div className="min-w-0 max-w-2xl animate-fade-up">
-        <h1 className="font-heading text-[2.6rem] leading-[1.02] text-dc-ink sm:text-[3.4rem]">
-          {title} <em className="dc-em">{accent}</em>
+      <div className="min-w-0 max-w-2xl">
+        <p className="wd-kicker">Wedding Planner</p>
+        <h1 className="wd-display mt-2 text-[clamp(2.1rem,4.4vw,3.4rem)] leading-[1.05]">
+          {title} <em>{accent}</em>
         </h1>
-        <p className="mt-3 text-[1.02rem] leading-relaxed text-dc-text-2">{subtitle}</p>
+        <p className="mt-3 text-[1.02rem] leading-relaxed text-wd-text">{subtitle}</p>
       </div>
       {action && <div className="hidden shrink-0 md:flex md:gap-2">{action}</div>}
     </div>
@@ -57,8 +58,8 @@ export function PlannerTitle({
 /** Mobile: the page's main action pinned above the bottom tab bar (56px). */
 export function MobileActionBar({ children }: { children: React.ReactNode }) {
   return (
-    <div className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-30 border-t border-dc-line bg-dc-ivory/95 px-4 py-3 md:hidden">
-      <div className="mx-auto flex max-w-md gap-2">{children}</div>
+    <div className="fixed inset-x-0 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-30 px-4 md:hidden">
+      <div className="mx-auto flex max-w-md gap-2 rounded-[22px] bg-white p-2 shadow-wd-pop ring-1 ring-wd-line">{children}</div>
     </div>
   );
 }
@@ -92,13 +93,13 @@ export function ProgressRing({ value, size = 132, label }: { value: number; size
   return (
     <div role="img" aria-label={label} className="relative shrink-0" style={{ width: size, height: size }}>
       <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90" aria-hidden>
-        <circle cx="50" cy="50" r={r} fill="none" stroke="var(--dc-paper-3)" strokeWidth="6" />
+        <circle cx="50" cy="50" r={r} fill="none" stroke="var(--wd-line)" strokeWidth="6" />
         <circle
           cx="50"
           cy="50"
           r={r}
           fill="none"
-          stroke="var(--dc-gold)"
+          stroke="var(--wd-accent-deep)"
           strokeWidth="6"
           strokeLinecap="round"
           strokeDasharray={c}
@@ -106,7 +107,7 @@ export function ProgressRing({ value, size = 132, label }: { value: number; size
           className="transition-[stroke-dashoffset] duration-700 ease-dc"
         />
       </svg>
-      <span className="absolute inset-0 flex items-center justify-center font-heading text-[2.1rem] font-semibold text-dc-ink [font-variant-numeric:lining-nums_tabular-nums]">
+      <span className="wd-display absolute inset-0 flex items-center justify-center text-[2.1rem] tabular-nums">
         {pct}
         <span className="ml-0.5 mt-2 text-base text-dc-text-3">%</span>
       </span>
@@ -204,13 +205,13 @@ export function FilterChips<T extends string>({
             type="button"
             aria-pressed={on}
             onClick={() => onChange(o.value)}
-            className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-colors duration-200 ${
-              on ? "border-dc-ink bg-dc-ink text-dc-on-dark" : "border-dc-line-strong bg-dc-white text-dc-ink hover:border-dc-ink"
+            className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm transition-colors duration-200 ${
+              on ? "border-wd-accent bg-wd-accent font-semibold text-wd-ink" : "border-wd-line text-wd-text hover:border-wd-accent hover:bg-wd-accent-wash"
             }`}
           >
             {o.label}
             {o.count !== undefined && (
-              <span className={`text-xs tabular-nums ${on ? "text-dc-on-dark/80" : "text-dc-text-3"}`}>{o.count}</span>
+              <span className="text-xs tabular-nums text-wd-text">{o.count}</span>
             )}
           </button>
         );

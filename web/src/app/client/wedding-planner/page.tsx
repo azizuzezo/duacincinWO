@@ -4,10 +4,9 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
-import { InvitationCard } from "@/components/invitation";
+import { ClientArt, type ArtKind } from "@/components/home/ClientArt";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Input } from "@/components/ui/Field";
@@ -48,7 +47,6 @@ import {
   ProgressRing,
   todayKey,
 } from "./_parts";
-import { GoldArch } from "@/components/ornament/GoldArch";
 
 export default function WeddingPlannerPage() {
   return (
@@ -315,9 +313,11 @@ function WeddingPlannerContent({ user }: { user: CurrentUser }) {
             {tasks.length > 0 && (
               <section
                 aria-label="Ringkasan persiapan"
-                className="relative mb-8 overflow-hidden rounded-2xl border border-dc-line bg-dc-white p-6 shadow-soft sm:p-8"
+                className="relative mb-10"
               >
-                <GoldArch className="pointer-events-none absolute -right-14 -top-10 hidden h-auto w-[220px] opacity-20 lg:block" />
+                <span aria-hidden className="pointer-events-none absolute right-0 top-0 hidden h-32 w-32 lg:block">
+                  <ClientArt kind="clipboard" />
+                </span>
                 <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center lg:pr-28">
                   <ProgressRing
                     value={progressPct}
@@ -502,7 +502,7 @@ function WeddingPlannerContent({ user }: { user: CurrentUser }) {
                             className="flex min-h-11 w-full items-center justify-between gap-3 rounded-md text-left"
                           >
                             <span className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
-                              <span className="font-heading text-[1.7rem] leading-tight text-dc-ink [font-variant-numeric:lining-nums]">
+                              <span className="wd-title text-[1.5rem] leading-tight">
                                 {g.timeframe}
                               </span>
                               <span className="text-sm font-semibold tabular-nums text-dc-text-3 sm:hidden">
@@ -527,7 +527,7 @@ function WeddingPlannerContent({ user }: { user: CurrentUser }) {
 
                         {isOpen && (
                           <div id={listId} className="mt-3">
-                            <ul className="divide-y divide-dc-line overflow-hidden rounded-xl border border-dc-line bg-dc-white shadow-soft">
+                            <ul className="divide-y divide-wd-line border-y border-wd-line">
                               {shown.map((task) => (
                                 <TaskRow
                                   key={task.id}
@@ -568,43 +568,7 @@ function WeddingPlannerContent({ user }: { user: CurrentUser }) {
             )}
           </div>
 
-          <aside className="flex flex-col gap-6 lg:sticky lg:top-8">
-            <InvitationCard />
-            <Card tone="paper" className="p-5">
-              <p className="font-heading text-xl leading-tight text-dc-ink">
-                Bab lain di planner
-              </p>
-              <ul className="mt-2 flex flex-col">
-                {[
-                  {
-                    href: "/client/wedding-planner/guests",
-                    label: "Daftar tamu dan RSVP",
-                    icon: "users" as const,
-                  },
-                  {
-                    href: "/client/wedding-planner/rundown",
-                    label: "Rundown hari H",
-                    icon: "clock" as const,
-                  },
-                  {
-                    href: "/client/budget",
-                    label: "Budget planner",
-                    icon: "store" as const,
-                  },
-                ].map((l) => (
-                  <li key={l.href}>
-                    <Link
-                      href={l.href}
-                      className="flex min-h-11 items-center gap-3 rounded-md text-sm font-semibold text-dc-ink hover:text-dc-clay"
-                    >
-                      <Icon name={l.icon} size={18} className="text-dc-clay" />
-                      {l.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          </aside>
+          <PlannerLinks />
         </div>
       )}
 
@@ -775,6 +739,36 @@ function WeddingPlannerContent({ user }: { user: CurrentUser }) {
         )}
       </Sheet>
     </PlannerFrame>
+  );
+}
+
+/** Other chapters of the planner, as illustrated links (no boxes). */
+function PlannerLinks() {
+  const items: { href: string; label: string; sub: string; art: ArtKind }[] = [
+    { href: "/client/wedding-planner/guests", label: "Tamu & RSVP", sub: "Daftar tamu dan tautan RSVP", art: "people" },
+    { href: "/client/wedding-planner/rundown", label: "Rundown hari H", sub: "Urutan acara per jam", art: "bubble" },
+    { href: "/client/budget", label: "Budget planner", sub: "Bagi anggaran per kategori", art: "coin" },
+    { href: "/client/undangan", label: "Undangan digital", sub: "Pilih tema, data terisi", art: "envelope" },
+  ];
+  return (
+    <aside aria-label="Bab lain di planner" className="lg:sticky lg:top-40">
+      <p className="wd-title text-[1.25rem] leading-tight">Bab lain di planner</p>
+      <ul className="mt-2 divide-y divide-wd-line border-y border-wd-line">
+        {items.map((it) => (
+          <li key={it.href}>
+            <Link href={it.href} className="group flex min-h-16 items-center gap-3 py-3">
+              <span className="block h-12 w-12 shrink-0 rounded-full bg-wd-accent-wash p-2 ring-1 ring-wd-line transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:-rotate-6 group-hover:scale-110 motion-reduce:transition-none motion-reduce:group-hover:transform-none">
+                <ClientArt kind={it.art} />
+              </span>
+              <span className="min-w-0">
+                <span className="block font-semibold text-wd-ink group-hover:text-wd-accent-ink">{it.label}</span>
+                <span className="block text-sm text-wd-text">{it.sub}</span>
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </aside>
   );
 }
 
