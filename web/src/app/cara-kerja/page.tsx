@@ -7,9 +7,9 @@ import { PageHero } from "@/components/landing/PageHero";
 import { Reveal } from "@/components/landing/Reveal";
 import { PublicShell } from "@/components/landing/PublicShell";
 import {
-  JourneyStory,
+  MoneyJourney,
   type Stage,
-} from "@/components/public/cara-kerja/JourneyStory";
+} from "@/components/public/cara-kerja/MoneyJourney";
 import { PhoneFrame } from "@/components/ui/DeviceFrame";
 import { breadcrumbLd, JsonLd, webPageLd } from "@/components/seo/JsonLd";
 
@@ -149,7 +149,7 @@ export default function CaraKerjaPage() {
           </ul>
         </PageHero>
 
-        <JourneyStory stages={STAGES} />
+        <MoneyJourney stages={STAGES} />
 
         <section
           aria-labelledby="masalah-judul"
