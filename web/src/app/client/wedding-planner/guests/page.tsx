@@ -225,7 +225,7 @@ function GuestListContent({ user }: { user: CurrentUser }) {
         <>
           <div className="mb-10 grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
             {/* Focal point: how many people are coming (what venue and catering need). */}
-            <section aria-label="Ringkasan RSVP" className="rounded-2xl border border-dc-line bg-dc-white p-6 shadow-soft sm:p-8">
+            <section aria-label="Ringkasan RSVP" className="border-t-[3px] border-wd-accent pt-5">
               <p className="text-sm font-semibold text-dc-text-2">Akan hadir</p>
               <p className="mt-1 flex flex-wrap items-baseline gap-x-3">
                 <span className="font-heading text-[4.2rem] font-semibold leading-none text-dc-ink [font-variant-numeric:lining-nums_tabular-nums]">
@@ -234,7 +234,7 @@ function GuestListContent({ user }: { user: CurrentUser }) {
                 <span className="text-dc-text-2">orang, dari {attendingGuests} undangan</span>
               </p>
               {total > 0 && (
-                <div aria-hidden className="mt-6 flex h-2.5 w-full overflow-hidden rounded-full bg-dc-cream">
+                <div aria-hidden className="mt-6 flex h-2.5 w-full overflow-hidden rounded-full bg-wd-line">
                   <span className="h-full bg-dc-gold" style={{ width: `${(attendingGuests / total) * 100}%` }} />
                   <span className="h-full bg-dc-line-strong" style={{ width: `${(pendingCount / total) * 100}%` }} />
                   <span className="h-full bg-dc-text-3" style={{ width: `${(notAttendingCount / total) * 100}%` }} />
@@ -258,7 +258,7 @@ function GuestListContent({ user }: { user: CurrentUser }) {
               <p className="mt-4 text-xs text-dc-text-3">Hitungan per undangan. Jumlah orang di atas sudah termasuk pendamping.</p>
             </section>
 
-            <section aria-labelledby="rsvp-link-h" className="flex flex-col rounded-2xl bg-dc-cream p-6 sm:p-8">
+            <section aria-labelledby="rsvp-link-h" className="flex flex-col border-t-[3px] border-wd-accent pt-5">
               <div className="flex items-start justify-between gap-3">
                 <h2 id="rsvp-link-h" className="font-heading text-[1.9rem] leading-tight text-dc-ink">
                   Link RSVP
@@ -357,7 +357,7 @@ function GuestListContent({ user }: { user: CurrentUser }) {
                   </p>
                 ) : (
                   // Rows arrive in sequence so a long list reads as a list, not a wall.
-                  <MotionList className="divide-y divide-dc-line overflow-hidden rounded-xl border border-dc-line bg-dc-white shadow-soft">
+                  <MotionList className="divide-y divide-wd-line border-y border-wd-line">
                     {shown.map((g) => (
                       <MotionItem key={g.id} className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-4 sm:px-5">
                         <Initials name={g.name} className="h-11 w-11 text-lg" />

@@ -197,7 +197,7 @@ function RundownContent({ user }: { user: CurrentUser }) {
                       aria-hidden
                       className={`absolute -left-[7px] top-5 h-3.5 w-3.5 rounded-full border-2 border-dc-gold ${i === 0 ? "bg-dc-gold" : "bg-dc-ivory"}`}
                     />
-                    <div className="rounded-xl border border-dc-line bg-dc-white p-4 shadow-soft sm:p-5">
+                    <div className="py-1 sm:py-2">
                       <div className="flex items-start justify-between gap-3">
                         <h2 className="min-w-0 break-words font-heading text-[1.55rem] leading-tight text-dc-ink">{it.title}</h2>
                         <button
@@ -226,7 +226,7 @@ function RundownContent({ user }: { user: CurrentUser }) {
           </MotionList>
 
           <aside className="lg:sticky lg:top-8">
-            <div className="rounded-2xl bg-dc-cream p-6">
+            <div className="border-t-[3px] border-wd-accent pt-5">
               <p className="text-sm font-semibold text-dc-text-2">Hari H dimulai</p>
               <p className="mt-1 font-heading text-[2.6rem] font-semibold leading-none text-dc-ink [font-variant-numeric:lining-nums_tabular-nums]">{jam(first.start_time)}</p>
               <dl className="mt-5 flex flex-col gap-3 border-t border-dc-line-strong/60 pt-4 text-sm">

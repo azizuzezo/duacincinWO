@@ -178,7 +178,7 @@ function SeatingContent({ user }: { user: CurrentUser }) {
             onDragLeave={() => setDragOverTarget(null)}
             onDrop={handleDropOnUnassigned}
             className={`rounded-2xl border p-5 transition-colors duration-200 sm:p-7 ${
-              dragOverTarget === "unassigned" ? "border-dc-gold bg-dc-gold/10" : "border-dc-line bg-dc-cream"
+              dragOverTarget === "unassigned" ? "border-dc-gold bg-dc-gold/10" : "border-dc-line bg-wd-accent-wash"
             }`}
           >
             <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
@@ -379,7 +379,7 @@ function TableCard({
   const full = taken >= table.capacity;
   return (
     <article
-      className={`flex h-full flex-col rounded-xl border p-5 shadow-soft transition-[border-color,background-color] duration-200 ${
+      className={`flex h-full flex-col rounded-[22px] border p-5 transition-[border-color,background-color] duration-200 ${
         over ? "border-dc-gold bg-dc-gold/5" : "border-dc-line bg-dc-white"
       }`}
     >
