@@ -51,9 +51,9 @@ export default function VendorBookingDetailPage({
 /** What the vendor should do at each stage, in one sentence. */
 const GUIDANCE: Record<Booking["status"], { title: string; body: string }> = {
   requested: { title: "Client menunggu jawabanmu", body: "Cek tanggal dan paket. Kalau bisa, terima supaya client bisa membayar DP lewat DuaCincin." },
-  confirmed: { title: "Menunggu DP dari client", body: "Kamu sudah menerima booking ini. Begitu client membayar DP, dananya ditahan escrow dan tanggalnya terkunci." },
-  dp_paid: { title: "DP sudah masuk escrow", body: "Jadwalkan technical meeting dengan client untuk membahas detail hari-H." },
-  full_paid: { title: "Booking sudah lunas", body: "Semua dana ditahan escrow sampai client menandai acara selesai. Pastikan technical meeting sudah terjadwal." },
+  confirmed: { title: "Menunggu DP dari client", body: "Kamu sudah menerima booking ini. Begitu client membayar DP, dananya ditahan Dana Aman dan tanggalnya terkunci." },
+  dp_paid: { title: "DP sudah masuk Dana Aman", body: "Jadwalkan technical meeting dengan client untuk membahas detail hari-H." },
+  full_paid: { title: "Booking sudah lunas", body: "Semua dana ditahan Dana Aman sampai client menandai acara selesai. Pastikan technical meeting sudah terjadwal." },
   completed: { title: "Acara selesai", body: "Dana bersih (setelah komisi) masuk antrean pencairan. Admin mentransfernya ke rekeningmu." },
   cancelled: { title: "Booking dibatalkan", body: "Tidak ada yang perlu kamu lakukan. Dana client mengikuti ketentuan pembatalan." },
 };
@@ -145,7 +145,7 @@ function VendorBookingDetailContent({ id, user }: { id: string; user: CurrentUse
   const canSchedule = !!booking && (booking.status === "dp_paid" || booking.status === "full_paid") && !hasTechnicalMeeting;
 
   return (
-    <Shell user={user} navItems={VENDOR_NAV} loginPath="/login" eyebrow="Vendor">
+    <Shell user={user} navItems={VENDOR_NAV} tone="wd" loginPath="/login" eyebrow="Vendor">
       <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-10">
         <Link
           href="/vendor/bookings"
@@ -280,7 +280,7 @@ function VendorBookingDetailContent({ id, user }: { id: string; user: CurrentUse
                   )}
                 </dl>
                 <p className="rounded-b-xl border-t border-dc-line bg-dc-cream/60 px-5 py-3.5 text-xs leading-relaxed text-dc-text-2 sm:px-6">
-                  Client membayar lewat DuaCincin. Dana ditahan escrow, lalu bagianmu diteruskan ke rekeningmu setelah client menandai acara selesai.
+                  Client membayar lewat DuaCincin. Dana ditahan Dana Aman, lalu bagianmu diteruskan ke rekeningmu setelah client menandai acara selesai.
                 </p>
               </Card>
             </section>

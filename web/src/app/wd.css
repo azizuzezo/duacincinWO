@@ -204,6 +204,11 @@ html:has(.wd) {
   --dc-clay: var(--wd-accent-ink);
   --dc-gold-soft: var(--wd-accent-soft);
   --dc-gold-wash: var(--wd-accent-wash);
+  /* App-shell surfaces (vendor dashboard): white canvas, paper sidebar. */
+  --dc-canvas: #ffffff;
+  --dc-surface: #ffffff;
+  --dc-surface-2: var(--wd-paper);
+  --dc-sidebar: var(--wd-paper);
   --font-display: var(--font-wd-display-face);
   --font-body: var(--font-wd-sans-face);
 }
@@ -377,4 +382,40 @@ html:has(.wd) {
   font-size: 1.5rem;
   color: var(--wd-ink);
   letter-spacing: -0.015em;
+}
+
+/* ── Scrollbars: thin and warm everywhere (page, chat, modals, menus) instead of
+   the browser's thick grey bar. The thumb keeps 3:1 against the track
+   (WCAG 1.4.11); high-contrast users get a near-black thumb. Classes that
+   hide the bar on purpose (.wd-rail, .wd-banners) are more specific and win. ── */
+:root {
+  --scrollbar-thumb: #8f8478;
+  --scrollbar-track: #f5f0e8;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+@media (prefers-contrast: more) {
+  :root {
+    --scrollbar-thumb: #231f1d;
+    --scrollbar-track: #ffffff;
+  }
+}
+@supports not (scrollbar-color: auto) {
+  * {
+    scrollbar-width: auto;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 999px;
+    border: 2px solid var(--scrollbar-track);
+  }
+  *::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
 }

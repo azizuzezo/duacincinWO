@@ -71,7 +71,7 @@ function VendorPayoutsContent({ user }: { user: CurrentUser }) {
   const history = payouts.slice().sort((a, b) => (a.status === b.status ? 0 : a.status === "pending" ? -1 : 1));
 
   return (
-    <Shell user={user} navItems={VENDOR_NAV} loginPath="/login" eyebrow="Vendor">
+    <Shell user={user} navItems={VENDOR_NAV} tone="wd" loginPath="/login" eyebrow="Vendor">
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
         <PageHeader
           eyebrow="Pencairan"
@@ -80,7 +80,7 @@ function VendorPayoutsContent({ user }: { user: CurrentUser }) {
               Uang <span className="dc-em">usahamu</span>
             </>
           }
-          subtitle="Dana dari client ditahan escrow sampai acara selesai, lalu diteruskan ke kamu setelah dipotong komisi."
+          subtitle="Dana dari client ditahan Dana Aman sampai acara selesai, lalu diteruskan ke kamu setelah dipotong komisi."
         />
 
         {loading ? (
@@ -124,7 +124,7 @@ function VendorPayoutsContent({ user }: { user: CurrentUser }) {
               </Card>
 
               <Card className="flex flex-col p-6 sm:p-7">
-                <p className="text-sm font-medium text-dc-text-2">Ditahan escrow</p>
+                <p className="text-sm font-medium text-dc-text-2">Ditahan Dana Aman</p>
                 <p className="mt-1 font-heading text-[2.2rem] font-semibold leading-tight text-dc-ink [font-variant-numeric:lining-nums_tabular-nums]">
                   <CountUp value={held} format={formatRupiah} />
                 </p>

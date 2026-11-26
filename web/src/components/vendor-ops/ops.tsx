@@ -72,8 +72,8 @@ export function countdownLabel(value: string): string | null {
 export const VENDOR_STATUS: Record<BookingStatus, string> = {
   requested: "Perlu jawabanmu",
   confirmed: "Menunggu DP client",
-  dp_paid: "DP masuk escrow",
-  full_paid: "Lunas di escrow",
+  dp_paid: "DP masuk Dana Aman",
+  full_paid: "Lunas di Dana Aman",
   completed: "Selesai",
   cancelled: "Dibatalkan",
 };
@@ -110,42 +110,39 @@ export function DateLeaf({ value, tone = "light" }: { value: string; tone?: "lig
   return (
     <span
       aria-hidden
-      className={`flex w-14 shrink-0 self-start flex-col items-center rounded-lg border py-1.5 leading-none ${
-        tone === "gold" ? "border-dc-gold/40 bg-dc-gold-wash" : "border-dc-line bg-dc-ivory"
-      }`}
+      className={`flex w-14 shrink-0 self-start flex-col items-center rounded-2xl py-2 leading-none ${tone === "gold" ? "bg-wd-accent text-wd-ink" : "bg-wd-blush text-wd-ink"}`}
     >
-      <span className="text-[11px] font-semibold text-dc-clay">{BULAN_PENDEK[d.getMonth()]}</span>
-      <span className="mt-1 font-heading text-[1.7rem] font-semibold text-dc-ink [font-variant-numeric:lining-nums]">{d.getDate()}</span>
-      <span className="mt-0.5 text-[11px] text-dc-text-3 tabular-nums">{d.getFullYear()}</span>
+      <span className="text-[11px] font-semibold uppercase">{BULAN_PENDEK[d.getMonth()]}</span>
+      <span className="wd-display mt-1 text-[1.7rem] tabular-nums">{d.getDate()}</span>
+      <span className="mt-0.5 text-[11px] tabular-nums opacity-80">{d.getFullYear()}</span>
     </span>
   );
 }
 
-/** One booking as a tappable row: date leaf, package, price, countdown,
- * vendor-side status and where the money is. Whole row is the link. */
+/** One booking as a flat row (like an order in a seller center): date leaf,
+ * package, price, countdown, vendor-side status and where the money is.
+ * The whole row is the link; rows are separated by hairlines. */
 export function BookingRow({ booking: b, showFund = true }: { booking: Booking; showFund?: boolean }) {
   const needsAnswer = b.status === "requested";
   const countdown = b.status === "completed" || b.status === "cancelled" ? null : countdownLabel(b.event_date);
   return (
     <Link
       href={`/vendor/bookings/${b.id}`}
-      className={`group flex gap-4 rounded-xl border bg-dc-white p-4 shadow-soft transition-[border-color,box-shadow,transform] duration-200 hover:border-dc-line-strong hover:shadow-lift motion-safe:hover:-translate-y-0.5 active:translate-y-0 active:bg-dc-ivory active:shadow-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold sm:p-5 ${
-        needsAnswer ? "border-dc-gold/60" : "border-dc-line"
-      }`}
+      className="group flex gap-4 border-b border-wd-line px-3 py-4 transition-colors duration-200 hover:bg-wd-paper focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-dc-gold sm:px-4"
     >
       <DateLeaf value={b.event_date} tone={needsAnswer ? "gold" : "light"} />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <Badge tone={needsAnswer ? "warning" : b.status === "confirmed" ? "info" : BOOKING_STATUS_TONE[b.status]}>{VENDOR_STATUS[b.status]}</Badge>
-          {countdown && <span className="text-xs font-medium text-dc-text-3">{countdown}</span>}
+          {countdown && <span className="text-xs font-medium text-wd-muted">{countdown}</span>}
         </div>
-        <p className="mt-1.5 break-words font-semibold leading-snug text-dc-ink">{b.package_description || "Booking"}</p>
-        <p className="mt-0.5 text-sm text-dc-text-2">
+        <p className="mt-1.5 break-words font-semibold leading-snug text-wd-ink">{b.package_description || "Booking"}</p>
+        <p className="mt-0.5 text-sm text-wd-text">
           <span className="sr-only">Tanggal acara </span>
           {formatTanggal(b.event_date, true)}
         </p>
-        <div className="mt-3 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
-          <p className="text-lg font-bold tabular-nums text-dc-ink">{formatRupiah(b.vendor_amount ?? b.agreed_price)}</p>
+        <div className="mt-2.5 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+          <p className="text-lg font-bold tabular-nums text-wd-ink">{formatRupiah(b.vendor_amount ?? b.agreed_price)}</p>
           {showFund && b.status !== "requested" && (
             <div className="min-w-0">
               <FundStatus status={b.status} compact />
@@ -153,7 +150,7 @@ export function BookingRow({ booking: b, showFund = true }: { booking: Booking; 
           )}
         </div>
       </div>
-      <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="mt-1 hidden shrink-0 text-dc-text-3 transition-transform group-hover:translate-x-0.5 sm:block">
+      <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="mt-1 hidden shrink-0 text-wd-muted transition-transform group-hover:translate-x-0.5 sm:block">
         <path d="M9 6l6 6-6 6" />
       </svg>
     </Link>
@@ -162,8 +159,8 @@ export function BookingRow({ booking: b, showFund = true }: { booking: Booking; 
 
 export function BookingRowSkeleton() {
   return (
-    <div className="flex gap-4 rounded-xl border border-dc-line bg-dc-white p-4 sm:p-5">
-      <div className="dc-skeleton h-[74px] w-14 rounded-lg" />
+    <div className="flex gap-4 border-b border-wd-line px-3 py-4 sm:px-4">
+      <div className="dc-skeleton h-[74px] w-14 rounded-2xl" />
       <div className="flex-1 space-y-2.5">
         <div className="dc-skeleton h-5 w-32 rounded-full" />
         <div className="dc-skeleton h-4 w-3/4 rounded" />

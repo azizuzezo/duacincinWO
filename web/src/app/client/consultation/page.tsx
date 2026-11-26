@@ -4,14 +4,14 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { dayName, formatJam, monthShort } from "@/components/booking/format";
-import { FOCUS } from "@/app/client/_ui";
+import { FOCUS, INPUT, LABEL } from "@/app/client/_ui";
+import { TanggalPicker, todayIso } from "@/app/vendors/[id]/_ui/TanggalPicker";
 import { ClientArt } from "@/components/home/ClientArt";
 import { wdButton } from "@/components/home/ui";
 import { ClientShell } from "@/components/shell/ClientShell";
-import { Button } from "@/components/ui/Button";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Input } from "@/components/ui/Field";
-import { Sheet } from "@/components/ui/Sheet";
+import { Modal } from "@/components/ui/Modal";
 import { SkeletonGroup } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { WithUser } from "@/components/WithUser";
@@ -32,6 +32,12 @@ const DOES = [
   "Menjadwalkan meeting lanjutan dan ikut technical meeting bila kamu minta.",
 ];
 
+/** Half-hour slots from 08.00 to 21.00. */
+const TIMES = Array.from({ length: 27 }, (_, i) => {
+  const m = 8 * 60 + i * 30;
+  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${m % 60 === 0 ? "00" : "30"}`;
+});
+
 function ClientConsultationContent({ user }: { user: CurrentUser }) {
   const router = useRouter();
   const { show } = useToast();
@@ -39,7 +45,8 @@ function ClientConsultationContent({ user }: { user: CurrentUser }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [scheduledAt, setScheduledAt] = useState("");
+  const [day, setDay] = useState("");
+  const [time, setTime] = useState("10:00");
   const [meetingLink, setMeetingLink] = useState("");
   const [saving, setSaving] = useState(false);
   const [opening, setOpening] = useState(false);
@@ -64,15 +71,18 @@ function ClientConsultationContent({ user }: { user: CurrentUser }) {
 
   async function handleSchedule(e: React.FormEvent) {
     e.preventDefault();
-    if (!scheduledAt) return;
+    if (!day) {
+      setError("Pilih tanggalnya dulu.");
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
       await apiPost("/api/v1/meetings/consultation", {
-        scheduled_at: new Date(scheduledAt).toISOString(),
+        scheduled_at: new Date(`${day}T${time}`).toISOString(),
         meeting_link: meetingLink,
       });
-      setScheduledAt("");
+      setDay("");
       setMeetingLink("");
       setSheetOpen(false);
       show("Sesi konsultasi dijadwalkan.", "success");
@@ -203,19 +213,26 @@ function ClientConsultationContent({ user }: { user: CurrentUser }) {
         </section>
       </div>
 
-      <Sheet
+      <Modal
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
         title="Jadwalkan sesi"
         description="Pilih waktu yang pas untukmu. Detailnya bisa dibahas lewat chat konsultasi."
-        footer={
-          <Button type="submit" form="consult-form" variant="primary" block loading={saving}>
-            Jadwalkan
-          </Button>
-        }
       >
-        <form id="consult-form" onSubmit={handleSchedule} className="flex flex-col gap-5">
-          <Input id="scheduled-at" label="Tanggal dan waktu" type="datetime-local" required value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
+        <form onSubmit={handleSchedule} className="flex flex-col gap-4">
+          <TanggalPicker label="Tanggal" value={day} onChange={setDay} min={todayIso()} />
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="consult-time" className={LABEL}>
+              Jam
+            </label>
+            <select id="consult-time" value={time} onChange={(e) => setTime(e.target.value)} className={INPUT}>
+              {TIMES.map((t) => (
+                <option key={t} value={t}>
+                  {t.replace(":", ".")}
+                </option>
+              ))}
+            </select>
+          </div>
           <Input
             id="meeting-link"
             label="Link meeting"
@@ -227,12 +244,20 @@ function ClientConsultationContent({ user }: { user: CurrentUser }) {
             hint="Kosongkan bila belum ada. Link bisa dibagikan lewat chat konsultasi."
           />
           {error && (
-            <p role="alert" className="text-sm text-dc-danger">
+            <p role="alert" className="text-sm text-wd-danger">
               {error}
             </p>
           )}
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <button type="button" onClick={() => setSheetOpen(false)} className={`${wdButton({ variant: "outline" })} ${FOCUS}`}>
+              Batal
+            </button>
+            <button type="submit" disabled={saving} aria-busy={saving} className={`${wdButton({ variant: "gold" })} ${FOCUS}`}>
+              {saving ? "Menjadwalkan..." : "Jadwalkan"}
+            </button>
+          </div>
         </form>
-      </Sheet>
+      </Modal>
     </ClientShell>
   );
 }

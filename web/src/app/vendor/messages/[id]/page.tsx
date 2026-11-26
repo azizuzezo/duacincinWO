@@ -21,7 +21,7 @@ export default function VendorMessageThreadPage({
   return (
     <WithUser allowedRoles={["vendor"]} loginPath="/login">
       {(user) => (
-        <Shell user={user} navItems={VENDOR_NAV} loginPath="/login" eyebrow="Vendor">
+        <Shell user={user} navItems={VENDOR_NAV} tone="wd" loginPath="/login" eyebrow="Vendor">
           <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-8">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <Link

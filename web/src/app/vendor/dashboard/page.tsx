@@ -5,9 +5,8 @@ import { useEffect, useState } from "react";
 
 import { VENDOR_NAV } from "@/components/shell/navConfig";
 import { Shell } from "@/components/shell/Shell";
-import { ButtonLink } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { DashboardBanner } from "@/components/ui/DashboardBanner";
+import { ClientArt, type ArtKind } from "@/components/home/ClientArt";
+import { wdButton } from "@/components/home/ui";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Skeleton, SkeletonGroup } from "@/components/ui/Skeleton";
@@ -15,6 +14,7 @@ import { CountUp } from "@/components/ui/Motion";
 import { ReviewList, ReviewSummary } from "@/components/vendor/Reviews";
 import { BookingRow, BookingRowSkeleton, heldAmount, todayLabel } from "@/components/vendor-ops/ops";
 import { StaggerItem, StaggerList } from "@/components/vendor-ops/motion";
+import { FOCUS } from "@/app/client/_ui";
 import { WithUser } from "@/components/WithUser";
 import {
   apiGet,
@@ -93,7 +93,7 @@ function VendorDashboardContent({ user }: { user: CurrentUser }) {
   }, [reload, user.id]);
 
   const shell = (children: React.ReactNode) => (
-    <Shell user={user} navItems={VENDOR_NAV} loginPath="/login" eyebrow="Vendor">
+    <Shell user={user} navItems={VENDOR_NAV} tone="wd" loginPath="/login" eyebrow="Vendor">
       {children}
     </Shell>
   );
@@ -116,16 +116,20 @@ function VendorDashboardContent({ user }: { user: CurrentUser }) {
 
   if (profile === undefined) {
     return shell(
-      <>
-        <DashboardBanner title="Hari ini" subtitle={todayLabel()} />
-        <SkeletonGroup label="Memuat dashboard" className="mx-auto max-w-6xl px-4 sm:px-6">
-          <Skeleton className="relative -mt-10 h-44 rounded-2xl sm:-mt-12" />
-          <div className="mt-8 grid gap-3">
+      <div className="wd-container pb-16 pt-8 sm:pt-10">
+        <p className="wd-kicker">Vendor</p>
+        <h1 className="wd-display mt-2 text-[clamp(2.1rem,4.4vw,3.4rem)] leading-[1.05]">
+          Hari <em>ini</em>
+        </h1>
+        <p className="mt-2 text-wd-text">{todayLabel()}</p>
+        <SkeletonGroup label="Memuat dashboard" className="mt-8">
+          <Skeleton className="h-36 rounded-[28px]" />
+          <div className="mt-8">
             <BookingRowSkeleton />
             <BookingRowSkeleton />
           </div>
         </SkeletonGroup>
-      </>,
+      </div>,
     );
   }
 
@@ -148,6 +152,7 @@ function VendorDashboardContent({ user }: { user: CurrentUser }) {
     .filter((b) => ["confirmed", "dp_paid", "full_paid"].includes(b.status))
     .sort((a, b) => a.event_date.localeCompare(b.event_date))
     .slice(0, 3);
+  const confirmedCount = list.filter((b) => ["confirmed", "dp_paid", "full_paid"].includes(b.status)).length;
   const held = list.reduce((sum, b) => sum + heldAmount(b), 0);
   const ready = (payouts ?? []).filter((p) => p.status === "pending").reduce((sum, p) => sum + p.net_amount, 0);
   const next = nextStep(profile, packages, requested);
@@ -164,190 +169,202 @@ function VendorDashboardContent({ user }: { user: CurrentUser }) {
     setReload((n) => n + 1);
   };
 
+  const art: ArtKind = profile.status === "rejected" ? "clipboard" : requested.length > 0 ? "envelope" : storefrontDone ? "shop" : "frame";
+  const statusChip =
+    profile.status === "approved"
+      ? { label: "Tampil di direktori", cls: "bg-wd-accent-soft text-wd-accent-ink" }
+      : profile.status === "rejected"
+        ? { label: "Perlu diperbaiki", cls: "bg-[#f8e6e1] text-wd-danger" }
+        : { label: "Menunggu persetujuan", cls: "bg-wd-blush text-wd-text" };
+
   return shell(
-    <>
-      <DashboardBanner
-        eyebrow={profile.business_name}
-        title={
-          <>
-            Hari <span className="dc-em">ini</span>
-          </>
-        }
-        subtitle={todayLabel()}
-      />
+    <div className="wd-container pb-16 pt-8 sm:pt-10">
+      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+        <div>
+          <p className="wd-kicker">{profile.business_name}</p>
+          <h1 className="wd-display mt-2 text-[clamp(2.1rem,4.4vw,3.4rem)] leading-[1.05]">
+            Hari <em>ini</em>
+          </h1>
+          <p className="mt-2 text-wd-text">{todayLabel()}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className={`inline-flex items-center rounded-full px-3.5 py-1.5 text-sm font-semibold ${statusChip.cls}`}>{statusChip.label}</span>
+          {profile.status === "approved" && (
+            <Link href={`/vendors/${user.id}`} className={`inline-flex min-h-11 items-center text-sm font-semibold text-wd-accent-ink underline underline-offset-4 hover:text-wd-ink ${FOCUS}`}>
+              Lihat halaman publik
+            </Link>
+          )}
+        </div>
+      </header>
 
-      <div className="mx-auto max-w-6xl px-4 pb-12 sm:px-6">
-        {/* The one focal point: the single most useful thing to do now. */}
-        <section
-          aria-labelledby="langkah-vendor"
-          className={`animate-fade-up relative -mt-10 mb-10 rounded-2xl border bg-dc-white p-6 shadow-lift sm:-mt-12 sm:p-8 ${urgent ? "border-dc-gold/70" : "border-dc-line"}`}
-        >
-          <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-            <div className="max-w-xl">
-              <p className="dc-eyebrow">{next.eyebrow}</p>
-              <h2 id="langkah-vendor" className="mt-2 font-heading text-[2rem] leading-[1.08] text-dc-ink sm:text-[2.6rem]">
-                {next.title}
-              </h2>
-              <p className="mt-2 leading-relaxed text-dc-text-2">{next.body}</p>
-            </div>
-            <ButtonLink href={next.href} variant={urgent ? "gold" : "primary"} size="lg" className="w-full shrink-0 md:w-auto">
-              {next.cta}
-            </ButtonLink>
-          </div>
-        </section>
+      {/* The one focal point: the single most useful thing to do now. */}
+      <section aria-labelledby="langkah-vendor" className={`mt-8 grid items-center gap-5 rounded-[28px] bg-wd-accent-wash p-6 sm:grid-cols-[84px_minmax(0,1fr)_auto] sm:gap-7 sm:p-8 ${urgent ? "border-2 border-dashed border-wd-accent" : ""}`}>
+        <div className="hidden h-[84px] w-[84px] sm:block">
+          <ClientArt kind={art} />
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-wd-accent-ink">{next.eyebrow}</p>
+          <h2 id="langkah-vendor" className="wd-display mt-1 text-[clamp(1.6rem,2.8vw,2.2rem)] leading-tight">
+            {next.title}
+          </h2>
+          <p className="mt-1.5 max-w-xl leading-relaxed text-wd-text">{next.body}</p>
+        </div>
+        <Link href={next.href} className={`${wdButton({ variant: urgent ? "gold" : "ink", size: "lg" })} ${FOCUS} w-full sm:w-auto`}>
+          {next.cta}
+        </Link>
+      </section>
 
-        {dataError && (
-          <div className="mb-8">
-            <ErrorState compact title="Sebagian data belum termuat" body="Booking atau pencairan belum bisa ditampilkan. Periksa koneksimu." onRetry={retry} />
-          </div>
-        )}
+      {dataError && (
+        <div className="mt-8">
+          <ErrorState compact title="Sebagian data belum termuat" body="Booking atau pencairan belum bisa ditampilkan. Periksa koneksimu." onRetry={retry} />
+        </div>
+      )}
 
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-8">
-          <div className="flex flex-col gap-10 lg:col-span-7">
-            {/* Requests first: they are the only thing that expires if ignored. */}
-            <section aria-labelledby="permintaan-baru">
-              <SectionHead id="permintaan-baru" title="Permintaan baru" count={bookings ? requested.length : undefined} href={requested.length > 2 ? "/vendor/bookings" : undefined} />
-              {bookings === null && !dataError ? (
-                <div className="grid gap-3">
-                  <BookingRowSkeleton />
+      {/* Four plain figures: what needs an answer, what is coming, and the money. */}
+      <section aria-label="Ringkasan" className="mt-10">
+        <dl className="grid grid-cols-2 gap-y-6 border-t border-wd-line pt-6 lg:grid-cols-4 lg:divide-x lg:divide-wd-line">
+          <Figure label="Permintaan baru" value={bookings ? <CountUp value={requested.length} /> : "-"} note="menunggu jawabanmu" />
+          <Figure label="Acara dikonfirmasi" value={bookings ? <CountUp value={confirmedCount} /> : "-"} note="sudah kamu terima" />
+          <Figure label="Siap dicairkan" value={payouts ? <CountUp value={ready} format={formatRupiah} /> : "-"} note={ready > 0 ? "sudah dipotong komisi" : "muncul setelah acara selesai"} href="/vendor/payouts" />
+          <Figure label="Ditahan Dana Aman" value={bookings ? <CountUp value={held} format={formatRupiah} /> : "-"} note="dibayar client, menunggu acara" />
+        </dl>
+      </section>
+
+      <div className="mt-14 grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-14">
+        <div className="flex flex-col gap-12 lg:col-span-7">
+          {/* Requests first: they are the only thing that expires if ignored. */}
+          <section aria-labelledby="permintaan-baru">
+            <SectionHead id="permintaan-baru" title="Permintaan" em="baru" count={bookings ? requested.length : undefined} href={requested.length > 2 ? "/vendor/bookings" : undefined} />
+            {bookings === null && !dataError ? (
+              <div className="border-t border-wd-line">
+                <BookingRowSkeleton />
+              </div>
+            ) : requested.length === 0 ? (
+              <Empty art="envelope">Belum ada permintaan baru. Permintaan booking dari client muncul di sini lebih dulu.</Empty>
+            ) : (
+              <StaggerList className="border-t border-wd-line">
+                {requested.slice(0, 2).map((b) => (
+                  <StaggerItem key={b.id}>
+                    <BookingRow booking={b} />
+                  </StaggerItem>
+                ))}
+              </StaggerList>
+            )}
+          </section>
+
+          <section aria-labelledby="acara-terdekat">
+            <SectionHead id="acara-terdekat" title="Acara" em="terdekat" href="/vendor/bookings" linkLabel="Semua booking" />
+            {bookings === null && !dataError ? (
+              <div className="border-t border-wd-line">
+                <BookingRowSkeleton />
+                <BookingRowSkeleton />
+              </div>
+            ) : upcoming.length === 0 ? (
+              <Empty art="clipboard">Belum ada acara yang dikonfirmasi. Booking yang sudah kamu terima akan muncul di sini, urut dari yang paling dekat.</Empty>
+            ) : (
+              <StaggerList className="border-t border-wd-line">
+                {upcoming.map((b) => (
+                  <StaggerItem key={b.id}>
+                    <BookingRow booking={b} />
+                  </StaggerItem>
+                ))}
+              </StaggerList>
+            )}
+          </section>
+        </div>
+
+        <div className="flex flex-col gap-12 lg:col-span-5">
+          <section aria-labelledby="ulasan-vendor">
+            <SectionHead id="ulasan-vendor" title="Ulasan" em="terbaru" />
+            {reviews.length === 0 ? (
+              <Empty art="people">Belum ada ulasan. Client bisa memberi ulasan setelah acaranya selesai.</Empty>
+            ) : (
+              <>
+                <ReviewSummary reviews={reviews} />
+                <div className="mt-4">
+                  <ReviewList reviews={reviews.slice(0, 2)} />
                 </div>
-              ) : requested.length === 0 ? (
-                <p className="rounded-xl border border-dashed border-dc-line-strong bg-dc-white/70 px-5 py-6 text-sm leading-relaxed text-dc-text-2">
-                  Belum ada permintaan baru. Permintaan booking dari client muncul di sini lebih dulu.
-                </p>
-              ) : (
-                <StaggerList>
-                  {requested.slice(0, 2).map((b) => (
-                    <StaggerItem key={b.id}>
-                      <BookingRow booking={b} />
-                    </StaggerItem>
-                  ))}
-                </StaggerList>
-              )}
-            </section>
+                {reviews.length > 2 && <p className="mt-2 text-sm text-wd-muted">Menampilkan 2 dari {reviews.length} ulasan.</p>}
+              </>
+            )}
+          </section>
 
-            <section aria-labelledby="acara-terdekat">
-              <SectionHead id="acara-terdekat" title="Acara terdekat" href="/vendor/bookings" linkLabel="Semua booking" />
-              {bookings === null && !dataError ? (
-                <div className="grid gap-3">
-                  <BookingRowSkeleton />
-                  <BookingRowSkeleton />
-                </div>
-              ) : upcoming.length === 0 ? (
-                <p className="rounded-xl border border-dashed border-dc-line-strong bg-dc-white/70 px-5 py-6 text-sm leading-relaxed text-dc-text-2">
-                  Belum ada acara yang dikonfirmasi. Booking yang sudah kamu terima akan muncul di sini, urut dari yang paling dekat.
-                </p>
-              ) : (
-                <StaggerList>
-                  {upcoming.map((b) => (
-                    <StaggerItem key={b.id}>
-                      <BookingRow booking={b} />
-                    </StaggerItem>
-                  ))}
-                </StaggerList>
-              )}
-            </section>
-          </div>
-
-          <div className="flex flex-col gap-10 lg:col-span-5">
-            {/* Money: what is ready to be transferred vs what escrow still holds. */}
-            <section aria-labelledby="uang-vendor">
-              <SectionHead id="uang-vendor" title="Pencairan" href="/vendor/payouts" linkLabel="Rincian" />
-              <Card className="overflow-hidden p-0">
-                {payouts === null && bookings === null && !dataError ? (
-                  <SkeletonGroup label="Memuat pencairan" className="p-6">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="mt-3 h-10 w-48" />
-                  </SkeletonGroup>
-                ) : (
-                  <>
-                    <div className="p-6">
-                      <p className="text-sm font-medium text-dc-text-2">Siap dicairkan Admin</p>
-                      <p className="mt-1 font-heading text-[2.4rem] font-semibold leading-tight text-dc-ink [font-variant-numeric:lining-nums_tabular-nums]">
-                        <CountUp value={ready} format={formatRupiah} />
-                      </p>
-                      <p className="mt-1 text-sm text-dc-text-3">{ready > 0 ? "Sudah dipotong komisi, ditransfer Admin ke rekeningmu." : "Muncul setelah client menandai acara selesai."}</p>
-                    </div>
-                    <div className="flex items-center justify-between gap-4 border-t border-dc-line bg-dc-cream/60 px-6 py-4">
-                      <div>
-                        <p className="text-sm font-medium text-dc-text-2">Ditahan escrow</p>
-                        <p className="text-xs text-dc-text-3">Dibayar client, menunggu acara selesai</p>
-                      </div>
-                      <p className="shrink-0 text-lg font-bold tabular-nums text-dc-ink">{formatRupiah(held)}</p>
-                    </div>
-                  </>
-                )}
-              </Card>
-            </section>
-
-            <section aria-labelledby="ulasan-vendor">
-              <SectionHead
-                id="ulasan-vendor"
-                title="Ulasan terbaru"
-                href={profile.status === "approved" ? `/vendors/${user.id}` : undefined}
-                linkLabel="Halaman publik"
-              />
-              {reviews.length === 0 ? (
-                <p className="rounded-xl border border-dashed border-dc-line-strong bg-dc-white/70 px-5 py-6 text-sm leading-relaxed text-dc-text-2">
-                  Belum ada ulasan. Client bisa memberi ulasan setelah acaranya selesai.
-                </p>
-              ) : (
-                <>
-                  <ReviewSummary reviews={reviews} />
-                  <div className="mt-4">
-                    <ReviewList reviews={reviews.slice(0, 2)} />
-                  </div>
-                  {reviews.length > 2 && <p className="mt-2 text-sm text-dc-text-3">Menampilkan 2 dari {reviews.length} ulasan.</p>}
-                </>
-              )}
-            </section>
-
-            {!storefrontDone && (
-              <section aria-labelledby="kelengkapan">
-                <SectionHead id="kelengkapan" title="Kelengkapan etalase" />
-                <Card className="divide-y divide-dc-line p-0">
-                  {checklist.map((c) => (
-                    <Link
-                      key={c.label}
-                      href={c.href}
-                      className="flex min-h-14 items-center gap-3 px-5 py-3 text-sm transition-colors first:rounded-t-xl last:rounded-b-xl hover:bg-dc-ivory focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-dc-gold"
-                    >
-                      <span
-                        aria-hidden
-                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${c.done ? "border-dc-success bg-dc-success text-dc-white" : "border-dc-line-strong"}`}
-                      >
+          {!storefrontDone && (
+            <section aria-labelledby="kelengkapan">
+              <SectionHead id="kelengkapan" title="Kelengkapan" em="etalase" />
+              <ul className="border-t border-wd-line">
+                {checklist.map((c) => (
+                  <li key={c.label}>
+                    <Link href={c.href} className={`flex min-h-14 items-center gap-3 border-b border-wd-line px-1 py-3 text-sm transition-colors hover:bg-wd-paper ${FOCUS}`}>
+                      <span aria-hidden className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${c.done ? "border-wd-ok bg-wd-ok text-white" : "border-wd-line-2"}`}>
                         {c.done && (
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M5 12l5 5L19 7" />
                           </svg>
                         )}
                       </span>
-                      <span className="flex-1 font-medium text-dc-ink">{c.label}</span>
-                      <span className="text-dc-text-3">{c.detail}</span>
+                      <span className="flex-1 font-semibold text-wd-ink">{c.label}</span>
+                      <span className="text-wd-muted">{c.detail}</span>
                       <span className="sr-only">{c.done ? ", selesai" : ", belum selesai"}</span>
                     </Link>
-                  ))}
-                </Card>
-              </section>
-            )}
-          </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
       </div>
-    </>,
+    </div>,
   );
 }
 
-function SectionHead({ id, title, count, href, linkLabel = "Lihat semua" }: { id: string; title: string; count?: number; href?: string; linkLabel?: string }) {
+function Figure({ label, value, note, href }: { label: string; value: React.ReactNode; note: string; href?: string }) {
+  return (
+    <div className="px-0 lg:px-6 lg:first:pl-0">
+      <dt className="text-sm font-semibold text-wd-text">
+        {href ? (
+          <Link href={href} className={`underline-offset-4 hover:underline ${FOCUS}`}>
+            {label}
+          </Link>
+        ) : (
+          label
+        )}
+      </dt>
+      <dd className="wd-display mt-1 break-words text-[clamp(1.6rem,2.6vw,2.2rem)] leading-tight tabular-nums">{value}</dd>
+      <dd className="mt-0.5 text-sm text-wd-muted">{note}</dd>
+    </div>
+  );
+}
+
+/** An empty list: a small character and one honest sentence, no dashed box. */
+function Empty({ art, children }: { art: ArtKind; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-4 border-t border-wd-line py-5">
+      <span aria-hidden className="h-14 w-14 shrink-0 rounded-2xl bg-wd-accent-wash p-2.5">
+        <ClientArt kind={art} />
+      </span>
+      <p className="text-sm leading-relaxed text-wd-text">{children}</p>
+    </div>
+  );
+}
+
+function SectionHead({ id, title, em, count, href, linkLabel = "Lihat semua" }: { id: string; title: string; em?: string; count?: number; href?: string; linkLabel?: string }) {
   return (
     <div className="mb-3 flex items-end justify-between gap-3">
-      <h2 id={id} className="flex items-baseline gap-2 font-heading text-[1.7rem] leading-tight text-dc-ink">
-        {title}
-        {count !== undefined && count > 0 && (
-          <span className="inline-flex min-w-7 items-center justify-center rounded-full bg-dc-gold-soft px-2 py-0.5 font-sans text-sm font-bold text-dc-clay tabular-nums">{count}</span>
-        )}
+      <h2 id={id} className="wd-title flex items-baseline gap-2 text-[clamp(1.4rem,2.2vw,1.8rem)] leading-tight">
+        <span>
+          {title}
+          {em && (
+            <>
+              {" "}
+              <em>{em}</em>
+            </>
+          )}
+        </span>
+        {count !== undefined && count > 0 && <span className="inline-flex min-w-7 items-center justify-center rounded-full bg-wd-accent px-2 py-0.5 font-sans text-sm font-bold text-wd-ink tabular-nums">{count}</span>}
       </h2>
       {href && (
-        <Link href={href} className="inline-flex min-h-11 shrink-0 items-center text-sm font-semibold text-dc-clay underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold">
+        <Link href={href} className={`inline-flex min-h-11 shrink-0 items-center text-sm font-semibold text-wd-accent-ink underline underline-offset-4 hover:text-wd-ink ${FOCUS}`}>
           {linkLabel}
         </Link>
       )}

@@ -82,7 +82,7 @@ function VendorCalendarContent({ user }: { user: CurrentUser }) {
   const atStart = y === now.getFullYear() && m === now.getMonth();
 
   return (
-    <Shell user={user} navItems={VENDOR_NAV} loginPath="/login" eyebrow="Vendor">
+    <Shell user={user} navItems={VENDOR_NAV} tone="wd" loginPath="/login" eyebrow="Vendor">
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
         <PageHeader
           eyebrow="Kalender"

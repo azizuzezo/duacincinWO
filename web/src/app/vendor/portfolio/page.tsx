@@ -161,7 +161,7 @@ function VendorPortfolioContent({ user }: { user: CurrentUser }) {
   const inBatch = queue.length;
 
   return (
-    <Shell user={user} navItems={VENDOR_NAV} loginPath="/login" eyebrow="Vendor">
+    <Shell user={user} navItems={VENDOR_NAV} tone="wd" loginPath="/login" eyebrow="Vendor">
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
         <EtalaseTabs publicId={profile?.status === "approved" ? user.id : undefined} status={profile?.status ?? null} />
 

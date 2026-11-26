@@ -105,7 +105,7 @@ function VendorPackagesContent({ user }: { user: CurrentUser }) {
   const current = editing && editing !== "new" ? packages.find((p) => p.id === editing) : undefined;
 
   return (
-    <Shell user={user} navItems={VENDOR_NAV} loginPath="/login" eyebrow="Vendor">
+    <Shell user={user} navItems={VENDOR_NAV} tone="wd" loginPath="/login" eyebrow="Vendor">
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
         <EtalaseTabs publicId={profile?.status === "approved" ? user.id : undefined} status={profile?.status ?? null} />
 
@@ -149,7 +149,7 @@ function VendorPackagesContent({ user }: { user: CurrentUser }) {
                 <span className="h-2 w-2 rounded-full border border-dc-line-strong" />
               </span>
               <p className="text-sm leading-relaxed text-dc-text-2">
-                <span className="font-semibold text-dc-ink">Dana ditahan escrow.</span> Saat calon pengantin memesan paketmu, pembayarannya ditahan DuaCincin dan diteruskan ke kamu setelah acara selesai.
+                <span className="font-semibold text-dc-ink">Dana ditahan Dana Aman.</span> Saat calon pengantin memesan paketmu, pembayarannya ditahan DuaCincin dan diteruskan ke kamu setelah acara selesai.
               </p>
             </div>
 

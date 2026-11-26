@@ -119,12 +119,24 @@ function NavLinks({ navItems, active, onNavigate, layoutId }: { navItems: NavIte
   );
 }
 
+/** The profile picture when there is one, else the initials. */
+function Face({ user, className }: { user: CurrentUser; className: string }) {
+  return (
+    <span className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-dc-gold/60 bg-dc-gold-wash font-heading font-semibold text-dc-clay ${className}`}>
+      {user.avatar_url ? (
+        // eslint-disable-next-line @next/next/no-img-element -- small square avatar
+        <img src={user.avatar_url} alt="" className="h-full w-full object-cover" />
+      ) : (
+        initials(user)
+      )}
+    </span>
+  );
+}
+
 function UserCard({ user, eyebrow, onLogout }: { user: CurrentUser; eyebrow?: string; onLogout: () => void }) {
   return (
     <div className="flex items-center gap-3 rounded-lg border border-dc-line bg-dc-surface p-2.5">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-dc-gold/60 bg-dc-gold-wash font-heading text-base font-semibold text-dc-clay">
-        {initials(user)}
-      </div>
+      <Face user={user} className="h-10 w-10 text-base" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-dc-ink">{user.full_name || user.email}</p>
         {eyebrow && <p className="text-xs text-dc-text-3">{eyebrow}</p>}
@@ -154,6 +166,7 @@ export function Shell({
   user,
   navItems,
   eyebrow,
+  tone,
   children,
 }: {
   user: CurrentUser;
@@ -161,6 +174,8 @@ export function Shell({
   /** Kept for callers; logging out now always lands on the home page. */
   loginPath?: string;
   eyebrow?: string;
+  /** "wd": the Putih look (white canvas, soft gold) used by the vendor area. */
+  tone?: "wd";
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -204,7 +219,7 @@ export function Shell({
   }
 
   return (
-    <div className="dc-app min-h-screen bg-dc-canvas lg:flex">
+    <div {...(tone === "wd" ? { "data-wd-public": "" } : {})} className={`dc-app min-h-screen bg-dc-canvas lg:flex ${tone === "wd" ? "wd" : ""}`}>
       <a href="#konten" className="dc-skip">
         Langsung ke konten
       </a>
@@ -242,9 +257,9 @@ export function Shell({
             aria-label="Buka menu dan akun"
             aria-expanded={mobileOpen}
             aria-controls="shell-drawer"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-dc-gold/60 bg-dc-gold-wash font-heading text-base font-semibold text-dc-clay"
+            className="flex h-11 w-11 items-center justify-center rounded-full"
           >
-            {initials(user)}
+            <Face user={user} className="h-11 w-11 text-base" />
           </button>
         </div>
       </header>
