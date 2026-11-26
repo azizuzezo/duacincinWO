@@ -81,11 +81,17 @@ const BASE: Banner[] = [
     href: "/register?role=vendor",
     img: "/banner/foto-venue-taman",
     pos: "object-[55%_70%]",
+    phones: [
+      { src: "/showcase/pages/v-booking-m.webp", alt: "" },
+      { src: "/showcase/pages/v-dashboard-m.webp", alt: "Dashboard vendor DuaCincin di ponsel: permintaan baru dan acara terdekat" },
+      { src: "/showcase/pages/v-pencairan-m.webp", alt: "" },
+    ],
     tone: "dark",
     kicker: "Untuk vendor",
     title: "Punya usaha pernikahan? Terima booking di sini",
     line: "Dana cair setelah acara selesai. Komisi ditambahkan di atas hargamu.",
     cta: "Daftar sebagai vendor",
+    chips: ["Etalase dan portofolio", "Booking lewat chat", "Pencairan jelas"],
   },
 ];
 
@@ -109,6 +115,7 @@ function Slide({ b, i, n, first }: { b: Banner; i: number; n: number; first: boo
     <>
       {b.phones ? (
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_75%_40%,#4a3a2c_0%,#2b231d_55%,#1f1915_100%)]">
+          {b.img && <Image src={`${b.img}.webp`} alt="" fill sizes="(min-width: 1280px) 1180px, 92vw" className={`object-cover opacity-35 ${b.pos}`} />}
           <div className="absolute right-[4%] top-1/2 hidden h-[86%] -translate-y-1/2 sm:block lg:right-[8%]">
             {b.phones.map((p, k) => (
               <div
