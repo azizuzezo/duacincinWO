@@ -105,6 +105,11 @@ export const ACTION_LABEL: Record<string, string> = {
   "staff.create": "Menambah anggota tim",
   "whatsapp.admin_send": "Mengirim pesan WhatsApp",
   "chat.view": "Membuka percakapan klien dan vendor",
+  "article.create": "Membuat artikel",
+  "article.update": "Mengubah artikel",
+  "article.publish": "Menerbitkan artikel",
+  "article.unpublish": "Menarik artikel dari terbit",
+  "article.delete": "Menghapus artikel",
 };
 
 export const SANCTION_LABEL: Record<string, string> = {

@@ -25,7 +25,7 @@ export const PHONE_FRAME_RATIO = "100 / 214.5";
  * on a dark band; everything else on the ivory app bar. */
 function captureTop(src?: string): { bar: string; dark: boolean } | null {
   if (!src) return null;
-  if (/chat/.test(src)) return { bar: "bg-dc-white", dark: false };
+  if (/chat|k5-konsultan/.test(src)) return { bar: "bg-dc-white", dark: false };
   if (/v-daftar/.test(src)) return { bar: "bg-[#2a231d]", dark: true };
   return null;
 }

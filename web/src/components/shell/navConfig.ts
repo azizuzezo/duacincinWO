@@ -58,6 +58,7 @@ export const ADMIN_NAV: NavItem[] = [
   { href: "/internal/admin/pesan", group: "Layanan", label: "Pesan Vendor", icon: ICON.chat },
   { href: "/internal/admin/whatsapp", group: "Layanan", label: "Kirim WhatsApp", icon: ICON.send },
   { href: "/internal/admin/inspirasi", group: "Layanan", label: "Inspirasi", icon: ICON.image },
+  { href: "/internal/admin/artikel", group: "Layanan", label: "Artikel", icon: ICON.checklist },
   { href: "/internal/admin/tim", group: "Sistem", label: "Tim Internal", icon: ICON.users },
   { href: "/internal/admin/kirana", group: "Sistem", label: "Model Kirana", icon: ICON.chat },
   { href: "/internal/admin/audit-log", group: "Sistem", label: "Audit Log", icon: ICON.checklist },

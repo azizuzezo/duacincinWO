@@ -19,23 +19,36 @@ import {
   ARTICLES,
   articleBySlug,
   formatArticleDate,
+  type Article,
 } from "@/content/artikel/registry";
+import { RichBody } from "@/components/public/artikel/RichBody";
+import { allArticles, fetchDbArticle, type DbArticle } from "@/lib/articles";
 import { categoryLabel } from "@/lib/api";
 import { OPEN_GRAPH_BASE, SITE_URL } from "@/lib/site";
 
-// Every article is known at build time (src/content/artikel/registry.ts), so
-// the pages are static and an unknown slug is a 404.
+// The static MDX articles (src/content/artikel/registry.ts) are built ahead of
+// time. Articles written in the admin panel are fetched on first visit and
+// cached for 2 minutes; a slug that is neither is a 404.
 export function generateStaticParams() {
   return ARTICLES.map((a) => ({ slug: a.slug }));
 }
-export const dynamicParams = false;
+export const dynamicParams = true;
+export const revalidate = 120;
+
+async function resolve(slug: string): Promise<{ a: Article; db: DbArticle | null } | null> {
+  const fixed = articleBySlug(slug);
+  if (fixed) return { a: fixed, db: null };
+  const db = await fetchDbArticle(slug);
+  return db ? { a: db, db } : null;
+}
 
 export async function generateMetadata({
   params,
 }: PageProps<"/artikel/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const a = articleBySlug(slug);
-  if (!a) return {};
+  const found = await resolve(slug);
+  if (!found) return {};
+  const a = found.a;
   const url = `/artikel/${a.slug}`;
   return {
     title: a.title,
@@ -64,11 +77,12 @@ export default async function ArtikelPage({
   params,
 }: PageProps<"/artikel/[slug]">) {
   const { slug } = await params;
-  const a = articleBySlug(slug);
-  if (!a) notFound();
-  const { default: Body } = await import(`@/content/artikel/${a.slug}.mdx`);
+  const found = await resolve(slug);
+  if (!found) notFound();
+  const { a, db } = found;
+  const Body = db ? null : (await import(`@/content/artikel/${a.slug}.mdx`)).default;
   const url = `${SITE_URL}/artikel/${a.slug}`;
-  const others = ARTICLES.filter((o) => o.slug !== a.slug).slice(0, 3);
+  const others = (await allArticles()).filter((o) => o.slug !== a.slug).slice(0, 3);
   const crumbs = [
     { name: "Artikel", path: "/artikel" },
     { name: a.title, path: `/artikel/${a.slug}` },
@@ -78,7 +92,7 @@ export default async function ArtikelPage({
     "@type": "BlogPosting",
     headline: a.title,
     description: a.description,
-    image: [`${SITE_URL}${a.image}`],
+    image: [a.image.startsWith("http") ? a.image : `${SITE_URL}${a.image}`],
     // Dates in the registry are days; publish time is 08:00 WIB.
     datePublished: `${a.published}T08:00:00+07:00`,
     dateModified: `${a.updated ?? a.published}T08:00:00+07:00`,
@@ -133,7 +147,7 @@ export default async function ArtikelPage({
             </p>
             <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
               <p className="text-sm text-wd-muted">
-                Tim DuaCincin · {a.updated ? "Diperbarui " : ""}
+                {db?.author ?? "Tim DuaCincin"} · {a.updated ? "Diperbarui " : ""}
                 <time dateTime={a.updated ?? a.published}>
                   {formatArticleDate(a.updated ?? a.published)}
                 </time>{" "}
@@ -154,6 +168,7 @@ export default async function ArtikelPage({
                 alt={a.imageAlt}
                 fill
                 priority
+                unoptimized={a.image.startsWith("http")}
                 sizes="(min-width: 1040px) 980px, 100vw"
                 className="object-cover"
               />
@@ -171,7 +186,7 @@ export default async function ArtikelPage({
               id="isi-artikel"
               className="mx-auto max-w-[720px] xl:mx-0 xl:max-w-none [&_h2]:font-wd-sans [&_h2]:text-[1.55rem] [&_h2]:font-[650] [&_h2]:tracking-[-0.01em] [&_h3]:text-[1.15rem]"
             >
-              <Body />
+              {db ? <RichBody doc={db.body} /> : Body ? <Body /> : null}
 
               <aside
                 aria-labelledby="cari-vendor-judul"
@@ -187,6 +202,7 @@ export default async function ArtikelPage({
                   Vendor terverifikasi, harga terbuka, pembayaran ditahan DuaCincin
                   sampai acaramu selesai.
                 </p>
+                {a.categories.length > 0 && (
                 <ul className="mt-4 flex flex-wrap gap-2">
                   {a.categories.map((c) => (
                     <li key={c}>
@@ -199,6 +215,7 @@ export default async function ArtikelPage({
                     </li>
                   ))}
                 </ul>
+                )}
                 <Link
                   href="/register"
                   className={wdButton({ className: "mt-6" })}

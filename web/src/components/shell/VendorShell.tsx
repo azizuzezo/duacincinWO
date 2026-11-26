@@ -14,6 +14,7 @@ import { AccountMenu } from "@/components/home/AccountMenu";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import { useFocusTrap } from "@/components/ui/useFocusTrap";
 import type { CurrentUser } from "@/lib/api";
+import { useVendorRequests } from "@/lib/useVendorQueues";
 import { EASE, SPRING_SNAPPY, useReducedMotion } from "@/lib/motion";
 
 import { VENDOR_NAV } from "./navConfig";
@@ -43,10 +44,20 @@ function NavIcon({ paths, size = 20 }: { paths: readonly string[]; size?: number
   );
 }
 
+/** Open-work count: a small gold pill that changes the moment the number does. */
+function Count({ n }: { n: number }) {
+  return (
+    <span aria-label={`${n} menunggu`} className="flex h-5 min-w-5 items-center justify-center rounded-full bg-wd-accent px-1.5 text-[11px] font-bold tabular-nums text-wd-ink">
+      {n > 99 ? "99+" : n}
+    </span>
+  );
+}
+
 export function VendorShell({ user, children }: { user: CurrentUser; navItems?: NavItem[]; loginPath?: string; eyebrow?: string; tone?: "wd"; children: React.ReactNode }) {
   const pathname = usePathname();
   const reduced = useReducedMotion();
-  const items = VENDOR_NAV;
+  const requests = useVendorRequests(true);
+  const items = VENDOR_NAV.map((i) => (i.href === "/vendor/bookings" && requests > 0 ? { ...i, badgeCount: requests } : i));
   const active = activeHref(items, pathname);
   const tabs = items.filter((i) => i.tab).slice(0, 4);
   const more = items.filter((i) => !tabs.includes(i));
@@ -90,6 +101,7 @@ export function VendorShell({ user, children }: { user: CurrentUser; navItems?: 
                       <NavIcon paths={item.icon} size={18} />
                     </span>
                     {item.label}
+                    {!!item.badgeCount && <Count n={item.badgeCount} />}
                     {on && <motion.span layoutId={reduced ? undefined : "vendor-underline"} transition={SPRING_SNAPPY} aria-hidden className="absolute inset-x-2 -bottom-px h-[3px] rounded-full bg-wd-accent-deep" />}
                   </Link>
                 </li>
@@ -124,7 +136,14 @@ export function VendorShell({ user, children }: { user: CurrentUser; navItems?: 
           return (
             <Link key={item.href} href={item.href} aria-current={on ? "page" : undefined} className={`relative flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold ${on ? "text-wd-accent-ink" : "text-wd-muted"} ${FOCUS}`}>
               {on && <motion.span layoutId={reduced ? undefined : "vendor-tab"} transition={SPRING_SNAPPY} aria-hidden className="absolute top-0 h-[3px] w-8 rounded-b-full bg-wd-accent-deep" />}
-              <NavIcon paths={item.icon} size={21} />
+              <span className="relative">
+                <NavIcon paths={item.icon} size={21} />
+                {!!item.badgeCount && (
+                  <span className="absolute -right-3 -top-1.5">
+                    <Count n={item.badgeCount} />
+                  </span>
+                )}
+              </span>
               <span className="max-w-full truncate px-1">{item.short ?? item.label}</span>
             </Link>
           );

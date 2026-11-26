@@ -208,6 +208,42 @@ func nonNil(s []string) []string {
 	return s
 }
 
+// ResubmitProfile lets a vendor whose profile was rejected send it back for
+// review after fixing it. Editing a rejected profile does not change its
+// status by itself, so without this a rejected vendor could never be listed.
+func ResubmitProfile(deps *Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		claims, ok := auth.ClaimsFromContext(r.Context())
+		if !ok {
+			httpx.Error(w, http.StatusUnauthorized, "belum login")
+			return
+		}
+		current, err := deps.Vendors.GetByUserID(r.Context(), claims.UserID)
+		if err != nil {
+			if err == repository.ErrNotFound {
+				httpx.Error(w, http.StatusNotFound, "profil belum dibuat")
+				return
+			}
+			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
+			return
+		}
+		if current.Status != "rejected" {
+			httpx.Error(w, http.StatusConflict, "profilmu tidak sedang ditolak")
+			return
+		}
+		profile, err := deps.Vendors.Resubmit(r.Context(), claims.UserID)
+		if err != nil {
+			if err == repository.ErrNotFound {
+				httpx.Error(w, http.StatusConflict, "profilmu tidak sedang ditolak")
+				return
+			}
+			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
+			return
+		}
+		httpx.JSON(w, http.StatusOK, ownProfileDTO(profile))
+	}
+}
+
 // MyProfile returns the authenticated Vendor's own profile + portfolio,
 // including its current approval status.
 func MyProfile(deps *Deps) http.HandlerFunc {

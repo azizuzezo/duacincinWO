@@ -5,7 +5,7 @@ import { PageHero } from "@/components/landing/PageHero";
 import { FeaturedArticle } from "@/components/public/artikel/ArticleCard";
 import { ArticleGrid } from "@/components/public/artikel/ArticleGrid";
 import { JsonLd, ORGANIZATION_LD } from "@/components/seo/JsonLd";
-import { ARTICLES } from "@/content/artikel/registry";
+import { allArticles } from "@/lib/articles";
 import { OPEN_GRAPH_BASE, SITE_URL } from "@/lib/site";
 
 const TITLE = "Artikel persiapan pernikahan";
@@ -18,7 +18,11 @@ export const metadata: Metadata = {
   openGraph: { ...OPEN_GRAPH_BASE, title: TITLE, description: DESCRIPTION, url: "/artikel", type: "website" },
 };
 
-export default function ArtikelIndexPage() {
+// Static and admin-written articles; the admin ones show up within 2 minutes of publishing.
+export const revalidate = 120;
+
+export default async function ArtikelIndexPage() {
+  const ARTICLES = await allArticles();
   const listLd = {
     "@context": "https://schema.org",
     "@type": "Blog",

@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-import { ARTICLES } from "@/content/artikel/registry";
+import { allArticles } from "@/lib/articles";
 import { VENDOR_CATEGORIES, vendorCategoryList, vendorCities } from "@/lib/api";
 import { cityFromSlug, citySlug, fetchAllVendors } from "@/lib/server-api";
 import { MIN_VENDORS_TO_INDEX } from "@/lib/seo";
@@ -16,6 +16,7 @@ export const revalidate = 3600;
 // API is down the static part is still served.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const fixed = ["", "/vendors", "/artikel", "/cara-kerja", "/untuk-vendor", "/bantuan", "/inspirasi", "/tentang-kami", "/kirana", "/legal/client-tos", "/legal/vendor-agreement"];
+  const ARTICLES = await allArticles();
   const vendors = (await fetchAllVendors()) ?? [];
   // Category x city pages with at least MIN_VENDORS_TO_INDEX vendors (the
   // rest are noindex, see app/kategori/[kategori]/[kota]/page.tsx).

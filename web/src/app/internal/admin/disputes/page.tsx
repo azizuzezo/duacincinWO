@@ -1,22 +1,18 @@
 "use client";
 
-import { AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { AdmAvatar, AdmEmpty, AdmError, AdmHead, AdmList, AdmListItem, AdmPill, AdmRowsSkeleton, AdmTabs, ADM_DANGER_BTN, ADM_FIELD, ADM_FOCUS } from "@/components/admin/admUi";
+import { wdButton } from "@/components/home/ui";
 import { ADMIN_NAV } from "@/components/shell/navConfig";
-import { Shell } from "@/components/shell/Shell";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { AdminShell } from "@/components/shell/AdminShell";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { PageHeader } from "@/components/ui/PageHeader";
-import { Sheet } from "@/components/ui/Sheet";
-import { TabPanel, Tabs } from "@/components/ui/Tabs";
+import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { WithUser } from "@/components/WithUser";
 import { apiGet, apiPost, ApiError, type CurrentUser, type Dispute } from "@/lib/api";
-import { ConfirmDialog, ErrorBanner, Monogram, PAGE, QueueItem, relatif, RowsSkeleton, SANCTION_LABEL, tanggal, tanggalJam, useMediaQuery } from "../../_ui";
+import { relatif, SANCTION_LABEL, tanggal, tanggalJam } from "../../_ui";
 
 export default function AdminDisputesPage() {
   return (
@@ -37,289 +33,268 @@ const SANCTIONS: { value: Sanction; label: string; effect: string; severe: boole
   { value: "terminate", label: SANCTION_LABEL.terminate, effect: "Akun vendor diputus permanen dan tidak bisa masuk lagi.", severe: true },
 ];
 
+type TabKey = "open" | "resolved";
+
 function vendorName(d: Dispute) {
   return d.vendor_business_name ?? `Vendor #${d.vendor_id.slice(0, 8)}`;
 }
 
+function sanctionTone(s: string) {
+  return s === "none" ? "ok" : s === "warning" ? "gold" : "danger";
+}
+
 function AdminDisputesContent({ user }: { user: CurrentUser }) {
-  const [tab, setTab] = useState<"open" | "resolved">("open");
-  const [disputes, setDisputes] = useState<Dispute[]>([]);
-  const [loadedTab, setLoadedTab] = useState<string | null>(null);
+  const [tab, setTab] = useState<TabKey>("open");
+  const [lists, setLists] = useState<{ open: Dispute[]; resolved: Dispute[] }>({ open: [], resolved: [] });
+  const [loaded, setLoaded] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
   const [choice, setChoice] = useState<Sanction | null>(null);
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const desktop = useMediaQuery("(min-width: 1024px)");
+  const [step, setStep] = useState<"case" | "confirm">("case");
+  const [typed, setTyped] = useState("");
   const { show } = useToast();
 
   function load() {
-    apiGet<Dispute[]>(`/api/v1/admin/disputes/${tab === "open" ? "open" : "resolved"}`)
-      .then((data) => {
-        setDisputes(data ?? []);
+    Promise.all([apiGet<Dispute[]>("/api/v1/admin/disputes/open"), apiGet<Dispute[]>("/api/v1/admin/disputes/resolved")])
+      .then(([open, resolved]) => {
+        setLists({ open: open ?? [], resolved: resolved ?? [] });
         setLoadFailed(false);
       })
       .catch((err) => {
         setLoadFailed(true);
         setError(err instanceof ApiError ? err.message : "Gagal memuat sengketa.");
       })
-      .finally(() => setLoadedTab(tab));
+      .finally(() => setLoaded(true));
   }
 
   useEffect(() => {
     queueMicrotask(load);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab]);
+  }, []);
+
+  const disputes = lists[tab];
+  const isOpen = tab === "open";
+  const active = [...lists.open, ...lists.resolved].find((d) => d.id === activeId) ?? null;
+  const activeIsOpen = !!active && active.status !== "resolved" && lists.open.some((d) => d.id === active.id);
+  const chosen = SANCTIONS.find((s) => s.value === choice);
+  const typedOk = choice !== "terminate" || (!!active && typed.trim().toLowerCase() === vendorName(active).trim().toLowerCase());
+
+  function openCase(id: string) {
+    setActiveId(id);
+    setChoice(null);
+    setStep("case");
+    setTyped("");
+    setError(null);
+  }
+
+  function closeCase() {
+    if (busy) return;
+    setActiveId(null);
+    setChoice(null);
+    setStep("case");
+    setTyped("");
+  }
 
   async function handleResolve() {
-    const d = disputes.find((x) => x.id === activeId);
-    if (!d || !choice) return;
+    const d = active;
+    if (!d || !choice || !typedOk) return;
     setBusy(true);
     setError(null);
     try {
       await apiPost(`/api/v1/admin/disputes/${d.id}/resolve`, { sanction: choice });
       show(`Sengketa ${vendorName(d)} diputuskan: ${SANCTION_LABEL[choice]}.`, "success");
-      setConfirmOpen(false);
-      setSheetOpen(false);
       setActiveId(null);
       setChoice(null);
+      setStep("case");
+      setTyped("");
       load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Gagal menyelesaikan sengketa.");
-      setConfirmOpen(false);
+      setStep("case");
     } finally {
       setBusy(false);
     }
   }
 
-  function select(id: string) {
-    setActiveId(id);
-    setChoice(null);
-    if (!desktop) setSheetOpen(true);
-  }
-
-  const loading = loadedTab !== tab;
-  const isOpen = tab === "open";
-  // On desktop the first case is open by default so the pane is never blank.
-  const active = disputes.find((d) => d.id === activeId) ?? (desktop ? disputes[0] : undefined);
-  const chosen = SANCTIONS.find((s) => s.value === choice);
-
-  const caseView = active ? (
-    <CaseView
-      d={active}
-      isOpen={isOpen}
-      choice={choice}
-      onChoose={setChoice}
-      onDecide={() => {
-        setActiveId(active.id);
-        setConfirmOpen(true);
-      }}
-    />
-  ) : null;
+  const modalTitle = !active ? "Detail sengketa" : step === "confirm" && chosen ? `${chosen.label} untuk ${vendorName(active)}?` : vendorName(active);
 
   return (
-    <Shell user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
-      <div className={PAGE}>
-        <PageHeader
-          eyebrow="Uang dan sengketa"
+    <AdminShell tone="wd" user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
+      <div className="wd-container pb-16 pt-8 sm:pt-10">
+        <AdmHead
+          kicker="Uang dan sengketa"
           title={
             <>
-              Sengketa <span className="dc-em">vendor</span>
+              Sengketa <em>vendor</em>
             </>
           }
-          subtitle="Laporan pelanggaran, misalnya mengajak client bertransaksi di luar DuaCincin. Baca buktinya, lalu tetapkan keputusan."
+          note="Laporan pelanggaran, misalnya mengajak client bertransaksi di luar DuaCincin. Baca buktinya, lalu tetapkan keputusan."
         />
 
-        <Tabs
-          idBase="sengketa"
-          label="Status sengketa"
-          value={tab}
-          onChange={(id) => {
-            setError(null);
-            setActiveId(null);
-            setChoice(null);
-            setTab(id as "open" | "resolved");
-          }}
-          items={[
-            { id: "open", label: "Terbuka", count: loadedTab === "open" && !loadFailed ? disputes.length : undefined },
-            { id: "resolved", label: "Riwayat" },
-          ]}
-        />
+        <div className="mt-8">
+          <AdmTabs<TabKey>
+            idBase="sengketa"
+            label="Status sengketa"
+            value={tab}
+            onChange={(k) => {
+              setError(null);
+              setTab(k);
+            }}
+            tabs={[
+              { key: "open", label: "Terbuka", count: loaded && !loadFailed ? lists.open.length : undefined, hot: true },
+              { key: "resolved", label: "Selesai", count: loaded && !loadFailed ? lists.resolved.length : undefined },
+            ]}
+          />
 
-        <TabPanel idBase="sengketa" id={tab} value={tab} className="mt-6">
-          {error && !loadFailed && <ErrorBanner message={error} />}
-          {loading ? (
-            <RowsSkeleton rows={3} label="Memuat sengketa" />
-          ) : loadFailed ? (
-            <ErrorState title="Sengketa belum bisa dimuat" onRetry={() => { setError(null); load(); }} />
-          ) : disputes.length === 0 ? (
-            <EmptyState
-              title={isOpen ? "Tidak ada sengketa terbuka" : "Belum ada riwayat sengketa"}
-              body={isOpen ? "Laporan baru, baik dari client maupun pesan yang ditandai otomatis, akan muncul di sini." : "Sengketa yang sudah kamu putuskan tercatat di sini."}
-            />
-          ) : (
-            <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.3fr)]">
-              <ul className="flex flex-col gap-2" aria-label={isOpen ? "Sengketa terbuka" : "Riwayat sengketa"}>
-                <AnimatePresence initial={false}>
-                {disputes.map((d, i) => {
-                  const selected = desktop && active?.id === d.id;
-                  return (
-                    <QueueItem key={d.id} index={i}>
-                      <button
-                        type="button"
-                        onClick={() => select(d.id)}
-                        aria-current={selected ? "true" : undefined}
-                        className={`flex w-full items-start gap-3 rounded-xl border px-4 py-4 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold ${
-                          selected ? "border-dc-ink bg-dc-white" : "border-dc-line bg-dc-white hover:border-dc-line-strong"
-                        }`}
-                      >
-                        <Monogram name={vendorName(d)} size="sm" />
-                        <span className="min-w-0 flex-1">
-                          <span className="flex items-baseline justify-between gap-3">
-                            <span className="truncate font-semibold text-dc-ink">{vendorName(d)}</span>
-                            <time dateTime={d.created_at} className="shrink-0 text-xs text-dc-text-3">
-                              {relatif(d.created_at)}
-                            </time>
-                          </span>
-                          <span className="mt-0.5 line-clamp-2 block text-sm text-dc-text-2">{d.reason}</span>
-                          <span className="mt-2 flex flex-wrap gap-1.5">
-                            {d.message_id && <Badge tone="neutral">Dari chat</Badge>}
-                            {!isOpen && d.sanction_applied && <Badge tone={sanctionTone(d.sanction_applied)}>{SANCTION_LABEL[d.sanction_applied] ?? d.sanction_applied}</Badge>}
-                          </span>
+          <div id="panel-sengketa" role="tabpanel" aria-labelledby={`tab-sengketa-${tab}`} className="pt-4">
+            {error && !loadFailed && !active && <AdmError message={error} />}
+            {!loaded ? (
+              <AdmRowsSkeleton rows={3} label="Memuat sengketa" />
+            ) : loadFailed ? (
+              <ErrorState
+                title="Sengketa belum bisa dimuat"
+                onRetry={() => {
+                  setError(null);
+                  load();
+                }}
+              />
+            ) : disputes.length === 0 ? (
+              <AdmEmpty art={isOpen ? "clipboard" : "frame"} title={isOpen ? "Tidak ada sengketa terbuka" : "Belum ada riwayat sengketa"}>
+                {isOpen ? "Laporan baru, baik dari client maupun pesan yang ditandai otomatis, akan muncul di sini." : "Sengketa yang sudah kamu putuskan tercatat di sini."}
+              </AdmEmpty>
+            ) : (
+              <AdmList label={isOpen ? "Sengketa terbuka" : "Riwayat sengketa"}>
+                {disputes.map((d) => (
+                  <AdmListItem key={d.id}>
+                    <button type="button" onClick={() => openCase(d.id)} className={`flex min-h-[76px] w-full items-start gap-3 px-1 py-4 text-left transition-colors hover:bg-wd-paper sm:px-3 focus-visible:-outline-offset-2 ${ADM_FOCUS}`}>
+                      <AdmAvatar name={vendorName(d)} />
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-baseline justify-between gap-3">
+                          <span className="truncate font-semibold text-wd-ink">{vendorName(d)}</span>
+                          <time dateTime={d.created_at} className="shrink-0 text-xs text-wd-muted">
+                            {relatif(d.created_at)}
+                          </time>
                         </span>
-                      </button>
-                    </QueueItem>
-                  );
-                })}
-                </AnimatePresence>
-              </ul>
-
-              {desktop && <div className="sticky top-6">{caseView}</div>}
-            </div>
-          )}
-        </TabPanel>
+                        <span className="mt-0.5 line-clamp-2 block text-sm leading-relaxed text-wd-text">{d.reason}</span>
+                        <span className="mt-2 flex flex-wrap items-center gap-1.5">
+                          <AdmPill>{d.message_id ? "Dari chat" : "Laporan client"}</AdmPill>
+                          {!isOpen && d.sanction_applied && <AdmPill tone={sanctionTone(d.sanction_applied)}>{SANCTION_LABEL[d.sanction_applied] ?? d.sanction_applied}</AdmPill>}
+                          <span className="text-xs font-semibold text-wd-accent-ink">{isOpen ? "Tinjau" : "Lihat"}</span>
+                        </span>
+                      </span>
+                    </button>
+                  </AdmListItem>
+                ))}
+              </AdmList>
+            )}
+          </div>
+        </div>
       </div>
 
-      {!desktop && (
-        <Sheet open={sheetOpen && !!active} onClose={() => setSheetOpen(false)} title="Detail sengketa" description={active ? vendorName(active) : undefined}>
-          {caseView}
-        </Sheet>
-      )}
+      <Modal
+        open={!!active}
+        onClose={closeCase}
+        title={modalTitle}
+        description={active ? (step === "confirm" ? undefined : `Dilaporkan ${tanggalJam(active.created_at)}`) : undefined}
+        size="lg"
+      >
+        {active && step === "case" && (
+          <div className="flex flex-col gap-5">
+            {error && <AdmError message={error} />}
 
-      <ConfirmDialog
-        open={confirmOpen && !!active && !!chosen}
-        onClose={() => setConfirmOpen(false)}
-        onConfirm={handleResolve}
-        busy={busy}
-        tone={chosen?.severe ? "danger" : "primary"}
-        title={chosen ? `${chosen.label} untuk ${active ? vendorName(active) : "vendor"}?` : "Tetapkan keputusan"}
-        consequence={
-          <>
-            {chosen?.effect} Vendor mendapat notifikasi dan sengketa pindah ke riwayat.
-            {chosen?.severe && <span className="mt-2 block font-semibold text-dc-danger">Keputusan ini tidak bisa dibatalkan dari halaman ini.</span>}
-          </>
-        }
-        confirmLabel={chosen ? `Tetapkan: ${chosen.label}` : "Tetapkan"}
-        typeToConfirm={choice === "terminate" && active ? vendorName(active) : undefined}
-      />
-    </Shell>
-  );
-}
+            {/* Evidence: the server keeps the flagged chat message; the report text is what it recorded. */}
+            <section aria-labelledby={`bukti-${active.id}`}>
+              <h3 id={`bukti-${active.id}`} className="text-sm font-semibold text-wd-ink">
+                Bukti
+              </h3>
+              <div className="mt-2 rounded-2xl bg-wd-accent-wash p-4">
+                <p className="text-xs text-wd-muted">{active.message_id ? "Pesan chat yang ditandai otomatis" : "Isi laporan"}</p>
+                <blockquote className="mt-1.5 border-l-2 border-wd-accent-deep pl-3 text-[1.05rem] leading-snug text-wd-ink">{active.reason}</blockquote>
+                {active.message_id && <p className="mt-3 text-sm leading-relaxed text-wd-text">Pesan aslinya tersimpan utuh di riwayat chat vendor dan client sebagai bukti.</p>}
+              </div>
+            </section>
 
-function sanctionTone(s: string) {
-  return s === "none" ? "success" : s === "warning" ? "gold" : "danger";
-}
-
-function CaseView({
-  d,
-  isOpen,
-  choice,
-  onChoose,
-  onDecide,
-}: {
-  d: Dispute;
-  isOpen: boolean;
-  choice: Sanction | null;
-  onChoose: (s: Sanction) => void;
-  onDecide: () => void;
-}) {
-  return (
-    <article aria-label={`Kasus ${vendorName(d)}`} className="flex flex-col gap-5 lg:rounded-xl lg:border lg:border-dc-line lg:bg-dc-white lg:p-6">
-      <header className="hidden items-center gap-4 lg:flex">
-        <Monogram name={vendorName(d)} size="lg" />
-        <div className="min-w-0">
-          <h2 className="font-heading text-3xl leading-tight text-dc-ink">{vendorName(d)}</h2>
-          <p className="text-sm text-dc-text-3">Dilaporkan {tanggalJam(d.created_at)}</p>
-        </div>
-      </header>
-      <p className="text-sm text-dc-text-3 lg:hidden">Dilaporkan {tanggalJam(d.created_at)}</p>
-
-      {/* Evidence: the server keeps the flagged chat message; the report text is what it recorded. */}
-      <section aria-labelledby={`bukti-${d.id}`}>
-        <h3 id={`bukti-${d.id}`} className="text-sm font-semibold text-dc-ink">
-          Bukti
-        </h3>
-        <div className="mt-2 rounded-lg border border-dc-line bg-dc-ivory p-4">
-          <p className="text-xs text-dc-text-3">{d.message_id ? "Pesan chat yang ditandai otomatis" : "Isi laporan"}</p>
-          <blockquote className="mt-1.5 border-l-2 border-dc-gold pl-3 font-heading text-xl italic leading-snug text-dc-ink">{d.reason}</blockquote>
-          {d.message_id && (
-            <p className="mt-3 text-sm leading-relaxed text-dc-text-2">
-              Pesan aslinya tersimpan utuh di riwayat chat vendor dan client sebagai bukti.
+            <p className="text-sm leading-relaxed text-wd-text">
+              Keputusan di sini tidak mengubah booking atau dana apa pun. Dana booking tetap ditahan Dana Aman sampai acara selesai, lalu masuk{" "}
+              <Link href="/internal/admin/disbursements" className={`font-semibold text-wd-accent-ink underline underline-offset-4 ${ADM_FOCUS}`}>
+                antrian pencairan
+              </Link>
+              .
             </p>
-          )}
-        </div>
-      </section>
 
-      <section aria-labelledby={`dana-${d.id}`}>
-        <h3 id={`dana-${d.id}`} className="text-sm font-semibold text-dc-ink">
-          Posisi dana
-        </h3>
-        <div className="mt-2 rounded-lg bg-dc-cream p-4 text-sm leading-relaxed text-dc-text-2">
-          Keputusan di sini tidak mengubah booking atau dana apa pun. Dana booking tetap mengikuti escrow: ditahan sampai acara selesai, lalu masuk{" "}
-          <Link href="/internal/admin/disbursements" className="font-semibold text-dc-clay underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold">
-            antrian pencairan
-          </Link>
-          .
-        </div>
-      </section>
-
-      {isOpen ? (
-        <fieldset>
-          <legend className="text-sm font-semibold text-dc-ink">Keputusan</legend>
-          <div className="mt-2 flex flex-col gap-2">
-            {SANCTIONS.map((s) => {
-              const on = choice === s.value;
-              return (
-                <label
-                  key={s.value}
-                  className={`flex min-h-11 cursor-pointer items-start gap-3 rounded-lg border px-4 py-3 transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-dc-gold ${
-                    on ? (s.severe ? "border-dc-danger bg-dc-danger/[0.05]" : "border-dc-ink bg-dc-white") : "border-dc-line bg-dc-white hover:border-dc-line-strong"
-                  }`}
+            {activeIsOpen ? (
+              <fieldset>
+                <legend className="text-sm font-semibold text-wd-ink">Keputusan</legend>
+                <div className="mt-2 flex flex-col gap-2">
+                  {SANCTIONS.map((s) => {
+                    const on = choice === s.value;
+                    return (
+                      <label
+                        key={s.value}
+                        className={`flex min-h-12 cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-wd-ink ${
+                          on ? (s.severe ? "border-wd-danger bg-wd-danger/[0.05]" : "border-wd-accent-deep bg-wd-accent-wash") : "border-wd-line bg-white hover:border-wd-line-2"
+                        }`}
+                      >
+                        <input type="radio" name={`sanksi-${active.id}`} value={s.value} checked={on} onChange={() => setChoice(s.value)} className="mt-1 h-4 w-4 accent-wd-ink" />
+                        <span>
+                          <span className={`block font-semibold ${s.severe ? "text-wd-danger" : "text-wd-ink"}`}>{s.label}</span>
+                          <span className="block text-sm text-wd-text">{s.effect}</span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+                <button
+                  type="button"
+                  disabled={!choice}
+                  onClick={() => setStep("confirm")}
+                  className={`mt-4 w-full ${chosen?.severe ? ADM_DANGER_BTN : `${wdButton({ variant: "ink", size: "md" })} ${ADM_FOCUS}`}`}
                 >
-                  <input type="radio" name={`sanksi-${d.id}`} value={s.value} checked={on} onChange={() => onChoose(s.value)} className="mt-1 h-4 w-4 accent-dc-ink" />
-                  <span>
-                    <span className={`block font-semibold ${s.severe ? "text-dc-danger" : "text-dc-ink"}`}>{s.label}</span>
-                    <span className="block text-sm text-dc-text-2">{s.effect}</span>
-                  </span>
-                </label>
-              );
-            })}
+                  {chosen ? `Tetapkan: ${chosen.label}` : "Pilih keputusan dulu"}
+                </button>
+              </fieldset>
+            ) : (
+              <section className="flex flex-wrap items-center gap-2 border-t border-wd-line pt-4">
+                <span className="text-sm text-wd-muted">Keputusan</span>
+                {active.sanction_applied ? <AdmPill tone={sanctionTone(active.sanction_applied)}>{SANCTION_LABEL[active.sanction_applied] ?? active.sanction_applied}</AdmPill> : "-"}
+                {active.resolved_at && <span className="text-sm text-wd-text">pada {tanggal(active.resolved_at)}</span>}
+              </section>
+            )}
           </div>
-          <Button className="mt-4 w-full" onClick={onDecide} disabled={!choice} variant={SANCTIONS.find((s) => s.value === choice)?.severe ? "danger" : "primary"}>
-            {choice ? `Tetapkan: ${SANCTION_LABEL[choice]}` : "Pilih keputusan dulu"}
-          </Button>
-        </fieldset>
-      ) : (
-        <section className="rounded-lg border border-dc-line p-4">
-          <p className="text-sm text-dc-text-3">Keputusan</p>
-          <p className="mt-1 flex flex-wrap items-center gap-2">
-            {d.sanction_applied ? <Badge tone={sanctionTone(d.sanction_applied)}>{SANCTION_LABEL[d.sanction_applied] ?? d.sanction_applied}</Badge> : "-"}
-            {d.resolved_at && <span className="text-sm text-dc-text-2">pada {tanggal(d.resolved_at)}</span>}
-          </p>
-        </section>
-      )}
-    </article>
+        )}
+
+        {active && step === "confirm" && chosen && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!busy) void handleResolve();
+            }}
+            className="flex flex-col gap-4"
+          >
+            <div className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${chosen.severe ? "bg-wd-danger/[0.06] text-wd-ink" : "bg-wd-accent-wash text-wd-text"}`}>
+              {chosen.effect} Vendor mendapat notifikasi dan sengketa pindah ke riwayat.
+              {chosen.severe && <span className="mt-2 block font-semibold text-wd-danger">Keputusan ini tidak bisa dibatalkan dari halaman ini.</span>}
+            </div>
+            {choice === "terminate" && (
+              <label className="flex flex-col gap-1.5 text-sm font-semibold text-wd-ink">
+                <span>
+                  Ketik <em className="font-display text-base text-wd-danger">{vendorName(active)}</em> untuk melanjutkan
+                </span>
+                <input value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" className={ADM_FIELD} />
+              </label>
+            )}
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button type="button" onClick={() => setStep("case")} disabled={busy} className={`${wdButton({ variant: "outline", size: "md" })} ${ADM_FOCUS}`}>
+                Kembali
+              </button>
+              <button type="submit" disabled={busy || !typedOk} className={chosen.severe ? ADM_DANGER_BTN : `${wdButton({ variant: "ink", size: "md" })} ${ADM_FOCUS}`}>
+                {busy ? "Memproses..." : `Tetapkan: ${chosen.label}`}
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
+    </AdminShell>
   );
 }

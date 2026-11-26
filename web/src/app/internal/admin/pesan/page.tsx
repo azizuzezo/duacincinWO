@@ -1,38 +1,39 @@
 "use client";
 
-import { ConversationList } from "@/components/ConversationList";
+import { ADM_SPLIT, AdmConvPane, AdmPickPane } from "@/components/admin/admPanes";
+import { AdmHead } from "@/components/admin/admUi";
 import { ADMIN_NAV } from "@/components/shell/navConfig";
-import { Shell } from "@/components/shell/Shell";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { AdminShell } from "@/components/shell/AdminShell";
 import { WithUser } from "@/components/WithUser";
-import { PAGE } from "../../_ui";
 
 /** The vendor chats this admin started (one thread per vendor, per admin). */
 export default function AdminVendorMessagesPage() {
   return (
     <WithUser allowedRoles={["admin"]} loginPath="/login">
       {(user) => (
-        <Shell user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
-          <div className={PAGE}>
-            <PageHeader
-              eyebrow="Layanan"
+        <AdminShell tone="wd" user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
+          <div className="wd-container pb-16 pt-8 sm:pt-10">
+            <AdmHead
+              kicker="Layanan"
               title={
                 <>
-                  Pesan <span className="dc-em">vendor</span>
+                  Pesan <em>vendor</em>
                 </>
               }
-              subtitle="Percakapanmu dengan vendor. Vendor mendapat email saat ada pesan baru darimu, dan kamu mendapat email saat mereka membalas."
+              note="Percakapanmu dengan vendor. Vendor mendapat email saat ada pesan baru darimu, dan kamu mendapat email saat mereka membalas."
             />
-            <div className="max-w-3xl">
-              <ConversationList
+            <div className={`mt-8 ${ADM_SPLIT}`}>
+              <AdmConvPane
+                userId={user.id}
                 basePath="/internal/admin/pesan"
                 type="admin_vendor"
-                emptyLabel="Mulai chat dari halaman detail vendor, lewat tombol Chat vendor."
-                currentUserId={user.id}
+                searchPlaceholder="Cari nama vendor"
+                emptyText="Mulai chat dari halaman detail vendor, lewat tombol Chat vendor."
               />
+              <AdmPickPane title="Pilih percakapan">Balas vendor dari sini. Untuk memulai chat baru, buka halaman detail vendor.</AdmPickPane>
             </div>
           </div>
-        </Shell>
+        </AdminShell>
       )}
     </WithUser>
   );

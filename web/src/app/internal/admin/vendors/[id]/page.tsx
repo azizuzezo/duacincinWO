@@ -2,21 +2,18 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 
+import { VA_BTN_DANGER, VA_BTN_GOLD, VA_BTN_OUTLINE, VA_FOCUS, VaAlert, VaAvatar, VaFailed, VaLightbox, VaPill, VaSkeleton, type VaTone } from "@/components/admin/VaKit";
 import { ADMIN_NAV } from "@/components/shell/navConfig";
-import { Shell } from "@/components/shell/Shell";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { AdminShell } from "@/components/shell/AdminShell";
 import { CityCombobox } from "@/components/ui/CityCombobox";
-import { ErrorState } from "@/components/ui/ErrorState";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { useToast } from "@/components/ui/Toast";
 import { WithUser } from "@/components/WithUser";
 import { apiGet, apiPost, apiPut, ApiError, type Conversation, formatRupiah, formatWhatsApp, categoriesLabel, type CurrentUser } from "@/lib/api";
 import { useLiveRefresh } from "@/lib/useLiveRefresh";
 import { findRegion, JABODETABEK } from "@/lib/wilayah";
-import { Monogram, PAGE, persen, relatif, RowsSkeleton, tanggal } from "../../../_ui";
+import { ConfirmDialog, persen, relatif, tanggal } from "../../../_ui";
 
 type PricePair = { vendor: number; website: number };
 
@@ -45,11 +42,34 @@ type AdminVendorDetail = {
   portfolio: string[];
 };
 
-const STATUS: Record<AdminVendorDetail["status"], { label: string; tone: "success" | "warning" | "danger" }> = {
-  approved: { label: "Aktif di direktori", tone: "success" },
-  pending: { label: "Menunggu review", tone: "warning" },
+const STATUS: Record<AdminVendorDetail["status"], { label: string; tone: VaTone }> = {
+  approved: { label: "Aktif di direktori", tone: "ok" },
+  pending: { label: "Menunggu review", tone: "warn" },
   rejected: { label: "Ditolak", tone: "danger" },
 };
+
+const REJECT_PICKS = [
+  "Nama usaha belum jelas atau tidak sesuai",
+  "Kategori tidak sesuai dengan layanan",
+  "Kota layanan belum diisi dengan benar",
+];
+
+function Section({ id, title, note, action, children }: { id: string; title: React.ReactNode; note?: React.ReactNode; action?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section aria-labelledby={id} className="border-t border-wd-line py-8">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h2 id={id} className="wd-display text-2xl leading-tight">
+            {title}
+          </h2>
+          {note && <p className="mt-1 max-w-2xl text-sm text-wd-text">{note}</p>}
+        </div>
+        {action}
+      </div>
+      {children}
+    </section>
+  );
+}
 
 /** A price below this is almost always a missing zero. */
 const SUSPICIOUSLY_LOW = 50_000;
@@ -93,7 +113,14 @@ function Content({ user }: { user: CurrentUser }) {
   const [vendor, setVendor] = useState<AdminVendorDetail | null>(null);
   const [error, setError] = useState<{ notFound: boolean; message: string } | null>(null);
   const router = useRouter();
+  const { show } = useToast();
   const [chatState, setChatState] = useState<{ opening: boolean; error?: string }>({ opening: false });
+  const [photo, setPhoto] = useState<number | null>(null);
+  const [approving, setApproving] = useState(false);
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejecting, setRejecting] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // Opens (or creates) this admin's chat with the vendor.
   async function openChat() {
@@ -126,13 +153,49 @@ function Content({ user }: { user: CurrentUser }) {
   // Vendors edit prices any time; keep what Admin is checking current.
   useLiveRefresh(() => load(true), 30_000);
 
+  // Same endpoints and payloads as the pending queue.
+  async function approve() {
+    if (!vendor) return;
+    setApproving(true);
+    setActionError(null);
+    try {
+      await apiPost(`/api/v1/admin/vendors/${vendor.user_id}/approve`, {});
+      show(`${vendor.business_name} disetujui dan tampil di direktori.`, "success");
+      await load();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Gagal menyetujui vendor.");
+    } finally {
+      setApproving(false);
+    }
+  }
+
+  async function confirmReject() {
+    if (!vendor) return;
+    setRejecting(true);
+    setActionError(null);
+    try {
+      await apiPost(`/api/v1/admin/vendors/${vendor.user_id}/reject`, { reason: rejectReason });
+      show(`${vendor.business_name} ditolak.`, "success");
+      setRejectOpen(false);
+      setRejectReason("");
+      await load();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Gagal menolak vendor.");
+      setRejectOpen(false);
+    } finally {
+      setRejecting(false);
+    }
+  }
+
   const checks = vendor ? priceChecks(vendor) : [];
+  const warnings = checks.filter((c) => c.tone !== "info");
   const fee = (p: PricePair) => p.website - p.vendor;
+  const linkCls = `inline-flex min-h-11 items-center text-sm font-semibold text-wd-accent-ink underline underline-offset-4 hover:text-wd-ink ${VA_FOCUS}`;
 
   return (
-    <Shell user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
-      <div className={PAGE}>
-        <Link href="/internal/admin/vendors/approved" className="mb-4 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-dc-text-2 hover:text-dc-ink">
+    <AdminShell tone="wd" user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
+      <div className="wd-container pb-10 pt-6 sm:pt-8">
+        <Link href={vendor?.status === "pending" ? "/internal/admin/vendors" : "/internal/admin/vendors/approved"} className={`mb-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-wd-text hover:text-wd-ink ${VA_FOCUS}`}>
           <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <path d="m15 6-6 6 6 6" />
           </svg>
@@ -140,178 +203,190 @@ function Content({ user }: { user: CurrentUser }) {
         </Link>
 
         {error ? (
-          <ErrorState title={error.notFound ? "Vendor tidak ditemukan" : "Detail vendor belum bisa dimuat"} onRetry={error.notFound ? undefined : () => load()} />
+          <VaFailed what={error.notFound ? "Vendor ini tidak ditemukan, atau detailnya" : "Detail vendor"} onRetry={() => load()} />
         ) : !vendor ? (
-          <RowsSkeleton rows={4} label="Memuat detail vendor" />
+          <VaSkeleton rows={4} label="Memuat detail vendor" />
         ) : (
           <>
-            <div className="flex items-start gap-4">
-              <Monogram name={vendor.business_name} size="lg" />
+            <header className="flex items-start gap-4">
+              <VaAvatar name={vendor.business_name} size="lg" />
               <div className="min-w-0 flex-1">
-                <PageHeader
-                  eyebrow={`${categoriesLabel(vendor)} · ${vendor.cities.length ? vendor.cities.join(", ") : vendor.city || "Kota belum diisi"}`}
-                  title={vendor.business_name}
-                  subtitle={`${vendor.owner_name || "Pemilik"} · ${vendor.email} · bergabung ${tanggal(vendor.joined_at)}`}
-                />
+                <p className="wd-kicker">
+                  {categoriesLabel(vendor)} · {vendor.cities.length ? vendor.cities.join(", ") : vendor.city || "Kota belum diisi"}
+                </p>
+                <h1 className="wd-display mt-1 break-words text-[clamp(2rem,4vw,3rem)] leading-[1.05]">{vendor.business_name}</h1>
+                <p className="mt-2 break-words text-wd-text">
+                  {vendor.owner_name || "Pemilik"} · {vendor.email} · bergabung {tanggal(vendor.joined_at)}
+                </p>
               </div>
-            </div>
-            <div className="-mt-2 mb-8 flex flex-wrap items-center gap-2">
-              <Badge tone={STATUS[vendor.status].tone}>{STATUS[vendor.status].label}</Badge>
-              {vendor.account_status !== "active" && <Badge tone="danger">Akun {vendor.account_status === "suspended" ? "ditangguhkan" : "diputus"}</Badge>}
-              <Badge tone={vendor.commission_is_custom ? "gold" : "neutral"}>
+            </header>
+
+            <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <VaPill tone={STATUS[vendor.status].tone}>{STATUS[vendor.status].label}</VaPill>
+              {vendor.account_status !== "active" && <VaPill tone="danger">Akun {vendor.account_status === "suspended" ? "ditangguhkan" : "diputus"}</VaPill>}
+              <VaPill tone={vendor.commission_is_custom ? "warn" : "neutral"}>
                 Komisi {persen(vendor.commission_rate)} {vendor.commission_is_custom ? "(khusus)" : "(bawaan)"}
-              </Badge>
+              </VaPill>
               {vendor.whatsapp_number ? (
-                <a
-                  href={`https://wa.me/${vendor.whatsapp_number}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex min-h-11 items-center text-sm font-semibold text-dc-clay underline underline-offset-4 hover:text-dc-ink"
-                >
+                <a href={`https://wa.me/${vendor.whatsapp_number}`} target="_blank" rel="noopener noreferrer" className={linkCls}>
                   WhatsApp {formatWhatsApp(vendor.whatsapp_number)}
                 </a>
               ) : (
-                <Badge tone="gold">WhatsApp belum diisi</Badge>
+                <VaPill tone="warn">WhatsApp belum diisi</VaPill>
               )}
-              <span className="text-sm text-dc-text-3">Profil diubah {relatif(vendor.profile_updated_at)}</span>
-              <Button size="sm" variant="ghost" className="ml-auto" loading={chatState.opening} onClick={openChat}>
-                Chat vendor
-              </Button>
-              <Link
-                href={`/internal/admin/percakapan?vendor=${vendor.user_id}`}
-                className="inline-flex min-h-11 items-center text-sm font-semibold text-dc-clay underline underline-offset-4 hover:text-dc-ink"
-              >
+              <span className="text-sm text-wd-muted">Profil diubah {relatif(vendor.profile_updated_at)}</span>
+            </div>
+            <div className="mt-1 flex flex-wrap items-center gap-x-5 gap-y-1">
+              <button type="button" onClick={openChat} disabled={chatState.opening} aria-busy={chatState.opening} className={`${linkCls} disabled:opacity-60`}>
+                {chatState.opening ? "Membuka chat..." : "Chat vendor"}
+              </button>
+              <Link href={`/internal/admin/percakapan?vendor=${vendor.user_id}`} className={linkCls}>
                 Percakapan dengan klien
               </Link>
-              <Link
-                href={`/internal/admin/whatsapp?user=${vendor.user_id}`}
-                className="inline-flex min-h-11 items-center text-sm font-semibold text-dc-clay underline underline-offset-4 hover:text-dc-ink"
-              >
+              <Link href={`/internal/admin/whatsapp?user=${vendor.user_id}`} className={linkCls}>
                 Kirim WhatsApp
               </Link>
               {vendor.status === "approved" && (
-                <Link href={`/vendors/${vendor.user_id}`} target="_blank" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-dc-clay underline underline-offset-4 hover:text-dc-ink">
+                <Link href={`/vendors/${vendor.user_id}`} target="_blank" className={linkCls}>
                   Lihat seperti calon pengantin
+                  <span className="sr-only"> (tab baru)</span>
                 </Link>
               )}
-              {chatState.error && (
-                <p role="alert" className="basis-full text-sm font-medium text-dc-danger">
-                  {chatState.error}
-                </p>
-              )}
             </div>
-
-            <VendorCities vendor={vendor} onSaved={(cities) => setVendor({ ...vendor, cities, city: cities.join(", ") })} />
-
-            <section aria-labelledby="cek-harga" className="mb-8">
-              <h2 id="cek-harga" className="mb-3 font-heading text-2xl text-dc-ink">
-                Pemeriksaan harga
-              </h2>
-              {checks.filter((c) => c.tone !== "info").length === 0 && (
-                <p className="mb-3 rounded-lg bg-dc-success-soft px-4 py-3 text-sm font-medium text-dc-success">Harga profil dan paket konsisten. Tidak ada yang perlu diperiksa.</p>
-              )}
-              {checks.length > 0 && (
-                <ul className="flex flex-col gap-2">
-                  {checks.map((c) => (
-                    <li
-                      key={c.text}
-                      className={`rounded-lg px-4 py-3 text-sm leading-relaxed ${
-                        c.tone === "danger" ? "bg-dc-danger-soft text-dc-danger" : c.tone === "warning" ? "bg-dc-warning-soft text-dc-warning" : "bg-dc-cream text-dc-text-2"
-                      }`}
-                    >
-                      {c.text}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-
-            <section aria-labelledby="harga" className="mb-8">
-              <h2 id="harga" className="mb-1 font-heading text-2xl text-dc-ink">
-                Harga
-              </h2>
-              <p className="mb-3 text-sm text-dc-text-2">
-                Kolom kiri adalah yang diisi vendor. Kolom kanan adalah yang dibaca dan dibayar calon pengantin (ditambah komisi {persen(vendor.commission_rate)}).
+            {chatState.error && (
+              <p role="alert" className="text-sm font-medium text-wd-danger">
+                {chatState.error}
               </p>
-              <Card className="overflow-hidden p-0">
-                <div className="hidden grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))_110px] gap-4 border-b border-dc-line bg-dc-cream px-5 py-3 text-sm font-semibold text-dc-text-2 md:grid" aria-hidden>
+            )}
+            {vendor.status === "rejected" && vendor.rejection_reason && (
+              <p className="mt-4 rounded-2xl bg-wd-danger/[0.06] px-4 py-3 text-sm text-wd-danger">Alasan ditolak: {vendor.rejection_reason}</p>
+            )}
+            {actionError && <div className="mt-4"><VaAlert message={actionError} /></div>}
+
+            <div className="mt-8">
+              <Section id="portofolio" title={<>Portofolio <span className="text-base text-wd-muted">({vendor.portfolio.length})</span></>} note={vendor.portfolio.length > 0 ? "Klik foto untuk memperbesar." : undefined}>
+                {vendor.portfolio.length === 0 ? (
+                  <p className="rounded-2xl bg-wd-accent-wash px-4 py-3 text-sm text-wd-text">Belum ada foto portofolio.</p>
+                ) : (
+                  <ul className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3">
+                    {vendor.portfolio.map((src, i) => (
+                      <li key={src} className={i === 0 && vendor.portfolio.length > 2 ? "col-span-2 lg:col-span-2 lg:row-span-2" : ""}>
+                        <button type="button" onClick={() => setPhoto(i)} aria-label={`Perbesar foto portofolio ${i + 1}`} className={`block h-full w-full overflow-hidden rounded-2xl bg-wd-blush ${VA_FOCUS}`}>
+                          {/* eslint-disable-next-line @next/next/no-img-element -- vendor uploads on Supabase Storage, admin-only */}
+                          <img src={src} alt={`Foto portofolio ${i + 1}`} loading={i < 3 ? "eager" : "lazy"} className={`h-full w-full object-cover transition-transform duration-500 hover:scale-[1.02] ${i === 0 && vendor.portfolio.length > 2 ? "aspect-[4/3] lg:aspect-auto" : "aspect-[4/3]"}`} />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Section>
+
+              <Section id="deskripsi" title="Deskripsi">
+                <p className="max-w-3xl whitespace-pre-line break-words leading-relaxed text-wd-text">{vendor.description || "Vendor belum menulis deskripsi."}</p>
+              </Section>
+
+              <Section id="cek-harga" title="Pemeriksaan harga">
+                {warnings.length === 0 && <p className="mb-3 rounded-2xl bg-wd-ok/10 px-4 py-3 text-sm font-medium text-wd-ok">Harga profil dan paket konsisten. Tidak ada yang perlu diperiksa.</p>}
+                {checks.length > 0 && (
+                  <ul className="border-t border-wd-line">
+                    {checks.map((c) => (
+                      <li key={c.text} className="flex items-start gap-3 border-b border-wd-line py-3 text-sm leading-relaxed text-wd-text">
+                        <VaPill tone={c.tone === "danger" ? "danger" : c.tone === "warning" ? "warn" : "neutral"} className="mt-0.5 shrink-0">
+                          {c.tone === "danger" ? "Periksa" : c.tone === "warning" ? "Perhatian" : "Info"}
+                        </VaPill>
+                        <span className="min-w-0 break-words">{c.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Section>
+
+              <Section id="harga" title="Harga" note={`Kolom kiri adalah yang diisi vendor. Kolom kanan adalah yang dibaca dan dibayar calon pengantin (ditambah komisi ${persen(vendor.commission_rate)}).`}>
+                <div className="hidden grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))_110px] gap-4 border-b border-wd-line px-2 pb-2 text-sm font-semibold text-wd-ink md:grid" aria-hidden>
                   <span>Item</span>
                   <span className="text-right">Diisi vendor</span>
                   <span className="text-right">Komisi</span>
                   <span className="text-right">Tampil di website</span>
                   <span className="text-right">Diubah</span>
                 </div>
-                <ul className="divide-y divide-dc-line">
+                <ul>
                   <PriceRow label="Harga mulai dari" note="Tampil di kartu direktori" pair={vendor.price_min} fee={fee(vendor.price_min)} />
                   <PriceRow label="Harga tertinggi" note="Tampil di profil vendor" pair={vendor.price_max} fee={fee(vendor.price_max)} />
                   {vendor.packages.map((p) => (
                     <PriceRow key={p.id} label={p.name} note={p.description} pair={p.price} fee={fee(p.price)} updated={p.updated_at} isPackage />
                   ))}
                 </ul>
-              </Card>
-            </section>
+              </Section>
 
-            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-              <section aria-labelledby="deskripsi">
-                <h2 id="deskripsi" className="mb-3 font-heading text-2xl text-dc-ink">
-                  Deskripsi
-                </h2>
-                <Card className="p-5">
-                  <p className="whitespace-pre-line text-sm leading-relaxed text-dc-text-2">{vendor.description || "Vendor belum menulis deskripsi."}</p>
-                  {vendor.status === "rejected" && vendor.rejection_reason && (
-                    <p className="mt-4 rounded-lg bg-dc-danger-soft px-4 py-3 text-sm text-dc-danger">Alasan ditolak: {vendor.rejection_reason}</p>
-                  )}
-                </Card>
-              </section>
-              <section aria-labelledby="portofolio">
-                <h2 id="portofolio" className="mb-3 font-heading text-2xl text-dc-ink">
-                  Portofolio <span className="text-base text-dc-text-3">({vendor.portfolio.length})</span>
-                </h2>
-                {vendor.portfolio.length === 0 ? (
-                  <Card className="p-5 text-sm text-dc-text-2">Belum ada foto portofolio.</Card>
-                ) : (
-                  <ul className="grid grid-cols-3 gap-2">
-                    {vendor.portfolio.slice(0, 9).map((src, i) => (
-                      <li key={src} className="aspect-square overflow-hidden rounded-lg bg-dc-cream">
-                        {/* eslint-disable-next-line @next/next/no-img-element -- vendor uploads on Supabase Storage, admin-only thumbnails */}
-                        <img src={src} alt={`Foto portofolio ${i + 1}`} loading="lazy" className="h-full w-full object-cover" />
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
+              <VendorCities vendor={vendor} onSaved={(cities) => setVendor({ ...vendor, cities, city: cities.join(", ") })} />
             </div>
           </>
         )}
       </div>
-    </Shell>
+
+      {/* Decision bar: sticks to the bottom while a vendor waits for review. */}
+      {vendor?.status === "pending" && (
+        <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 px-4 pb-2 md:bottom-4">
+          <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-3xl border border-wd-accent-line bg-wd-white px-4 py-3 shadow-wd-lift sm:rounded-full sm:pl-6">
+            <p className="min-w-0 text-sm text-wd-text">
+              <span className="font-semibold text-wd-ink">Keputusan</span>
+              <span className="hidden sm:inline"> untuk {vendor.business_name}</span>
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={() => setRejectOpen(true)} disabled={approving || rejecting} className={VA_BTN_DANGER}>
+                Tolak
+              </button>
+              <button type="button" onClick={approve} disabled={approving || rejecting} aria-busy={approving} className={VA_BTN_GOLD}>
+                {approving ? "Menyetujui..." : "Setujui vendor"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <VaLightbox photos={vendor?.portfolio ?? []} index={photo} onClose={() => setPhoto(null)} onIndex={setPhoto} label="Foto portofolio" />
+
+      <ConfirmDialog
+        open={rejectOpen}
+        onClose={() => {
+          setRejectOpen(false);
+          setRejectReason("");
+        }}
+        onConfirm={confirmReject}
+        busy={rejecting}
+        title={`Tolak ${vendor?.business_name ?? "vendor"}?`}
+        consequence="Vendor ini tidak akan tampil di direktori. Alasanmu disimpan bersama penolakan agar vendor tahu apa yang perlu diperbaiki."
+        confirmLabel="Tolak vendor"
+        reason={{ value: rejectReason, onChange: setRejectReason, label: "Alasan penolakan", picks: REJECT_PICKS, hint: "Tulis dengan sopan dan jelas. Pilih salah satu di atas atau tulis sendiri." }}
+      />
+    </AdminShell>
   );
 }
 
 function PriceRow({ label, note, pair, fee, updated, isPackage = false }: { label: string; note?: string; pair: PricePair; fee: number; updated?: string; isPackage?: boolean }) {
   const empty = pair.vendor === 0;
   return (
-    <li className="grid grid-cols-2 gap-x-4 gap-y-1.5 px-5 py-4 md:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))_110px] md:items-center">
+    <li className="grid grid-cols-2 gap-x-4 gap-y-1.5 border-b border-wd-line px-2 py-4 md:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))_110px] md:items-center">
       <div className="col-span-2 min-w-0 md:col-span-1">
-        <p className="font-semibold text-dc-ink">
-          {isPackage && <span className="mr-2 text-xs font-semibold uppercase tracking-wide text-dc-text-3">Paket</span>}
+        <p className="break-words font-semibold text-wd-ink">
+          {isPackage && <span className="mr-2 text-xs font-semibold text-wd-accent-ink">Paket</span>}
           {label}
         </p>
-        {note && <p className="line-clamp-2 text-sm text-dc-text-3">{note}</p>}
+        {note && <p className="line-clamp-2 text-sm text-wd-muted">{note}</p>}
       </div>
-      <p className="text-sm text-dc-text-2 md:text-right">
+      <p className="text-sm text-wd-text md:text-right">
         <span className="md:hidden">Diisi vendor: </span>
-        <span className="font-semibold tabular-nums text-dc-ink">{empty ? "Lewat chat" : formatRupiah(pair.vendor)}</span>
+        <span className="font-semibold tabular-nums text-wd-ink">{empty ? "Lewat chat" : formatRupiah(pair.vendor)}</span>
       </p>
-      <p className="text-sm text-dc-text-2 md:text-right">
+      <p className="text-sm text-wd-text md:text-right">
         <span className="md:hidden">Komisi: </span>
-        <span className="tabular-nums">{empty ? "–" : formatRupiah(fee)}</span>
+        <span className="tabular-nums">{empty ? "-" : formatRupiah(fee)}</span>
       </p>
-      <p className="text-sm text-dc-text-2 md:text-right">
+      <p className="text-sm text-wd-text md:text-right">
         <span className="md:hidden">Di website: </span>
-        <span className="font-bold tabular-nums text-dc-ink">{empty ? "Lewat chat" : formatRupiah(pair.website)}</span>
+        <span className="font-bold tabular-nums text-wd-ink">{empty ? "Lewat chat" : formatRupiah(pair.website)}</span>
       </p>
-      <p className="text-sm text-dc-text-3 md:text-right">{updated ? relatif(updated) : <span className="md:hidden" />}</p>
+      <p className="text-sm text-wd-muted md:text-right">{updated ? relatif(updated) : <span className="md:hidden" />}</p>
     </li>
   );
 }
@@ -353,24 +428,22 @@ function VendorCities({ vendor, onSaved }: { vendor: AdminVendorDetail; onSaved:
     }
   }
 
+  const reasonId = useId();
   return (
-    <section aria-labelledby="lokasi" className="mb-8">
-      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 id="lokasi" className="font-heading text-2xl text-dc-ink">
-            Lokasi layanan
-          </h2>
-          <p className="text-sm text-dc-text-2">Kabupaten/kota yang dilayani vendor. Biasanya diatur vendor sendiri di profilnya.</p>
-        </div>
-        {!editing && (
-          <Button size="sm" variant="ghost" onClick={start}>
+    <Section
+      id="lokasi"
+      title="Lokasi layanan"
+      note="Kabupaten/kota yang dilayani vendor. Biasanya diatur vendor sendiri di profilnya."
+      action={
+        !editing ? (
+          <button type="button" onClick={start} className={VA_BTN_OUTLINE}>
             Ubah lokasi (darurat)
-          </Button>
-        )}
-      </div>
-
+          </button>
+        ) : undefined
+      }
+    >
       {saved && (
-        <p role="status" className="mb-3 rounded-lg bg-dc-success-soft px-4 py-3 text-sm font-medium text-dc-success">
+        <p role="status" className="mb-3 rounded-2xl bg-wd-ok/10 px-4 py-3 text-sm font-medium text-wd-ok">
           Lokasi tersimpan. Vendor sudah diberi notifikasi beserta alasannya, dan perubahan tercatat di audit log.
         </p>
       )}
@@ -379,22 +452,20 @@ function VendorCities({ vendor, onSaved }: { vendor: AdminVendorDetail; onSaved:
         vendor.cities.length > 0 ? (
           <ul className="flex flex-wrap gap-2">
             {vendor.cities.map((c) => (
-              <li key={c} className="inline-flex min-h-9 items-center gap-1 rounded-full border border-dc-line-strong bg-dc-cream px-3.5 text-sm font-semibold text-dc-ink">
+              <li key={c} className="inline-flex min-h-9 items-center gap-1 rounded-full bg-wd-accent-soft px-3.5 text-sm font-semibold text-wd-ink">
                 {c}
-                <span className="font-normal text-dc-text-3">· {findRegion(c)?.province ?? "di luar daftar"}</span>
+                <span className="font-normal text-wd-muted">· {findRegion(c)?.province ?? "di luar daftar"}</span>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="rounded-lg bg-dc-warning-soft px-4 py-3 text-sm font-medium text-dc-warning">
+          <p className="rounded-2xl bg-wd-accent-wash px-4 py-3 text-sm font-medium text-wd-accent-ink">
             Belum ada kabupaten/kota terpilih{vendor.city ? ` (teks lama: "${vendor.city}")` : ""}. Vendor ini tidak muncul di pencarian per kota.
           </p>
         )
       ) : (
-        <Card className="flex flex-col gap-4 p-5">
-          <p className="rounded-lg bg-dc-warning-soft px-4 py-3 text-sm leading-relaxed text-dc-warning">
-            Pakai hanya saat darurat, misalnya vendor tidak bisa menyimpan profilnya. Vendor akan menerima notifikasi berisi daftar baru dan alasanmu.
-          </p>
+        <div className="flex flex-col gap-4 rounded-2xl bg-wd-accent-wash p-5">
+          <p className="text-sm leading-relaxed text-wd-text">Pakai hanya saat darurat, misalnya vendor tidak bisa menyimpan profilnya. Vendor akan menerima notifikasi berisi daftar baru dan alasanmu.</p>
           <CityCombobox
             id="admin-cities"
             label="Kabupaten/kota layanan"
@@ -403,33 +474,36 @@ function VendorCities({ vendor, onSaved }: { vendor: AdminVendorDetail; onSaved:
             groups={[{ name: "Jabodetabek", cities: JABODETABEK }]}
             hint="Hanya dari daftar resmi kabupaten/kota, maksimal 20."
           />
-          <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-semibold text-dc-ink">Alasan perubahan</span>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor={reasonId} className="text-sm font-semibold text-wd-ink">
+              Alasan perubahan
+            </label>
             <textarea
+              id={reasonId}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={3}
               maxLength={300}
               placeholder="Misalnya: vendor tidak bisa menyimpan Jakarta Utara, diminta lewat chat 19 Nov"
-              className="rounded-md border border-dc-line-strong bg-dc-white px-3.5 py-2.5 text-base text-dc-ink outline-none focus:border-dc-gold focus:shadow-[0_0_0_4px_rgb(184_146_74_/_0.15)]"
+              className={`rounded-xl border border-wd-line-2 bg-wd-white px-4 py-3 text-base text-wd-ink placeholder:text-wd-muted focus:border-wd-accent-line focus:outline-none ${VA_FOCUS}`}
             />
-            <span className="text-xs text-dc-text-3">Wajib. Tercatat di audit log dan dikirim ke vendor.</span>
-          </label>
+            <span className="text-xs text-wd-muted">Wajib. Tercatat di audit log dan dikirim ke vendor.</span>
+          </div>
           {error && (
-            <p role="alert" className="text-sm font-semibold text-dc-danger">
+            <p role="alert" className="text-sm font-semibold text-wd-danger">
               {error}
             </p>
           )}
           <div className="flex flex-wrap justify-end gap-2">
-            <Button size="sm" variant="ghost" onClick={() => setEditing(false)} disabled={saving}>
+            <button type="button" onClick={() => setEditing(false)} disabled={saving} className={VA_BTN_OUTLINE}>
               Batal
-            </Button>
-            <Button size="sm" variant="primary" loading={saving} onClick={save}>
-              Simpan lokasi
-            </Button>
+            </button>
+            <button type="button" onClick={save} disabled={saving} aria-busy={saving} className={VA_BTN_GOLD}>
+              {saving ? "Menyimpan..." : "Simpan lokasi"}
+            </button>
           </div>
-        </Card>
+        </div>
       )}
-    </section>
+    </Section>
   );
 }

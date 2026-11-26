@@ -94,6 +94,7 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
   const summaryRef = useRef<HTMLDivElement>(null);
   const [saving, setSaving] = useState(false);
   const [nameSheet, setNameSheet] = useState(false);
+  const [resubmitting, setResubmitting] = useState(false);
 
   function applyProfile(p: VendorProfile) {
     setProfile(p);
@@ -154,14 +155,14 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
   const blur = (k: keyof FieldErrors) => () => setTouched((t) => ({ ...t, [k]: true }));
   const showSummary = submitted && Object.keys(allErrors).length > 0;
 
-  async function handleSave(e?: React.FormEvent) {
+  async function handleSave(e?: React.FormEvent): Promise<boolean> {
     e?.preventDefault();
     setSaveError(null);
     setSubmitted(true);
     if (Object.keys(allErrors).length) {
       // Error summary takes focus so keyboard and screen reader users land on what to fix.
       requestAnimationFrame(() => summaryRef.current?.focus());
-      return;
+      return false;
     }
     setSaving(true);
     try {
@@ -176,10 +177,28 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
       // PUT returns the profile without its portfolio; keep the photos we already have.
       applyProfile({ ...updated, portfolio: updated.portfolio ?? profile?.portfolio });
       toast.show("Profil tersimpan", "success");
+      return true;
     } catch (err) {
       setSaveError(friendlyError(err, "Profil belum tersimpan. Periksa koneksi internetmu, lalu coba lagi."));
+      return false;
     } finally {
       setSaving(false);
+    }
+  }
+
+  /** A rejected profile goes back to review. Unsaved edits are saved first, so the team reviews what is on screen. */
+  async function resubmit() {
+    if (resubmitting || saving) return;
+    if (dirty && !(await handleSave())) return;
+    setResubmitting(true);
+    try {
+      const updated = await apiPost<VendorProfile>("/api/v1/vendor/profile/resubmit", {});
+      applyProfile({ ...updated, portfolio: updated.portfolio ?? profile?.portfolio });
+      toast.show("Pengajuan dikirim ulang. Tim DuaCincin akan meninjaunya lagi.", "success");
+    } catch (err) {
+      toast.show(friendlyError(err, "Pengajuan belum terkirim. Coba lagi sebentar."), "danger");
+    } finally {
+      setResubmitting(false);
     }
   }
 
@@ -238,12 +257,28 @@ function VendorProfileContent({ user }: { user: CurrentUser }) {
               </p>
 
               {profile?.status === "rejected" && (
-                <div role="alert" className="mt-5 rounded-[20px] bg-wd-blush px-5 py-4">
-                  <p className="font-semibold text-wd-ink">Profilmu belum disetujui</p>
-                  <p className="mt-1 text-sm leading-relaxed text-wd-text">
-                    {profile.rejection_reason ? <>Catatan dari tim: {profile.rejection_reason}</> : "Tim DuaCincin belum menyetujui profil ini."}
+                <section aria-labelledby="ditolak" className="mt-5 rounded-[24px] bg-wd-accent-wash p-5 ring-2 ring-wd-accent sm:p-6">
+                  <h2 id="ditolak" className="wd-display text-[1.5rem] leading-tight">
+                    Profilmu belum disetujui
+                  </h2>
+                  <p role="alert" className="mt-1.5 text-[0.95rem] leading-relaxed text-wd-text">
+                    {profile.rejection_reason ? (
+                      <>
+                        Catatan dari tim: <span className="font-semibold text-wd-ink">{profile.rejection_reason}</span>
+                      </>
+                    ) : (
+                      "Tim DuaCincin belum menyetujui profil ini."
+                    )}
                   </p>
-                </div>
+                  <ol className="mt-3 list-inside list-decimal text-sm leading-relaxed text-wd-text">
+                    <li>Perbaiki data di bawah sesuai catatan, atau tambah foto dan paket.</li>
+                    <li>Tekan Ajukan ulang. Perubahan yang belum disimpan ikut tersimpan.</li>
+                    <li>Tim meninjau lagi. Begitu disetujui, etalasemu tampil di direktori.</li>
+                  </ol>
+                  <button type="button" onClick={() => void resubmit()} disabled={resubmitting || saving} aria-busy={resubmitting} className={`${wdButton({ variant: "gold", size: "md" })} mt-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wd-ink`}>
+                    {resubmitting ? "Mengirim..." : dirty ? "Simpan dan ajukan ulang" : "Ajukan ulang"}
+                  </button>
+                </section>
               )}
 
               {/* Mobile: the meter leads so the vendor sees what is missing before scrolling the form. */}

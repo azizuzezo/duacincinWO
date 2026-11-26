@@ -39,6 +39,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiError(res.status, body?.error ?? "Terjadi kesalahan, coba lagi.");
   }
   if (init?.method && init.method !== "GET" && path.startsWith("/api/v1/admin/")) lastAdminWrite = Date.now();
+  if (init?.method && init.method !== "GET" && typeof window !== "undefined") window.dispatchEvent(new Event("dc:mutated"));
 
   return body as T;
 }
@@ -78,6 +79,7 @@ export async function apiPostForm<T>(path: string, form: FormData): Promise<T> {
   if (!res.ok) {
     throw new ApiError(res.status, body?.error ?? "Terjadi kesalahan, coba lagi.");
   }
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("dc:mutated"));
 
   return body as T;
 }
@@ -468,6 +470,24 @@ export type AppNotification = {
   read: boolean;
   created_at: string;
 };
+
+/** An article in the admin panel (written in the composer, stored as a ProseMirror document). */
+export type AdminArticleSummary = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  topic: string;
+  cover_url: string;
+  cover_alt: string;
+  status: "draft" | "published";
+  author_name: string;
+  reading_minutes: number;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+export type AdminArticle = AdminArticleSummary & { body: import("@/lib/articles").RichDoc };
 
 export type AuditLogEntry = {
   id: string;

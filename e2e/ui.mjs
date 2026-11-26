@@ -143,7 +143,7 @@ for (const [w, h, label] of [[1440, 900, "desktop"], [390, 844, "mobile"]]) {
   await s.go(`${WEB}/internal/admin/dashboard`);
   const body = await s.ev("document.body.innerText");
   ok("admin queue board renders", body.includes("Antrian kerja") && body.includes("Vendor menunggu verifikasi"), body.slice(0, 200));
-  const rows = await s.ev("[...document.querySelectorAll('#antrian-title ~ ul li a')].map(a=>a.querySelector('span').textContent+'|'+a.querySelector('.font-heading').textContent)");
+  const rows = await s.ev("[...document.querySelectorAll('#antrian-title ~ ul li a')].map(a=>a.querySelector('span').textContent+'|'+a.querySelector('.wd-title').textContent)");
   // api.mjs deletes the second (pending) vendor when it tests vendor deletion, so no vendor is waiting.
   ok("queue counts match the database (0 pending vendors, 1 dispute from the flagged chat message, 0 disbursements)", JSON.stringify(rows) === JSON.stringify(["1|Sengketa terbuka", "0|Pencairan menunggu", "0|Vendor menunggu verifikasi", "0|Pengajuan ganti nama"]), JSON.stringify(rows));
   await s.shot("real-admin-dashboard");
@@ -176,6 +176,14 @@ for (const [w, h, label] of [[1440, 900, "desktop"], [390, 844, "mobile"]]) {
   ok("admin inspirasi: tag sheet lists approved vendors only, current tag ticked", sheet.includes("Ballroom Uji") && !sheet.includes("Dekor Uji") && sheet.includes("1 dari maksimal 10"), sheet.slice(0, 400));
   ok("admin inspirasi: current vendor checkbox is checked", await s.ev("[...document.querySelectorAll('[role=dialog] label')].find(l=>l.innerText.includes('Ballroom Uji'))?.querySelector('input')?.checked === true"));
   await s.shot("admin-inspirasi-tag-sheet");
+  await s.go(`${WEB}/internal/admin/artikel`);
+  await s.sleep(2500);
+  const art = await s.ev("document.body.innerText");
+  ok("admin Artikel: list page renders with the write button", art.includes("Artikel") && art.includes("Tulis artikel"), art.slice(0, 200));
+  await s.go(`${WEB}/internal/admin/artikel/baru`);
+  await s.sleep(3500);
+  ok("admin Artikel composer: editor, toolbar and settings render", await s.ev("!!document.querySelector('.cmp-prose') && !!document.querySelector('[role=toolbar][aria-label=\"Pemformatan teks\"]') && !!document.getElementById('cmp-title') && !!document.getElementById('cmp-desc')"));
+  await s.shot("admin-artikel-composer");
   ok("no console errors (admin)", s.errors.length === 0, JSON.stringify(s.errors.slice(0, 2)));
   s.close();
 }

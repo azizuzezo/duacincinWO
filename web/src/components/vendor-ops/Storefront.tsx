@@ -30,7 +30,7 @@ export function Storefront({ profile, userId }: { profile: VendorProfile; userId
 
   return (
     <section aria-label="Tokomu" className="relative isolate overflow-hidden rounded-[28px] bg-wd-ink text-white">
-      <Image src={cover} alt={own?.alt_text || art.alt} fill priority sizes="(min-width: 1200px) 1140px, 100vw" className="-z-20 object-cover" style={{ objectPosition: own ? "50% 40%" : art.focus ?? "50% 35%" }} />
+      <Image src={cover} alt={own?.alt_text || art.alt} fill priority unoptimized={!!own} sizes="(min-width: 1200px) 1140px, 100vw" className="-z-20 object-cover" style={{ objectPosition: own ? "50% 40%" : art.focus ?? "50% 35%" }} />
       <div aria-hidden className="absolute inset-0 -z-10 bg-linear-to-t from-wd-ink/95 via-wd-ink/75 to-wd-ink/25" />
       <div className="flex min-h-[260px] flex-col justify-end gap-5 p-6 pt-24 sm:min-h-[300px] sm:p-9 md:flex-row md:items-end md:justify-between">
         <div className="min-w-0">

@@ -32,7 +32,7 @@ const STAGES: Stage[] = [
     where: "Direktori vendor",
     screen: {
       src: `${SHOT}/k1-direktori.webp`,
-      alt: "Layar direktori vendor DuaCincin: kartu Sanggar Rias Kencana dengan harga mulai dari dan rating",
+      alt: "Layar direktori vendor DuaCincin: kartu vendor dengan foto, kategori, harga mulai dari, dan lencana Dana Aman",
     },
   },
   {
@@ -43,7 +43,7 @@ const STAGES: Stage[] = [
     where: "Pesan, langsung dengan vendor",
     screen: {
       src: `${SHOT}/k2-chat.webp`,
-      alt: "Layar chat dengan Pendopo Ageng Sriwedari yang menanyakan ketersediaan tanggal",
+      alt: "Layar chat dengan vendor dekorasi yang menjawab ketersediaan tanggal pernikahan",
     },
   },
   {
@@ -54,7 +54,7 @@ const STAGES: Stage[] = [
     where: "Booking, dari halaman vendor",
     screen: {
       src: `${SHOT}/k3-vendor.webp`,
-      alt: "Halaman vendor dengan pilihan tanggal, tombol ajukan booking, dan penjelasan Dana Aman",
+      alt: "Formulir ajukan booking: tanggal acara terisi dari tanggal nikah, pilihan paket vendor, dan harga disepakati",
     },
   },
   {

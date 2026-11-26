@@ -4,12 +4,9 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { ADMIN_NAV } from "@/components/shell/navConfig";
-import { Shell } from "@/components/shell/Shell";
-import { ButtonLink } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
+import { AdminShell } from "@/components/shell/AdminShell";
+import { wdButton } from "@/components/home/ui";
 import { WhatsAppAdminCard } from "@/components/wa/WhatsAppAdminCard";
-import { DashboardBanner } from "@/components/ui/DashboardBanner";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Skeleton, SkeletonGroup } from "@/components/ui/Skeleton";
 import { CountUp, MotionItem, MotionList } from "@/components/ui/Motion";
@@ -118,47 +115,53 @@ function AdminDashboardContent({ user }: { user: CurrentUser }) {
   const focus = open[0];
   const total = queues ? QUEUES.reduce((n, q) => n + queues[q.key], 0) : 0;
 
-  return (
-    <Shell user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
-      <DashboardBanner
-        eyebrow={greeting && firstName ? `${greeting}, ${firstName}` : undefined}
-        title={
-          <>
-            Antrian <span className="dc-em">kerja</span>
-          </>
-        }
-        subtitle={
-          queues
-            ? total === 0
-              ? "Tidak ada yang menunggu tindakanmu saat ini."
-              : `${total} hal menunggu tindakanmu, diurutkan dari yang paling mendesak.`
-            : "Apa yang menunggu tindakanmu, diurutkan dari yang paling mendesak."
-        }
-        action={
-          focus ? (
-            <ButtonLink href={focus.href} variant="gold" size="lg">
-              {focus.cta}
-            </ButtonLink>
-          ) : undefined
-        }
-      />
+  const FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wd-ink";
 
-      <div className="mx-auto max-w-6xl px-4 pb-12 sm:px-6">
-        {/* One list in fixed urgency order (money in dispute first). The first queue
-            with work is the focal row: champagne wash, "Paling mendesak", and the banner CTA. */}
-        <section aria-labelledby="antrian-title" className="relative -mt-10 overflow-hidden rounded-xl border border-dc-line bg-dc-white shadow-soft sm:-mt-12">
+  return (
+    <AdminShell tone="wd" user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
+      <div className="wd-container pb-16 pt-8 sm:pt-10">
+        <header>
+          <p className="wd-kicker">{greeting && firstName ? `${greeting}, ${firstName}` : "Admin"}</p>
+          <h1 className="wd-display mt-2 text-[clamp(2.1rem,4.4vw,3.4rem)] leading-[1.05]">
+            Antrian <em>kerja</em>
+          </h1>
+          <p className="mt-2 text-wd-text">
+            {queues
+              ? total === 0
+                ? "Tidak ada yang menunggu tindakanmu saat ini."
+                : `${total} hal menunggu tindakanmu, diurutkan dari yang paling mendesak.`
+              : "Apa yang menunggu tindakanmu, diurutkan dari yang paling mendesak."}
+          </p>
+        </header>
+
+        {/* The most urgent queue, as one calm strip with its action. */}
+        {focus && queues && (
+          <section aria-label="Paling mendesak" className="mt-7 flex flex-col gap-4 rounded-[24px] bg-wd-accent-wash p-5 ring-2 ring-wd-accent sm:flex-row sm:items-center sm:justify-between sm:px-7">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-wd-accent-ink">Paling mendesak</p>
+              <p className="wd-display mt-0.5 text-[clamp(1.3rem,2.2vw,1.7rem)] leading-tight">
+                {queues[focus.key]} {focus.unit}: {focus.title.toLowerCase()}
+              </p>
+              <p className="mt-1 max-w-2xl text-[0.95rem] leading-relaxed text-wd-text">{focus.why}</p>
+            </div>
+            <Link href={focus.href} className={`${wdButton({ variant: "gold", size: "md" })} ${FOCUS} shrink-0`}>
+              {focus.cta}
+            </Link>
+          </section>
+        )}
+
+        {/* One list in fixed urgency order (money in dispute first). */}
+        <section aria-labelledby="antrian-title" className="mt-8">
           <h2 id="antrian-title" className="sr-only">
             Antrian kerja
           </h2>
           {queuesFailed && !queues ? (
-            <div className="p-2">
-              <ErrorState compact title="Antrian belum bisa dimuat" onRetry={reloadQueues} />
-            </div>
+            <ErrorState compact title="Antrian belum bisa dimuat" onRetry={reloadQueues} />
           ) : queuesLoading && !queues ? (
-            <SkeletonGroup label="Memuat antrian kerja">
+            <SkeletonGroup label="Memuat antrian kerja" className="border-t border-wd-line">
               {[0, 1, 2, 3].map((i) => (
-                <div key={i} className={`flex items-center gap-5 px-5 py-5 sm:px-7 ${i > 0 ? "border-t border-dc-line" : ""}`}>
-                  <Skeleton className="h-10 w-10" />
+                <div key={i} className="flex items-center gap-5 border-b border-wd-line px-2 py-5">
+                  <Skeleton className="h-10 w-12" />
                   <div className="flex flex-1 flex-col gap-2">
                     <Skeleton className="h-5 w-1/3" />
                     <Skeleton className="h-3 w-2/3" />
@@ -168,27 +171,23 @@ function AdminDashboardContent({ user }: { user: CurrentUser }) {
             </SkeletonGroup>
           ) : (
             queues && (
-              <MotionList className="divide-y divide-dc-line">
+              <MotionList className="border-t border-wd-line">
                 {QUEUES.map((q) => {
                   const n = queues[q.key];
                   const isFocus = focus?.key === q.key;
                   return (
-                    <MotionItem key={q.key} className={`relative ${isFocus ? "bg-dc-gold-wash/60" : ""}`}>
-                      <Link
-                        href={q.href}
-                        className="group grid min-h-20 grid-cols-[2.75rem_1fr_auto] items-center gap-x-4 gap-y-1 px-5 py-5 transition-colors hover:bg-dc-ivory active:bg-dc-cream focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-dc-gold sm:grid-cols-[4.5rem_1fr_auto] sm:px-7"
-                      >
-                        <span style={{ fontFamily: "var(--font-heading)" }} className={`font-semibold leading-none [font-variant-numeric:lining-nums_tabular-nums] ${isFocus ? "text-6xl text-dc-ink" : n > 0 ? "text-5xl text-dc-ink" : "text-5xl text-dc-text-3"}`}>
+                    <MotionItem key={q.key} className="border-b border-wd-line">
+                      <Link href={q.href} className={`group grid min-h-20 grid-cols-[3.25rem_1fr_auto] items-center gap-x-4 gap-y-1 rounded-2xl px-2 py-5 transition-colors hover:bg-wd-paper sm:grid-cols-[4.5rem_1fr_auto] sm:px-3 ${FOCUS}`}>
+                        <span className={`wd-display leading-none tabular-nums ${isFocus ? "text-[3.4rem]" : "text-[2.8rem]"} ${n > 0 ? "" : "!text-wd-muted"}`}>
                           <CountUp value={n} />
                         </span>
                         <span className="min-w-0">
                           <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                            <span className={`font-heading text-2xl leading-tight ${n > 0 ? "text-dc-ink" : "text-dc-text-2"}`}>{q.title}</span>
-                            {isFocus && <Badge tone="warning">Paling mendesak</Badge>}
+                            <span className={`wd-title text-[1.35rem] leading-tight ${n > 0 ? "" : "!text-wd-text"}`}>{q.title}</span>
                           </span>
-                          <span className="mt-0.5 block text-sm leading-relaxed text-dc-text-2">{n > 0 ? q.why : "Tidak ada yang menunggu."}</span>
+                          <span className="mt-0.5 block text-sm leading-relaxed text-wd-text">{n > 0 ? q.why : "Tidak ada yang menunggu."}</span>
                         </span>
-                        <span className={`hidden text-sm font-semibold sm:inline ${n > 0 ? "text-dc-clay group-hover:underline group-hover:underline-offset-4" : "text-dc-text-3"}`}>{n > 0 ? q.cta : "Kosong"}</span>
+                        <span className={`hidden items-center text-sm font-semibold sm:inline-flex ${n > 0 ? "text-wd-accent-ink group-hover:underline group-hover:underline-offset-4" : "text-wd-muted"}`}>{n > 0 ? q.cta : "Kosong"}</span>
                       </Link>
                     </MotionItem>
                   );
@@ -198,7 +197,7 @@ function AdminDashboardContent({ user }: { user: CurrentUser }) {
           )}
         </section>
         {queues && queuesFailed && (
-          <p className="mt-3 text-sm text-dc-danger" role="alert">
+          <p className="mt-3 text-sm text-wd-danger" role="alert">
             Angka antrian mungkin belum terbaru.{" "}
             <button type="button" onClick={reloadQueues} className="min-h-11 font-semibold underline underline-offset-4">
               Muat ulang
@@ -206,95 +205,81 @@ function AdminDashboardContent({ user }: { user: CurrentUser }) {
           </p>
         )}
 
-        <div className="mt-12 grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+        <div className="mt-14 grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] lg:gap-14">
           <section aria-labelledby="ringkasan-title" className="min-w-0">
-            <div className="mb-4 flex min-h-11 items-end">
-              <h2 id="ringkasan-title" className="font-heading text-3xl text-dc-ink">
-                Ringkasan
-              </h2>
-            </div>
+            <h2 id="ringkasan-title" className="wd-title mb-3 text-[clamp(1.4rem,2.2vw,1.8rem)]">
+              Ringkasan <em>platform</em>
+            </h2>
             {statsFailed && <ErrorBanner message="Ringkasan belum bisa dimuat." onRetry={load} />}
-            <Card>
-              <dl className="divide-y divide-dc-line">
-                {[
-                  { label: "Vendor aktif", value: stats?.active_vendors, href: "/internal/admin/vendors/approved", link: "Kelola komisi" },
-                  { label: "Transaksi berjalan", value: stats?.ongoing_transactions, href: "/internal/admin/disbursements", link: "Lihat pencairan" },
-                  { label: "Sengketa terbuka", value: stats?.open_disputes, href: "/internal/admin/disputes", link: "Tinjau sengketa" },
-                ].map((s) => (
-                  <div key={s.label} className="flex items-center justify-between gap-4 px-5 py-4">
-                    <div>
-                      <dt className="text-sm text-dc-text-2">{s.label}</dt>
-                      <Link href={s.href} className="inline-flex min-h-11 items-center text-sm font-semibold text-dc-clay underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold">
-                        {s.link}
-                      </Link>
-                    </div>
-                    <dd className="font-heading text-4xl font-semibold text-dc-ink [font-variant-numeric:lining-nums_tabular-nums]">
-                      {s.value !== undefined ? <CountUp value={s.value} /> : statsFailed ? "-" : <Skeleton className="h-9 w-10" />}
-                    </dd>
+            <dl className="border-t border-wd-line">
+              {[
+                { label: "Vendor aktif", value: stats?.active_vendors, href: "/internal/admin/vendors/approved", link: "Kelola komisi" },
+                { label: "Transaksi berjalan", value: stats?.ongoing_transactions, href: "/internal/admin/disbursements", link: "Lihat pencairan" },
+                { label: "Sengketa terbuka", value: stats?.open_disputes, href: "/internal/admin/disputes", link: "Tinjau sengketa" },
+              ].map((st) => (
+                <div key={st.label} className="flex items-center justify-between gap-4 border-b border-wd-line px-1 py-4">
+                  <div>
+                    <dt className="text-sm text-wd-text">{st.label}</dt>
+                    <Link href={st.href} className={`inline-flex min-h-11 items-center text-sm font-semibold text-wd-accent-ink underline underline-offset-4 hover:text-wd-ink ${FOCUS}`}>
+                      {st.link}
+                    </Link>
                   </div>
-                ))}
-              </dl>
-            </Card>
+                  <dd className="wd-display text-[2.4rem] leading-none tabular-nums">{st.value !== undefined ? <CountUp value={st.value} /> : statsFailed ? "-" : <Skeleton className="h-9 w-10" />}</dd>
+                </div>
+              ))}
+            </dl>
             <div className="mt-10">
               <WhatsAppAdminCard refreshKey={tick} />
             </div>
           </section>
 
           <section aria-labelledby="recent-title" className="min-w-0">
-            <div className="mb-4 flex items-end justify-between gap-3">
-              <h2 id="recent-title" className="font-heading text-3xl text-dc-ink">
-                Aktivitas terbaru
+            <div className="mb-3 flex items-end justify-between gap-3">
+              <h2 id="recent-title" className="wd-title text-[clamp(1.4rem,2.2vw,1.8rem)]">
+                Aktivitas <em>terbaru</em>
               </h2>
-              <Link
-                href="/internal/admin/audit-log"
-                className="inline-flex min-h-11 items-center text-sm font-semibold text-dc-clay underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold"
-              >
+              <Link href="/internal/admin/audit-log" className={`inline-flex min-h-11 items-center text-sm font-semibold text-wd-accent-ink underline underline-offset-4 hover:text-wd-ink ${FOCUS}`}>
                 Buka audit log
               </Link>
             </div>
             {recentFailed ? (
               <ErrorState compact title="Aktivitas belum bisa dimuat" onRetry={load} />
             ) : recent === null ? (
-              <Card className="p-5">
-                <SkeletonGroup label="Memuat aktivitas" className="flex flex-col gap-5">
-                  {[0, 1, 2].map((i) => (
-                    <div key={i} className="flex gap-3">
-                      <Skeleton className="mt-1 h-2.5 w-2.5 rounded-full" />
-                      <div className="flex flex-1 flex-col gap-2">
-                        <Skeleton className="h-4 w-1/2" />
-                        <Skeleton className="h-3 w-1/4" />
-                      </div>
+              <SkeletonGroup label="Memuat aktivitas" className="flex flex-col gap-5 border-t border-wd-line pt-5">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="flex gap-3">
+                    <Skeleton className="mt-1 h-2.5 w-2.5 rounded-full" />
+                    <div className="flex flex-1 flex-col gap-2">
+                      <Skeleton className="h-4 w-1/2" />
+                      <Skeleton className="h-3 w-1/4" />
                     </div>
-                  ))}
-                </SkeletonGroup>
-              </Card>
+                  </div>
+                ))}
+              </SkeletonGroup>
             ) : recent.length === 0 ? (
-              <Card className="px-5 py-8 text-center text-dc-text-2">Belum ada aktivitas admin yang tercatat.</Card>
+              <p className="border-t border-wd-line py-8 text-wd-text">Belum ada aktivitas admin yang tercatat.</p>
             ) : (
-              <Card className="px-5 py-2">
-                <MotionList as="ol">
-                  {recent.map((e, i) => {
-                    const detail = auditDetail(e.action, e.metadata);
-                    return (
-                      <MotionItem key={e.id} className="relative flex gap-4 py-4">
-                        {i < recent.length - 1 && <span aria-hidden className="absolute bottom-0 left-[4.5px] top-9 w-px bg-dc-line" />}
-                        <span aria-hidden className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full border-2 border-dc-gold bg-dc-white" />
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium text-dc-ink">{ACTION_LABEL[e.action] ?? "Perubahan oleh admin"}</p>
-                          {detail.length > 0 && <p className="mt-0.5 break-words text-sm text-dc-text-2">{detail.join(" · ")}</p>}
-                        </div>
-                        <time dateTime={e.created_at} className="shrink-0 text-sm text-dc-text-3">
-                          {relatif(e.created_at)}
-                        </time>
-                      </MotionItem>
-                    );
-                  })}
-                </MotionList>
-              </Card>
+              <MotionList as="ol" className="border-t border-wd-line">
+                {recent.map((e) => {
+                  const detail = auditDetail(e.action, e.metadata);
+                  return (
+                    <MotionItem key={e.id} className="flex gap-4 border-b border-wd-line py-4">
+                      <span aria-hidden className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-wd-accent" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-wd-ink">{ACTION_LABEL[e.action] ?? "Perubahan oleh admin"}</p>
+                        {detail.length > 0 && <p className="mt-0.5 break-words text-sm text-wd-text">{detail.join(" · ")}</p>}
+                      </div>
+                      <time dateTime={e.created_at} className="shrink-0 text-sm text-wd-muted">
+                        {relatif(e.created_at)}
+                      </time>
+                    </MotionItem>
+                  );
+                })}
+              </MotionList>
             )}
           </section>
         </div>
       </div>
-    </Shell>
+    </AdminShell>
   );
 }

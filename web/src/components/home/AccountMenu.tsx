@@ -107,9 +107,11 @@ export function AccountMenu({ user }: { user: CurrentUser }) {
 
   // Vendors get the same corner with their own destinations; their messages page is a full page, not the client popup.
   const vendor = user.role === "vendor";
-  const menuLinks = vendor ? VENDOR_NAV : ACCOUNT_LINKS;
-  const bookings = vendor ? VENDOR_NAV.find((i) => i.href === "/vendor/bookings") : CLIENT_NAV.find((i) => i.href === "/client/bookings");
-  const messages = vendor ? VENDOR_NAV.find((i) => i.href === "/vendor/messages") : CLIENT_NAV.find((i) => i.href === "/client/messages");
+  // Staff (admin, consultant) navigate from the header row; their account menu is just the sign-out.
+  const staff = user.role === "admin" || user.role === "wedding_consultant";
+  const menuLinks = staff ? [] : vendor ? VENDOR_NAV : ACCOUNT_LINKS;
+  const bookings = staff ? undefined : vendor ? VENDOR_NAV.find((i) => i.href === "/vendor/bookings") : CLIENT_NAV.find((i) => i.href === "/client/bookings");
+  const messages = staff ? undefined : vendor ? VENDOR_NAV.find((i) => i.href === "/vendor/messages") : CLIENT_NAV.find((i) => i.href === "/client/messages");
 
   return (
     <div className="flex items-center gap-0.5">

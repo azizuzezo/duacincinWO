@@ -3,14 +3,12 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
+import { VA_BTN_OUTLINE, VA_FOCUS, VaAlert, VaAvatar, VaEmpty, VaHeader, VaList, VaPill, VaRow, VaSearch, VaSkeleton, type VaTone } from "@/components/admin/VaKit";
 import { ADMIN_NAV } from "@/components/shell/navConfig";
-import { Shell } from "@/components/shell/Shell";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { AdminShell } from "@/components/shell/AdminShell";
 import { WithUser } from "@/components/WithUser";
 import { apiGet, ApiError, type CurrentUser } from "@/lib/api";
-import { ErrorBanner, Monogram, PAGE, ResultCount, RowsSkeleton, SearchField, tanggal } from "../../_ui";
+import { tanggal } from "../../_ui";
 
 // Klien terdaftar: every couple's account, with the WhatsApp number only
 // admins may see, and shortcuts to their chats and to a WhatsApp message.
@@ -29,9 +27,9 @@ type Client = {
 
 type Page = { items: Client[]; total: number; page: number; page_size: number };
 
-const WA_BADGE: Record<Client["whatsapp_status"], { tone: "success" | "gold" | "neutral"; label: string }> = {
-  verified: { tone: "success", label: "WA terverifikasi" },
-  pending: { tone: "gold", label: "WA belum verifikasi" },
+const WA_BADGE: Record<Client["whatsapp_status"], { tone: VaTone; label: string }> = {
+  verified: { tone: "ok", label: "WA terverifikasi" },
+  pending: { tone: "warn", label: "WA belum verifikasi" },
   none: { tone: "neutral", label: "Belum isi WA" },
 };
 
@@ -72,20 +70,20 @@ function AdminClientsContent({ user }: { user: CurrentUser }) {
   const pages = data ? Math.max(1, Math.ceil(data.total / data.page_size)) : 1;
 
   return (
-    <Shell user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
-      <div className={PAGE}>
-        <PageHeader
-          eyebrow="Pengguna"
+    <AdminShell tone="wd" user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
+      <div className="wd-container pb-16 pt-8 sm:pt-10">
+        <VaHeader
+          kicker="Pengguna"
           title={
             <>
-              Klien <span className="dc-em">terdaftar</span>
+              Klien <em>terdaftar</em>
             </>
           }
-          subtitle="Semua akun calon pengantin. Nomor WhatsApp hanya terlihat oleh admin."
+          sub="Semua akun calon pengantin. Nomor WhatsApp hanya terlihat oleh admin."
         />
 
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <SearchField
+        <div className="mb-3 mt-7 flex flex-wrap items-center gap-x-5 gap-y-3">
+          <VaSearch
             value={q}
             onChange={(v) => {
               setQ(v);
@@ -94,78 +92,74 @@ function AdminClientsContent({ user }: { user: CurrentUser }) {
             label="Cari klien"
             placeholder="Nama, email, atau nomor WA"
           />
-          {data && <ResultCount shown={data.items.length} total={data.total} noun="klien" />}
+          {data && (
+            <p className="text-sm text-wd-muted" aria-live="polite">
+              {data.items.length === data.total ? `${data.total} klien` : `${data.items.length} dari ${data.total} klien`}
+            </p>
+          )}
         </div>
 
-        {error && <ErrorBanner message={error} onRetry={() => void load(q.trim(), page)} />}
-        {!data && !error && <RowsSkeleton rows={6} label="Memuat klien" />}
+        {error && <VaAlert message={error} onRetry={() => void load(q.trim(), page)} />}
+        {!data && !error && <VaSkeleton rows={6} label="Memuat klien" />}
         {data && data.items.length === 0 && (
-          <p className="rounded-xl border border-dashed border-dc-line-strong px-4 py-10 text-center text-sm text-dc-text-2">
+          <VaEmpty art="people" title={q ? "Tidak ada yang cocok" : "Belum ada klien"}>
             {q ? "Tidak ada klien yang cocok dengan pencarian." : "Belum ada klien yang mendaftar."}
-          </p>
+          </VaEmpty>
         )}
         {data && data.items.length > 0 && (
-          <ul className="divide-y divide-dc-line overflow-hidden rounded-xl border border-dc-line bg-dc-white">
+          <VaList>
             {data.items.map((c) => {
               const wa = WA_BADGE[c.whatsapp_status];
               return (
-                <li key={c.id} className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center">
-                  <div className="flex min-w-0 flex-1 items-center gap-3">
-                    <Monogram name={c.full_name || c.email} size="sm" />
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold text-dc-ink">
-                        {c.full_name || "(tanpa nama)"}
-                        {c.account_status !== "active" && (
-                          <Badge tone="danger" className="ml-2">
-                            {c.account_status === "suspended" ? "Ditangguhkan" : "Diputus"}
-                          </Badge>
-                        )}
-                      </p>
-                      <p className="truncate text-sm text-dc-text-2">{c.email}</p>
-                      <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-dc-text-2">
-                        <Badge tone={wa.tone}>{wa.label}</Badge>
-                        {c.whatsapp && <span className="whitespace-nowrap">{c.whatsapp}</span>}
-                      </p>
+                <VaRow key={c.id}>
+                  <div className="flex flex-col gap-3 px-1 py-4 sm:flex-row sm:items-center sm:px-2">
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <VaAvatar name={c.full_name || c.email} />
+                      <div className="min-w-0">
+                        <p className="flex flex-wrap items-center gap-2 font-semibold text-wd-ink">
+                          <span className="break-words">{c.full_name || "(tanpa nama)"}</span>
+                          {c.account_status !== "active" && <VaPill tone="danger">{c.account_status === "suspended" ? "Ditangguhkan" : "Diputus"}</VaPill>}
+                        </p>
+                        <p className="truncate text-sm text-wd-text">{c.email}</p>
+                        <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-wd-text">
+                          <VaPill tone={wa.tone}>{wa.label}</VaPill>
+                          {c.whatsapp && <span className="whitespace-nowrap">{c.whatsapp}</span>}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-14 text-sm text-wd-text sm:justify-end sm:pl-0">
+                      <span>Daftar {tanggal(c.created_at)}</span>
+                      <span>{c.bookings} booking</span>
+                      <Link href={`/internal/admin/percakapan?client=${c.id}`} className={`inline-flex min-h-11 items-center font-semibold text-wd-accent-ink underline underline-offset-4 hover:text-wd-ink ${VA_FOCUS}`}>
+                        {c.conversations} percakapan
+                      </Link>
+                      {c.whatsapp_status === "verified" && (
+                        <Link href={`/internal/admin/whatsapp?user=${c.id}`} className={`inline-flex min-h-11 items-center font-semibold text-wd-accent-ink underline underline-offset-4 hover:text-wd-ink ${VA_FOCUS}`}>
+                          Kirim WhatsApp
+                        </Link>
+                      )}
                     </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-dc-text-2 sm:justify-end">
-                    <span>Daftar {tanggal(c.created_at)}</span>
-                    <span>{c.bookings} booking</span>
-                    <Link
-                      href={`/internal/admin/percakapan?client=${c.id}`}
-                      className="inline-flex min-h-11 items-center font-semibold text-dc-clay underline underline-offset-4 hover:text-dc-ink"
-                    >
-                      {c.conversations} percakapan
-                    </Link>
-                    {c.whatsapp_status === "verified" && (
-                      <Link
-                        href={`/internal/admin/whatsapp?user=${c.id}`}
-                        className="inline-flex min-h-11 items-center font-semibold text-dc-clay underline underline-offset-4 hover:text-dc-ink"
-                      >
-                        Kirim WhatsApp
-                      </Link>
-                    )}
-                  </div>
-                </li>
+                </VaRow>
               );
             })}
-          </ul>
+          </VaList>
         )}
 
         {data && pages > 1 && (
-          <nav aria-label="Halaman" className="mt-4 flex items-center justify-between gap-3">
-            <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+          <nav aria-label="Halaman" className="mt-5 flex items-center justify-between gap-3">
+            <button type="button" className={VA_BTN_OUTLINE} disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
               Sebelumnya
-            </Button>
-            <span className="text-sm text-dc-text-2">
+            </button>
+            <span className="text-sm text-wd-text">
               Halaman {page} dari {pages}
             </span>
-            <Button variant="ghost" size="sm" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>
+            <button type="button" className={VA_BTN_OUTLINE} disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>
               Berikutnya
-            </Button>
+            </button>
           </nav>
         )}
       </div>
-    </Shell>
+    </AdminShell>
   );
 }

@@ -4,26 +4,21 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { apiGet, apiPost, type AppNotification } from "@/lib/api";
+import { createLiveStore } from "@/lib/liveStore";
 
-const POLL_MS = 30000;
+// Unread count is live: one shared poll every 8s while the tab is visible, plus an
+// instant refresh after any change (lib/liveStore.ts).
+const unreadStore = createLiveStore(() => apiGet<{ unread: number }>("/api/v1/notifications/unread-count").then((d) => d.unread), 8_000);
 
 export function NotificationBell({ light = false }: { light?: boolean } = {}) {
   const [open, setOpen] = useState(false);
-  const [unread, setUnread] = useState(0);
+  const { data: live } = unreadStore.useLive();
+  // Local override right after reading, until the next live value arrives.
+  const [override, setOverride] = useState<{ base: number | null; value: number } | null>(null);
+  const unread = override && override.base === live ? override.value : (live ?? 0);
   const [items, setItems] = useState<AppNotification[]>([]);
   const [loaded, setLoaded] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function poll() {
-      apiGet<{ unread: number }>("/api/v1/notifications/unread-count")
-        .then((d) => setUnread(d.unread))
-        .catch(() => {});
-    }
-    poll();
-    const interval = setInterval(poll, POLL_MS);
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -53,14 +48,14 @@ export function NotificationBell({ light = false }: { light?: boolean } = {}) {
   async function handleMarkAllRead() {
     await apiPost("/api/v1/notifications/read-all", {});
     setItems((prev) => prev.map((n) => ({ ...n, read: true })));
-    setUnread(0);
+    setOverride({ base: live, value: 0 });
   }
 
   async function handleItemClick(n: AppNotification) {
     if (!n.read) {
       await apiPost(`/api/v1/notifications/${n.id}/read`, {});
       setItems((prev) => prev.map((it) => (it.id === n.id ? { ...it, read: true } : it)));
-      setUnread((u) => Math.max(0, u - 1));
+      setOverride({ base: live, value: Math.max(0, unread - 1) });
     }
     setOpen(false);
   }

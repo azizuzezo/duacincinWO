@@ -1,4 +1,4 @@
-import { ARTICLES } from "@/content/artikel/registry";
+import { allArticles } from "@/lib/articles";
 import { VENDOR_CATEGORIES } from "@/lib/api";
 import { COMPANY } from "@/lib/company";
 import { SITE_URL as SITE } from "@/lib/site";
@@ -7,7 +7,8 @@ import { SITE_URL as SITE } from "@/lib/site";
 // answer engines. Built from the same lists as the sitemap so it never drifts.
 export const revalidate = 86400;
 
-export function GET() {
+export async function GET() {
+  const ARTICLES = await allArticles();
   const lines = [
     "# DuaCincin",
     "",

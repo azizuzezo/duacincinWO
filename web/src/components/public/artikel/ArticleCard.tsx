@@ -15,7 +15,7 @@ export function ArticleCard({ article, priority = false, heading: H = "h2" }: { 
   return (
     <article className={`group relative flex h-full flex-col overflow-hidden rounded-[20px] border border-wd-line bg-white focus-within:border-wd-accent-line hover:border-wd-line-2 ${LIFT}`}>
       <span className="relative block aspect-[4/3] overflow-hidden bg-wd-blush">
-        <Image src={article.image} alt="" fill priority={priority} sizes="(min-width: 1024px) 400px, (min-width: 640px) 50vw, 100vw" className={ZOOM} />
+        <Image src={article.image} alt="" fill priority={priority} unoptimized={article.image.startsWith("http")} sizes="(min-width: 1024px) 400px, (min-width: 640px) 50vw, 100vw" className={ZOOM} />
         <span className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-xs font-semibold text-wd-accent-ink shadow-wd-card">{article.topic}</span>
       </span>
       <div className="flex flex-1 flex-col p-5">
@@ -46,7 +46,7 @@ export function FeaturedArticle({ article }: { article: Article }) {
   return (
     <article className="group relative grid items-center gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:gap-12">
       <span className={`relative block aspect-[4/3] overflow-hidden rounded-[24px] bg-wd-blush lg:aspect-[16/10] ${LIFT} group-hover:-translate-y-1 group-hover:shadow-wd-lift`}>
-        <Image src={article.image} alt="" fill priority sizes="(min-width: 1024px) 700px, 100vw" className={ZOOM} />
+        <Image src={article.image} alt="" fill priority unoptimized={article.image.startsWith("http")} sizes="(min-width: 1024px) 700px, 100vw" className={ZOOM} />
         <span className="absolute left-4 top-4 rounded-full bg-wd-accent px-3 py-1 text-xs font-semibold text-wd-ink">Terbaru</span>
       </span>
       <span className="block">

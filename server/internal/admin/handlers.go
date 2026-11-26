@@ -36,6 +36,8 @@ type Deps struct {
 	Chat *repository.ChatRepo
 	// AISettings backs the Kirana model settings page (set in app.go).
 	AISettings *repository.AISettingsRepo
+	// Articles backs the article composer (set in app.go).
+	Articles *repository.ArticleRepo
 	// Storage and PortfolioBucket let a vendor deletion also remove the
 	// vendor's portfolio files. The bucket name is passed in because the
 	// vendors package imports this one.
@@ -496,6 +498,43 @@ func dashboard(deps *Deps) http.HandlerFunc {
 	}
 }
 
+// queueCountsDTO is what the admin menu badges show: open work per queue.
+type queueCountsDTO struct {
+	Disputes      int `json:"disputes"`
+	Disbursements int `json:"disbursements"`
+	Vendors       int `json:"vendors"`
+	NameChanges   int `json:"name_changes"`
+}
+
+// queueCounts answers the four numbers behind the menu badges in one request,
+// so the web can refresh them every few seconds without loading four lists.
+func queueCounts(deps *Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fail := func() { httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi") }
+		disputes, err := deps.Disputes.ListOpen(r.Context())
+		if err != nil {
+			fail()
+			return
+		}
+		disbursements, err := deps.Disbursements.ListPending(r.Context())
+		if err != nil {
+			fail()
+			return
+		}
+		vendors, err := deps.Vendors.ListPending(r.Context())
+		if err != nil {
+			fail()
+			return
+		}
+		changes, err := deps.NameChange.ListPending(r.Context())
+		if err != nil {
+			fail()
+			return
+		}
+		httpx.JSON(w, http.StatusOK, queueCountsDTO{Disputes: len(disputes), Disbursements: len(disbursements), Vendors: len(vendors), NameChanges: len(changes)})
+	}
+}
+
 type auditLogEntryDTO struct {
 	ID         string         `json:"id"`
 	ActorID    string         `json:"actor_id"`
@@ -589,6 +628,7 @@ func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 		r.Use(auth.RequireRole(auth.RoleAdmin))
 
 		r.Get("/dashboard", dashboard(deps))
+		r.Get("/queues", queueCounts(deps))
 
 		r.Get("/vendors/pending", listPending(deps))
 		r.Get("/vendors/approved", listApproved(deps))
@@ -622,5 +662,14 @@ func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 
 		r.Get("/ai-settings", getAISettings(deps))
 		r.Put("/ai-settings", saveAISettings(deps))
+
+		r.Get("/articles", listArticles(deps))
+		r.Post("/articles", createArticle(deps))
+		r.Post("/articles/images", uploadArticleImage(deps))
+		r.Get("/articles/{id}", getArticle(deps))
+		r.Put("/articles/{id}", updateArticle(deps))
+		r.Post("/articles/{id}/publish", publishArticle(deps))
+		r.Post("/articles/{id}/unpublish", unpublishArticle(deps))
+		r.Delete("/articles/{id}", deleteArticle(deps))
 	})
 }

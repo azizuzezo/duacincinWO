@@ -1,22 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
+import { VA_BTN_DANGER, VA_BTN_GOLD, VA_BTN_OUTLINE, VA_FOCUS, VaAlert, VaAvatar, VaChips, VaEmpty, VaFailed, VaHeader, VaList, VaPill, VaRouteTabs, VaRow, VaSearch, VaSkeleton } from "@/components/admin/VaKit";
+import { wdButton } from "@/components/home/ui";
 import { ADMIN_NAV } from "@/components/shell/navConfig";
-import { Shell } from "@/components/shell/Shell";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { ErrorState } from "@/components/ui/ErrorState";
-import { Input } from "@/components/ui/Field";
-import { PageHeader } from "@/components/ui/PageHeader";
-import { Sheet } from "@/components/ui/Sheet";
+import { AdminShell } from "@/components/shell/AdminShell";
+import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import { MotionItem, MotionList } from "@/components/ui/Motion";
 import { WithUser } from "@/components/WithUser";
 import { apiDelete, apiGet, apiPatch, ApiError, categoriesLabel, type CurrentUser, type VendorSummary } from "@/lib/api";
-import { ConfirmDialog, DangerGhostButton, ErrorBanner, Monogram, PAGE, persen, ResultCount, RowsSkeleton, SearchField, SubNav } from "../../../_ui";
+import { ConfirmDialog, persen } from "../../../_ui";
 
 /** Platform default when a vendor has no override (PRD §8.10). */
 const DEFAULT_LABEL = "10%";
@@ -35,6 +30,7 @@ function ApprovedVendorsContent({ user }: { user: CurrentUser }) {
   const [loadFailed, setLoadFailed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | "custom" | "default">("all");
   const [editing, setEditing] = useState<VendorSummary | null>(null);
   const [draft, setDraft] = useState("");
   const [draftError, setDraftError] = useState<string | null>(null);
@@ -115,21 +111,25 @@ function ApprovedVendorsContent({ user }: { user: CurrentUser }) {
   }
 
   const q = search.trim().toLowerCase();
-  const shown = vendors.filter((v) => !q || v.business_name.toLowerCase().includes(q) || v.city.toLowerCase().includes(q));
+  const customCount = vendors.filter((v) => v.commission_rate).length;
+  const shown = vendors.filter(
+    (v) => (!q || v.business_name.toLowerCase().includes(q) || v.city.toLowerCase().includes(q)) && (filter === "all" || (filter === "custom" ? !!v.commission_rate : !v.commission_rate)),
+  );
+  const filtering = !!q || filter !== "all";
 
   return (
-    <Shell user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
-      <div className={PAGE}>
-        <PageHeader
-          eyebrow="Verifikasi vendor"
+    <AdminShell tone="wd" user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
+      <div className="wd-container pb-16 pt-8 sm:pt-10">
+        <VaHeader
+          kicker="Verifikasi vendor"
           title={
             <>
-              Vendor <span className="dc-em">aktif</span>
+              Vendor <em>aktif</em>
             </>
           }
-          subtitle={`Komisi ditambahkan di atas harga vendor pada harga yang dilihat calon pengantin; vendor menerima harganya utuh. Bawaan ${DEFAULT_LABEL} kecuali kamu atur khusus di sini.`}
+          sub={`Komisi ditambahkan di atas harga vendor pada harga yang dilihat calon pengantin; vendor menerima harganya utuh. Bawaan ${DEFAULT_LABEL} kecuali kamu atur khusus di sini.`}
         />
-        <SubNav
+        <VaRouteTabs
           label="Daftar vendor"
           items={[
             { href: "/internal/admin/vendors", label: "Menunggu" },
@@ -137,119 +137,124 @@ function ApprovedVendorsContent({ user }: { user: CurrentUser }) {
           ]}
         />
 
-        {error && !loadFailed && <ErrorBanner message={error} />}
+        <div className="mt-6">
+          {error && !loadFailed && <VaAlert message={error} />}
 
-        {loading ? (
-          <RowsSkeleton rows={5} label="Memuat vendor aktif" />
-        ) : loadFailed ? (
-          <ErrorState
-            title="Daftar vendor belum bisa dimuat"
-            onRetry={() => {
-              setLoading(true);
-              setError(null);
-              load();
-            }}
-          />
-        ) : vendors.length === 0 ? (
-          <EmptyState title="Belum ada vendor aktif" body="Vendor yang kamu setujui akan muncul di sini." actionHref="/internal/admin/vendors" actionLabel="Tinjau vendor menunggu" />
-        ) : (
-          <>
-            <div className="mb-5 flex flex-wrap items-center gap-x-5 gap-y-3">
-              <SearchField value={search} onChange={setSearch} label="Cari vendor aktif" placeholder="Cari nama usaha atau kota" />
-              <ResultCount shown={shown.length} total={vendors.length} noun="vendor" />
-            </div>
+          {loading ? (
+            <VaSkeleton rows={5} label="Memuat vendor aktif" />
+          ) : loadFailed ? (
+            <VaFailed
+              what="Daftar vendor"
+              onRetry={() => {
+                setLoading(true);
+                setError(null);
+                load();
+              }}
+            />
+          ) : vendors.length === 0 ? (
+            <VaEmpty
+              art="shop"
+              title="Belum ada vendor aktif"
+              action={
+                <Link href="/internal/admin/vendors" className={`${wdButton({ variant: "outline", size: "sm", className: "min-h-11" })} ${VA_FOCUS}`}>
+                  Tinjau vendor menunggu
+                </Link>
+              }
+            >
+              Vendor yang kamu setujui akan muncul di sini.
+            </VaEmpty>
+          ) : (
+            <>
+              <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-3">
+                <VaSearch value={search} onChange={setSearch} label="Cari vendor aktif" placeholder="Cari nama usaha atau kota" />
+                <VaChips
+                  label="Jenis komisi"
+                  value={filter}
+                  onChange={(id) => setFilter(id as "all" | "custom" | "default")}
+                  options={[
+                    { id: "all", label: "Semua", count: vendors.length },
+                    { id: "custom", label: "Komisi khusus", count: customCount },
+                    { id: "default", label: "Bawaan", count: vendors.length - customCount },
+                  ]}
+                />
+              </div>
+              <p className="mb-2 text-sm text-wd-muted" aria-live="polite">
+                {filtering ? `${shown.length} dari ${vendors.length} vendor` : `${vendors.length} vendor`}
+              </p>
 
-            {shown.length === 0 ? (
-              <EmptyState title="Tidak ada yang cocok" body={`Tidak ada vendor aktif dengan nama atau kota "${search}".`} action={<Button variant="ghost" size="sm" onClick={() => setSearch("")}>Hapus pencarian</Button>} />
-            ) : (
-              <div className="overflow-hidden rounded-xl border border-dc-line bg-dc-white">
-                <div className="hidden grid-cols-[1fr_160px_120px_auto] gap-4 border-b border-dc-line bg-dc-cream px-5 py-3 text-sm font-semibold text-dc-text-2 md:grid" aria-hidden>
-                  <span>Vendor</span>
-                  <span>Kategori</span>
-                  <span className="text-right">Komisi</span>
-                  <span />
-                </div>
-                <MotionList className="divide-y divide-dc-line">
+              {shown.length === 0 ? (
+                <VaEmpty
+                  art="mirror"
+                  title="Tidak ada yang cocok"
+                  action={
+                    <button
+                      type="button"
+                      className={VA_BTN_OUTLINE}
+                      onClick={() => {
+                        setSearch("");
+                        setFilter("all");
+                      }}
+                    >
+                      Hapus pencarian
+                    </button>
+                  }
+                >
+                  Tidak ada vendor aktif yang cocok dengan pencarian ini.
+                </VaEmpty>
+              ) : (
+                <VaList>
                   {shown.map((v) => (
-                    <MotionItem key={v.user_id} className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-3 px-5 py-4 md:grid-cols-[1fr_160px_120px_auto]">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <Monogram name={v.business_name} size="sm" />
-                        <div className="min-w-0">
-                          <Link href={`/internal/admin/vendors/${v.user_id}`} className="block truncate font-semibold text-dc-ink underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-dc-gold">
+                    <VaRow key={v.user_id}>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-3 px-1 py-4 sm:px-2">
+                        <VaAvatar name={v.business_name} />
+                        <div className="min-w-0 flex-1 basis-48">
+                          <Link href={`/internal/admin/vendors/${v.user_id}`} className={`break-words text-lg font-semibold leading-snug text-wd-ink underline-offset-4 hover:underline ${VA_FOCUS}`}>
                             {v.business_name}
                           </Link>
-                          <p className="truncate text-sm text-dc-text-3">
-                            <span className="md:hidden">{categoriesLabel(v)} · </span>
-                            {v.city}
+                          <p className="mt-0.5 text-sm text-wd-text">
+                            {categoriesLabel(v)} · {v.city}
                           </p>
                         </div>
+                        <div className="flex items-center gap-2 sm:w-36 sm:flex-col sm:items-end sm:gap-0.5">
+                          <p className="font-semibold tabular-nums text-wd-ink">
+                            <span className="sr-only">Komisi </span>
+                            {v.commission_rate ? persen(v.commission_rate) : DEFAULT_LABEL}
+                          </p>
+                          {v.commission_rate ? <VaPill tone="warn">Khusus</VaPill> : <span className="text-xs text-wd-muted">bawaan</span>}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <button type="button" onClick={() => openEdit(v)} className={VA_BTN_OUTLINE} aria-label={`Atur komisi ${v.business_name}`}>
+                            Atur komisi
+                          </button>
+                          <button type="button" onClick={() => openDelete(v)} className={VA_BTN_DANGER} aria-label={`Hapus ${v.business_name}`}>
+                            Hapus
+                          </button>
+                        </div>
                       </div>
-                      <p className="hidden text-sm text-dc-text-2 md:block">{categoriesLabel(v)}</p>
-                      <div className="text-right">
-                        <p className="font-semibold tabular-nums text-dc-ink">{v.commission_rate ? persen(v.commission_rate) : DEFAULT_LABEL}</p>
-                        {v.commission_rate ? <Badge tone="gold">Khusus</Badge> : <p className="text-xs text-dc-text-3">bawaan</p>}
-                      </div>
-                      <div className="col-span-2 flex gap-2 md:col-span-1 md:justify-end">
-                        <Button variant="ghost" size="sm" onClick={() => openEdit(v)} className="flex-1 md:flex-none" aria-label={`Atur komisi ${v.business_name}`}>
-                          Atur komisi
-                        </Button>
-                        <DangerGhostButton onClick={() => openDelete(v)} className="flex-1 md:flex-none" aria-label={`Hapus ${v.business_name}`}>
-                          Hapus
-                        </DangerGhostButton>
-                      </div>
-                    </MotionItem>
+                    </VaRow>
                   ))}
-                </MotionList>
-              </div>
-            )}
-          </>
-        )}
+                </VaList>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
-      <Sheet
-        open={!!editing}
-        onClose={() => setEditing(null)}
-        title="Atur komisi"
-        description={editing?.business_name}
-        footer={
-          <div className="flex flex-col gap-2">
-            <Button block onClick={() => save(false)} loading={saving === "custom"} disabled={saving !== null}>
-              Simpan komisi
-            </Button>
-            {editing?.commission_rate ? (
-              <Button variant="ghost" block onClick={() => save(true)} loading={saving === "default"} disabled={saving !== null}>
-                Kembali ke komisi bawaan ({DEFAULT_LABEL})
-              </Button>
-            ) : null}
-          </div>
-        }
-      >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            save(false);
+      <Modal open={!!editing} onClose={() => setEditing(null)} title="Atur komisi" description={editing?.business_name}>
+        <CommissionForm
+          key={editing?.user_id ?? "none"}
+          currentLabel={editing?.commission_rate ? `${persen(editing.commission_rate)} (khusus)` : `${DEFAULT_LABEL} (bawaan)`}
+          hasOverride={!!editing?.commission_rate}
+          draft={draft}
+          onDraft={(v) => {
+            setDraft(v);
+            setDraftError(null);
           }}
-          className="flex flex-col gap-5"
-        >
-          <div className="rounded-lg bg-dc-cream px-4 py-3 text-sm text-dc-text-2">
-            Komisi sekarang:{" "}
-            <span className="font-semibold text-dc-ink">{editing?.commission_rate ? `${persen(editing.commission_rate)} (khusus)` : `${DEFAULT_LABEL} (bawaan)`}</span>
-          </div>
-          <Input
-            label="Komisi khusus (%)"
-            inputMode="decimal"
-            value={draft}
-            onChange={(e) => {
-              setDraft(e.target.value);
-              setDraftError(null);
-            }}
-            placeholder={`Kosongkan untuk ${DEFAULT_LABEL}`}
-            hint="Langsung menaikkan harga vendor ini di direktori, profil, dan paket (contoh: Rp10.000.000 tampil Rp11.000.000 dengan 10%). Booking yang sudah dibuat tidak berubah. Kosongkan untuk memakai komisi bawaan."
-            error={draftError ?? undefined}
-            autoFocus
-          />
-        </form>
-      </Sheet>
+          error={draftError}
+          saving={saving}
+          onSave={save}
+        />
+      </Modal>
       <ConfirmDialog
         open={!!deleting}
         onClose={() => {
@@ -262,8 +267,75 @@ function ApprovedVendorsContent({ user }: { user: CurrentUser }) {
         busy={deleteBusy}
         typeToConfirm={deleting?.business_name}
       >
-        {deleteError && <ErrorBanner message={deleteError} />}
+        {deleteError && <VaAlert message={deleteError} />}
       </ConfirmDialog>
-    </Shell>
+    </AdminShell>
+  );
+}
+
+function CommissionForm({
+  currentLabel,
+  hasOverride,
+  draft,
+  onDraft,
+  error,
+  saving,
+  onSave,
+}: {
+  currentLabel: string;
+  hasOverride: boolean;
+  draft: string;
+  onDraft: (v: string) => void;
+  error: string | null;
+  saving: "custom" | "default" | null;
+  onSave: (useDefault: boolean) => void;
+}) {
+  const id = useId();
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSave(false);
+      }}
+      className="flex flex-col gap-5"
+    >
+      <div className="rounded-2xl bg-wd-accent-wash px-4 py-3 text-sm text-wd-text">
+        Komisi sekarang: <span className="font-semibold text-wd-ink">{currentLabel}</span>
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor={id} className="text-sm font-semibold text-wd-ink">
+          Komisi khusus (%)
+        </label>
+        <input
+          id={id}
+          inputMode="decimal"
+          value={draft}
+          onChange={(e) => onDraft(e.target.value)}
+          placeholder={`Kosongkan untuk ${DEFAULT_LABEL}`}
+          autoFocus
+          aria-invalid={error ? true : undefined}
+          aria-describedby={`${id}-hint`}
+          className={`min-h-12 rounded-xl border bg-wd-white px-4 text-[0.95rem] text-wd-ink placeholder:text-wd-muted focus:border-wd-accent-line focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wd-ink ${error ? "border-wd-danger" : "border-wd-line-2"}`}
+        />
+        <p id={`${id}-hint`} className="text-xs leading-relaxed text-wd-muted">
+          Langsung menaikkan harga vendor ini di direktori, profil, dan paket (contoh: Rp10.000.000 tampil Rp11.000.000 dengan 10%). Booking yang sudah dibuat tidak berubah. Kosongkan untuk memakai komisi bawaan.
+        </p>
+        {error && (
+          <p role="alert" className="text-sm font-semibold text-wd-danger">
+            {error}
+          </p>
+        )}
+      </div>
+      <div className="flex flex-col gap-2">
+        <button type="submit" disabled={saving !== null} aria-busy={saving === "custom"} className={`${VA_BTN_GOLD} w-full`}>
+          {saving === "custom" ? "Menyimpan..." : "Simpan komisi"}
+        </button>
+        {hasOverride && (
+          <button type="button" onClick={() => onSave(true)} disabled={saving !== null} aria-busy={saving === "default"} className={`${VA_BTN_OUTLINE} w-full`}>
+            Kembali ke komisi bawaan ({DEFAULT_LABEL})
+          </button>
+        )}
+      </div>
+    </form>
   );
 }

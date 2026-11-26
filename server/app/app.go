@@ -17,6 +17,7 @@ import (
 
 	"duacincin/server/internal/admin"
 	"duacincin/server/internal/aiassist"
+	"duacincin/server/internal/articles"
 	"duacincin/server/internal/auth"
 	"duacincin/server/internal/booking"
 	"duacincin/server/internal/budget"
@@ -100,7 +101,7 @@ func New(ctx context.Context, opts Options) (*App, error) {
 
 	storageClient := storage.NewClient(cfg.SupabaseURL, cfg.SupabaseServiceRoleKey)
 	if opts.EnsureBuckets && storageClient.Configured() {
-		for _, bucket := range []string{vendors.PortfolioBucket, inspiration.Bucket, chat.AttachmentBucket, auth.AvatarBucket} {
+		for _, bucket := range []string{vendors.PortfolioBucket, inspiration.Bucket, chat.AttachmentBucket, auth.AvatarBucket, admin.ArticleImageBucket} {
 			if err := storageClient.EnsureBucket(ctx, bucket, true); err != nil {
 				log.Printf("warning: could not ensure storage bucket %q: %v", bucket, err)
 			}
@@ -167,6 +168,8 @@ func New(ctx context.Context, opts Options) (*App, error) {
 	adminDeps.Chat = chatRepo
 	aiSettingsRepo := repository.NewAISettingsRepo(pool)
 	adminDeps.AISettings = aiSettingsRepo
+	articleRepo := repository.NewArticleRepo(pool)
+	adminDeps.Articles = articleRepo
 	aiDeps := aiassist.NewDeps(vendorRepo, reviewRepo, inspirationRepo, repository.NewAIChatRepo(pool), aiSettingsRepo, limiter, cfg)
 	aiDeps.Chat, aiDeps.Packages = chatRepo, vendorRepo.Packages()
 
@@ -175,6 +178,7 @@ func New(ctx context.Context, opts Options) (*App, error) {
 		Auth:           authDeps,
 		Vendors:        vendorsDeps,
 		Admin:          adminDeps,
+		Articles:       articles.NewDeps(articleRepo),
 		Chat:           chatDeps,
 		Whatsapp:       whatsappDeps,
 		Budget:         budget.NewDeps(repository.NewBudgetRepo(pool)),

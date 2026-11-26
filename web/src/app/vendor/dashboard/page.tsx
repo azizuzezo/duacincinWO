@@ -46,7 +46,7 @@ type NextStep = { eyebrow: string; title: string; body: string; cta: string; hre
  * it fresh. A single request links straight to that booking. */
 function nextStep(profile: VendorProfile, packages: VendorPackage[], requested: Booking[]): NextStep {
   if (profile.status === "rejected") {
-    return { eyebrow: "Perlu diperbaiki", title: "Profilmu perlu diperbaiki", body: profile.rejection_reason || "Admin menolak profilmu. Perbarui datanya lalu kirim ulang.", cta: "Perbarui profil", href: "/vendor/profile" };
+    return { eyebrow: "Perlu diperbaiki", title: "Profilmu perlu diperbaiki", body: `${profile.rejection_reason ? `Catatan tim: ${profile.rejection_reason}. ` : ""}Perbaiki datanya lalu ajukan ulang supaya ditinjau lagi.`, cta: "Perbaiki dan ajukan ulang", href: "/vendor/profile" };
   }
   if (requested.length > 0) {
     return {

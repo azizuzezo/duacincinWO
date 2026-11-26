@@ -24,6 +24,7 @@ func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 
 		r.Put("/profile", UpsertProfile(deps))
 		r.Get("/profile/me", MyProfile(deps))
+		r.Post("/profile/resubmit", ResubmitProfile(deps))
 		r.Post("/profile/name-change", RequestNameChange(deps))
 		r.Post("/portfolio", UploadPortfolio(deps))
 		r.Delete("/portfolio/{id}", DeletePortfolio(deps))

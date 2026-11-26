@@ -45,7 +45,7 @@ export function JoinPath({ steps }: { steps: JoinStep[] }) {
               {s.screen.kind === "phone" ? (
                 <PhoneFrame src={s.screen.src} alt={s.screen.alt} sizes="220px" className="w-[200px] transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:-translate-y-3 motion-reduce:transition-none motion-reduce:group-hover:translate-y-0" />
               ) : (
-                <BrowserFrame src={s.screen.src} alt={s.screen.alt} sizes="(min-width: 1024px) 380px, 90vw" address="duacincin.id/vendor/profile" className="w-[150%] max-w-none shrink-0 transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:-translate-x-[12%] motion-reduce:transition-none motion-reduce:group-hover:translate-x-0" />
+                <BrowserFrame src={s.screen.src} alt={s.screen.alt} sizes="(min-width: 1024px) 380px, 90vw" address="duacincin.id/vendor/portfolio" className="w-[150%] max-w-none shrink-0 transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:-translate-x-[12%] motion-reduce:transition-none motion-reduce:group-hover:translate-x-0" />
               )}
               <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-white/90 to-transparent" />
             </div>

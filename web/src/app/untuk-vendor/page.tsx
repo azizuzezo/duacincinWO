@@ -48,7 +48,7 @@ const SIGNUP: JoinStep[] = [
     result: "Profil, portofolio, paket",
     screen: {
       src: `${SHOT}/v-etalase.webp`,
-      alt: "Editor etalase vendor dengan identitas usaha dan daftar kelengkapan etalase",
+      alt: "Galeri portofolio vendor dengan foto sampul dan tombol tambah foto",
       kind: "desk",
     },
   },
@@ -58,7 +58,7 @@ const SIGNUP: JoinStep[] = [
     result: "Statusnya terlihat di dashboard",
     screen: {
       src: `${SHOT}/k1-direktori.webp`,
-      alt: "Kartu vendor Sanggar Rias Kencana tampil di direktori DuaCincin",
+      alt: "Kartu vendor tampil di direktori DuaCincin dengan foto dan harga mulai dari",
       kind: "phone",
     },
   },
@@ -79,7 +79,7 @@ const SHOWCASE: ShowcaseItem[] = [
     title: "Detail booking",
     body: "Paket, tanggal, harga, DP dan pelunasan, plus langkah berikutnya untuk setiap booking.",
     src: `${SHOT}/v-booking.webp`,
-    alt: "Detail booking Paket Rias Paes Ageng: DP sudah masuk Dana Aman, rincian DP dan pelunasan",
+    alt: "Daftar booking masuk dengan tab status, permintaan baru yang perlu dijawab, dan harga yang kamu terima",
     address: "duacincin.id/vendor/bookings",
     phoneSrc: `${SHOT}/v-booking-m.webp`,
   },
@@ -88,8 +88,8 @@ const SHOWCASE: ShowcaseItem[] = [
     title: "Etalase",
     body: "Atur profil, portofolio, dan paket, dengan pratinjau persis seperti yang dilihat calon pengantin.",
     src: `${SHOT}/v-etalase.webp`,
-    alt: "Editor etalase dengan langkah profil, portofolio, dan paket harga serta kelengkapan etalase",
-    address: "duacincin.id/vendor/profile",
+    alt: "Etalase vendor dengan tab Profil, Portofolio, dan Paket, serta galeri foto hasil kerja",
+    address: "duacincin.id/vendor/portfolio",
     phoneSrc: `${SHOT}/v-etalase-m.webp`,
   },
   {

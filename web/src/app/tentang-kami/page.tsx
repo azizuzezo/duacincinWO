@@ -46,14 +46,14 @@ const PRINCIPLES: Principle[] = [
     title: "Wadah vendor mendapatkan client",
     body: "Vendor terverifikasi tampil di direktori, dihubungi calon pengantin lewat chat, dan menerima booking di satu tempat.",
     link: { href: "/untuk-vendor", label: "Untuk vendor" },
-    screen: { src: `${SHOT}/k1-direktori.webp`, alt: "Direktori vendor DuaCincin dengan kartu vendor, harga mulai dari, dan rating" },
+    screen: { src: `${SHOT}/k1-direktori.webp`, alt: "Direktori vendor DuaCincin dengan kartu vendor, harga mulai dari, dan lencana Dana Aman" },
   },
   {
     id: "budget",
     title: "Kami bantu sesuaikan dengan budget",
     body: "Budget planner membagi anggaranmu per kategori, dan wedding consultant kami merekomendasikan vendor yang pas dengan budget itu.",
     link: { href: "/#budget", label: "Coba hitung budget" },
-    screen: { src: `${SHOT}/k5-konsultan.webp`, alt: "Chat dengan wedding consultant DuaCincin yang merekomendasikan vendor" },
+    screen: { src: `${SHOT}/k5-konsultan.webp`, alt: "Halaman konsultasi DuaCincin dengan tombol chat dan jadwalkan video call" },
   },
 ];
 

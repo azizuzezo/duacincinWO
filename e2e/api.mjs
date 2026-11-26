@@ -133,6 +133,16 @@ r = await new Client("anon").call("GET", "/vendors"); ok("pending vendor NOT in 
 r = await new Client("anon").call("GET", `/vendors/${vendorId}/packages`); ok("pending vendor packages are 404 publicly", r.status === 404, JSON.stringify(r));
 r = await admin.call("GET", "/admin/vendors/pending"); ok("admin sees pending vendors", r.status === 200 && r.data.length >= 2, JSON.stringify(r));
 r = await client.call("GET", "/admin/vendors/pending"); ok("client forbidden from admin API (403)", r.status === 403, JSON.stringify(r));
+// A rejected vendor can fix the profile and send it back for review.
+r = await vendor2.call("POST", "/vendor/profile/resubmit", {}); ok("resubmit is refused while the profile is pending (409)", r.status === 409, JSON.stringify(r));
+r = await admin.call("POST", `/admin/vendors/${vendor2Id}/reject`, { reason: "Foto portofolio belum ada" }); ok("admin rejects the second vendor", r.status < 300, JSON.stringify(r));
+r = await vendor2.call("GET", "/vendor/profile/me"); ok("rejected vendor sees the status and the reason", r.status === 200 && r.data?.status === "rejected" && r.data?.rejection_reason === "Foto portofolio belum ada", JSON.stringify(r));
+r = await vendor2.call("PUT", "/vendor/profile", { business_name: "Dekor Uji", category: "decor", city: "Bandung", price_min: 5000000, price_max: 20000000, description: "Sudah diperbaiki", whatsapp_number: "+62 813 1111 2222" }); ok("rejected vendor can edit the profile", r.status === 200 && r.data?.status === "rejected", JSON.stringify(r));
+r = await admin.call("GET", "/admin/vendors/pending"); ok("a rejected vendor is not in the pending queue before resubmitting", !r.data?.some((v) => v.user_id === vendor2Id || v.id === vendor2Id), JSON.stringify(r.data?.map((v) => v.business_name)));
+r = await client.call("POST", "/vendor/profile/resubmit", {}); ok("a client cannot resubmit (403)", r.status === 403, JSON.stringify(r));
+r = await vendor2.call("POST", "/vendor/profile/resubmit", {}); ok("rejected vendor resubmits: back to pending, reason cleared", r.status === 200 && r.data?.status === "pending" && !r.data?.rejection_reason, JSON.stringify(r));
+r = await admin.call("GET", "/admin/vendors/pending"); ok("the resubmitted vendor is back in the pending queue", r.status === 200 && r.data?.some((v) => v.user_id === vendor2Id || v.id === vendor2Id), JSON.stringify(r.data?.map((v) => v.business_name)));
+r = await vendor2.call("POST", "/vendor/profile/resubmit", {}); ok("resubmit twice is refused (409)", r.status === 409, JSON.stringify(r));
 r = await admin.call("POST", `/admin/vendors/${vendorId}/approve`, {}); ok("admin approves vendor", r.status < 300, JSON.stringify(r));
 r = await new Client("anon").call("GET", "/vendors?category=venue"); ok("approved vendor in directory (category filter)", r.data?.some((v) => v.id === vendorId), JSON.stringify(r.data));
 r = await new Client("anon").call("GET", "/vendors?category=venue&city=jakarta%20selatan"); ok("city filter is case-insensitive", r.data?.some((v) => v.id === vendorId), JSON.stringify(r.data));
@@ -498,6 +508,77 @@ r = await admin.call("DELETE", "/admin/vendors/bukan-uuid"); ok("malformed id is
 ok("deletion is written to the audit log", psql(`select count(*) from admin_audit_log where action = 'vendor.delete' and target_id = '${vendor2Id}'`) === "1");
 r = await admin.call("GET", "/admin/audit-log"); const delEntry = r.data?.find((e) => e.action === "vendor.delete" && e.target_id === vendor2Id);
 ok("audit log names who did it", delEntry?.actor_name === "Admin Uji" && delEntry?.actor_email === emails.admin && delEntry?.actor_role === "admin", JSON.stringify(delEntry));
+
+// 11. Articles: admin-written, rich-text body as a validated ProseMirror document.
+{
+  const anon = new Client("anon-art");
+  const doc = (...content) => ({ type: "doc", content });
+  const para = (text) => ({ type: "paragraph", content: [{ type: "text", text }] });
+  const title = `Tips Memilih Venue ${stamp}`;
+  r = await client.call("GET", "/admin/articles"); ok("client cannot list admin articles (403)", r.status === 403, JSON.stringify(r));
+  r = await vendor.call("POST", "/admin/articles", { title }); ok("vendor cannot create an article (403)", r.status === 403, JSON.stringify(r));
+  r = await anon.call("GET", "/admin/articles"); ok("anonymous cannot list admin articles (401)", r.status === 401, JSON.stringify(r));
+  r = await admin.call("POST", "/admin/articles", { title }); ok("admin creates a draft, slug derived, reading_minutes >= 1", r.status === 201 && r.data?.status === "draft" && r.data.slug === `tips-memilih-venue-${stamp}` && r.data.reading_minutes >= 1 && r.data.author_name === "Admin Uji" && r.data.body?.type === "doc" && r.data.published_at === null, JSON.stringify(r));
+  const art = r.data;
+  r = await admin.call("POST", "/admin/articles", { title }); ok("same title gets a -2 slug", r.status === 201 && r.data?.slug === `${art.slug}-2`, JSON.stringify(r));
+  const art2 = r.data;
+  r = await admin.call("POST", "/admin/articles", { title: "Judul lain", slug: art.slug }); ok("typed duplicate slug is refused (409)", r.status === 409 && r.data?.error === "alamat artikel sudah dipakai", JSON.stringify(r));
+  r = await admin.call("POST", "/admin/articles", { title: "Judul lain", slug: "Bad Slug!" }); ok("malformed typed slug is refused (400)", r.status === 400, JSON.stringify(r));
+  r = await admin.call("POST", "/admin/articles", { title: "ab" }); ok("too short title is refused (400)", r.status === 400, JSON.stringify(r));
+  r = await admin.call("POST", "/admin/articles", { title: "Judul bagus", cover_url: "javascript:alert(1)" }); ok("bad cover url is refused (400)", r.status === 400, JSON.stringify(r));
+  r = await admin.call("POST", "/admin/articles", { title: "Judul bagus", body: doc({ type: "script", content: [] }) }); ok("unknown node type is refused (400, Indonesian)", r.status === 400 && /^isi artikel tidak valid/.test(r.data?.error ?? ""), JSON.stringify(r));
+  r = await admin.call("POST", "/admin/articles", { title: "Judul bagus", body: doc({ type: "paragraph", content: [{ type: "text", text: "x", marks: [{ type: "link", attrs: { href: "javascript:alert(1)" } }] }] }) }); ok("javascript: link is refused (400)", r.status === 400 && /^isi artikel tidak valid/.test(r.data?.error ?? ""), JSON.stringify(r));
+  let deep = { type: "paragraph" }; for (let i = 0; i < 13; i++) deep = { type: "blockquote", content: [deep] };
+  r = await admin.call("POST", "/admin/articles", { title: "Judul bagus", body: doc(deep) }); ok("too-deep document is refused (400)", r.status === 400 && /^isi artikel tidak valid/.test(r.data?.error ?? ""), JSON.stringify(r));
+  r = await admin.call("POST", "/admin/articles", { title: "Judul bagus", body: doc({ type: "paragraph", content: [{ type: "text", text: "x", marks: [{ type: "textStyle", attrs: { fontFamily: "Comic Sans" } }] }] }) }); ok("font outside the allowlist is refused (400)", r.status === 400, JSON.stringify(r));
+  const words = Array.from({ length: 450 }, () => "kata").join(" ");
+  const longBody = doc({ type: "heading", attrs: { level: 2, textAlign: "center" }, content: [{ type: "text", text: "Mulai dari anggaran" }] }, para(words));
+  r = await admin.call("PUT", `/admin/articles/${art.id}`, { title: "Memilih Venue dengan Tenang", slug: `venue-${stamp}`, description: "Panduan singkat memilih venue pernikahan sesuai anggaran.", topic: "Venue", body: longBody, author_name: "Tim Dua Cincin" });
+  ok("admin updates the article (slug, body, reading time 3)", r.status === 200 && r.data?.slug === `venue-${stamp}` && r.data.reading_minutes === 3 && r.data.author_name === "Tim Dua Cincin" && r.data.body?.content?.length === 2 && r.data.status === "draft", JSON.stringify(r).slice(0, 300));
+  r = await admin.call("PUT", `/admin/articles/${art.id}`, { title: "Memilih Venue dengan Tenang", slug: art2.slug }); ok("update to a taken slug is refused (409)", r.status === 409, JSON.stringify(r));
+  r = await admin.call("PUT", `/admin/articles/${art.id}`, { title: "Memilih Venue dengan Tenang", description: "Panduan singkat memilih venue pernikahan sesuai anggaran.", topic: "Venue" });
+  ok("update without body or slug keeps both", r.status === 200 && r.data?.slug === `venue-${stamp}` && r.data.body?.content?.length === 2, JSON.stringify(r).slice(0, 300));
+  r = await admin.call("GET", `/admin/articles/${art.id}`); ok("admin get returns the body as an object", r.status === 200 && typeof r.data?.body === "object" && r.data.body.type === "doc", JSON.stringify(r).slice(0, 200));
+  r = await admin.call("GET", "/admin/articles/bukan-uuid"); ok("malformed id is 404", r.status === 404, JSON.stringify(r));
+  r = await admin.call("GET", "/admin/articles?status=draft"); ok("admin list (summaries, no body) filters by status", r.status === 200 && r.data.some((a) => a.id === art.id) && r.data.every((a) => a.status === "draft" && !("body" in a)), JSON.stringify(r).slice(0, 200));
+  r = await admin.call("GET", "/admin/articles?status=nope"); ok("bad status filter is refused (400)", r.status === 400, JSON.stringify(r));
+  r = await anon.call("GET", "/articles"); ok("public list does not show the draft", r.status === 200 && Array.isArray(r.data) && !r.data.some((a) => a.id === art.id), JSON.stringify(r).slice(0, 200));
+  r = await anon.call("GET", `/articles/venue-${stamp}`); ok("public get of a draft is 404", r.status === 404, JSON.stringify(r));
+  // publish: empty body and short description are refused
+  r = await admin.call("POST", `/admin/articles/${art2.id}/publish`); ok("publish without description is refused (400)", r.status === 400 && /deskripsi/.test(r.data?.error ?? ""), JSON.stringify(r));
+  r = await admin.call("PUT", `/admin/articles/${art2.id}`, { title, description: "Deskripsi yang cukup panjang untuk terbit." }); ok("description saved", r.status === 200, JSON.stringify(r));
+  r = await admin.call("POST", `/admin/articles/${art2.id}/publish`); ok("publish with an empty body is refused (400)", r.status === 400 && /isi artikel/.test(r.data?.error ?? ""), JSON.stringify(r));
+  r = await admin.call("PUT", `/admin/articles/${art2.id}`, { title, description: "Deskripsi yang cukup panjang untuk terbit.", body: doc(para("Isi artikel yang nyata.")) }); ok("body saved", r.status === 200, JSON.stringify(r));
+  r = await admin.call("POST", `/admin/articles/${art2.id}/publish`); ok("publish succeeds, published_at set", r.status === 200 && r.data?.status === "published" && !!r.data.published_at, JSON.stringify(r).slice(0, 300));
+  const firstPub = r.data?.published_at;
+  r = await anon.call("GET", "/articles"); ok("public list shows it without body", r.status === 200 && r.data.some((a) => a.slug === art2.slug && !("body" in a) && !("created_by" in a) && a.status === "published"), JSON.stringify(r).slice(0, 300));
+  { const res = await fetch(`${BASE}/articles/${art2.slug}`); const data = await res.json(); ok("public get returns the body object with cache headers", res.status === 200 && data.body?.type === "doc" && data.body.content[0].content[0].text === "Isi artikel yang nyata." && /max-age=60/.test(res.headers.get("cache-control") ?? "") && !("created_by" in data), JSON.stringify(data).slice(0, 200)); }
+  { const res = await fetch(`${BASE}/articles?limit=1`); const data = await res.json(); ok("public list honours limit", res.status === 200 && data.length <= 1 && /stale-while-revalidate/.test(res.headers.get("cache-control") ?? "")); }
+  await new Promise((res) => setTimeout(res, 1100));
+  r = await admin.call("POST", `/admin/articles/${art2.id}/publish`); ok("republish keeps the original published_at", r.status === 200 && r.data?.published_at === firstPub, JSON.stringify({ a: r.data?.published_at, b: firstPub }));
+  r = await admin.call("POST", `/admin/articles/${art2.id}/unpublish`); ok("unpublish returns it to draft", r.status === 200 && r.data?.status === "draft", JSON.stringify(r).slice(0, 200));
+  r = await anon.call("GET", `/articles/${art2.slug}`); ok("unpublished article is 404 publicly", r.status === 404, JSON.stringify(r));
+  r = await admin.call("POST", `/admin/articles/${art2.id}/publish`); ok("republish after unpublish keeps the first date", r.status === 200 && r.data?.published_at === firstPub, JSON.stringify(r).slice(0, 200));
+  // image upload through the fake storage
+  const upImg = async (who, bytes, name, type) => {
+    const form = new FormData(); form.append("file", new Blob([bytes], { type }), name);
+    const res = await fetch(BASE + "/admin/articles/images", { method: "POST", headers: who.cookie ? { Cookie: who.cookie } : {}, body: form });
+    const txt = await res.text(); let data = null; try { data = txt ? JSON.parse(txt) : null; } catch { data = txt; }
+    return { status: res.status, data };
+  };
+  const gif = Buffer.from("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", "base64");
+  r = await upImg(admin, gif, "kecil.gif", "image/gif"); ok("admin uploads an article image (200 + public url)", r.status === 200 && /^https?:\/\/.+\/artikel-foto\/[0-9a-f-]{36}\.gif$/.test(r.data?.url ?? ""), JSON.stringify(r));
+  r = await upImg(admin, "ini bukan gambar", "palsu.png", "image/png"); ok("a text file renamed .png is refused (400)", r.status === 400, JSON.stringify(r));
+  r = await upImg(client, gif, "kecil.gif", "image/gif"); ok("client cannot upload article images (403)", r.status === 403, JSON.stringify(r));
+  // delete
+  r = await client.call("DELETE", `/admin/articles/${art.id}`); ok("client cannot delete (403)", r.status === 403, JSON.stringify(r));
+  r = await admin.call("DELETE", `/admin/articles/${art.id}`); ok("admin deletes an article", r.status === 200 && r.data?.message === "artikel dihapus", JSON.stringify(r));
+  r = await admin.call("GET", `/admin/articles/${art.id}`); ok("deleted article is 404", r.status === 404, JSON.stringify(r));
+  r = await admin.call("DELETE", `/admin/articles/${art.id}`); ok("deleting again is 404", r.status === 404, JSON.stringify(r));
+  const acts = psql(`select string_agg(distinct action, ',' order by action) from admin_audit_log where action like 'article.%'`);
+  ok("every article action is audited", acts === "article.create,article.delete,article.publish,article.unpublish,article.update", acts);
+  await admin.call("DELETE", `/admin/articles/${art2.id}`);
+}
 
 console.log(results.join("\n")); console.log(`\n${results.length - failed}/${results.length} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

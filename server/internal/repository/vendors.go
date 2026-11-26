@@ -79,6 +79,23 @@ func (r *VendorRepo) UpsertProfile(ctx context.Context, userID, businessName str
 	return scanVendorProfile(row)
 }
 
+// Resubmit puts a rejected profile back in the review queue: status goes to
+// pending and the old rejection reason is cleared. Only a rejected profile
+// can be resubmitted; anything else returns ErrNotFound (the handler tells
+// "no profile" and "not rejected" apart before calling this).
+func (r *VendorRepo) Resubmit(ctx context.Context, userID string) (*VendorProfile, error) {
+	row := r.pool.QueryRow(ctx, `
+		update vendor_profiles set status = 'pending', rejection_reason = null, updated_at = now()
+		where user_id = $1 and status = 'rejected'
+		returning user_id, business_name, category, city, price_min, price_max, description, status, rejection_reason, commission_rate, created_at, updated_at, cities, categories::text[], whatsapp_number
+	`, userID)
+	p, err := scanVendorProfile(row)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	return p, err
+}
+
 // UpdateBusinessName applies an approved name-change request. Deliberately
 // separate from UpsertProfile so it never touches status/rejection_reason.
 func (r *VendorRepo) UpdateBusinessName(ctx context.Context, userID, businessName string) error {

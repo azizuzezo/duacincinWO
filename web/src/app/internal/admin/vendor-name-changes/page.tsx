@@ -1,20 +1,16 @@
 "use client";
 
-import { AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
+import { VA_BTN_DANGER, VA_BTN_GOLD, VA_FOCUS, VaAlert, VaCount, VaEmpty, VaFailed, VaHeader, VaList, VaPill, VaRow, VaSkeleton } from "@/components/admin/VaKit";
 import { ADMIN_NAV } from "@/components/shell/navConfig";
-import { Shell } from "@/components/shell/Shell";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { ErrorState } from "@/components/ui/ErrorState";
-import { PageHeader } from "@/components/ui/PageHeader";
-import { TabPanel, Tabs } from "@/components/ui/Tabs";
+import { AdminShell } from "@/components/shell/AdminShell";
 import { useToast } from "@/components/ui/Toast";
 import { WithUser } from "@/components/WithUser";
 import { apiGet, apiPost, ApiError, type CurrentUser } from "@/lib/api";
-import { ConfirmDialog, DangerGhostButton, ErrorBanner, PAGE, QueueItem, RowsSkeleton, tanggal } from "../../_ui";
+import { SPRING_SNAPPY, useReducedMotion } from "@/lib/motion";
+import { ConfirmDialog, tanggal } from "../../_ui";
 
 type PendingNameChange = {
   id: string;
@@ -66,6 +62,11 @@ function AdminVendorNameChangesContent({ user }: { user: CurrentUser }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
+  function switchTab(next: "pending" | "resolved") {
+    setError(null);
+    setTab(next);
+  }
+
   async function confirmApprove() {
     if (!approveTarget) return;
     const id = approveTarget.id;
@@ -104,92 +105,122 @@ function AdminVendorNameChangesContent({ user }: { user: CurrentUser }) {
 
   const loading = loadedTab !== tab;
   const pending = tab === "pending";
+  const reduced = useReducedMotion();
+  const tabs = [
+    { id: "pending" as const, label: "Menunggu", count: loadedTab === "pending" && !loadFailed ? requests.length : undefined },
+    { id: "resolved" as const, label: "Riwayat", count: undefined },
+  ];
 
   return (
-    <Shell user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
-      <div className={PAGE}>
-        <PageHeader
-          eyebrow="Verifikasi vendor"
+    <AdminShell tone="wd" user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
+      <div className="wd-container pb-16 pt-8 sm:pt-10">
+        <VaHeader
+          kicker="Verifikasi vendor"
           title={
             <>
-              Ganti <span className="dc-em">nama</span> vendor
+              Ganti <em>nama</em> vendor
             </>
           }
-          subtitle="Nama baru langsung tampil di halaman publik vendor setelah kamu setujui."
+          sub="Nama baru langsung tampil di halaman publik vendor setelah kamu setujui."
         />
 
-        <Tabs
-          idBase="ganti-nama"
-          label="Status permintaan"
-          value={tab}
-          onChange={(id) => {
-            setError(null);
-            setTab(id as "pending" | "resolved");
+        <div
+          role="tablist"
+          aria-label="Status permintaan"
+          className="mt-7 flex gap-1 overflow-x-auto border-b border-wd-line [scrollbar-width:none]"
+          onKeyDown={(e) => {
+            if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+              e.preventDefault();
+              switchTab(tab === "pending" ? "resolved" : "pending");
+              document.getElementById(`ganti-nama-tab-${tab === "pending" ? "resolved" : "pending"}`)?.focus();
+            }
           }}
-          items={[
-            { id: "pending", label: "Menunggu", count: loadedTab === "pending" && !loadFailed ? requests.length : undefined },
-            { id: "resolved", label: "Riwayat" },
-          ]}
-        />
+        >
+          {tabs.map((t) => {
+            const on = t.id === tab;
+            return (
+              <button
+                key={t.id}
+                id={`ganti-nama-tab-${t.id}`}
+                role="tab"
+                type="button"
+                aria-selected={on}
+                aria-controls="ganti-nama-panel"
+                tabIndex={on ? 0 : -1}
+                onClick={() => switchTab(t.id)}
+                className={`relative inline-flex min-h-12 shrink-0 items-center gap-2 px-3.5 text-[0.93rem] transition-colors ${on ? "font-semibold text-wd-ink" : "text-wd-text hover:text-wd-ink"} ${VA_FOCUS}`}
+              >
+                {t.label}
+                <VaCount n={t.count} active={on} />
+                {on && <motion.span layoutId={reduced ? undefined : "ganti-nama-underline"} transition={SPRING_SNAPPY} aria-hidden className="absolute inset-x-2 -bottom-px h-[3px] rounded-full bg-wd-accent-deep" />}
+              </button>
+            );
+          })}
+        </div>
 
-        <TabPanel idBase="ganti-nama" id={tab} value={tab} className="mt-6">
-          {error && !loadFailed && <ErrorBanner message={error} />}
+        <div id="ganti-nama-panel" role="tabpanel" aria-labelledby={`ganti-nama-tab-${tab}`} className="mt-6">
+          {error && !loadFailed && <VaAlert message={error} />}
           {loading ? (
-            <RowsSkeleton rows={3} label="Memuat permintaan" />
+            <VaSkeleton rows={3} label="Memuat permintaan" />
           ) : loadFailed ? (
-            <ErrorState title="Permintaan belum bisa dimuat" onRetry={() => { setError(null); load(); }} />
-          ) : requests.length === 0 ? (
-            <EmptyState
-              title={pending ? "Tidak ada yang menunggu" : "Belum ada riwayat"}
-              body={pending ? "Pengajuan ganti nama dari vendor akan muncul di sini." : "Pengajuan yang sudah kamu proses akan tercatat di sini."}
+            <VaFailed
+              what="Permintaan"
+              onRetry={() => {
+                setError(null);
+                load();
+              }}
             />
+          ) : requests.length === 0 ? (
+            <VaEmpty art={pending ? "card" : "clipboard"} title={pending ? "Tidak ada yang menunggu" : "Belum ada riwayat"}>
+              {pending ? "Pengajuan ganti nama dari vendor akan muncul di sini." : "Pengajuan yang sudah kamu proses akan tercatat di sini."}
+            </VaEmpty>
           ) : (
-            <ul className="flex flex-col gap-4">
-              <AnimatePresence initial={false}>
-              {requests.map((req, i) => (
-                <QueueItem key={req.id} index={i}>
-                  <article className="rounded-xl border border-dc-line bg-dc-white" aria-label={`Ganti nama ${req.current_name} jadi ${req.requested_name}`}>
-                    <div className="grid gap-5 p-5 sm:p-6 md:grid-cols-[1fr_1.1fr]">
-                      {/* Old -> new reads as one line of change; the new name carries the weight. */}
-                      <div>
-                        <p className="text-sm text-dc-text-3">Nama sekarang</p>
-                        <p className="mt-0.5 text-lg text-dc-text-2">{req.current_name}</p>
-                        <p className="mt-3 text-sm text-dc-text-3">Diganti jadi</p>
-                        <p className="mt-0.5 font-heading text-3xl leading-tight text-dc-ink">{req.requested_name}</p>
-                      </div>
-                      <div className="rounded-lg bg-dc-cream px-4 py-3">
-                        <p className="text-sm font-semibold text-dc-ink">Alasan vendor</p>
-                        <p className="mt-1 leading-relaxed text-dc-text-2">{req.reason || "Vendor tidak menulis alasan."}</p>
-                        {req.created_at && <p className="mt-3 text-xs text-dc-text-3">Diajukan {tanggal(req.created_at)}</p>}
-                      </div>
+            <VaList>
+              {requests.map((req) => (
+                <VaRow key={req.id}>
+                  <article className="grid gap-x-8 gap-y-4 px-1 py-6 sm:px-2 md:grid-cols-[1.1fr_1fr]" aria-label={`Ganti nama ${req.current_name} jadi ${req.requested_name}`}>
+                    <div className="min-w-0">
+                      <p className="text-sm text-wd-muted">Nama sekarang</p>
+                      <p className="mt-0.5 break-words text-lg text-wd-text line-through decoration-wd-line-2">
+                        <span className="sr-only">Nama sekarang: </span>
+                        {req.current_name}
+                      </p>
+                      <p className="mt-3 text-sm text-wd-muted">Diganti jadi</p>
+                      <p className="wd-display mt-0.5 break-words text-3xl leading-tight">{req.requested_name}</p>
                     </div>
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-dc-line px-5 py-4 sm:px-6">
-                      {pending ? (
-                        <>
-                          <span className="text-sm text-dc-text-3">Menunggu keputusanmu</span>
-                          <div className="flex flex-wrap gap-2">
-                            <DangerGhostButton onClick={() => setRejectTarget(req)} disabled={busyId === req.id}>
-                              Tolak
-                            </DangerGhostButton>
-                            <Button size="sm" onClick={() => setApproveTarget(req)} disabled={busyId === req.id}>
-                              Setujui nama baru
-                            </Button>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <Badge tone={req.status === "approved" ? "success" : "danger"}>{req.status === "approved" ? "Disetujui" : "Ditolak"}</Badge>
-                          {req.admin_note && <p className="min-w-0 flex-1 text-sm text-dc-text-2 sm:text-right">Catatan: {req.admin_note}</p>}
-                        </>
-                      )}
+                    <div className="min-w-0">
+                      <div className="rounded-2xl bg-wd-accent-wash px-4 py-3">
+                        <p className="text-sm font-semibold text-wd-ink">Alasan vendor</p>
+                        <p className="mt-1 break-words leading-relaxed text-wd-text">{req.reason || "Vendor tidak menulis alasan."}</p>
+                        {req.created_at && <p className="mt-2 text-xs text-wd-muted">Diajukan {tanggal(req.created_at)}</p>}
+                      </div>
+                      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                        {pending ? (
+                          <>
+                            <VaPill tone="warn">Menunggu keputusanmu</VaPill>
+                            <div className="flex flex-wrap gap-2">
+                              <button type="button" onClick={() => setRejectTarget(req)} disabled={busyId === req.id} className={VA_BTN_DANGER}>
+                                Tolak
+                              </button>
+                              <button type="button" onClick={() => setApproveTarget(req)} disabled={busyId === req.id} className={VA_BTN_GOLD}>
+                                Setujui nama baru
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <VaPill tone={req.status === "approved" ? "ok" : "danger"}>{req.status === "approved" ? "Disetujui" : "Ditolak"}</VaPill>
+                            {req.admin_note && <p className="min-w-0 flex-1 break-words text-sm text-wd-text sm:text-right">Catatan: {req.admin_note}</p>}
+                          </>
+                        )}
+                      </div>
                     </div>
                   </article>
-                </QueueItem>
+                </VaRow>
               ))}
-              </AnimatePresence>
-            </ul>
+            </VaList>
           )}
-        </TabPanel>
+        </div>
       </div>
 
       <ConfirmDialog
@@ -225,6 +256,6 @@ function AdminVendorNameChangesContent({ user }: { user: CurrentUser }) {
         confirmLabel="Tolak permintaan"
         reason={{ value: rejectNote, onChange: setRejectNote, label: "Catatan untuk vendor", picks: REJECT_PICKS }}
       />
-    </Shell>
+    </AdminShell>
   );
 }

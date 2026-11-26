@@ -55,7 +55,7 @@ function Card({ a }: { a: Article }) {
   return (
     <article className="group relative flex h-full flex-col overflow-hidden rounded-[18px] border border-wd-line bg-white transition-[box-shadow,transform] duration-300 hover:shadow-wd-lift motion-safe:hover:-translate-y-1">
       <div className="relative block aspect-[4/3] overflow-hidden bg-wd-blush">
-        <Image src={a.image} alt="" fill draggable={false} sizes="300px" className="object-cover transition-transform duration-700 group-hover:scale-[1.05] motion-reduce:transition-none motion-reduce:group-hover:scale-100" />
+        <Image src={a.image} alt="" fill draggable={false} unoptimized={a.image.startsWith("http")} sizes="300px" className="object-cover transition-transform duration-700 group-hover:scale-[1.05] motion-reduce:transition-none motion-reduce:group-hover:scale-100" />
       </div>
       <div className="flex flex-1 flex-col p-4">
         <p className="flex items-center justify-between gap-2 text-xs">

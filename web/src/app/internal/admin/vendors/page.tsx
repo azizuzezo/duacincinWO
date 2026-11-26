@@ -1,21 +1,17 @@
 "use client";
 
-import { AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+import { VA_BTN_DANGER, VA_BTN_GOLD, VA_BTN_OUTLINE, VA_FOCUS, VaAlert, VaAvatar, VaChips, VaEmpty, VaFailed, VaHeader, VaList, VaPill, VaRouteTabs, VaRow, VaSearch, VaSkeleton } from "@/components/admin/VaKit";
+import { wdButton } from "@/components/home/ui";
 import { ADMIN_NAV } from "@/components/shell/navConfig";
-import { Shell } from "@/components/shell/Shell";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { ErrorState } from "@/components/ui/ErrorState";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { AdminShell } from "@/components/shell/AdminShell";
 import { useToast } from "@/components/ui/Toast";
 import { WithUser } from "@/components/WithUser";
-import { apiGet, apiPost, ApiError, categoriesLabel, type CurrentUser } from "@/lib/api";
+import { apiGet, apiPost, ApiError, categoriesLabel, categoryLabel, type CurrentUser, vendorCategoryList } from "@/lib/api";
 import { useLiveRefresh } from "@/lib/useLiveRefresh";
-import { ConfirmDialog, DangerGhostButton, ErrorBanner, Monogram, PAGE, QueueItem, ResultCount, RowsSkeleton, SearchField, SubNav } from "../../_ui";
+import { ConfirmDialog } from "../../_ui";
 
 type PendingVendor = {
   user_id: string;
@@ -49,6 +45,7 @@ function AdminVendorsContent({ user }: { user: CurrentUser }) {
   const [rejectTarget, setRejectTarget] = useState<PendingVendor | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [search, setSearch] = useState("");
+  const [cat, setCat] = useState("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -152,23 +149,30 @@ function AdminVendorsContent({ user }: { user: CurrentUser }) {
   }
 
   const q = search.trim().toLowerCase();
-  const shown = vendors.filter((v) => !q || v.business_name.toLowerCase().includes(q) || v.city.toLowerCase().includes(q));
+  const catCounts = new Map<string, number>();
+  vendors.forEach((v) => vendorCategoryList(v).forEach((c) => catCounts.set(c, (catCounts.get(c) ?? 0) + 1)));
+  const catOptions = [{ id: "all", label: "Semua", count: vendors.length }, ...[...catCounts].map(([id, count]) => ({ id, label: categoryLabel(id), count }))];
+  const activeCat = cat === "all" || catCounts.has(cat) ? cat : "all";
+  const shown = vendors.filter(
+    (v) => (!q || v.business_name.toLowerCase().includes(q) || v.city.toLowerCase().includes(q)) && (activeCat === "all" || vendorCategoryList(v).includes(activeCat)),
+  );
   const selectedVendors = vendors.filter((v) => selected.has(v.user_id));
   const allShownSelected = shown.length > 0 && shown.every((v) => selected.has(v.user_id));
+  const filtering = !!q || activeCat !== "all";
 
   return (
-    <Shell user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
-      <div className={PAGE}>
-        <PageHeader
-          eyebrow="Verifikasi vendor"
+    <AdminShell tone="wd" user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
+      <div className="wd-container pb-16 pt-8 sm:pt-10">
+        <VaHeader
+          kicker="Verifikasi vendor"
           title={
             <>
-              Vendor <span className="dc-em">menunggu</span> review
+              Vendor <em>menunggu</em> review
             </>
           }
-          subtitle="Vendor baru tampil di direktori setelah kamu setujui. Vendor yang ditolak menerima alasanmu."
+          sub="Vendor baru tampil di direktori setelah kamu setujui. Vendor yang ditolak menerima alasanmu."
         />
-        <SubNav
+        <VaRouteTabs
           label="Daftar vendor"
           items={[
             { href: "/internal/admin/vendors", label: "Menunggu", count: loading ? null : vendors.length },
@@ -176,139 +180,149 @@ function AdminVendorsContent({ user }: { user: CurrentUser }) {
           ]}
         />
 
-        {error && !loadFailed && <ErrorBanner message={error} />}
+        <div className="mt-6">
+          {error && !loadFailed && <VaAlert message={error} />}
 
-        {loading ? (
-          <RowsSkeleton rows={3} label="Memuat vendor" />
-        ) : loadFailed ? (
-          <ErrorState
-            title="Daftar vendor belum bisa dimuat"
-            onRetry={() => {
-              setLoading(true);
-              setError(null);
-              load();
-            }}
-          />
-        ) : vendors.length === 0 ? (
-          <EmptyState
-            title="Tidak ada vendor yang menunggu"
-            body="Pendaftaran vendor baru akan muncul di sini untuk kamu tinjau."
-            actionHref="/internal/admin/vendors/approved"
-            actionLabel="Lihat vendor aktif"
-          />
-        ) : (
-          <>
-            <div className="mb-5 flex flex-wrap items-center gap-x-5 gap-y-3">
-              <SearchField value={search} onChange={setSearch} label="Cari vendor" placeholder="Cari nama usaha atau kota" />
-              <label className="inline-flex min-h-11 cursor-pointer items-center gap-2.5 text-sm font-medium text-dc-text-2">
-                <input
-                  type="checkbox"
-                  checked={allShownSelected}
-                  onChange={() =>
-                    setSelected((prev) => {
-                      const next = new Set(prev);
-                      shown.forEach((v) => (allShownSelected ? next.delete(v.user_id) : next.add(v.user_id)));
-                      return next;
-                    })
-                  }
-                  className="h-5 w-5 accent-dc-ink"
-                />
-                Pilih semua yang tampil
-              </label>
-              <ResultCount shown={shown.length} total={vendors.length} noun="vendor" />
-            </div>
+          {loading ? (
+            <VaSkeleton rows={4} label="Memuat vendor" />
+          ) : loadFailed ? (
+            <VaFailed
+              what="Daftar vendor"
+              onRetry={() => {
+                setLoading(true);
+                setError(null);
+                load();
+              }}
+            />
+          ) : vendors.length === 0 ? (
+            <VaEmpty
+              art="clipboard"
+              title="Tidak ada vendor yang menunggu"
+              action={
+                <Link href="/internal/admin/vendors/approved" className={`${wdButton({ variant: "outline", size: "sm", className: "min-h-11" })} ${VA_FOCUS}`}>
+                  Lihat vendor aktif
+                </Link>
+              }
+            >
+              Pendaftaran vendor baru akan muncul di sini untuk kamu tinjau.
+            </VaEmpty>
+          ) : (
+            <>
+              <div className="mb-5 rounded-2xl bg-wd-accent-wash px-5 py-4 text-sm leading-relaxed text-wd-text">
+                <span className="font-semibold text-wd-ink">Sebelum menyetujui:</span> pastikan nama usaha, kategori, dan kota sesuai layanan yang dijual. Setiap vendor sudah menyetujui Perjanjian Kemitraan saat mendaftar.{" "}
+                <Link href="/legal/vendor-agreement" target="_blank" className={`inline-flex min-h-11 items-center font-semibold text-wd-accent-ink underline underline-offset-4 ${VA_FOCUS}`}>
+                  Baca perjanjian
+                  <span className="sr-only"> (tab baru)</span>
+                </Link>
+              </div>
 
-            <div className="mb-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 rounded-lg bg-dc-cream px-4 py-3 text-sm text-dc-text-2">
-              <p>
-                <span className="font-semibold text-dc-ink">Sebelum menyetujui:</span> pastikan nama usaha, kategori, dan kota sesuai layanan yang dijual. Setiap vendor sudah menyetujui Perjanjian Kemitraan saat mendaftar.
+              <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-3">
+                <VaSearch value={search} onChange={setSearch} label="Cari vendor" placeholder="Cari nama usaha atau kota" />
+                <label className="inline-flex min-h-11 cursor-pointer items-center gap-2.5 text-sm font-medium text-wd-text">
+                  <input
+                    type="checkbox"
+                    checked={allShownSelected}
+                    onChange={() =>
+                      setSelected((prev) => {
+                        const next = new Set(prev);
+                        shown.forEach((v) => (allShownSelected ? next.delete(v.user_id) : next.add(v.user_id)));
+                        return next;
+                      })
+                    }
+                    className={`h-5 w-5 accent-wd-ink ${VA_FOCUS}`}
+                  />
+                  Pilih semua yang tampil
+                </label>
+              </div>
+              {catOptions.length > 2 && (
+                <div className="mb-4">
+                  <VaChips label="Kategori" options={catOptions} value={activeCat} onChange={setCat} />
+                </div>
+              )}
+              <p className="mb-2 text-sm text-wd-muted" aria-live="polite">
+                {filtering ? `${shown.length} dari ${vendors.length} vendor` : `${vendors.length} vendor`}
               </p>
-              <Link
-                href="/legal/vendor-agreement"
-                target="_blank"
-                className="inline-flex min-h-11 items-center font-semibold text-dc-clay underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold"
-              >
-                Baca perjanjian
-                <span className="sr-only"> (tab baru)</span>
-              </Link>
-            </div>
 
-            {shown.length === 0 ? (
-              <EmptyState title="Tidak ada yang cocok" body={`Tidak ada vendor dengan nama atau kota "${search}".`} action={<Button variant="ghost" size="sm" onClick={() => setSearch("")}>Hapus pencarian</Button>} />
-            ) : (
-              <ul className="grid gap-4 lg:grid-cols-2">
-                <AnimatePresence initial={false}>
-                {shown.map((v, i) => {
-                  const isSel = selected.has(v.user_id);
-                  return (
-                    <QueueItem key={v.user_id} index={i}>
-                      <article
-                        aria-labelledby={`v-${v.user_id}`}
-                        className={`flex h-full flex-col rounded-xl border bg-dc-white transition-colors ${isSel ? "border-dc-ink" : "border-dc-line"}`}
-                      >
-                        <div className="flex items-start gap-4 px-5 py-5 sm:px-6">
-                          <Monogram name={v.business_name} />
-                          <div className="min-w-0 flex-1">
-                            <h2 id={`v-${v.user_id}`} className="font-heading text-2xl leading-tight text-dc-ink">
-                              <Link href={`/internal/admin/vendors/${v.user_id}`} className="underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-dc-gold">
+              {shown.length === 0 ? (
+                <VaEmpty
+                  art="mirror"
+                  title="Tidak ada yang cocok"
+                  action={
+                    <button
+                      type="button"
+                      className={VA_BTN_OUTLINE}
+                      onClick={() => {
+                        setSearch("");
+                        setCat("all");
+                      }}
+                    >
+                      Hapus pencarian
+                    </button>
+                  }
+                >
+                  Tidak ada vendor yang cocok dengan pencarian atau kategori ini.
+                </VaEmpty>
+              ) : (
+                <VaList>
+                  {shown.map((v) => {
+                    const isSel = selected.has(v.user_id);
+                    return (
+                      <VaRow key={v.user_id} className={isSel ? "bg-wd-accent-wash" : ""}>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-3 px-1 py-4 sm:px-2">
+                          <label className="inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full hover:bg-wd-blush">
+                            <input type="checkbox" checked={isSel} onChange={() => toggleSelect(v.user_id)} className={`h-5 w-5 accent-wd-ink ${VA_FOCUS}`} aria-label={`Pilih ${v.business_name}`} />
+                          </label>
+                          <VaAvatar name={v.business_name} />
+                          <div className="min-w-0 flex-1 basis-48">
+                            <p className="flex flex-wrap items-center gap-2">
+                              <Link href={`/internal/admin/vendors/${v.user_id}`} className={`break-words text-lg font-semibold leading-snug text-wd-ink underline-offset-4 hover:underline ${VA_FOCUS}`}>
                                 {v.business_name}
                               </Link>
-                              {fresh.has(v.user_id) && (
-                                <Badge tone="gold" className="ml-2 align-middle font-sans">
-                                  Baru
-                                </Badge>
-                              )}
-                            </h2>
-                            <p className="mt-1 text-sm text-dc-text-2">
+                              {fresh.has(v.user_id) && <VaPill tone="gold">Baru</VaPill>}
+                            </p>
+                            <p className="mt-0.5 text-sm text-wd-text">
                               {categoriesLabel(v)} · {v.city}
                             </p>
+                            <p className="mt-0.5 text-xs text-wd-muted">Perjanjian kemitraan disetujui</p>
                           </div>
-                          <label className="-m-2 inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full hover:bg-dc-cream">
-                            <input type="checkbox" checked={isSel} onChange={() => toggleSelect(v.user_id)} className="h-5 w-5 accent-dc-ink" aria-label={`Pilih ${v.business_name}`} />
-                          </label>
+                          <div className="flex flex-wrap items-center gap-2 pl-[3.75rem] sm:pl-0">
+                            <Link href={`/internal/admin/vendors/${v.user_id}`} className={VA_BTN_OUTLINE}>
+                              Tinjau
+                              <span className="sr-only"> {v.business_name}</span>
+                            </Link>
+                            <button type="button" onClick={() => setRejectTarget(v)} disabled={busyId === v.user_id} className={VA_BTN_DANGER}>
+                              Tolak
+                            </button>
+                            <button type="button" onClick={() => handleApprove(v)} disabled={busyId === v.user_id} aria-busy={busyId === v.user_id} className={VA_BTN_GOLD}>
+                              {busyId === v.user_id ? "Menyetujui..." : "Setujui vendor"}
+                            </button>
+                          </div>
                         </div>
-
-                        <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-dc-line px-5 py-3 sm:px-6">
-                          <span className="flex items-center gap-1.5 text-sm text-dc-text-2">
-                            <svg aria-hidden viewBox="0 0 20 20" className="h-4 w-4 shrink-0 text-dc-success" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="m4.5 10.5 3.5 3.5 7.5-8" />
-                            </svg>
-                            Perjanjian kemitraan disetujui
-                          </span>
-                          <span className="flex gap-2">
-                          <DangerGhostButton onClick={() => setRejectTarget(v)} disabled={busyId === v.user_id}>
-                            Tolak
-                          </DangerGhostButton>
-                          <Button size="sm" onClick={() => handleApprove(v)} loading={busyId === v.user_id}>
-                            Setujui vendor
-                          </Button>
-                          </span>
-                        </div>
-                      </article>
-                    </QueueItem>
-                  );
-                })}
-                </AnimatePresence>
-              </ul>
-            )}
-          </>
-        )}
+                      </VaRow>
+                    );
+                  })}
+                </VaList>
+              )}
+            </>
+          )}
+        </div>
         {selected.size > 0 && <div aria-hidden className="h-20" />}
       </div>
 
-      {/* Sticky bulk bar: appears only with a selection, above the mobile tab bar. */}
+      {/* Bulk bar: appears only with a selection, above the mobile tab bar. */}
       {selected.size > 0 && (
         <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 px-4 md:bottom-6 md:left-[272px]">
-          <div className="mx-auto flex max-w-xl animate-fade-up items-center justify-between gap-3 rounded-full bg-dc-ink py-2 pl-5 pr-2 text-dc-on-dark shadow-float">
+          <div className="mx-auto flex max-w-xl items-center justify-between gap-3 rounded-full bg-wd-ink py-2 pl-5 pr-2 text-white shadow-wd-lift">
             <p className="text-sm font-medium tabular-nums" aria-live="polite">
               {selected.size} vendor dipilih
             </p>
             <div className="flex items-center gap-1">
-              <button type="button" onClick={() => setSelected(new Set())} className="min-h-11 rounded-full px-3 text-sm font-semibold text-dc-on-dark/80 hover:text-dc-on-dark focus-visible:outline-2 focus-visible:outline-dc-gold-antique">
+              <button type="button" onClick={() => setSelected(new Set())} className="min-h-11 rounded-full px-3 text-sm font-semibold text-white/80 hover:text-white focus-visible:outline-2 focus-visible:outline-wd-accent">
                 Batal pilih
               </button>
-              <Button variant="light" size="sm" onClick={() => setBulkOpen(true)}>
+              <button type="button" onClick={() => setBulkOpen(true)} className={wdButton({ variant: "gold", size: "sm", className: "min-h-11 focus-visible:outline-2 focus-visible:outline-white" })}>
                 Setujui semua
-              </Button>
+              </button>
             </div>
           </div>
         </div>
@@ -347,6 +361,6 @@ function AdminVendorsContent({ user }: { user: CurrentUser }) {
           ))}
         </ul>
       </ConfirmDialog>
-    </Shell>
+    </AdminShell>
   );
 }

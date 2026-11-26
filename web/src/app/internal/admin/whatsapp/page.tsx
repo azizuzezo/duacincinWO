@@ -2,17 +2,16 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { AdmHeader, ADM_FOCUS, Avatar, Chips, ListSkeleton, Pill, SearchBox } from "@/components/admin/adm";
+import { ClientArt } from "@/components/home/ClientArt";
+import { wdButton } from "@/components/home/ui";
 import { ADMIN_NAV } from "@/components/shell/navConfig";
-import { Shell } from "@/components/shell/Shell";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { AdminShell } from "@/components/shell/AdminShell";
 import { Textarea } from "@/components/ui/Field";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/Toast";
 import { WithUser } from "@/components/WithUser";
 import { apiGet, apiPost, ApiError, type CurrentUser } from "@/lib/api";
-import { ConfirmDialog, ErrorBanner, Monogram, PAGE, RowsSkeleton, SearchField, tanggalJam } from "../../_ui";
+import { ConfirmDialog, ErrorBanner, relatif, tanggalJam } from "../../_ui";
 
 // Kirim WhatsApp: one message from the official DuaCincin number to a client
 // or vendor whose number is verified. Every send is in the audit log, which
@@ -132,69 +131,63 @@ function AdminWhatsAppContent({ user }: { user: CurrentUser }) {
   }
 
   return (
-    <Shell user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
-      <div className={PAGE}>
-        <PageHeader
-          eyebrow="Layanan"
+    <AdminShell tone="wd" user={user} navItems={ADMIN_NAV} loginPath="/login" eyebrow="Admin">
+      <div className="wd-container pb-16 pt-8 sm:pt-10">
+        <AdmHeader
+          kicker="Layanan"
           title={
             <>
-              Kirim <span className="dc-em">WhatsApp</span>
+              Kirim <em>WhatsApp</em>
             </>
           }
-          subtitle="Kirim pesan dari nomor resmi DuaCincin ke klien atau vendor yang nomornya sudah terverifikasi. Penerima tidak bisa membalas lewat WhatsApp, jadi arahkan ke chat di DuaCincin bila perlu jawaban."
+          sub="Pesan dikirim dari nomor resmi DuaCincin ke klien atau vendor yang nomornya sudah terverifikasi. Penerima tidak bisa membalas lewat WhatsApp, jadi arahkan ke chat di DuaCincin bila perlu jawaban."
         />
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start">
-          <div className="flex min-w-0 flex-col gap-6">
-            <Card className="p-5 sm:p-6">
-              <h2 className="font-heading text-xl font-semibold text-dc-ink">1. Pilih penerima</h2>
+        <div className="mt-10 grid gap-x-12 gap-y-12 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+          <div className="min-w-0">
+            <section aria-labelledby="wa-penerima">
+              <h2 id="wa-penerima" className="wd-title text-[1.2rem] leading-tight">
+                Penerima
+              </h2>
               {selected ? (
-                <div className="mt-4 flex items-center gap-3 rounded-lg border border-dc-gold/60 bg-dc-gold-soft/40 p-3">
-                  <Monogram name={displayName(selected)} size="sm" />
+                <div className="mt-4 flex items-center gap-3 rounded-[20px] bg-wd-accent-wash p-3 pr-2 ring-1 ring-wd-accent-line/50">
+                  <Avatar name={displayName(selected)} />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold text-dc-ink">{displayName(selected)}</p>
-                    <p className="truncate text-sm text-dc-text-2">
+                    <p className="truncate font-semibold text-wd-ink">{displayName(selected)}</p>
+                    <p className="truncate text-sm text-wd-text">
                       {selected.phone_display} · {selected.email}
                     </p>
                   </div>
-                  <Badge tone={selected.role === "vendor" ? "ink" : "gold"}>{ROLE_LABEL[selected.role]}</Badge>
-                  <button
-                    type="button"
-                    onClick={() => setSelected(null)}
-                    className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-dc-clay underline-offset-4 hover:underline"
-                  >
+                  <Pill tone={selected.role === "vendor" ? "ink" : "gold"}>{ROLE_LABEL[selected.role]}</Pill>
+                  <button type="button" onClick={() => setSelected(null)} className={`${wdButton({ variant: "outline", size: "sm" })} ${ADM_FOCUS}`}>
                     Ganti
                   </button>
                 </div>
               ) : (
                 <div className="mt-4 flex flex-col gap-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <SearchField value={q} onChange={setQ} label="Cari penerima" placeholder="Nama, usaha, email, atau nomor" />
-                    <div role="group" aria-label="Peran" className="flex gap-1.5">
-                      {([["", "Semua"], ["client", "Klien"], ["vendor", "Vendor"]] as const).map(([v, label]) => (
-                        <button
-                          key={v}
-                          type="button"
-                          aria-pressed={role === v}
-                          onClick={() => setRole(v)}
-                          className={`min-h-11 rounded-full border px-4 text-sm font-semibold transition-colors ${
-                            role === v ? "border-dc-ink bg-dc-ink text-dc-on-dark" : "border-dc-line-strong text-dc-ink hover:border-dc-ink"
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
+                    <SearchBox value={q} onChange={setQ} label="Cari penerima" placeholder="Nama, usaha, email, atau nomor" />
+                    <Chips
+                      label="Peran"
+                      value={role}
+                      onChange={(v) => setRole(v as "" | Role)}
+                      items={[
+                        { id: "", label: "Semua" },
+                        { id: "client", label: "Klien" },
+                        { id: "vendor", label: "Vendor" },
+                      ]}
+                    />
                   </div>
                   {searchError && <ErrorBanner message={searchError} onRetry={() => void search(q.trim(), role)} />}
-                  {!results && !searchError && <RowsSkeleton rows={3} label="Mencari penerima" />}
+                  {!results && !searchError && <ListSkeleton rows={3} label="Mencari penerima" />}
                   {results && results.length === 0 && (
-                    <p className="rounded-lg border border-dashed border-dc-line-strong px-4 py-6 text-center text-sm text-dc-text-2">
-                      Tidak ada penerima yang cocok. Hanya klien dan vendor dengan nomor WhatsApp terverifikasi yang muncul di sini.
-                    </p>
+                    <div className="flex items-center gap-4 rounded-[20px] bg-wd-paper px-5 py-6">
+                      <ClientArt kind="people" className="h-14 w-14 shrink-0" />
+                      <p className="text-sm leading-relaxed text-wd-text">Tidak ada penerima yang cocok. Hanya klien dan vendor dengan nomor WhatsApp terverifikasi yang muncul di sini.</p>
+                    </div>
                   )}
                   {results && results.length > 0 && (
-                    <ul className="max-h-80 divide-y divide-dc-line overflow-y-auto rounded-xl border border-dc-line bg-dc-white">
+                    <ul className="max-h-80 divide-y divide-wd-line overflow-y-auto border-y border-wd-line">
                       {results.map((r) => (
                         <li key={r.user_id}>
                           <button
@@ -203,16 +196,16 @@ function AdminWhatsAppContent({ user }: { user: CurrentUser }) {
                               setSelected(r);
                               setSendError(null);
                             }}
-                            className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-dc-ivory focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-dc-gold"
+                            className="flex min-h-14 w-full items-center gap-3 px-1 py-2.5 text-left transition-colors hover:bg-wd-paper focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-wd-ink"
                           >
-                            <Monogram name={displayName(r)} size="sm" />
+                            <Avatar name={displayName(r)} />
                             <span className="min-w-0 flex-1">
-                              <span className="block truncate font-semibold text-dc-ink">{displayName(r)}</span>
-                              <span className="block truncate text-sm text-dc-text-2">
+                              <span className="block truncate font-semibold text-wd-ink">{displayName(r)}</span>
+                              <span className="block truncate text-sm text-wd-text">
                                 {r.phone_display} · {r.email}
                               </span>
                             </span>
-                            <Badge tone={r.role === "vendor" ? "ink" : "gold"}>{ROLE_LABEL[r.role]}</Badge>
+                            <Pill tone={r.role === "vendor" ? "ink" : "gold"}>{ROLE_LABEL[r.role]}</Pill>
                           </button>
                         </li>
                       ))}
@@ -220,19 +213,21 @@ function AdminWhatsAppContent({ user }: { user: CurrentUser }) {
                   )}
                 </div>
               )}
-            </Card>
+            </section>
 
-            <Card className="p-5 sm:p-6">
-              <h2 className="font-heading text-xl font-semibold text-dc-ink">2. Tulis pesan</h2>
+            <section aria-labelledby="wa-pesan" className="mt-10 border-t border-wd-line pt-8">
+              <h2 id="wa-pesan" className="wd-title text-[1.2rem] leading-tight">
+                Pesan
+              </h2>
               <form
-                className="mt-4 flex flex-col gap-4"
+                className="mt-4 flex flex-col gap-5"
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (canSend) setConfirming(true);
                 }}
               >
                 <Textarea
-                  label="Pesan"
+                  label="Isi pesan"
                   rows={6}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
@@ -241,59 +236,64 @@ function AdminWhatsAppContent({ user }: { user: CurrentUser }) {
                   error={length > MAX ? `Maksimal ${MAX} karakter.` : undefined}
                 />
                 <div>
-                  <p className="text-sm font-semibold text-dc-text-2">Pratinjau di WhatsApp</p>
-                  <div className="mt-2 rounded-xl bg-[#e7ddd3] p-3">
-                    <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-lg rounded-tl-none bg-white px-3 py-2 text-sm leading-relaxed text-[#111b21] shadow-sm">
-                      <strong>📣 Pesan dari Tim DuaCincin</strong>
+                  <p className="text-sm font-semibold text-wd-ink">Pratinjau di WhatsApp</p>
+                  <div className="mt-2 rounded-[20px] bg-wd-blush p-3">
+                    <div className="max-w-[88%] whitespace-pre-wrap break-words rounded-2xl rounded-tl-sm bg-white px-4 py-3 text-sm leading-relaxed text-wd-ink">
+                      <strong>Pesan dari Tim DuaCincin</strong>
                       {"\n\n"}
-                      {message.trim() || <span className="text-dc-text-3">Pesanmu akan tampil di sini.</span>}
+                      {message.trim() || <span className="text-wd-muted">Pesanmu akan tampil di sini.</span>}
                       {"\n\n"}
-                      <em className="text-[#54656f]">
-                        Nomor ini khusus notifikasi dan tidak menerima balasan. Butuh bantuan? Hubungi kami lewat chat di duacincin.id.
-                      </em>
+                      <em className="text-wd-muted">Nomor ini khusus notifikasi dan tidak menerima balasan. Butuh bantuan? Hubungi kami lewat chat di duacincin.id.</em>
                     </div>
                   </div>
                 </div>
                 {sendError && (
-                  <p role="alert" className="text-sm font-medium text-dc-danger">
+                  <p role="alert" className="text-sm font-medium text-wd-danger">
                     {sendError}
                   </p>
                 )}
-                <Button type="submit" variant="primary" disabled={!canSend} loading={sending}>
-                  {selected ? `Kirim ke ${displayName(selected)}` : "Pilih penerima dulu"}
-                </Button>
+                <div>
+                  <button type="submit" disabled={!canSend} aria-busy={sending} className={`${wdButton({ variant: "ink", size: "md" })} ${ADM_FOCUS}`}>
+                    {selected ? `Kirim ke ${displayName(selected)}` : "Pilih penerima dulu"}
+                  </button>
+                </div>
               </form>
-            </Card>
+            </section>
           </div>
 
-          <section aria-labelledby="wa-riwayat" className="min-w-0">
-            <h2 id="wa-riwayat" className="mb-3 text-sm font-semibold text-dc-text-2">
+          <section aria-labelledby="wa-riwayat" className="min-w-0 lg:border-l lg:border-wd-line lg:pl-10">
+            <h2 id="wa-riwayat" className="wd-title text-[1.2rem] leading-tight">
               Riwayat terkirim
             </h2>
-            {sentError && <ErrorBanner message={sentError} onRetry={() => void loadSent()} />}
-            {!sent && !sentError && <RowsSkeleton rows={3} label="Memuat riwayat" />}
-            {sent && sent.length === 0 && (
-              <Card className="px-5 py-8 text-center text-sm text-dc-text-2">Belum ada pesan WhatsApp yang dikirim admin.</Card>
-            )}
-            {sent && sent.length > 0 && (
-              <ul className="flex flex-col gap-3">
-                {sent.map((s) => (
-                  <li key={s.id} className="rounded-xl border border-dc-line bg-dc-white p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="min-w-0 truncate font-semibold text-dc-ink">
-                        {s.recipient_name}
-                        {s.phone_tail && <span className="ml-1.5 font-normal text-dc-text-3">…{s.phone_tail}</span>}
+            <div className="mt-4">
+              {sentError && <ErrorBanner message={sentError} onRetry={() => void loadSent()} />}
+              {!sent && !sentError && <ListSkeleton rows={3} label="Memuat riwayat" />}
+              {sent && sent.length === 0 && (
+                <div className="flex items-center gap-4 rounded-[20px] bg-wd-paper px-5 py-6">
+                  <ClientArt kind="envelope" className="h-14 w-14 shrink-0" />
+                  <p className="text-sm leading-relaxed text-wd-text">Belum ada pesan WhatsApp yang dikirim admin.</p>
+                </div>
+              )}
+              {sent && sent.length > 0 && (
+                <ul className="divide-y divide-wd-line border-y border-wd-line">
+                  {sent.map((s) => (
+                    <li key={s.id} className="py-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="min-w-0 truncate font-semibold text-wd-ink">
+                          {s.recipient_name}
+                          {s.phone_tail && <span className="ml-1.5 font-normal text-wd-muted">...{s.phone_tail}</span>}
+                        </p>
+                        <Pill tone={s.recipient_role === "vendor" ? "ink" : "gold"}>{ROLE_LABEL[s.recipient_role] ?? s.recipient_role}</Pill>
+                      </div>
+                      <p className="mt-1.5 line-clamp-4 whitespace-pre-wrap break-words text-sm leading-relaxed text-wd-text">{s.message}</p>
+                      <p className="mt-1.5 text-xs text-wd-muted" title={tanggalJam(s.sent_at)}>
+                        {relatif(s.sent_at)} · oleh {s.sent_by}
                       </p>
-                      <Badge tone={s.recipient_role === "vendor" ? "ink" : "gold"}>{ROLE_LABEL[s.recipient_role] ?? s.recipient_role}</Badge>
-                    </div>
-                    <p className="mt-2 line-clamp-4 whitespace-pre-wrap break-words text-sm leading-relaxed text-dc-text-2">{s.message}</p>
-                    <p className="mt-2 text-xs text-dc-text-3">
-                      {tanggalJam(s.sent_at)} · oleh {s.sent_by}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </section>
         </div>
       </div>
@@ -308,6 +308,6 @@ function AdminWhatsAppContent({ user }: { user: CurrentUser }) {
         onConfirm={() => void send()}
         busy={sending}
       />
-    </Shell>
+    </AdminShell>
   );
 }

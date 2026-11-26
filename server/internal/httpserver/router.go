@@ -13,6 +13,7 @@ import (
 
 	"duacincin/server/internal/admin"
 	"duacincin/server/internal/aiassist"
+	"duacincin/server/internal/articles"
 	"duacincin/server/internal/auth"
 	"duacincin/server/internal/booking"
 	"duacincin/server/internal/budget"
@@ -35,6 +36,7 @@ type Deps struct {
 	Auth           *auth.Deps
 	Vendors        *vendors.Deps
 	Admin          *admin.Deps
+	Articles       *articles.Deps
 	Chat           *chat.Deps
 	Budget         *budget.Deps
 	Inspiration    *inspiration.Deps
@@ -74,6 +76,7 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config, deps Deps) http.Handler {
 			auth.Mount(r, deps.Auth)
 			googleauth.Mount(r, deps.GoogleAuth)
 			vendors.Mount(r, deps.Vendors, cfg)
+			articles.Mount(r, deps.Articles)
 			admin.Mount(r, deps.Admin, cfg)
 			chat.Mount(r, deps.Chat, cfg)
 			budget.Mount(r, deps.Budget, cfg)
