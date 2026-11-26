@@ -368,3 +368,13 @@ html:has(.wd) {
   .wd-compact-card form label:has(input[type="checkbox"]) { min-height: 0; padding: 0.5rem 0.75rem; font-size: 0.8rem; line-height: 1.35; }
   .wd-compact-card form button[type="submit"] { min-height: 2.5rem; }
 }
+
+/* PasswordSection is shared with the vendor area; inside the client area its
+   heading takes the Putih title face. */
+.wd-password #ubah-password {
+  font-family: var(--font-wd-sans-face), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 650;
+  font-size: 1.5rem;
+  color: var(--wd-ink);
+  letter-spacing: -0.015em;
+}

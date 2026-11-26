@@ -1,17 +1,16 @@
 "use client";
 
+// Client account: a profile header, then plain sections (account data, wedding
+// date, WhatsApp number, password) and two short link lists (agreements, help).
+// No boxed cards: gold rules and hairlines separate the parts.
 import Link from "next/link";
 import { useState } from "react";
 
-import { FOCUS } from "@/app/client/_ui";
 import { WeddingDateField } from "@/components/client/WeddingDateField";
+import { ClientArt, type ArtKind } from "@/components/home/ClientArt";
+import { ClientShell } from "@/components/shell/ClientShell";
 import { PasswordSection } from "@/components/PasswordSection";
 import { WhatsAppNumberCard } from "@/components/wa/WhatsAppVerify";
-import { ClientShell } from "@/components/shell/ClientShell";
-import { Card } from "@/components/ui/Card";
-import { PageHeader } from "@/components/ui/PageHeader";
-import { Rings } from "@/components/ui/Rings";
-import { FadeIn } from "@/components/ui/Motion";
 import { WithUser } from "@/components/WithUser";
 import type { CurrentUser } from "@/lib/api";
 
@@ -29,114 +28,105 @@ function initials(name: string, email: string): string {
 }
 
 // Agreements a client accepts at sign-up (register page, client role).
-const AGREEMENTS = [
-  { href: "/legal/client-tos", title: "Ketentuan Layanan Client", body: "Kamu menyetujuinya saat mendaftar. Baca kembali kapan saja." },
+const AGREEMENTS: { href: string; title: string; body: string; art: ArtKind }[] = [
+  { href: "/legal/client-tos", title: "Ketentuan Layanan Client", body: "Kamu menyetujuinya saat mendaftar. Baca kembali kapan saja.", art: "clipboard" },
 ];
 
-const HELP = [
-  { href: "/cara-kerja", title: "Cara kerja DuaCincin", body: "Dari mencari vendor sampai dana diteruskan setelah acara." },
-  { href: "/bantuan", title: "Pusat bantuan", body: "Jawaban untuk pertanyaan yang sering muncul." },
+const HELP: { href: string; title: string; body: string; art: ArtKind }[] = [
+  { href: "/cara-kerja", title: "Cara kerja DuaCincin", body: "Dari mencari vendor sampai dana diteruskan setelah acara.", art: "coin" },
+  { href: "/bantuan", title: "Pusat bantuan", body: "Jawaban untuk pertanyaan yang sering muncul.", art: "bubble" },
 ];
+
+const SECTION = "border-t-[3px] border-wd-accent pt-5";
+const H2 = "wd-title text-[1.5rem] leading-tight";
 
 function ClientAccountContent({ user }: { user: CurrentUser }) {
   const [weddingDate, setWeddingDate] = useState(user.wedding_date ?? "");
   return (
     <ClientShell user={user}>
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
-        <PageHeader
-          eyebrow="Akun"
-          title={
-            <>
-              Profil & <span className="dc-em">keamanan</span>
-            </>
-          }
-          subtitle="Data akunmu, password, dan perjanjian yang berlaku."
-        />
+      <div className="wd-container pb-16 pt-8 sm:pt-10">
+        {/* Profile: initials avatar (no generated photos), name, email. */}
+        <header className="flex flex-wrap items-center gap-5 sm:gap-7">
+          <span aria-hidden className="wd-display flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-wd-accent text-[2.1rem] ring-4 ring-wd-accent-wash">
+            {initials(user.full_name, user.email)}
+          </span>
+          <div className="min-w-0">
+            <p className="wd-kicker">Akun</p>
+            <h1 className="wd-display break-words text-[clamp(2rem,4vw,3rem)] leading-[1.05]">{user.full_name || "Tanpa nama"}</h1>
+            <p className="mt-1 break-words text-wd-text">
+              {user.email} <span className="text-wd-muted">· Akun calon pengantin</span>
+            </p>
+          </div>
+        </header>
 
-        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-12">
-          <div className="flex flex-col gap-5 lg:col-span-7">
-            {/* Profile: initials avatar (no generated photos), name, email. */}
-            <Card className="overflow-hidden">
-              <div className="relative flex flex-wrap items-center gap-5 overflow-hidden bg-dc-cream/70 px-6 py-6 sm:px-8">
-                <Rings className="pointer-events-none absolute -right-6 -top-8 h-40 w-64 opacity-40" />
-                <span
-                  aria-hidden
-                  className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border border-dc-gold bg-dc-white font-heading text-3xl text-dc-ink ring-4 ring-dc-white"
-                >
-                  {initials(user.full_name, user.email)}
-                </span>
+        <div className="mt-12 grid grid-cols-1 items-start gap-x-14 gap-y-12 lg:grid-cols-12">
+          <div className="flex flex-col gap-12 lg:col-span-7">
+            <section aria-labelledby="data-akun" className={SECTION}>
+              <h2 id="data-akun" className={H2}>
+                Data akun
+              </h2>
+              <dl className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <div className="min-w-0">
-                  <p className="break-words font-heading text-[2rem] leading-tight text-dc-ink">{user.full_name || "Tanpa nama"}</p>
-                  <p className="text-sm text-dc-text-2">Akun calon pengantin</p>
-                </div>
-              </div>
-              <dl className="grid grid-cols-1 gap-5 px-6 py-6 sm:grid-cols-2 sm:px-8">
-                <div className="min-w-0">
-                  <dt className="text-sm text-dc-text-3">Nama lengkap</dt>
-                  <dd className="mt-1 break-words font-semibold text-dc-ink">{user.full_name || "Belum diisi"}</dd>
+                  <dt className="text-sm text-wd-text">Nama lengkap</dt>
+                  <dd className="mt-1 break-words font-semibold text-wd-ink">{user.full_name || "Belum diisi"}</dd>
                 </div>
                 <div className="min-w-0">
-                  <dt className="text-sm text-dc-text-3">Email untuk masuk</dt>
-                  <dd className="mt-1 break-words font-semibold text-dc-ink">{user.email}</dd>
+                  <dt className="text-sm text-wd-text">Email untuk masuk</dt>
+                  <dd className="mt-1 break-words font-semibold text-wd-ink">{user.email}</dd>
                 </div>
               </dl>
-            </Card>
+            </section>
 
-            <Card className="p-6 sm:p-8">
-              <h2 className="font-heading text-[1.75rem] leading-tight text-dc-ink">Tanggal nikah</h2>
-              <p className="mt-1 mb-4 text-sm text-dc-text-2">Dipakai untuk mengisi tanggal booking otomatis dan hitung mundur di dasbor.</p>
-              <WeddingDateField value={weddingDate} onSaved={setWeddingDate} />
-            </Card>
+            <section aria-labelledby="tanggal-nikah" className={SECTION}>
+              <h2 id="tanggal-nikah" className={H2}>
+                Tanggal nikah
+              </h2>
+              <div className="mt-4">
+                <WeddingDateField value={weddingDate} onSaved={setWeddingDate} />
+              </div>
+            </section>
 
-            <WhatsAppNumberCard />
+            <section aria-labelledby="wa" className={SECTION}>
+              <h2 id="wa" className="sr-only">
+                Nomor WhatsApp
+              </h2>
+              <WhatsAppNumberCard className="!rounded-none !border-0 !bg-transparent !p-0" />
+            </section>
 
-            <Card className="p-6 sm:p-8">
+            <section aria-label="Ubah password" className={`${SECTION} wd-password`}>
               <PasswordSection />
-            </Card>
+            </section>
           </div>
 
-          <FadeIn inView={false} delay={0.08} className="flex flex-col gap-5 lg:col-span-5">
-            <Card className="p-6 sm:p-8">
-              <h2 className="font-heading text-[1.75rem] leading-tight text-dc-ink">Perjanjian</h2>
-              <ul className="mt-4 flex flex-col gap-3">
-                {AGREEMENTS.map((a) => (
-                  <li key={a.href}>
-                    <DocLink {...a} />
-                  </li>
-                ))}
-              </ul>
-            </Card>
-            <Card tone="paper" className="p-6 sm:p-8">
-              <h2 className="font-heading text-[1.75rem] leading-tight text-dc-ink">Butuh bantuan?</h2>
-              <ul className="mt-4 flex flex-col gap-3">
-                {HELP.map((a) => (
-                  <li key={a.href}>
-                    <DocLink {...a} />
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          </FadeIn>
+          <div className="flex flex-col gap-10 lg:col-span-5">
+            <LinkList title="Perjanjian" items={AGREEMENTS} />
+            <LinkList title="Butuh bantuan?" items={HELP} />
+          </div>
         </div>
       </div>
     </ClientShell>
   );
 }
 
-function DocLink({ href, title, body }: { href: string; title: string; body: string }) {
+function LinkList({ title, items }: { title: string; items: { href: string; title: string; body: string; art: ArtKind }[] }) {
   return (
-    <Link
-      href={href}
-      className={`group flex items-start gap-3 rounded-lg border border-dc-line bg-dc-white px-4 py-4 transition-[transform,box-shadow,border-color] duration-300 ease-dc hover:border-dc-line-strong hover:shadow-soft motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-0 motion-safe:active:scale-[0.99] ${FOCUS}`}
-    >
-      <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0 text-dc-clay">
-        <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z" />
-        <path d="M14 3v5h5M9 13h6M9 17h4" />
-      </svg>
-      <span className="min-w-0 flex-1">
-        <span className="block font-semibold text-dc-ink group-hover:underline group-hover:underline-offset-4">{title}</span>
-        <span className="mt-0.5 block text-sm leading-relaxed text-dc-text-2">{body}</span>
-      </span>
-    </Link>
+    <section className={SECTION}>
+      <h2 className={H2}>{title}</h2>
+      <ul className="mt-3 divide-y divide-wd-line border-y border-wd-line">
+        {items.map((it) => (
+          <li key={it.href}>
+            <Link href={it.href} className="group flex min-h-16 items-center gap-3 py-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wd-accent">
+              <span className="block h-12 w-12 shrink-0 rounded-full bg-wd-accent-wash p-2 ring-1 ring-wd-line transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:-rotate-6 group-hover:scale-110 motion-reduce:transition-none motion-reduce:group-hover:transform-none">
+                <ClientArt kind={it.art} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold text-wd-ink group-hover:text-wd-accent-ink">{it.title}</span>
+                <span className="block text-sm text-wd-text">{it.body}</span>
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
