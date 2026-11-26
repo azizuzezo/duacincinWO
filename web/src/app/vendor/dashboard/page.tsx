@@ -7,7 +7,6 @@ import { VENDOR_NAV } from "@/components/shell/navConfig";
 import { VendorShell } from "@/components/shell/VendorShell";
 import { ClientArt, type ArtKind } from "@/components/home/ClientArt";
 import { wdButton } from "@/components/home/ui";
-import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Skeleton, SkeletonGroup } from "@/components/ui/Skeleton";
 import { CountUp } from "@/components/ui/Motion";
@@ -137,14 +136,49 @@ function VendorDashboardContent({ user }: { user: CurrentUser }) {
   }
 
   if (profile === null) {
+    const first = (user.full_name || "").trim().split(/\s+/)[0];
+    const steps = [
+      { title: "Isi profil usaha", body: "Nama usaha, kategori, kota layanan, harga mulai dari, dan cerita singkat usahamu.", href: "/vendor/profile" },
+      { title: "Tambah foto portofolio", body: "Minimal 3 foto hasil kerja. Calon pengantin memilih vendor dari foto lebih dulu.", href: "/vendor/portfolio" },
+      { title: "Buat paket harga", body: "Minimal 1 paket supaya client bisa membandingkan pilihan sebelum chat.", href: "/vendor/paket" },
+      { title: "Tim DuaCincin meninjau", body: "Setelah disetujui, etalasemu tampil di direktori dan bisa menerima booking.", href: undefined },
+    ];
     return shell(
-      <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
-        <EmptyState
-          title="Lengkapi profil dulu"
-          body="Isi profil usahamu supaya halaman ini bisa menampilkan booking, ulasan, dan pencairan."
-          actionHref="/vendor/profile"
-          actionLabel="Lengkapi profil"
-        />
+      <div className="wd-container pb-16 pt-8 sm:pt-10">
+        <section aria-labelledby="selamat-datang" className="grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-14">
+          <div>
+            <p className="wd-kicker">{first ? `Selamat datang, ${first}` : "Selamat datang"}</p>
+            <h1 id="selamat-datang" className="wd-display mt-2 text-[clamp(2.1rem,4.4vw,3.4rem)] leading-[1.05]">
+              Buka <em>tokomu</em> di DuaCincin
+            </h1>
+            <p className="mt-3 max-w-xl text-[1.02rem] leading-relaxed text-wd-text">Empat langkah sampai usahamu tampil di direktori dan siap menerima booking. Dana dari client ditahan lewat Dana Aman sampai acara selesai.</p>
+            <ol className="mt-7 max-w-2xl border-t border-wd-line">
+              {steps.map((st, i) => (
+                <li key={st.title} className="flex items-start gap-4 border-b border-wd-line py-4">
+                  <span aria-hidden className="wd-display w-6 shrink-0 text-[1.6rem] italic leading-none text-wd-accent-ink">
+                    {i + 1}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    {st.href ? (
+                      <Link href={st.href} className={`font-semibold text-wd-ink underline-offset-4 hover:underline ${FOCUS}`}>
+                        {st.title}
+                      </Link>
+                    ) : (
+                      <span className="font-semibold text-wd-ink">{st.title}</span>
+                    )}
+                    <span className="mt-0.5 block text-[0.93rem] leading-relaxed text-wd-text">{st.body}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+            <Link href="/vendor/profile" className={`${wdButton({ variant: "gold", size: "lg" })} ${FOCUS} mt-7`}>
+              Mulai dari profil usaha
+            </Link>
+          </div>
+          <div aria-hidden className="hidden aspect-square w-full max-w-[220px] justify-self-center rounded-[28px] bg-wd-accent-wash p-8 lg:block">
+            <ClientArt kind="shop" />
+          </div>
+        </section>
       </div>,
     );
   }
