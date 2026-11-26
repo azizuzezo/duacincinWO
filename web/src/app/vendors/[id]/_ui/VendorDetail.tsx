@@ -11,6 +11,9 @@ import { Navbar } from "@/components/landing/Navbar";
 import { Stars } from "@/components/vendor/Reviews";
 import {
   apiGet,
+  availabilityQuery,
+  unavailableMap,
+  type UnavailableDate,
   apiPost,
   ApiError,
   categoryLabel,
@@ -72,8 +75,9 @@ export function VendorDetail({
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [eventDate, setEventDateRaw] = useState("");
+  const [pickedDate, setPickedDate] = useState<string | null>(null);
   const [dateError, setDateError] = useState<string | null>(null);
+  const [unavailable, setUnavailable] = useState<Record<string, "booked" | "blocked">>({});
   const [packageDescription, setPackageDescription] = useState("");
   const [agreedPrice, setAgreedPrice] = useState("");
   const [bookingSaving, setBookingSaving] = useState(false);
@@ -114,6 +118,17 @@ export function VendorDetail({
       .finally(() => setCheckingUser(false));
   }, []);
 
+  // Days this vendor cannot take (booked or blocked), shown struck out in the booking calendar.
+  useEffect(() => {
+    apiGet<{ dates: UnavailableDate[] }>(`/api/v1/vendors/${id}/availability${availabilityQuery()}`)
+      .then((d) => setUnavailable(unavailableMap(d?.dates)))
+      .catch(() => setUnavailable({}));
+  }, [id]);
+
+  // The couple's wedding date fills the booking date once, when it is free at this vendor; they can change it.
+  const weddingDate = user?.role === "client" ? user.wedding_date || undefined : undefined;
+  const eventDate = pickedDate ?? (weddingDate && !unavailable[weddingDate] ? weddingDate : "");
+
   function retryLoad() {
     setError(null);
     setPkgLoad("loading");
@@ -133,7 +148,7 @@ export function VendorDetail({
   }
 
   function setEventDate(v: string) {
-    setEventDateRaw(v);
+    setPickedDate(v);
     if (v) setDateError(null);
   }
 
@@ -453,6 +468,8 @@ export function VendorDetail({
                       {...actions}
                       eventDate={eventDate}
                       setEventDate={setEventDate}
+                      unavailable={unavailable}
+                      weddingDate={weddingDate}
                       selected={selected}
                       onClearPackage={clearPackage}
                       onSeePackages={() => goTo("paket")}
@@ -478,6 +495,8 @@ export function VendorDetail({
           packages={packages}
           eventDate={eventDate}
           setEventDate={setEventDate}
+          unavailable={unavailable}
+          weddingDate={weddingDate}
           packageDescription={packageDescription}
           setPackageDescription={setPackageDescription}
           agreedPrice={agreedPrice}

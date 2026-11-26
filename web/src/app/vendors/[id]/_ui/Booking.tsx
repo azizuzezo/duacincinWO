@@ -65,6 +65,14 @@ function swap(reduced: boolean | null) {
   } as const;
 }
 
+/** One line under the date field: where the date came from, or why it cannot be used. */
+export function dateHint(eventDate: string, weddingDate: string | undefined, unavailable: Record<string, "booked" | "blocked"> | undefined): string | undefined {
+  if (weddingDate && unavailable?.[weddingDate] && !eventDate) return "Vendor ini tidak tersedia di tanggal nikahmu. Pilih tanggal lain, atau chat vendor dulu.";
+  if (weddingDate && eventDate === weddingDate) return "Terisi dari tanggal nikahmu. Bisa kamu ubah.";
+  if (!eventDate) return "Bisa diubah lagi saat mengajukan booking.";
+  return undefined;
+}
+
 /** Desktop only: the sticky decision card in the right column. On phones the
  * same actions live in MobileActionBar. */
 export function BookingCard({
@@ -81,7 +89,11 @@ export function BookingCard({
   onSeePackages,
   error,
   loginHref,
+  unavailable,
+  weddingDate,
 }: Common & {
+  unavailable?: Record<string, "booked" | "blocked">;
+  weddingDate?: string;
   eventDate: string;
   setEventDate: (v: string) => void;
   selected: VendorPackage | null;
@@ -115,7 +127,15 @@ export function BookingCard({
         </div>
       ) : isClient ? (
         <div className="grid gap-4">
-          <TanggalPicker label="Tanggal acara" min={todayIso()} value={eventDate} onChange={setEventDate} hint={eventDate ? undefined : "Bisa diubah lagi saat mengajukan booking."} />
+          <TanggalPicker
+            label="Tanggal acara"
+            min={todayIso()}
+            value={eventDate}
+            onChange={setEventDate}
+            unavailable={unavailable}
+            marked={weddingDate}
+            hint={dateHint(eventDate, weddingDate, unavailable)}
+          />
           {/* The chosen package swaps in place (crossfade + slight rise) so
               picking one in the Paket section visibly lands here. */}
           <div className={`overflow-hidden rounded-[14px] px-4 py-3 transition-colors duration-300 ${selected ? "bg-wd-accent-wash ring-1 ring-wd-accent-line" : "bg-wd-paper"}`}>
@@ -233,7 +253,11 @@ export function BookingSheet({
   error,
   dateError,
   onSubmit,
+  unavailable,
+  weddingDate,
 }: {
+  unavailable?: Record<string, "booked" | "blocked">;
+  weddingDate?: string;
   open: boolean;
   onClose: () => void;
   packages: VendorPackage[];
@@ -263,7 +287,7 @@ export function BookingSheet({
       }
     >
       <form id="booking-form" onSubmit={onSubmit} className="grid gap-5">
-        <TanggalPicker label="Tanggal acara" min={todayIso()} value={eventDate} onChange={setEventDate} error={dateError} />
+        <TanggalPicker label="Tanggal acara" min={todayIso()} value={eventDate} onChange={setEventDate} error={dateError} unavailable={unavailable} marked={weddingDate} hint={dateHint(eventDate, weddingDate, unavailable)} />
 
         {packages.length > 0 && (
           <fieldset>

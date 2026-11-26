@@ -264,7 +264,7 @@ export function BudgetTool() {
                       </label>
                       <span className="text-right text-sm tabular-nums">
                         <span className="font-semibold text-wd-ink">{amount(c.percentage)}</span>
-                        <span className="ml-2 text-wd-muted">{pct}%</span>
+                        <span className="ml-2 text-wd-text">{pct}%</span>
                       </span>
                     </div>
                     <div className="mt-0.5 flex items-center gap-3 pl-12">

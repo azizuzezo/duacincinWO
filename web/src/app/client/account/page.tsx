@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 
 import { FOCUS } from "@/app/client/_ui";
+import { WeddingDateField } from "@/components/client/WeddingDateField";
 import { PasswordSection } from "@/components/PasswordSection";
 import { WhatsAppNumberCard } from "@/components/wa/WhatsAppVerify";
 import { ClientShell } from "@/components/shell/ClientShell";
@@ -37,6 +39,7 @@ const HELP = [
 ];
 
 function ClientAccountContent({ user }: { user: CurrentUser }) {
+  const [weddingDate, setWeddingDate] = useState(user.wedding_date ?? "");
   return (
     <ClientShell user={user}>
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
@@ -77,6 +80,12 @@ function ClientAccountContent({ user }: { user: CurrentUser }) {
                   <dd className="mt-1 break-words font-semibold text-dc-ink">{user.email}</dd>
                 </div>
               </dl>
+            </Card>
+
+            <Card className="p-6 sm:p-8">
+              <h2 className="font-heading text-[1.75rem] leading-tight text-dc-ink">Tanggal nikah</h2>
+              <p className="mt-1 mb-4 text-sm text-dc-text-2">Dipakai untuk mengisi tanggal booking otomatis dan hitung mundur di dasbor.</p>
+              <WeddingDateField value={weddingDate} onSaved={setWeddingDate} />
             </Card>
 
             <WhatsAppNumberCard />

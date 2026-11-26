@@ -38,7 +38,7 @@ export function ForVendors() {
             <ol className="mt-9 border-t border-white/15">
               {STEPS.map((text, i) => (
                 <li key={text} className="flex items-baseline gap-5 border-b border-white/15 py-4">
-                  <span className="wd-display w-6 shrink-0 text-[1.7rem] italic leading-none text-[#e3c78c]">{i + 1}</span>
+                  <span className="wd-display w-6 shrink-0 text-[1.7rem] italic leading-none !text-[#e3c78c]">{i + 1}</span>
                   <span className="text-[1.02rem] leading-snug text-white/90">{text}</span>
                 </li>
               ))}

@@ -42,6 +42,9 @@ export function TanggalPicker({
   min,
   hint,
   error,
+  unavailable,
+  marked,
+  markedLabel = "Tanggal nikahmu",
 }: {
   label: string;
   value: string;
@@ -49,6 +52,11 @@ export function TanggalPicker({
   min?: string;
   hint?: string;
   error?: string | null;
+  /** Days the vendor cannot take ("booked" = locked by a booking, "blocked" = closed by the vendor). Shown struck out and not selectable. */
+  unavailable?: Record<string, "booked" | "blocked">;
+  /** A day to point out (the couple's wedding date), ringed in gold. */
+  marked?: string;
+  markedLabel?: string;
 }) {
   const id = useId();
   const reduced = useReducedMotion();
@@ -87,7 +95,7 @@ export function TanggalPicker({
   }
 
   function pick(d: Date) {
-    if (isBefore(d)) return;
+    if (isBefore(d) || unavailable?.[toIso(d)]) return;
     onChange(toIso(d));
     setOpen(false);
     trigger.current?.focus();
@@ -195,7 +203,9 @@ export function TanggalPicker({
                       if (!d) return <span key={`e${i}`} role="gridcell" />;
                       const iso = toIso(d);
                       const selected = iso === value;
-                      const disabled = isBefore(d);
+                      const off = unavailable?.[iso];
+                      const disabled = isBefore(d) || !!off;
+                      const isMarked = iso === marked;
                       const focused = iso === toIso(focus);
                       return (
                         <span key={iso} role="gridcell" aria-selected={selected} className="flex justify-center">
@@ -204,10 +214,10 @@ export function TanggalPicker({
                             tabIndex={focused ? 0 : -1}
                             disabled={disabled}
                             onClick={() => pick(d)}
-                            aria-label={`${formatTanggal(iso)}${iso === todayStr ? ", hari ini" : ""}`}
+                            aria-label={`${formatTanggal(iso)}${iso === todayStr ? ", hari ini" : ""}${isMarked ? `, ${markedLabel.toLowerCase()}` : ""}${off ? ", vendor tidak tersedia" : ""}`}
                             className={`relative flex h-11 w-11 items-center justify-center rounded-full text-sm tabular-nums transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-dc-gold disabled:cursor-not-allowed disabled:font-normal disabled:text-dc-text-3 ${
-                              selected ? "bg-dc-ink font-semibold text-dc-on-dark" : "font-medium text-dc-black hover:bg-dc-cream"
-                            }`}
+                              selected ? "bg-dc-ink font-semibold text-dc-on-dark" : off ? "font-normal text-dc-text-3 line-through decoration-1" : "font-medium text-dc-black hover:bg-dc-cream"
+                            } ${isMarked && !selected ? "ring-2 ring-inset ring-dc-gold" : ""}`}
                           >
                             {d.getDate()}
                             {iso === todayStr && !selected && <span aria-hidden className="absolute bottom-1.5 h-1 w-1 rounded-full bg-dc-gold" />}
@@ -218,6 +228,24 @@ export function TanggalPicker({
                   </div>
                 ))}
               </div>
+              {(unavailable || marked) && (
+                <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 border-t border-dc-line px-1 pt-2 text-[0.72rem] text-dc-text-2">
+                  {unavailable && (
+                    <li className="flex items-center gap-1.5">
+                      <span aria-hidden className="text-dc-text-3 line-through">
+                        12
+                      </span>
+                      Vendor tidak tersedia
+                    </li>
+                  )}
+                  {marked && (
+                    <li className="flex items-center gap-1.5">
+                      <span aria-hidden className="h-3.5 w-3.5 rounded-full ring-2 ring-inset ring-dc-gold" />
+                      {markedLabel}
+                    </li>
+                  )}
+                </ul>
+              )}
             </div>
           </motion.div>
         )}

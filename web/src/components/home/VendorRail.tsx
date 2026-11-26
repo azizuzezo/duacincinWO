@@ -36,7 +36,7 @@ export function VendorCard({ card }: { card: DirectoryCard }) {
             className="transition-transform duration-[1.1s] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.05] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
           />
         ) : (
-          <span className="flex h-full items-center justify-center text-sm text-wd-muted">Belum ada foto</span>
+          <span className="flex h-full items-center justify-center text-sm text-wd-text">Belum ada foto</span>
         )}
         <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-[0.72rem] font-semibold text-wd-ink">
           <Shield size={11} className="text-wd-accent-ink" />

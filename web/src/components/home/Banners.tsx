@@ -103,7 +103,7 @@ const KIRANA: Banner = {
 
 const STEP_MS = 6000;
 
-function Slide({ b, i, n, first }: { b: Banner; i: number; n: number; first: boolean }) {
+function Slide({ b, i, n }: { b: Banner; i: number; n: number }) {
   const dark = b.tone === "dark";
   const body = (
     <>
@@ -133,7 +133,7 @@ function Slide({ b, i, n, first }: { b: Banner; i: number; n: number; first: boo
           src={`${b.img}.webp`}
           alt=""
           fill
-          priority={first}
+          priority loading="eager"
           sizes="(min-width: 1280px) 1180px, 92vw"
           className={`object-cover ${b.pos} [transform:translate3d(calc(var(--px,0)*-14px),calc(var(--py,0)*-10px),0)_scale(1.04)] transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transform-none motion-reduce:transition-none`}
         />
@@ -278,7 +278,7 @@ export function Banners({ kirana }: { kirana: boolean }) {
         style={{ paddingInline: `max(6vw, ${side})` }}
       >
         {slides.map((b, i) => (
-          <Slide key={b.id} b={b} i={i} n={n} first={i <= start} />
+          <Slide key={b.id} b={b} i={i} n={n} />
         ))}
       </div>
 

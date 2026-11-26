@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { daysUntil, ErrorState, firstName, formatTanggal, relativeDays, Skeleton } from "@/app/client/_ui";
+import { WeddingDateField } from "@/components/client/WeddingDateField";
 import { ClientArt, type ArtKind } from "@/components/home/ClientArt";
 import { Inspiration } from "@/components/home/Inspiration";
 import { rankVendors, VendorRail } from "@/components/home/VendorRail";
@@ -99,6 +100,7 @@ function ClientDashboardContent({ user }: { user: CurrentUser }) {
   const [pending, setPending] = useState(3);
   const [failed, setFailed] = useState(false);
   const directory = useDirectory();
+  const [weddingDate, setWeddingDate] = useState(user.wedding_date ?? "");
 
   function load() {
     setPending(3);
@@ -139,7 +141,9 @@ function ClientDashboardContent({ user }: { user: CurrentUser }) {
   const active = live.filter((b) => b.status !== "completed").sort((a, b) => a.event_date.localeCompare(b.event_date));
   const nextBooking = active[0];
   const next = nextStep(nextBooking, budget, bookings.length > 0);
-  const days = daysUntil(nextBooking?.event_date);
+  // The wedding date the couple set wins; without it, the nearest booking's date stands in.
+  const mainDate = weddingDate || nextBooking?.event_date;
+  const days = daysUntil(mainDate);
   const committed = live.reduce((s, b) => s + b.agreed_price, 0);
 
   // Journey: where the slowest live booking stands. Steps before it are done, it is "now".
@@ -163,9 +167,9 @@ function ClientDashboardContent({ user }: { user: CurrentUser }) {
               <div role="status" aria-label="Memuat jadwal" className="mt-3">
                 <Skeleton className="h-12 w-80 max-w-full" />
               </div>
-            ) : nextBooking && days !== null && days >= 0 ? (
+            ) : mainDate && days !== null && days >= 0 ? (
               <h1 id="halo" className="wd-display mt-2 text-[clamp(2.1rem,4.4vw,3.4rem)] leading-[1.05]">
-                {days > 1 ? <>{days} hari menuju</> : <>{relativeDays(days)},</>} <em>{formatTanggal(nextBooking.event_date)}</em>
+                {days > 1 ? <>{days} hari menuju</> : <>{relativeDays(days)},</>} <em>{formatTanggal(mainDate)}</em>
               </h1>
             ) : (
               <h1 id="halo" className="wd-display mt-2 text-[clamp(2.1rem,4.4vw,3.4rem)] leading-[1.05]">
@@ -176,6 +180,11 @@ function ClientDashboardContent({ user }: { user: CurrentUser }) {
               <p className="mt-3 max-w-xl leading-relaxed text-wd-text">
                 <span className="font-semibold text-wd-ink">{next.title}.</span> {next.body}
               </p>
+            )}
+            {!loading && (
+              <div className="mt-4">
+                <WeddingDateField value={weddingDate} onSaved={setWeddingDate} compact />
+              </div>
             )}
           </div>
           {!loading && (

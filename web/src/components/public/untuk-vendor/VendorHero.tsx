@@ -39,7 +39,7 @@ export function VendorHero() {
 
           <div className="grid items-center lg:grid-cols-12">
             <div className="p-7 pt-14 sm:p-12 sm:pt-16 lg:col-span-7 lg:p-16 lg:pt-20">
-              <p className="wd-kicker">Untuk vendor</p>
+              <p className="wd-kicker !text-[#6b4f12]">Untuk vendor</p>
               <h1 id="uv-judul" className="wd-display mt-4 text-[clamp(2.3rem,4.6vw,3.7rem)] leading-[1.06]">
                 Punya usaha pernikahan? <em>Tampilkan karyamu.</em>
               </h1>

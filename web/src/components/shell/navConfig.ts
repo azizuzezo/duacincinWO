@@ -41,6 +41,7 @@ export const VENDOR_NAV: NavItem[] = [
     label: "Etalase",
     icon: ICON.image,
   },
+  { href: "/vendor/kalender", label: "Kalender", icon: ICON.calendar },
   { href: "/vendor/payouts", label: "Pencairan", icon: ICON.cash },
 ];
 

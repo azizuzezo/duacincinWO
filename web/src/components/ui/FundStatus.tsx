@@ -44,7 +44,7 @@ export function FundStatus({ status, compact = false }: { status: BookingStatus;
       </span>
       <div>
         <p className="text-sm font-semibold text-dc-ink">{c.label}</p>
-        {!compact && <p className="text-xs leading-relaxed text-dc-text-3">{c.hint}</p>}
+        {!compact && <p className="text-xs leading-relaxed text-dc-text-2">{c.hint}</p>}
       </div>
     </div>
   );

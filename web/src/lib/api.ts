@@ -87,7 +87,27 @@ export type CurrentUser = {
   email: string;
   role: "client" | "vendor" | "admin" | "wedding_consultant";
   full_name: string;
+  /** The couple's wedding day ("YYYY-MM-DD"), set once and used to prefill bookings. Clients only. */
+  wedding_date?: string;
 };
+
+/** A day a vendor cannot take a booking: already locked by a booking, or blocked by the vendor. */
+export type UnavailableDate = { date: string; reason: "booked" | "blocked" };
+
+/** Map "YYYY-MM-DD" -> reason, for the calendar. */
+export function unavailableMap(list: UnavailableDate[] | undefined | null): Record<string, UnavailableDate["reason"]> {
+  const m: Record<string, UnavailableDate["reason"]> = {};
+  for (const d of list ?? []) m[d.date] = d.reason;
+  return m;
+}
+
+/** "?from=today&to=today+400d": the window the availability calendar asks for (the server allows at most 400 days). */
+export function availabilityQuery(days = 399): string {
+  const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const from = new Date();
+  const to = new Date(from.getFullYear(), from.getMonth(), from.getDate() + days);
+  return `?from=${iso(from)}&to=${iso(to)}`;
+}
 
 /** Mirrors the server's vendor_category enum (vendors.ValidCategories). */
 export const VENDOR_CATEGORIES: { value: string; label: string }[] = [

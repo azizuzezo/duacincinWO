@@ -152,7 +152,7 @@ export function CategoryListing({
                                 }`}
                               >
                                 {c.label}
-                                {c.count !== undefined && <span className="tabular-nums text-wd-muted">{c.count}</span>}
+                                {c.count !== undefined && <span className="tabular-nums text-wd-text">{c.count}</span>}
                               </Link>
                             </li>
                           );

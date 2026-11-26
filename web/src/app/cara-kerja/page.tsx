@@ -191,7 +191,7 @@ export default function CaraKerjaPage() {
                 sizes="(min-width: 1024px) 290px, 70vw"
                 className="mx-auto w-[min(70%,290px)]"
               />
-              <figcaption className="mt-6 text-center text-sm text-wd-muted">
+              <figcaption className="mt-6 text-center text-sm text-wd-text">
                 Pengingat ini tampil di setiap chat dengan vendor.
               </figcaption>
             </figure>
