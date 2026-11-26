@@ -1,13 +1,14 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { dayName, formatJam, monthShort } from "@/components/booking/format";
+import { FOCUS } from "@/app/client/_ui";
+import { ClientArt } from "@/components/home/ClientArt";
+import { wdButton } from "@/components/home/ui";
 import { ClientShell } from "@/components/shell/ClientShell";
 import { Button } from "@/components/ui/Button";
-import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Input } from "@/components/ui/Field";
 import { Sheet } from "@/components/ui/Sheet";
@@ -30,15 +31,6 @@ const DOES = [
   "Merekomendasikan vendor yang cocok dari direktori DuaCincin.",
   "Menjadwalkan meeting lanjutan dan ikut technical meeting bila kamu minta.",
 ];
-
-function RingBullet() {
-  return (
-    <svg aria-hidden viewBox="0 0 26 16" fill="none" className="mt-1 h-4 w-[26px] shrink-0 text-dc-gold-antique">
-      <circle cx="9" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.4" />
-      <circle cx="17" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.4" />
-    </svg>
-  );
-}
 
 function ClientConsultationContent({ user }: { user: CurrentUser }) {
   const router = useRouter();
@@ -117,96 +109,91 @@ function ClientConsultationContent({ user }: { user: CurrentUser }) {
   const upcoming = sorted.filter((m) => new Date(m.scheduled_at).getTime() >= now);
   const past = sorted.filter((m) => new Date(m.scheduled_at).getTime() < now).reverse();
 
+  const [next, ...laterUpcoming] = upcoming;
+
   return (
     <ClientShell user={user}>
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
-        {/* The one ink block of the page: who the consultant is and the two ways to reach them. */}
-        <section aria-labelledby="konsultan-judul" className="dc-on-dark relative isolate animate-fade-up overflow-hidden rounded-2xl bg-dc-ink text-dc-on-dark">
-          <div aria-hidden className="absolute -right-24 -top-24 -z-10 h-80 w-80 rounded-full bg-[radial-gradient(closest-side,color-mix(in_srgb,var(--dc-gold-antique)_24%,transparent),transparent)]" />
-          <div className="grid items-end gap-6 p-6 sm:p-10 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-10">
-            <div className="pb-2">
-              <p className="dc-eyebrow">Wedding Consultant</p>
-              <h1 id="konsultan-judul" className="mt-3 text-balance font-heading text-[2.5rem] leading-[1.02] sm:text-[3.4rem]">
-                Ceritakan rencanamu, <span className="dc-em-light">kami bantu</span> memilih.
-              </h1>
-              <ul className="mt-6 flex flex-col gap-3">
-                {DOES.map((d) => (
-                  <li key={d} className="flex gap-3 text-[0.95rem] leading-relaxed text-dc-on-dark/85">
-                    <RingBullet />
-                    {d}
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Button variant="gold" size="lg" onClick={handleChat} loading={opening}>
-                  Chat sekarang
-                </Button>
-                <Button variant="ghostLight" size="lg" onClick={() => setSheetOpen(true)}>
-                  Jadwalkan video call
-                </Button>
-              </div>
+      <div className="wd-container pb-16 pt-8 sm:pt-10">
+        {/* Header: what the consultant does, and the two ways to reach them. Plain, no panel. */}
+        <section aria-labelledby="konsultan-judul" className="grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_240px] lg:gap-14">
+          <div>
+            <p className="wd-kicker">Konsultasi</p>
+            <h1 id="konsultan-judul" className="wd-display mt-2 text-[clamp(2.1rem,4.4vw,3.4rem)] leading-[1.05]">
+              Ceritakan rencanamu, <em>kami bantu memilih.</em>
+            </h1>
+            <ol className="mt-6 max-w-xl border-t border-wd-line">
+              {DOES.map((d, i) => (
+                <li key={d} className="flex items-baseline gap-4 border-b border-wd-line py-3.5">
+                  <span className="wd-display w-5 shrink-0 text-[1.5rem] italic leading-none text-wd-accent-ink">{i + 1}</span>
+                  <span className="leading-snug text-wd-text">{d}</span>
+                </li>
+              ))}
+            </ol>
+            <div className="mt-7 flex flex-wrap gap-3">
+              <button type="button" onClick={handleChat} disabled={opening} aria-busy={opening} className={`${wdButton({ variant: "gold", size: "lg" })} ${FOCUS}`}>
+                {opening ? "Membuka chat..." : "Chat sekarang"}
+              </button>
+              <button type="button" onClick={() => setSheetOpen(true)} className={`${wdButton({ variant: "outline", size: "lg" })} ${FOCUS}`}>
+                Jadwalkan video call
+              </button>
             </div>
-            {/* Real couple cutout in a gapura-shaped arch, the brand frame for people. */}
-            <div className="relative mx-auto hidden aspect-[4/5] w-full max-w-[300px] sm:block lg:max-w-none">
-              <div aria-hidden className="absolute inset-0 rounded-t-full border border-dc-gold-antique/40" />
-              <div className="absolute inset-3 overflow-hidden rounded-t-full bg-dc-ink-2">
-                <Image src="/photos/pasangan/pin-akad.webp" alt="Pasangan pengantin berbusana putih duduk di pelaminan bunga putih saat akad" fill sizes="340px" className="object-cover object-[50%_60%]" />
-              </div>
-            </div>
+          </div>
+          <div className="hidden aspect-square w-full max-w-[240px] justify-self-center rounded-[28px] bg-wd-accent-wash p-8 lg:block">
+            <ClientArt kind="bubble" />
           </div>
         </section>
 
-        <section aria-labelledby="jadwal-judul" className="mt-12">
-          <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+        <section aria-labelledby="jadwal-judul" className="mt-14">
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
             <div>
-              <h2 id="jadwal-judul" className="font-heading text-[2rem] leading-tight text-dc-ink">
-                Jadwal <span className="dc-em">sesimu</span>
+              <h2 id="jadwal-judul" className="wd-title text-[clamp(1.55rem,2.6vw,2.05rem)] leading-tight">
+                Jadwal <em>sesimu</em>
               </h2>
-              <p className="mt-1 text-sm text-dc-text-2">Sesi video call atau telepon dengan Wedding Consultant.</p>
+              <p className="mt-1.5 text-[0.95rem] text-wd-muted">Sesi video call atau telepon dengan Wedding Consultant.</p>
             </div>
             {meetings.length > 0 && (
-              <Button variant="ghost" size="sm" onClick={() => setSheetOpen(true)}>
+              <button type="button" onClick={() => setSheetOpen(true)} className={`${wdButton({ variant: "outline", size: "sm" })} ${FOCUS}`}>
                 Tambah sesi
-              </Button>
+              </button>
             )}
           </div>
 
           {loading ? (
-            <SkeletonGroup label="Memuat jadwal" className="grid gap-3 sm:grid-cols-2">
-              <span className="dc-skeleton block h-28 rounded-xl" />
-              <span className="dc-skeleton block h-28 rounded-xl" />
+            <SkeletonGroup label="Memuat jadwal" className="flex flex-col gap-3">
+              <span className="dc-skeleton block h-24 rounded-2xl" />
+              <span className="dc-skeleton block h-16 rounded-2xl" />
             </SkeletonGroup>
           ) : loadError ? (
             <ErrorState title="Jadwal belum bisa dimuat" body={loadError} onRetry={load} />
           ) : sorted.length === 0 ? (
-            <EmptyState
-              title="Belum ada sesi terjadwal"
-              body="Pilih tanggal dan jam yang pas, lalu konsultan menemanimu meninjau anggaran atau pilihan vendor."
-              action={
-                <Button variant="primary" size="sm" onClick={() => setSheetOpen(true)}>
+            <div className="grid items-center gap-6 rounded-[28px] border-2 border-dashed border-wd-accent bg-wd-accent-wash p-6 sm:grid-cols-[96px_minmax(0,1fr)] sm:p-8">
+              <div className="mx-auto h-24 w-24">
+                <ClientArt kind="clipboard" />
+              </div>
+              <div className="text-center sm:text-left">
+                <h3 className="wd-display text-[1.6rem] leading-tight">Belum ada sesi terjadwal</h3>
+                <p className="mt-1.5 max-w-lg text-wd-text">Pilih tanggal dan jam yang pas, lalu konsultan menemanimu meninjau anggaran atau pilihan vendor.</p>
+                <button type="button" onClick={() => setSheetOpen(true)} className={`${wdButton({ variant: "gold" })} ${FOCUS} mt-4`}>
                   Jadwalkan sesi pertama
-                </Button>
-              }
-            />
+                </button>
+              </div>
+            </div>
           ) : (
-            <div className="flex flex-col gap-8">
-              {upcoming.length > 0 && (
-                <ul className="grid gap-3 sm:grid-cols-2">
-                  {upcoming.map((m, i) => (
-                    <li key={m.id}>
-                      <MeetingCard meeting={m} next={i === 0} />
-                    </li>
+            <div>
+              {next && <NextSession meeting={next} />}
+              {laterUpcoming.length > 0 && (
+                <ul className="border-t border-wd-line">
+                  {laterUpcoming.map((m) => (
+                    <SessionRow key={m.id} meeting={m} />
                   ))}
                 </ul>
               )}
               {past.length > 0 && (
-                <div>
-                  <h3 className="mb-3 text-sm font-semibold text-dc-text-2">Sudah lewat</h3>
-                  <ul className="grid gap-3 sm:grid-cols-2">
+                <div className="mt-10">
+                  <h3 className="text-sm font-semibold text-wd-text">Sudah lewat</h3>
+                  <ul className="mt-2 border-t border-wd-line">
                     {past.map((m) => (
-                      <li key={m.id}>
-                        <MeetingCard meeting={m} past />
-                      </li>
+                      <SessionRow key={m.id} meeting={m} past />
                     ))}
                   </ul>
                 </div>
@@ -250,34 +237,55 @@ function ClientConsultationContent({ user }: { user: CurrentUser }) {
   );
 }
 
-/** A session as a calendar tile: the day number leads, time and link follow. */
-function MeetingCard({ meeting, next = false, past = false }: { meeting: Meeting; next?: boolean; past?: boolean }) {
+const LINK_CLS = `-ml-1 inline-flex min-h-11 items-center px-1 text-sm font-semibold text-wd-accent-ink underline underline-offset-4 hover:text-wd-ink ${FOCUS}`;
+
+function MeetingLink({ meeting }: { meeting: Meeting }) {
+  return meeting.meeting_link ? (
+    <a href={meeting.meeting_link} target="_blank" rel="noopener noreferrer" className={LINK_CLS}>
+      Buka link meeting
+    </a>
+  ) : (
+    <p className="text-sm text-wd-muted">Belum ada link meeting</p>
+  );
+}
+
+/** The next session, big: the day number leads, then time and link. */
+function NextSession({ meeting }: { meeting: Meeting }) {
   const date = new Date(meeting.scheduled_at);
   return (
-    <div className={`flex items-center gap-4 rounded-xl border p-4 ${past ? "border-dc-line bg-dc-cream/60" : "border-dc-line bg-dc-white shadow-soft"} ${next ? "border-dc-gold/60" : ""}`}>
-      <div className={`flex h-20 w-18 shrink-0 flex-col items-center justify-center rounded-lg ${next ? "bg-dc-ink text-dc-on-dark" : "bg-dc-cream text-dc-ink"}`}>
-        <span className={`text-xs font-semibold ${next ? "text-dc-gold-antique" : "text-dc-clay"}`}>{monthShort(date)}</span>
-        <span className="font-heading text-[2.1rem] leading-none lining-nums">{date.getDate()}</span>
-        <span className={`text-xs ${next ? "text-dc-on-dark/80" : "text-dc-text-3"}`}>{date.getFullYear()}</span>
+    <div className="mb-6 flex items-center gap-5 rounded-[28px] bg-wd-accent-wash p-5 sm:gap-8 sm:p-7">
+      <div className="flex w-24 shrink-0 flex-col items-center sm:w-28">
+        <span className="text-sm font-semibold uppercase text-wd-accent-ink">{monthShort(date)}</span>
+        <span className="wd-display text-[4rem] leading-none tabular-nums sm:text-[4.8rem]">{date.getDate()}</span>
+        <span className="text-sm text-wd-text">{date.getFullYear()}</span>
       </div>
       <div className="min-w-0 flex-1">
-        {next && <p className="text-xs font-semibold text-dc-clay">Sesi berikutnya</p>}
-        <p className="font-semibold text-dc-ink">
+        <p className="text-sm font-semibold text-wd-accent-ink">Sesi berikutnya</p>
+        <p className="wd-display mt-1 text-[clamp(1.4rem,2.6vw,1.9rem)] leading-tight">
           {dayName(date)}, pukul {formatJam(meeting.scheduled_at)}
         </p>
-        {meeting.meeting_link ? (
-          <a
-            href={meeting.meeting_link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="-ml-1 inline-flex min-h-11 items-center rounded-full px-1 text-sm font-semibold text-dc-clay underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold"
-          >
-            Buka link meeting
-          </a>
-        ) : (
-          <p className="mt-1 text-sm text-dc-text-3">Belum ada link meeting</p>
-        )}
+        <div className="mt-1">
+          <MeetingLink meeting={meeting} />
+        </div>
       </div>
     </div>
+  );
+}
+
+function SessionRow({ meeting, past = false }: { meeting: Meeting; past?: boolean }) {
+  const date = new Date(meeting.scheduled_at);
+  return (
+    <li className={`flex items-center gap-4 border-b border-wd-line py-3 ${past ? "opacity-75" : ""}`}>
+      <div className="flex w-14 shrink-0 flex-col items-center">
+        <span className="text-xs font-semibold uppercase text-wd-text">{monthShort(date)}</span>
+        <span className="wd-display text-[1.9rem] leading-none tabular-nums">{date.getDate()}</span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="font-semibold text-wd-ink">
+          {dayName(date)}, pukul {formatJam(meeting.scheduled_at)}
+        </p>
+        <MeetingLink meeting={meeting} />
+      </div>
+    </li>
   );
 }

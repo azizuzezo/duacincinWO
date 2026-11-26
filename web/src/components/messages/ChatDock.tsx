@@ -75,7 +75,7 @@ export function ChatDock({ user }: { user: CurrentUser }) {
       )}
 
       {open && (
-        <section role="dialog" aria-label="Chat" className="fixed bottom-5 right-5 z-50 flex h-[min(620px,calc(100dvh-6rem))] w-[392px] flex-col overflow-hidden rounded-[22px] bg-white shadow-wd-pop ring-1 ring-wd-line">
+        <section role="dialog" aria-label="Chat" className="fixed bottom-5 right-5 z-50 flex h-[min(540px,calc(100dvh-6rem))] w-[348px] flex-col overflow-hidden rounded-[22px] bg-white shadow-wd-pop ring-1 ring-wd-line">
           <header className="flex min-h-14 items-center gap-2 bg-wd-accent px-3">
             {activeId ? (
               <>

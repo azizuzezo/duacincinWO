@@ -427,9 +427,9 @@ export function ChatThread({
                       </p>
                     )}
                     <div className={`group flex flex-col ${mine ? "items-end" : "items-start"} ${fresh && !reduced ? "animate-fade-up" : ""}`}>
-                      <div className={`flex max-w-[86%] items-center gap-1 sm:max-w-[72%] ${mine ? "flex-row-reverse" : ""}`}>
+                      <div className={`flex max-w-[84%] items-center gap-1 sm:max-w-[68%] ${mine ? "flex-row-reverse" : ""}`}>
                         <div
-                          className={`min-w-0 rounded-2xl px-3.5 py-2 text-[0.95rem] leading-relaxed ${corner} ${
+                          className={`min-w-0 rounded-[18px] px-3 py-1.5 text-[0.84rem] leading-[1.45] ${corner} ${
                             mine ? "bg-dc-ink text-dc-on-dark" : "border border-dc-line bg-dc-white text-dc-black"
                           }`}
                         >
@@ -464,7 +464,7 @@ export function ChatThread({
                             </a>
                           )}
                           {m.body && <span className="whitespace-pre-wrap wrap-break-word">{m.body}</span>}
-                          <span className={`ml-2 inline-flex translate-y-0.5 items-center gap-1 text-xs tabular-nums ${mine ? "text-dc-on-dark/70" : "text-dc-text-3"}`}>
+                          <span className={`ml-2 inline-flex translate-y-0.5 items-center gap-1 text-[0.68rem] tabular-nums ${mine ? "text-dc-on-dark/70" : "text-dc-text-3"}`}>
                             {formatJam(m.created_at)}
                             {mine && <MessageTicks status={m.status} />}
                           </span>
@@ -584,7 +584,7 @@ export function ChatThread({
                   }}
                   placeholder="Tulis pesan"
                   aria-label="Tulis pesan"
-                  className="max-h-33 min-h-11 min-w-0 flex-1 resize-none rounded-[22px] border border-dc-line-strong bg-dc-ivory px-4 py-2.5 text-[0.95rem] leading-snug text-dc-black transition-[border-color,box-shadow] placeholder:text-dc-text-3 focus:border-dc-gold focus:shadow-[0_0_0_4px_rgba(184,146,74,0.18)] focus:outline-none"
+                  className="max-h-33 min-h-11 min-w-0 flex-1 resize-none rounded-[22px] border border-dc-line-strong bg-dc-ivory px-3.5 py-2 text-[0.875rem] leading-snug text-dc-black transition-[border-color,box-shadow] placeholder:text-dc-text-3 focus:border-dc-gold focus:shadow-[0_0_0_4px_rgba(184,146,74,0.18)] focus:outline-none"
                 />
                 <button
                   type="submit"
