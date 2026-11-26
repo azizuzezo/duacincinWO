@@ -509,6 +509,15 @@ ok("deletion is written to the audit log", psql(`select count(*) from admin_audi
 r = await admin.call("GET", "/admin/audit-log"); const delEntry = r.data?.find((e) => e.action === "vendor.delete" && e.target_id === vendor2Id);
 ok("audit log names who did it", delEntry?.actor_name === "Admin Uji" && delEntry?.actor_email === emails.admin && delEntry?.actor_role === "admin", JSON.stringify(delEntry));
 
+// 10b. The API host is never a web page: robots.txt disallows everything and every response says noindex.
+{
+  const root = BASE.replace(/\/api\/v1$/, "");
+  const rb = await fetch(`${root}/robots.txt`); const rbt = await rb.text();
+  ok("API robots.txt disallows everything", rb.status === 200 && /Disallow: \//.test(rbt), rbt);
+  const hz = await fetch(`${root}/healthz`);
+  ok("API responses carry X-Robots-Tag noindex", /noindex/.test(hz.headers.get("x-robots-tag") ?? ""), String(hz.headers.get("x-robots-tag")));
+}
+
 // 11. Articles: admin-written, rich-text body as a validated ProseMirror document.
 {
   const anon = new Client("anon-art");

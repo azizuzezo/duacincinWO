@@ -68,6 +68,17 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config, deps Deps) http.Handler {
 		MaxAge:           300,
 	}))
 
+	// This host is an API, never a web page: tell search engines to stay out.
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			w.Header().Set("X-Robots-Tag", "noindex, nofollow")
+			next.ServeHTTP(w, req)
+		})
+	})
+	r.Get("/robots.txt", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		_, _ = w.Write([]byte("User-agent: *\nDisallow: /\n"))
+	})
 	r.Get("/healthz", healthHandler(pool))
 
 	r.Route("/api/v1", func(r chi.Router) {
