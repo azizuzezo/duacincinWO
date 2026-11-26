@@ -89,6 +89,8 @@ export type CurrentUser = {
   full_name: string;
   /** The couple's wedding day ("YYYY-MM-DD"), set once and used to prefill bookings. Clients only. */
   wedding_date?: string;
+  /** Profile picture (a cropped square), when the user set one. */
+  avatar_url?: string;
 };
 
 /** A day a vendor cannot take a booking: already locked by a booking, or blocked by the vendor. */

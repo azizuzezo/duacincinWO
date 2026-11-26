@@ -6,6 +6,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { AvatarEditor } from "@/components/client/AvatarEditor";
 import { WeddingDateField } from "@/components/client/WeddingDateField";
 import { ClientArt, type ArtKind } from "@/components/home/ClientArt";
 import { ClientShell } from "@/components/shell/ClientShell";
@@ -20,11 +21,6 @@ export default function ClientAccountPage() {
       {(user) => <ClientAccountContent user={user} />}
     </WithUser>
   );
-}
-
-function initials(name: string, email: string): string {
-  const words = (name || email).trim().split(/\s+/).filter(Boolean);
-  return ((words[0]?.[0] ?? "") + (words[1]?.[0] ?? "")).toUpperCase() || "DC";
 }
 
 // Agreements a client accepts at sign-up (register page, client role).
@@ -47,9 +43,7 @@ function ClientAccountContent({ user }: { user: CurrentUser }) {
       <div className="wd-container pb-16 pt-8 sm:pt-10">
         {/* Profile: initials avatar (no generated photos), name, email. */}
         <header className="flex flex-wrap items-center gap-5 sm:gap-7">
-          <span aria-hidden className="wd-display flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-wd-accent text-[2.1rem] ring-4 ring-wd-accent-wash">
-            {initials(user.full_name, user.email)}
-          </span>
+          <AvatarEditor user={user} />
           <div className="min-w-0">
             <p className="wd-kicker">Akun</p>
             <h1 className="wd-display break-words text-[clamp(2rem,4vw,3rem)] leading-[1.05]">{user.full_name || "Tanpa nama"}</h1>

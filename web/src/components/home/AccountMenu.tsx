@@ -22,6 +22,20 @@ function initials(user: CurrentUser): string {
   return (parts.length >= 2 ? parts[0][0] + parts[1][0] : source.slice(0, 2)).toUpperCase();
 }
 
+/** The avatar circle: the profile picture when there is one, else initials. */
+function Avatar({ user, className }: { user: CurrentUser; className: string }) {
+  return (
+    <span className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-wd-accent font-bold text-wd-ink ${className}`}>
+      {user.avatar_url ? (
+        // eslint-disable-next-line @next/next/no-img-element -- small square avatar
+        <img src={user.avatar_url} alt="" className="h-full w-full object-cover" />
+      ) : (
+        initials(user)
+      )}
+    </span>
+  );
+}
+
 function Icon({ paths, size = 18 }: { paths: readonly string[]; size?: number }) {
   return (
     <svg aria-hidden width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
@@ -120,7 +134,7 @@ export function AccountMenu({ user }: { user: CurrentUser }) {
           onClick={() => setOpen((v) => !v)}
           className="flex min-h-11 items-center gap-2 rounded-full py-1 pl-1 pr-2 transition-colors hover:bg-wd-accent-wash"
         >
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-wd-accent text-[0.8rem] font-bold text-wd-ink">{initials(user)}</span>
+          <Avatar user={user} className="h-9 w-9 text-[0.8rem]" />
           <span className="hidden max-w-[110px] truncate text-[0.92rem] font-semibold text-wd-ink md:block">{first}</span>
           <svg aria-hidden width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className={`hidden text-wd-muted transition-transform md:block ${open ? "rotate-180" : ""}`}>
             <path d="m6 9 6 6 6-6" />
@@ -129,7 +143,7 @@ export function AccountMenu({ user }: { user: CurrentUser }) {
         {open && (
           <div id="menu-akun" role="menu" className="absolute right-0 top-full z-50 mt-2 w-[228px] rounded-[18px] bg-white p-1.5 shadow-wd-pop ring-1 ring-wd-line">
             <div className="flex items-center gap-2.5 border-b border-wd-line px-2.5 pb-2.5 pt-1.5">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-wd-accent text-[0.78rem] font-bold text-wd-ink">{initials(user)}</span>
+              <Avatar user={user} className="h-9 w-9 text-[0.78rem]" />
               <span className="min-w-0 leading-tight">
                 <span className="block truncate text-[0.9rem] font-semibold text-wd-ink">{user.full_name || "Akunmu"}</span>
                 <span className="block truncate text-[0.74rem] text-wd-muted">{user.email}</span>

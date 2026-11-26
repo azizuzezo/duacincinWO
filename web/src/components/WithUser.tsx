@@ -20,6 +20,13 @@ export function forgetCurrentUser() {
   lastUser = null;
 }
 
+/** Patch the signed-in user (e.g. after a new profile picture) so every page and the header show it at once. */
+export function updateCurrentUser(patch: Partial<CurrentUser>) {
+  if (!lastUser) return;
+  lastUser = { ...lastUser, ...patch };
+  window.dispatchEvent(new Event("dc:user"));
+}
+
 export function WithUser({
   allowedRoles,
   loginPath,
@@ -57,6 +64,13 @@ export function WithUser({
       })
       .finally(() => setChecking(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // A page patched the user (updateCurrentUser): take the new copy.
+  useEffect(() => {
+    const on = () => lastUser && setUser(lastUser);
+    window.addEventListener("dc:user", on);
+    return () => window.removeEventListener("dc:user", on);
   }, []);
 
   if (checking) {
