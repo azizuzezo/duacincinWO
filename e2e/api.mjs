@@ -2,6 +2,7 @@
 // Run via e2e/run.sh. It creates the data that e2e/ui.mjs later asserts on.
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { deflateSync as zlibDeflate } from "node:zlib";
 const BASE = `http://localhost:${process.env.E2E_API_PORT ?? 8080}/api/v1`;
 const PG = process.env.E2E_PG_CONTAINER ?? "dc-e2e-pg";
 const results = []; let failed = 0;
@@ -355,6 +356,35 @@ r = await client.call("PUT", "/me/wedding-date", { wedding_date: "2027-02-30" })
 r = await client.call("PUT", "/me/wedding-date", { wedding_date: "2020-01-01" }); ok("a past wedding date is refused (400)", r.status === 400, JSON.stringify(r));
 r = await vendor.call("PUT", "/me/wedding-date", { wedding_date: "2027-03-14" }); ok("a vendor cannot set a wedding date (403)", r.status === 403, JSON.stringify(r));
 r = await client.call("PUT", "/me/wedding-date", { wedding_date: "" }); ok("the wedding date can be cleared", r.status === 200 && !r.data?.wedding_date, JSON.stringify(r));
+// 6c. profile picture: any signed-in role can upload one (storage is the fake from e2e/fake-storage.mjs).
+{
+  const crcTable = Array.from({ length: 256 }, (_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
+  const crc32 = (b) => { let c = 0xffffffff; for (const x of b) c = crcTable[(c ^ x) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+  const chunk = (type, data) => { const out = Buffer.alloc(12 + data.length); out.writeUInt32BE(data.length, 0); out.write(type, 4, "ascii"); data.copy(out, 8); out.writeUInt32BE(crc32(out.subarray(4, 8 + data.length)), 8 + data.length); return out; };
+  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(1, 0); ihdr.writeUInt32BE(1, 4); ihdr[8] = 8; ihdr[9] = 2;
+  const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk("IHDR", ihdr), chunk("IDAT", zlibDeflate(Buffer.from([0, 255, 0, 0]))), chunk("IEND", Buffer.alloc(0))]);
+  const upload = async (who, bytes, name, type) => {
+    const form = new FormData(); form.append("file", new Blob([bytes], { type }), name);
+    const res = await fetch(BASE + "/me/avatar", { method: "POST", headers: who.cookie ? { Cookie: who.cookie } : {}, body: form });
+    const txt = await res.text(); let data = null; try { data = txt ? JSON.parse(txt) : null; } catch { data = txt; }
+    return { status: res.status, data };
+  };
+  const stored = async () => (await (await fetch(`http://127.0.0.1:${process.env.E2E_STORAGE_PORT ?? 55433}/__objects`)).json()).filter((p) => p.startsWith("foto-profil/"));
+  r = await upload(client, png, "me.png", "image/png"); const avatarUrl = r.data?.avatar_url;
+  ok("client uploads a profile picture", r.status === 200 && /^https?:\/\/.+\/foto-profil\/.+\.png$/.test(avatarUrl ?? ""), JSON.stringify(r));
+  r = await client.call("GET", "/auth/me"); ok("current user carries the avatar url", r.data?.avatar_url === avatarUrl, JSON.stringify(r));
+  const first = (await stored()).length;
+  r = await upload(client, png, "again.png", "image/png"); ok("a second upload replaces the picture", r.status === 200 && r.data?.avatar_url && r.data.avatar_url !== avatarUrl, JSON.stringify(r));
+  ok("the previous avatar object is removed from storage", first === 1 && (await stored()).length === 1, JSON.stringify(await stored()));
+  r = await upload(client, "ini bukan gambar", "fake.png", "image/png"); ok("a text file renamed .png is refused (400)", r.status === 400, JSON.stringify(r));
+  r = await upload(new Client("anon"), png, "me.png", "image/png"); ok("avatar upload without login is refused (401)", r.status === 401, JSON.stringify(r));
+  r = await upload(vendor, png, "v.png", "image/png"); ok("a vendor can upload a profile picture too", r.status === 200 && !!r.data?.avatar_url, JSON.stringify(r));
+  r = await client.call("DELETE", "/me/avatar"); ok("client clears the profile picture", r.status === 200 && r.data?.avatar_url === "", JSON.stringify(r));
+  r = await client.call("GET", "/auth/me"); ok("current user no longer has an avatar url", r.status === 200 && !("avatar_url" in (r.data ?? {})), JSON.stringify(r));
+  r = await client.call("DELETE", "/me/avatar"); ok("clearing again is a no-op (200)", r.status === 200 && r.data?.avatar_url === "", JSON.stringify(r));
+  ok("only the vendor's avatar object is left in storage", (await stored()).length === 1, JSON.stringify(await stored()));
+  r = await new Client("anon").call("DELETE", "/me/avatar"); ok("clearing without login is refused (401)", r.status === 401, JSON.stringify(r));
+}
 r = await client.call("POST", `/bookings/${bk.id}/meetings`, { scheduled_at: "2027-03-01T10:00:00+07:00", meeting_link: "https://meet.example/test" }); ok("technical meeting scheduled", r.status < 300, JSON.stringify(r));
 r = await vendor2.call("GET", `/bookings/${bk.id}`); ok("unrelated vendor cannot read booking", r.status === 404 || r.status === 403, JSON.stringify(r));
 r = await client.call("POST", `/bookings/${bk.id}/complete`, {}); ok("client confirms completion", r.status < 300, JSON.stringify(r));

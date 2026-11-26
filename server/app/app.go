@@ -100,7 +100,7 @@ func New(ctx context.Context, opts Options) (*App, error) {
 
 	storageClient := storage.NewClient(cfg.SupabaseURL, cfg.SupabaseServiceRoleKey)
 	if opts.EnsureBuckets && storageClient.Configured() {
-		for _, bucket := range []string{vendors.PortfolioBucket, inspiration.Bucket, chat.AttachmentBucket} {
+		for _, bucket := range []string{vendors.PortfolioBucket, inspiration.Bucket, chat.AttachmentBucket, auth.AvatarBucket} {
 			if err := storageClient.EnsureBucket(ctx, bucket, true); err != nil {
 				log.Printf("warning: could not ensure storage bucket %q: %v", bucket, err)
 			}
@@ -145,6 +145,7 @@ func New(ctx context.Context, opts Options) (*App, error) {
 
 	authDeps := auth.NewDeps(userRepo, otpRepo, agreementRepo, limiter, mailer, cfg)
 	authDeps.WhatsApp = whatsappLinkRepo
+	authDeps.Storage = storageClient
 	vendorsDeps := vendors.NewDeps(vendorRepo, vendorNameChangeRepo, storageClient, reviewRepo, disbursementRepo)
 	vendorsDeps.WhatsApp = whatsappLinkRepo
 	availabilityRepo := repository.NewAvailabilityRepo(pool)

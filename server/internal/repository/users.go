@@ -32,6 +32,8 @@ type User struct {
 	AccountStatus       string
 	SuspendedUntil      *time.Time
 	CreatedAt           time.Time
+	// AvatarURL is the public profile picture URL, empty when none is set.
+	AvatarURL string
 }
 
 func (u *User) IsLocked() bool {
@@ -59,7 +61,7 @@ func (r *UserRepo) Create(ctx context.Context, email, passwordHash, role, fullNa
 	row := r.pool.QueryRow(ctx, `
 		insert into users (email, password_hash, role, full_name)
 		values (lower($1), $2, $3, $4)
-		returning id, email, password_hash, role, full_name, failed_login_attempts, locked_until, account_status, suspended_until, created_at
+		returning id, email, password_hash, role, full_name, failed_login_attempts, locked_until, account_status, suspended_until, created_at, coalesce(avatar_url, '')
 	`, email, passwordHash, role, fullName)
 
 	u, err := scanUser(row)
@@ -74,7 +76,7 @@ func (r *UserRepo) Create(ctx context.Context, email, passwordHash, role, fullNa
 
 func (r *UserRepo) GetByEmail(ctx context.Context, email string) (*User, error) {
 	row := r.pool.QueryRow(ctx, `
-		select id, email, password_hash, role, full_name, failed_login_attempts, locked_until, account_status, suspended_until, created_at
+		select id, email, password_hash, role, full_name, failed_login_attempts, locked_until, account_status, suspended_until, created_at, coalesce(avatar_url, '')
 		from users where email = lower($1)
 	`, email)
 
@@ -87,7 +89,7 @@ func (r *UserRepo) GetByEmail(ctx context.Context, email string) (*User, error) 
 
 func (r *UserRepo) GetByID(ctx context.Context, id string) (*User, error) {
 	row := r.pool.QueryRow(ctx, `
-		select id, email, password_hash, role, full_name, failed_login_attempts, locked_until, account_status, suspended_until, created_at
+		select id, email, password_hash, role, full_name, failed_login_attempts, locked_until, account_status, suspended_until, created_at, coalesce(avatar_url, '')
 		from users where id = $1
 	`, id)
 
@@ -142,7 +144,7 @@ func scanUser(row pgx.Row) (*User, error) {
 	var u User
 	if err := row.Scan(
 		&u.ID, &u.Email, &u.PasswordHash, &u.Role, &u.FullName,
-		&u.FailedLoginAttempts, &u.LockedUntil, &u.AccountStatus, &u.SuspendedUntil, &u.CreatedAt,
+		&u.FailedLoginAttempts, &u.LockedUntil, &u.AccountStatus, &u.SuspendedUntil, &u.CreatedAt, &u.AvatarURL,
 	); err != nil {
 		return nil, err
 	}
@@ -175,7 +177,7 @@ var StaffRoles = []string{"admin", "wedding_consultant"}
 // ListStaff returns every admin and wedding consultant, newest first.
 func (r *UserRepo) ListStaff(ctx context.Context) ([]*User, error) {
 	rows, err := r.pool.Query(ctx, `
-		select id, email, password_hash, role, coalesce(full_name, ''), failed_login_attempts, locked_until, account_status, suspended_until, created_at
+		select id, email, password_hash, role, coalesce(full_name, ''), failed_login_attempts, locked_until, account_status, suspended_until, created_at, coalesce(avatar_url, '')
 		from users where role in ('admin', 'wedding_consultant')
 		order by created_at desc
 	`)
@@ -220,4 +222,19 @@ func (r *UserRepo) GetWeddingDate(ctx context.Context, id string) (*time.Time, e
 func (r *UserRepo) SetWeddingDate(ctx context.Context, id string, date *time.Time) error {
 	_, err := r.pool.Exec(ctx, `update users set wedding_date = $2, updated_at = now() where id = $1`, id, date)
 	return err
+}
+
+// SetAvatarURL stores the profile picture URL ("" clears it) and returns the
+// URL it replaced, so the caller can delete the old object.
+func (r *UserRepo) SetAvatarURL(ctx context.Context, id, url string) (previous string, err error) {
+	err = r.pool.QueryRow(ctx, `
+		update users u set avatar_url = nullif($2, ''), updated_at = now()
+		from (select coalesce(avatar_url, '') as old from users where id = $1) o
+		where u.id = $1
+		returning o.old
+	`, id, url).Scan(&previous)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", ErrNotFound
+	}
+	return previous, err
 }

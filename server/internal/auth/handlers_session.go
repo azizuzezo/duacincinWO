@@ -14,10 +14,12 @@ type userDTO struct {
 	FullName string `json:"full_name"`
 	// WeddingDate is "YYYY-MM-DD", omitted until the couple sets it.
 	WeddingDate string `json:"wedding_date,omitempty"`
+	// AvatarURL is the profile picture, omitted until one is uploaded.
+	AvatarURL string `json:"avatar_url,omitempty"`
 }
 
 func userResponse(u *repository.User) userDTO {
-	return userDTO{ID: u.ID, Email: u.Email, Role: u.Role, FullName: u.FullName}
+	return userDTO{ID: u.ID, Email: u.Email, Role: u.Role, FullName: u.FullName, AvatarURL: u.AvatarURL}
 }
 
 func Logout(deps *Deps) http.HandlerFunc {

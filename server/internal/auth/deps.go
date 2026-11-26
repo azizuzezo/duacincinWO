@@ -8,6 +8,7 @@ import (
 	"duacincin/server/internal/email"
 	"duacincin/server/internal/ratelimit"
 	"duacincin/server/internal/repository"
+	"duacincin/server/internal/storage"
 )
 
 type Deps struct {
@@ -20,6 +21,8 @@ type Deps struct {
 	// WhatsApp records the number typed at registration, to be verified
 	// by a WhatsApp code once signed in.
 	WhatsApp *repository.WhatsAppLinkRepo
+	// Storage holds profile pictures (AvatarBucket).
+	Storage *storage.Client
 }
 
 func NewDeps(users *repository.UserRepo, otps *repository.OTPRepo, agreements *repository.AgreementRepo, limiter *ratelimit.Limiter, mailer *email.Client, cfg *config.Config) *Deps {

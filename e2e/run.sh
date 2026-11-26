@@ -11,6 +11,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PG_NAME="${E2E_PG_CONTAINER:-dc-e2e-pg}"
 PG_PORT="${E2E_PG_PORT:-55432}"
 API_PORT="${E2E_API_PORT:-8080}"
+STORAGE_PORT="${E2E_STORAGE_PORT:-55433}"
 WORK="$(mktemp -d)"
 PIDS=()
 
@@ -30,10 +31,10 @@ if [ -z "${CHROMIUM:-}" ]; then
   done
 fi
 [ -n "${CHROMIUM:-}" ] || { echo "Chromium tidak ditemukan. Set CHROMIUM=/path/ke/chromium." >&2; exit 2; }
-export CHROMIUM E2E_PG_CONTAINER="$PG_NAME" E2E_API_PORT="$API_PORT"
+export CHROMIUM E2E_PG_CONTAINER="$PG_NAME" E2E_API_PORT="$API_PORT" E2E_STORAGE_PORT="$STORAGE_PORT"
 
 # CORS on the API only allows http://localhost:3000. Port 3000 is fixed; the API port is configurable.
-for port in 3000 "$API_PORT" "$PG_PORT"; do
+for port in 3000 "$API_PORT" "$PG_PORT" "$STORAGE_PORT"; do
   if ss -ltn 2>/dev/null | grep -q ":${port} "; then echo "Port $port sudah dipakai. Hentikan prosesnya dulu." >&2; exit 2; fi
 done
 
@@ -52,10 +53,16 @@ echo "== Build API (set E2E_GO_BUILD_FLAGS untuk flag tambahan, mis. -modfile=..
 # shellcheck disable=SC2086
 (cd "$ROOT/server" && go build ${E2E_GO_BUILD_FLAGS:-} -o "$WORK/api" ./cmd/api)
 
+echo "== Storage palsu (pengganti Supabase Storage)"
+node "$ROOT/e2e/fake-storage.mjs" >"$WORK/storage.log" 2>&1 &
+PIDS+=($!)
+wait_for "http://127.0.0.1:${STORAGE_PORT}/__objects" "storage palsu"
+
 echo "== Jalankan API (migrasi berjalan otomatis)"
 mkdir -p "$WORK/run/work"
 (cd "$WORK/run/work" && exec env -i PATH="$PATH" HOME="$HOME" PORT="$API_PORT" APP_ENV=development \
   DATABASE_POOLER="postgres://postgres:test@127.0.0.1:${PG_PORT}/duacincin?sslmode=disable" \
+  SUPABASE_URL="http://127.0.0.1:${STORAGE_PORT}" SUPABASE_SERVICE_ROLE_KEY="e2e-only-storage-key" \
   JWT_SECRET="e2e-only-secret-not-for-real-use" \
   WHATSAPP_BOT_SECRET="e2e-only-bot-secret-0123456789" \
   AI_BASE_URL="${E2E_AI_BASE_URL:-}" AI_API_KEY="${E2E_AI_API_KEY:-}" AI_MODEL="${E2E_AI_MODEL:-}" \

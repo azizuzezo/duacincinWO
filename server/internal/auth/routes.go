@@ -43,7 +43,9 @@ func Mount(r chi.Router, deps *Deps) {
 
 	r.Route("/me", func(r chi.Router) {
 		r.Use(RequireAuth(deps.Cfg))
-		r.Use(RequireRole(RoleClient))
-		r.Put("/wedding-date", SetWeddingDate(deps))
+		// Profile picture: every signed-in role.
+		r.Post("/avatar", UploadAvatar(deps))
+		r.Delete("/avatar", DeleteAvatar(deps))
+		r.With(RequireRole(RoleClient)).Put("/wedding-date", SetWeddingDate(deps))
 	})
 }
