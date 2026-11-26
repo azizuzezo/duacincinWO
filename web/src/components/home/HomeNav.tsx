@@ -21,7 +21,19 @@ import { CATEGORY_ART, categoryThumb } from "@/components/vendor/directory/categ
 import { VENDOR_CATEGORIES } from "@/lib/api";
 import { EASE, useReducedMotion } from "@/lib/motion";
 
+import { type CurrentUser } from "@/lib/api";
+
+import { AccountMenu, ACCOUNT_LINKS, useLogout } from "./AccountMenu";
 import { ArrowRight, wdButton } from "./ui";
+
+const CLIENT_LINKS = [
+  { href: "/inspirasi", label: "Inspirasi" },
+  { href: "/artikel", label: "Artikel" },
+  { href: "/client/budget", label: "Budget Planner" },
+  { href: "/client/wedding-planner", label: "Wedding Planner" },
+  { href: "/client/consultation", label: "Konsultasi" },
+  { href: "/kirana", label: "Tanya Kirana" },
+];
 
 const LINKS = [
   { href: "/inspirasi", label: "Inspirasi" },
@@ -64,7 +76,9 @@ function Search({ id, className = "" }: { id: string; className?: string }) {
   );
 }
 
-export function HomeNav() {
+export function HomeNav({ user }: { user?: CurrentUser } = {}) {
+  const links = user ? CLIENT_LINKS : LINKS;
+  const logout = useLogout();
   const pathname = usePathname();
   const reduced = useReducedMotion();
   const [mega, setMega] = useState(false);
@@ -124,15 +138,21 @@ export function HomeNav() {
           </Link>
           <Search id="cari-atas" className="hidden flex-1 lg:block lg:max-w-[680px]" />
           <div className="ml-auto flex items-center gap-2">
-            <Link href="/register?role=vendor" className="hidden min-h-11 items-center px-2 text-[0.92rem] font-medium text-wd-text hover:text-wd-ink xl:inline-flex">
-              Jadi vendor
-            </Link>
-            <Link href="/login" className={wdButton({ variant: "outline", size: "sm", className: "border-wd-accent px-5 !text-wd-accent-ink hover:!bg-wd-accent-wash" })}>
-              Masuk
-            </Link>
-            <Link href="/register" className={wdButton({ size: "sm", className: "hidden px-5 sm:inline-flex" })}>
-              Daftar
-            </Link>
+            {user ? (
+              <AccountMenu user={user} />
+            ) : (
+              <>
+                <Link href="/register?role=vendor" className="hidden min-h-11 items-center px-2 text-[0.92rem] font-medium text-wd-text hover:text-wd-ink xl:inline-flex">
+                  Jadi vendor
+                </Link>
+                <Link href="/login" className={wdButton({ variant: "outline", size: "sm", className: "border-wd-accent px-5 !text-wd-accent-ink hover:!bg-wd-accent-wash" })}>
+                  Masuk
+                </Link>
+                <Link href="/register" className={wdButton({ size: "sm", className: "hidden px-5 sm:inline-flex" })}>
+                  Daftar
+                </Link>
+              </>
+            )}
             <button
               type="button"
               onClick={() => setOpen(true)}
@@ -222,7 +242,7 @@ export function HomeNav() {
               </AnimatePresence>
             </div>
 
-            {LINKS.map((l) => (
+            {links.map((l) => (
               <Link
                 key={l.href}
                 href={l.href}
@@ -235,16 +255,23 @@ export function HomeNav() {
                 )}
               </Link>
             ))}
-            <a
-              href="https://invitation.duacincin.id"
-              className="ml-auto inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-[0.92rem] font-medium text-wd-accent-ink hover:text-wd-accent-ink"
-            >
-              Digital Invitation
-            </a>
+            {user ? (
+              <Link href="/client/dashboard" className="ml-auto inline-flex min-h-10 items-center gap-2 rounded-full border border-wd-accent px-4 text-[0.9rem] font-semibold text-wd-accent-ink transition-colors hover:bg-wd-accent-wash">
+                Detail pernikahan
+              </Link>
+            ) : (
+              <a
+                href="https://invitation.duacincin.id"
+                className="ml-auto inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-[0.92rem] font-medium text-wd-accent-ink hover:text-wd-accent-ink"
+              >
+                Digital Invitation
+              </a>
+            )}
           </div>
         </nav>
       </header>
 
+      {logout.modal}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -285,7 +312,7 @@ export function HomeNav() {
                 })}
               </ul>
               <ul className="mt-6 border-t border-wd-line">
-                {[{ href: "/vendors", label: "Semua vendor" }, ...LINKS].map((l, i) => (
+                {[{ href: "/vendors", label: "Semua vendor" }, ...links].map((l, i) => (
                   <motion.li
                     key={l.href}
                     initial={reduced ? false : { opacity: 0, y: 6 }}
@@ -303,14 +330,39 @@ export function HomeNav() {
                   </a>
                 </li>
               </ul>
-              <div className="mt-6 grid grid-cols-2 gap-2">
-                <Link href="/login" onClick={() => setOpen(false)} className={wdButton({ variant: "outline" })}>
-                  Masuk
-                </Link>
-                <Link href="/register" onClick={() => setOpen(false)} className={wdButton()}>
-                  Daftar gratis
-                </Link>
-              </div>
+              {user ? (
+                <div className="mt-6">
+                  <p className="text-sm font-semibold text-wd-ink">Akunku</p>
+                  <ul className="mt-2 border-t border-wd-line">
+                    {ACCOUNT_LINKS.map((l) => (
+                      <li key={l.href}>
+                        <Link href={l.href} onClick={() => setOpen(false)} className="flex min-h-12 items-center border-b border-wd-line py-3 text-[1rem] text-wd-ink">
+                          {l.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      logout.ask();
+                    }}
+                    className={wdButton({ variant: "outline", className: "mt-5 w-full" })}
+                  >
+                    Keluar
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-6 grid grid-cols-2 gap-2">
+                  <Link href="/login" onClick={() => setOpen(false)} className={wdButton({ variant: "outline" })}>
+                    Masuk
+                  </Link>
+                  <Link href="/register" onClick={() => setOpen(false)} className={wdButton()}>
+                    Daftar gratis
+                  </Link>
+                </div>
+              )}
             </nav>
           </motion.div>
         )}

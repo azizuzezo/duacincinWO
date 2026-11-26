@@ -4,8 +4,7 @@
 // denah meja). Private to this route folder: built on components/ui, no new
 // colors, so the planner reads as one workspace.
 
-import { CLIENT_NAV } from "@/components/shell/navConfig";
-import { Shell } from "@/components/shell/Shell";
+import { ClientShell } from "@/components/shell/ClientShell";
 import { WeddingPlannerTabs } from "@/components/WeddingPlannerTabs";
 import type { CurrentUser } from "@/lib/api";
 
@@ -21,12 +20,12 @@ export function PlannerFrame({
   bottomBar?: boolean;
 }) {
   return (
-    <Shell user={user} navItems={CLIENT_NAV} loginPath="/login" eyebrow="Client">
+    <ClientShell user={user}>
       <div className={`mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10 ${bottomBar ? "pb-28 md:pb-10" : ""}`}>
         <WeddingPlannerTabs />
         {children}
       </div>
-    </Shell>
+    </ClientShell>
   );
 }
 

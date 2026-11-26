@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { dayName, formatJam, monthShort } from "@/components/booking/format";
-import { CLIENT_NAV } from "@/components/shell/navConfig";
-import { Shell } from "@/components/shell/Shell";
+import { ClientShell } from "@/components/shell/ClientShell";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -119,7 +118,7 @@ function ClientConsultationContent({ user }: { user: CurrentUser }) {
   const past = sorted.filter((m) => new Date(m.scheduled_at).getTime() < now).reverse();
 
   return (
-    <Shell user={user} navItems={CLIENT_NAV} loginPath="/login" eyebrow="Client">
+    <ClientShell user={user}>
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
         {/* The one ink block of the page: who the consultant is and the two ways to reach them. */}
         <section aria-labelledby="konsultan-judul" className="dc-on-dark relative isolate animate-fade-up overflow-hidden rounded-2xl bg-dc-ink text-dc-on-dark">
@@ -247,7 +246,7 @@ function ClientConsultationContent({ user }: { user: CurrentUser }) {
           )}
         </form>
       </Sheet>
-    </Shell>
+    </ClientShell>
   );
 }
 

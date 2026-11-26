@@ -5,8 +5,7 @@ import { useEffect, useState } from "react";
 
 import { GrowBar } from "@/app/client/_motion";
 import { FOCUS, LINK, Skeleton } from "@/app/client/_ui";
-import { CLIENT_NAV } from "@/components/shell/navConfig";
-import { Shell } from "@/components/shell/Shell";
+import { ClientShell } from "@/components/shell/ClientShell";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -129,7 +128,7 @@ function BudgetPlannerContent({ user }: { user: CurrentUser }) {
   }
 
   return (
-    <Shell user={user} navItems={CLIENT_NAV} loginPath="/login" eyebrow="Client">
+    <ClientShell user={user}>
       <div className={`mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 ${dirty ? "pb-44 md:pb-32" : ""}`}>
         <PageHeader
           eyebrow="Keuangan"
@@ -295,7 +294,7 @@ function BudgetPlannerContent({ user }: { user: CurrentUser }) {
           )}
         </form>
       </Sheet>
-    </Shell>
+    </ClientShell>
   );
 }
 

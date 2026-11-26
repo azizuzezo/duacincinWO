@@ -4,8 +4,7 @@ import { use, useState } from "react";
 
 import { ChatThread } from "@/components/ChatThread";
 import { InboxPane, ThreadHeader, useMobileFullscreen } from "@/components/messages/Inbox";
-import { CLIENT_NAV } from "@/components/shell/navConfig";
-import { Shell } from "@/components/shell/Shell";
+import { ClientShell } from "@/components/shell/ClientShell";
 import { WithUser } from "@/components/WithUser";
 import type { Conversation, CurrentUser } from "@/lib/api";
 
@@ -25,7 +24,7 @@ function ThreadContent({ id, user }: { id: string; user: CurrentUser }) {
   const conversation = conversations?.find((c) => c.id === id);
 
   return (
-    <Shell user={user} navItems={CLIENT_NAV} loginPath="/login" eyebrow="Client">
+    <ClientShell user={user}>
       <div className="md:mx-auto md:max-w-6xl md:px-6 md:py-8">
         {/* Desktop: inbox list beside the open thread. Mobile: the thread alone, full screen. */}
         <div className="md:grid md:h-[calc(100dvh-4rem)] md:min-h-[560px] md:grid-cols-[300px_minmax(0,1fr)] md:gap-5 lg:grid-cols-[340px_minmax(0,1fr)]">
@@ -44,6 +43,6 @@ function ThreadContent({ id, user }: { id: string; user: CurrentUser }) {
           </section>
         </div>
       </div>
-    </Shell>
+    </ClientShell>
   );
 }

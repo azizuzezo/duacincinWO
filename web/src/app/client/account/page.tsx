@@ -5,8 +5,7 @@ import Link from "next/link";
 import { FOCUS } from "@/app/client/_ui";
 import { PasswordSection } from "@/components/PasswordSection";
 import { WhatsAppNumberCard } from "@/components/wa/WhatsAppVerify";
-import { CLIENT_NAV } from "@/components/shell/navConfig";
-import { Shell } from "@/components/shell/Shell";
+import { ClientShell } from "@/components/shell/ClientShell";
 import { Card } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Rings } from "@/components/ui/Rings";
@@ -39,7 +38,7 @@ const HELP = [
 
 function ClientAccountContent({ user }: { user: CurrentUser }) {
   return (
-    <Shell user={user} navItems={CLIENT_NAV} loginPath="/login" eyebrow="Client">
+    <ClientShell user={user}>
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
         <PageHeader
           eyebrow="Akun"
@@ -111,7 +110,7 @@ function ClientAccountContent({ user }: { user: CurrentUser }) {
           </FadeIn>
         </div>
       </div>
-    </Shell>
+    </ClientShell>
   );
 }
 

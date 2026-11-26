@@ -2,8 +2,7 @@
 
 import { ConversationList } from "@/components/ConversationList";
 import { ConsultantShortcut, InboxPane } from "@/components/messages/Inbox";
-import { CLIENT_NAV } from "@/components/shell/navConfig";
-import { Shell } from "@/components/shell/Shell";
+import { ClientShell } from "@/components/shell/ClientShell";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Rings } from "@/components/ui/Rings";
 import { WithUser } from "@/components/WithUser";
@@ -12,7 +11,7 @@ export default function ClientMessagesPage() {
   return (
     <WithUser allowedRoles={["client"]} loginPath="/login">
       {(user) => (
-        <Shell user={user} navItems={CLIENT_NAV} loginPath="/login" eyebrow="Client">
+        <ClientShell user={user}>
           {/* Mobile: one column inbox. */}
           <div className="px-4 py-8 md:hidden">
             <PageHeader
@@ -45,7 +44,7 @@ export default function ClientMessagesPage() {
               </div>
             </div>
           </div>
-        </Shell>
+        </ClientShell>
       )}
     </WithUser>
   );

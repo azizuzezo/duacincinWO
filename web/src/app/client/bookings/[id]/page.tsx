@@ -8,8 +8,7 @@ import { VendorThumb } from "@/components/booking/BookingCard";
 import { countdownLabel, formatJam, formatTanggal } from "@/components/booking/format";
 import { useVendorLookup } from "@/components/booking/useVendorLookup";
 import { BookingStepper } from "@/components/BookingStepper";
-import { CLIENT_NAV } from "@/components/shell/navConfig";
-import { Shell } from "@/components/shell/Shell";
+import { ClientShell } from "@/components/shell/ClientShell";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -149,7 +148,7 @@ function ClientBookingDetailContent({ id, user }: { id: string; user: CurrentUse
   const hasTechnicalMeeting = techMeetings.length > 0;
 
   return (
-    <Shell user={user} navItems={CLIENT_NAV} loginPath="/login" eyebrow="Client">
+    <ClientShell user={user}>
       <div className="mx-auto max-w-6xl px-4 pb-32 pt-6 sm:px-6 sm:pt-10 md:pb-12">
         <Link
           href="/client/bookings"
@@ -343,7 +342,7 @@ function ClientBookingDetailContent({ id, user }: { id: string; user: CurrentUse
           </div>
         )}
       </div>
-    </Shell>
+    </ClientShell>
   );
 }
 

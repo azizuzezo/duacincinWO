@@ -5,8 +5,7 @@ import { useEffect, useState } from "react";
 import { BookingCard, BookingCardSkeleton, CLIENT_NEXT_ACTION } from "@/components/booking/BookingCard";
 import { useVendorLookup } from "@/components/booking/useVendorLookup";
 import { BookingStatusFilter, countBookingFilters, matchesBookingFilter } from "@/components/BookingStatusFilter";
-import { CLIENT_NAV } from "@/components/shell/navConfig";
-import { Shell } from "@/components/shell/Shell";
+import { ClientShell } from "@/components/shell/ClientShell";
 import { ButtonLink } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -67,7 +66,7 @@ function ClientBookingsContent({ user }: { user: CurrentUser }) {
   const active = bookings.filter((b) => matchesBookingFilter(b.status, "active")).length;
 
   return (
-    <Shell user={user} navItems={CLIENT_NAV} loginPath="/login" eyebrow="Client">
+    <ClientShell user={user}>
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
         <PageHeader
           eyebrow="Booking"
@@ -170,6 +169,6 @@ function ClientBookingsContent({ user }: { user: CurrentUser }) {
           </div>
         )}
       </div>
-    </Shell>
+    </ClientShell>
   );
 }
