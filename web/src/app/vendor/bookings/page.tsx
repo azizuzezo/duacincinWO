@@ -1,27 +1,18 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import {
-  BookingStatusFilter,
-  matchesBookingFilter,
-} from "@/components/BookingStatusFilter";
+import { ClientArt } from "@/components/home/ClientArt";
+import { wdButton } from "@/components/home/ui";
 import { VENDOR_NAV } from "@/components/shell/navConfig";
-import { Shell } from "@/components/shell/Shell";
-import { Button } from "@/components/ui/Button";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { VendorShell } from "@/components/shell/VendorShell";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { SkeletonGroup } from "@/components/ui/Skeleton";
-import { BookingRow, BookingRowSkeleton, sortForWork } from "@/components/vendor-ops/ops";
-import { StaggerItem, StaggerList } from "@/components/vendor-ops/motion";
+import { BookingList } from "@/components/vendor-ops/BookingList";
+import { BookingRowSkeleton } from "@/components/vendor-ops/ops";
 import { WithUser } from "@/components/WithUser";
-import {
-  apiGet,
-  ApiError,
-  type Booking,
-  type CurrentUser,
-} from "@/lib/api";
+import { apiGet, ApiError, type Booking, type CurrentUser } from "@/lib/api";
 
 export default function VendorBookingsPage() {
   return (
@@ -35,7 +26,6 @@ function VendorBookingsContent({ user }: { user: CurrentUser }) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
   const [reload, setReload] = useState(0);
 
   useEffect(() => {
@@ -50,118 +40,62 @@ function VendorBookingsContent({ user }: { user: CurrentUser }) {
       });
   }, [reload]);
 
-  const sorted = sortForWork(bookings);
-  const requested = sorted.filter((b) => b.status === "requested");
-  const visible = sorted.filter((b) => matchesBookingFilter(b.status, filter));
-  // Split the visible list so requests always read as their own group first.
-  const visibleRequests = visible.filter((b) => b.status === "requested");
-  const visibleRest = visible.filter((b) => b.status !== "requested");
-
+  const waiting = bookings.filter((b) => b.status === "requested").length;
   const summary =
-    requested.length > 0
-      ? `${requested.length} permintaan menunggu jawabanmu. Ketuk untuk menerima atau menolak.`
-      : "Semua permintaan sudah kamu jawab. Booking diurutkan dari acara terdekat.";
+    waiting > 0
+      ? `${waiting} permintaan menunggu jawabanmu.`
+      : "Semua permintaan sudah kamu jawab. Urut dari acara terdekat.";
 
   return (
-    <Shell user={user} navItems={VENDOR_NAV} tone="wd" loginPath="/login" eyebrow="Vendor">
-      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
-        <PageHeader
-          eyebrow="Booking"
-          title={
-            <>
-              Booking <span className="dc-em">masuk</span>
-            </>
-          }
-          subtitle={!loading && !error && bookings.length > 0 ? summary : undefined}
-        />
+    <VendorShell user={user} navItems={VENDOR_NAV} tone="wd" loginPath="/login" eyebrow="Vendor">
+      <div className="wd-container pb-16 pt-8 sm:pt-10">
+        <p className="wd-kicker">Booking</p>
+        <h1 className="wd-display mt-2 text-[clamp(2.1rem,4.4vw,3.4rem)] leading-[1.05]">
+          Booking <em>masuk</em>
+        </h1>
+        {!loading && !error && bookings.length > 0 && <p className="mt-2 text-wd-text">{summary}</p>}
 
-        {loading && (
-          <SkeletonGroup label="Memuat booking" className="grid gap-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <BookingRowSkeleton key={i} />
-            ))}
-          </SkeletonGroup>
-        )}
-
-        {error && (
-          <ErrorState
-            title="Booking belum bisa dimuat"
-            body={error}
-            onRetry={() => {
-              setLoading(true);
-              setError(null);
-              setReload((n) => n + 1);
-            }}
-          />
-        )}
-
-        {!loading && !error && bookings.length === 0 && (
-          <EmptyState
-            title="Belum ada booking masuk"
-            body="Permintaan booking dari client muncul di sini setelah profilmu disetujui Admin. Etalase yang lengkap lebih sering dipilih."
-            actionHref="/vendor/profile"
-            actionLabel="Lengkapi etalase"
-          />
-        )}
-
-        {!loading && !error && bookings.length > 0 && (
-          <>
-            <BookingStatusFilter value={filter} onChange={setFilter} />
-
-            {visible.length === 0 ? (
-              <div className="mt-4">
-                <EmptyState
-                  title="Tidak ada booking di sini"
-                  body="Belum ada booking dengan status ini."
-                  action={
-                    <Button variant="ghost" size="sm" onClick={() => setFilter("all")}>
-                      Tampilkan semua
-                    </Button>
-                  }
-                />
+        <div className="mt-8">
+          {loading && (
+            <SkeletonGroup label="Memuat booking">
+              <div className="border-t border-wd-line">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <BookingRowSkeleton key={i} />
+                ))}
               </div>
-            ) : (
-              <div className="mt-4 flex flex-col gap-8">
-                {visibleRequests.length > 0 && (
-                  <section aria-labelledby="grup-permintaan">
-                    <h2 id="grup-permintaan" className="mb-3 font-heading text-2xl text-dc-ink">
-                      Perlu jawabanmu
-                    </h2>
-                    <StaggerList>
-                      {visibleRequests.map((b) => (
-                        <StaggerItem key={b.id}>
-                          <BookingRow booking={b} />
-                        </StaggerItem>
-                      ))}
-                    </StaggerList>
-                  </section>
-                )}
-                {visibleRest.length > 0 && (
-                  <section aria-labelledby="grup-lain">
-                    {visibleRequests.length > 0 && (
-                      <h2 id="grup-lain" className="mb-3 font-heading text-2xl text-dc-ink">
-                        Booking lainnya
-                      </h2>
-                    )}
-                    {visibleRequests.length === 0 && (
-                      <h2 id="grup-lain" className="sr-only">
-                        Daftar booking
-                      </h2>
-                    )}
-                    <StaggerList>
-                      {visibleRest.map((b) => (
-                        <StaggerItem key={b.id}>
-                          <BookingRow booking={b} />
-                        </StaggerItem>
-                      ))}
-                    </StaggerList>
-                  </section>
-                )}
+            </SkeletonGroup>
+          )}
+
+          {error && (
+            <ErrorState
+              title="Booking belum bisa dimuat"
+              body={error}
+              onRetry={() => {
+                setLoading(true);
+                setError(null);
+                setReload((n) => n + 1);
+              }}
+            />
+          )}
+
+          {!loading && !error && bookings.length === 0 && (
+            <div className="flex flex-col items-start gap-5 rounded-[28px] bg-wd-accent-wash p-6 sm:flex-row sm:items-center sm:p-8">
+              <span aria-hidden className="h-20 w-20 shrink-0 rounded-3xl bg-white/70 p-3.5">
+                <ClientArt kind="envelope" />
+              </span>
+              <div>
+                <h2 className="wd-title text-[1.4rem] leading-tight">Belum ada booking masuk</h2>
+                <p className="mt-1 max-w-lg text-[0.95rem] leading-relaxed text-wd-text">Permintaan dari client muncul di sini setelah profilmu disetujui Admin. Etalase yang lengkap lebih sering dipilih.</p>
+                <Link href="/vendor/profile" className={`${wdButton({ variant: "ink", size: "md", className: "mt-4" })} focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wd-ink`}>
+                  Lengkapi etalase
+                </Link>
               </div>
-            )}
-          </>
-        )}
+            </div>
+          )}
+
+          {!loading && !error && bookings.length > 0 && <BookingList bookings={bookings} />}
+        </div>
       </div>
-    </Shell>
+    </VendorShell>
   );
 }

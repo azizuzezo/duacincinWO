@@ -3,18 +3,14 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { ClientArt } from "@/components/home/ClientArt";
+import { wdButton } from "@/components/home/ui";
 import { VENDOR_NAV } from "@/components/shell/navConfig";
-import { Shell } from "@/components/shell/Shell";
-import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { VendorShell } from "@/components/shell/VendorShell";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { FundStatus } from "@/components/ui/FundStatus";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { Skeleton, SkeletonGroup } from "@/components/ui/Skeleton";
 import { CountUp } from "@/components/ui/Motion";
 import { formatTanggal, heldAmount } from "@/components/vendor-ops/ops";
-import { StaggerItem, StaggerList } from "@/components/vendor-ops/motion";
 import { WithUser } from "@/components/WithUser";
 import {
   apiGet,
@@ -25,10 +21,7 @@ import {
   type Payout,
 } from "@/lib/api";
 
-const STATUS_TONE: Record<string, "gold" | "success"> = {
-  pending: "gold",
-  disbursed: "success",
-};
+const FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wd-ink";
 
 const STATUS_LABEL: Record<string, string> = {
   pending: "Menunggu ditransfer",
@@ -68,145 +61,142 @@ function VendorPayoutsContent({ user }: { user: CurrentUser }) {
   const held = bookings.reduce((sum, b) => sum + heldAmount(b), 0);
   const heldCount = bookings.filter((b) => heldAmount(b) > 0).length;
   // Pending first (what the vendor is waiting for), then transferred.
-  const history = payouts.slice().sort((a, b) => (a.status === b.status ? 0 : a.status === "pending" ? -1 : 1));
+  const pending = payouts.filter((p) => p.status === "pending");
+  const done = payouts.filter((p) => p.status !== "pending");
+  const groups = [
+    { id: "grup-menunggu", title: "Menunggu ditransfer", items: pending },
+    { id: "grup-selesai", title: "Sudah ditransfer", items: done },
+  ].filter((g) => g.items.length > 0);
+
+  function row(p: Payout) {
+    const b = byId.get(p.booking_id);
+    return (
+      <li key={p.booking_id} className="border-b border-wd-line">
+        <Link href={`/vendor/bookings/${p.booking_id}`} className={`group flex flex-wrap items-start justify-between gap-x-4 gap-y-1 px-1 py-4 transition-colors hover:bg-wd-paper sm:px-3 ${FOCUS} focus-visible:-outline-offset-2`}>
+          <div className="min-w-0">
+            <p className="break-words font-semibold text-wd-ink">{b?.package_description || "Booking selesai"}</p>
+            <p className="mt-0.5 text-sm text-wd-text">
+              {b ? `Acara ${formatTanggal(b.event_date)}. ` : ""}
+              Harga {formatRupiah(p.gross_amount)}, komisi {formatRupiah(p.commission_amount)}.
+            </p>
+            <p className={`mt-1 text-sm font-semibold ${p.status === "disbursed" ? "text-wd-ok" : "text-wd-accent-ink"}`}>{STATUS_LABEL[p.status] ?? p.status}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-wd-muted">Dana bersih</p>
+            <p className="text-lg font-bold tabular-nums text-wd-ink">{formatRupiah(p.net_amount)}</p>
+          </div>
+        </Link>
+      </li>
+    );
+  }
 
   return (
-    <Shell user={user} navItems={VENDOR_NAV} tone="wd" loginPath="/login" eyebrow="Vendor">
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
-        <PageHeader
-          eyebrow="Pencairan"
-          title={
+    <VendorShell user={user} navItems={VENDOR_NAV} tone="wd" loginPath="/login" eyebrow="Vendor">
+      <div className="wd-container pb-16 pt-8 sm:pt-10">
+        <p className="wd-kicker">Pencairan</p>
+        <h1 className="wd-display mt-2 text-[clamp(2.1rem,4.4vw,3.4rem)] leading-[1.05]">
+          Uang <em>usahamu</em>
+        </h1>
+        <p className="mt-2 max-w-xl text-wd-text">Dana dari client ditahan Dana Aman sampai acara selesai, lalu diteruskan ke kamu setelah dipotong komisi.</p>
+
+        <div className="mt-8">
+          {loading ? (
+            <SkeletonGroup label="Memuat pencairan" className="grid gap-6">
+              <Skeleton className="h-44 rounded-[28px]" />
+              <Skeleton className="h-24 rounded-2xl" />
+            </SkeletonGroup>
+          ) : error ? (
+            <ErrorState
+              title="Pencairan belum bisa dimuat"
+              body={error}
+              onRetry={() => {
+                setLoading(true);
+                setError(null);
+                setReload((n) => n + 1);
+              }}
+            />
+          ) : (
             <>
-              Uang <span className="dc-em">usahamu</span>
-            </>
-          }
-          subtitle="Dana dari client ditahan Dana Aman sampai acara selesai, lalu diteruskan ke kamu setelah dipotong komisi."
-        />
-
-        {loading ? (
-          <SkeletonGroup label="Memuat pencairan" className="grid gap-4 md:grid-cols-[1.4fr_1fr]">
-            <Skeleton className="h-48 rounded-2xl" />
-            <Skeleton className="h-48 rounded-2xl" />
-          </SkeletonGroup>
-        ) : error ? (
-          <ErrorState
-            title="Pencairan belum bisa dimuat"
-            body={error}
-            onRetry={() => {
-              setLoading(true);
-              setError(null);
-              setReload((n) => n + 1);
-            }}
-          />
-        ) : (
-          <>
-            {/* Balance: the big number is what the vendor is owed now; escrow
-                is the money that becomes theirs after upcoming events. */}
-            <div className="animate-fade-up grid gap-4 md:grid-cols-[1.4fr_1fr]">
-              <Card tone="ink" className="relative overflow-hidden p-6 sm:p-8">
-                <svg aria-hidden viewBox="0 0 64 40" fill="none" className="pointer-events-none absolute -right-10 -top-12 h-48 w-72 opacity-[0.16]">
-                  <circle cx="24" cy="20" r="16" stroke="var(--dc-gold-antique)" strokeWidth="0.4" />
-                  <circle cx="40" cy="20" r="16" stroke="var(--dc-gold-antique)" strokeWidth="0.4" />
-                </svg>
-                <p className="relative text-sm font-medium text-dc-on-dark/80">Siap ditransfer ke kamu</p>
-                <p className="relative mt-1 font-heading text-[2.6rem] font-semibold leading-tight text-dc-on-dark [font-variant-numeric:lining-nums_tabular-nums] sm:text-[3.2rem]">
-                  <CountUp value={totalPending} format={formatRupiah} />
-                </p>
-                <p className="relative mt-2 max-w-sm text-sm leading-relaxed text-dc-on-dark/80">
-                  {totalPending > 0
-                    ? "Sudah dipotong komisi. Admin mentransfer dana ini lalu menandainya sudah ditransfer."
-                    : "Belum ada dana yang menunggu transfer. Dana masuk ke sini setelah client menandai acara selesai."}
-                </p>
-                <div className="relative mt-6 flex items-center justify-between gap-4 border-t border-dc-on-dark/15 pt-4 text-sm">
-                  <span className="text-dc-on-dark/80">Total sudah ditransfer</span>
-                  <span className="font-bold tabular-nums text-dc-gold-antique">{formatRupiah(totalDisbursed)}</span>
-                </div>
-              </Card>
-
-              <Card className="flex flex-col p-6 sm:p-7">
-                <p className="text-sm font-medium text-dc-text-2">Ditahan Dana Aman</p>
-                <p className="mt-1 font-heading text-[2.2rem] font-semibold leading-tight text-dc-ink [font-variant-numeric:lining-nums_tabular-nums]">
-                  <CountUp value={held} format={formatRupiah} />
-                </p>
-                <p className="mt-1 text-sm text-dc-text-3">
-                  {heldCount > 0 ? `Dari ${heldCount} booking yang sudah dibayar client, sebelum komisi.` : "Belum ada pembayaran client yang ditahan."}
-                </p>
-                <div className="mt-auto pt-5">
-                  <FundStatus status={heldCount > 0 ? "dp_paid" : "confirmed"} />
-                </div>
-              </Card>
-            </div>
-
-            <section aria-labelledby="riwayat" className="mt-10">
-              <h2 id="riwayat" className="mb-3 font-heading text-[1.7rem] leading-tight text-dc-ink">
-                Riwayat pencairan
-              </h2>
-              {history.length === 0 ? (
-                <EmptyState
-                  title="Belum ada pencairan"
-                  body="Setiap booking yang selesai muncul di sini dengan rincian harga, komisi, dan dana bersih."
-                  actionHref="/vendor/bookings"
-                  actionLabel="Lihat booking"
-                />
-              ) : (
-                <StaggerList>
-                  {history.map((p) => {
-                    const b = byId.get(p.booking_id);
-                    return (
-                      <StaggerItem key={p.booking_id}>
-                        <Card className="p-5">
-                          <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-                            <div className="min-w-0">
-                              <Badge tone={STATUS_TONE[p.status] ?? "neutral"}>{STATUS_LABEL[p.status] ?? p.status}</Badge>
-                              <p className="mt-2 break-words font-semibold text-dc-ink">{b?.package_description || "Booking selesai"}</p>
-                              {b && <p className="text-sm text-dc-text-2">Acara {formatTanggal(b.event_date)}</p>}
-                            </div>
-                            <div className="text-right">
-                              <p className="text-xs font-medium text-dc-text-3">Dana bersih</p>
-                              <p className="text-xl font-bold tabular-nums text-dc-ink">{formatRupiah(p.net_amount)}</p>
-                            </div>
-                          </div>
-                          <dl className="mt-4 grid grid-cols-2 gap-3 rounded-lg bg-dc-cream/70 px-4 py-3 text-sm">
-                            <div>
-                              <dt className="text-xs text-dc-text-3">Harga booking</dt>
-                              <dd className="font-semibold tabular-nums text-dc-ink">{formatRupiah(p.gross_amount)}</dd>
-                            </div>
-                            <div>
-                              <dt className="text-xs text-dc-text-3">Komisi DuaCincin</dt>
-                              <dd className="font-semibold tabular-nums text-dc-ink">{formatRupiah(p.commission_amount)}</dd>
-                            </div>
-                          </dl>
-                          <Link
-                            href={`/vendor/bookings/${p.booking_id}`}
-                            className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-dc-clay underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold"
-                          >
-                            Buka booking
-                          </Link>
-                        </Card>
-                      </StaggerItem>
-                    );
-                  })}
-                </StaggerList>
-              )}
-            </section>
-
-            {/* Bank details are not stored in this app: say so plainly and
-                point to the team instead of inventing an account card. */}
-            <section aria-labelledby="rekening" className="mt-10">
-              <Card tone="paper" className="p-6">
-                <div className="max-w-xl">
-                  <h2 id="rekening" className="font-heading text-2xl text-dc-ink">
-                    Rekening tujuan
+              {/* One big figure: what is ready to be transferred to the vendor. */}
+              <section aria-labelledby="siap-cair" className="animate-fade-up flex items-center gap-5 rounded-[28px] bg-wd-accent-wash p-6 sm:p-9">
+                <div className="min-w-0 flex-1">
+                  <h2 id="siap-cair" className="text-sm font-semibold text-wd-accent-ink">
+                    Siap ditransfer ke kamu
                   </h2>
-                  <p className="mt-1 text-sm leading-relaxed text-dc-text-2">
-                    Admin DuaCincin mentransfer dana bersih ke rekening usahamu, lalu menandainya sudah ditransfer di sini. Data rekening belum bisa dilihat atau diubah dari aplikasi. Kalau rekeningmu berubah, sampaikan ke Admin DuaCincin sebelum pencairan berikutnya.
+                  <p className="wd-display mt-1 break-words text-[clamp(2.4rem,7vw,4.2rem)] leading-none tabular-nums">
+                    <CountUp value={totalPending} format={formatRupiah} />
+                  </p>
+                  <p className="mt-3 max-w-md text-[0.95rem] leading-relaxed text-wd-text">
+                    {totalPending > 0
+                      ? "Sudah dipotong komisi. Admin mentransfer dana ini lalu menandainya sudah ditransfer."
+                      : "Belum ada dana yang menunggu transfer. Dana masuk ke sini setelah client menandai acara selesai."}
                   </p>
                 </div>
-              </Card>
-            </section>
-          </>
-        )}
+                <span aria-hidden className="hidden h-28 w-28 shrink-0 rounded-3xl bg-white/70 p-4 sm:block">
+                  <ClientArt kind="coin" />
+                </span>
+              </section>
+
+              <dl className="mt-2 grid gap-x-10 sm:grid-cols-2 sm:divide-x sm:divide-wd-line">
+                <div className="border-b border-wd-line py-5 sm:border-b-0 sm:pr-8">
+                  <dt className="text-sm font-semibold text-wd-text">Ditahan Dana Aman</dt>
+                  <dd className="wd-display mt-1 text-[clamp(1.6rem,2.6vw,2.2rem)] leading-tight tabular-nums">
+                    <CountUp value={held} format={formatRupiah} />
+                  </dd>
+                  <dd className="mt-0.5 text-sm text-wd-muted">{heldCount > 0 ? `Dari ${heldCount} booking yang sudah dibayar client, sebelum komisi.` : "Belum ada pembayaran client yang ditahan."}</dd>
+                </div>
+                <div className="py-5 sm:pl-8">
+                  <dt className="text-sm font-semibold text-wd-text">Total sudah ditransfer</dt>
+                  <dd className="wd-display mt-1 text-[clamp(1.6rem,2.6vw,2.2rem)] leading-tight tabular-nums">{formatRupiah(totalDisbursed)}</dd>
+                  <dd className="mt-0.5 text-sm text-wd-muted">Dana bersih yang sudah masuk ke rekeningmu.</dd>
+                </div>
+              </dl>
+
+              <section aria-labelledby="riwayat" className="mt-10">
+                <h2 id="riwayat" className="wd-title text-[clamp(1.55rem,2.6vw,2.05rem)] leading-tight">
+                  Riwayat <em>pencairan</em>
+                </h2>
+                {payouts.length === 0 ? (
+                  <div className="mt-4 flex flex-col items-start gap-4 border-t border-wd-line py-6 sm:flex-row sm:items-center">
+                    <span aria-hidden className="h-16 w-16 shrink-0 rounded-2xl bg-wd-accent-wash p-3">
+                      <ClientArt kind="clipboard" />
+                    </span>
+                    <div>
+                      <p className="max-w-md text-[0.95rem] leading-relaxed text-wd-text">Belum ada pencairan. Setiap booking yang selesai muncul di sini dengan rincian harga, komisi, dan dana bersih.</p>
+                      <Link href="/vendor/bookings" className={`${wdButton({ variant: "outline", size: "sm", className: "mt-3" })} ${FOCUS}`}>
+                        Lihat booking
+                      </Link>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-4 flex flex-col gap-8">
+                    {groups.map((g) => (
+                      <div key={g.id}>
+                        <h3 id={g.id} className="mb-1 text-sm font-semibold text-wd-text">
+                          {g.title} <span className="tabular-nums text-wd-muted">({g.items.length})</span>
+                        </h3>
+                        <ul aria-labelledby={g.id} className="border-t border-wd-line">
+                          {g.items.map(row)}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              {/* Bank details are not stored in this app: say so plainly. */}
+              <section aria-labelledby="rekening" className="mt-12 border-t border-wd-line pt-6">
+                <h2 id="rekening" className="wd-title text-[1.4rem] leading-tight">
+                  Rekening <em>tujuan</em>
+                </h2>
+                <p className="mt-2 max-w-xl text-sm leading-relaxed text-wd-text">
+                  Admin DuaCincin mentransfer dana bersih ke rekening usahamu, lalu menandainya sudah ditransfer di sini. Data rekening belum bisa dilihat atau diubah dari aplikasi. Kalau rekeningmu berubah, sampaikan ke Admin DuaCincin sebelum pencairan berikutnya.
+                </p>
+              </section>
+            </>
+          )}
+        </div>
       </div>
-    </Shell>
+    </VendorShell>
   );
 }

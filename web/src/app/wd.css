@@ -386,15 +386,17 @@ html:has(.wd) {
 
 /* ── Scrollbars: thin and warm everywhere (page, chat, modals, menus) instead of
    the browser's thick grey bar. The thumb keeps 3:1 against the track
-   (WCAG 1.4.11); high-contrast users get a near-black thumb. Classes that
-   hide the bar on purpose (.wd-rail, .wd-banners) are more specific and win. ── */
+   (WCAG 1.4.11); high-contrast users get a near-black thumb. The base layer keeps it
+   below utilities such as [scrollbar-width:none], which hide the bar on purpose. ── */
 :root {
   --scrollbar-thumb: #8f8478;
   --scrollbar-track: #f5f0e8;
 }
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
 }
 @media (prefers-contrast: more) {
   :root {

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { VENDOR_NAV } from "@/components/shell/navConfig";
-import { Shell } from "@/components/shell/Shell";
+import { VendorShell } from "@/components/shell/VendorShell";
 import { ClientArt, type ArtKind } from "@/components/home/ClientArt";
 import { wdButton } from "@/components/home/ui";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -12,8 +12,10 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { Skeleton, SkeletonGroup } from "@/components/ui/Skeleton";
 import { CountUp } from "@/components/ui/Motion";
 import { ReviewList, ReviewSummary } from "@/components/vendor/Reviews";
-import { BookingRow, BookingRowSkeleton, heldAmount, todayLabel } from "@/components/vendor-ops/ops";
-import { StaggerItem, StaggerList } from "@/components/vendor-ops/motion";
+import { BookingRowSkeleton, heldAmount, todayLabel } from "@/components/vendor-ops/ops";
+import { MiniCalendar } from "@/components/vendor-ops/MiniCalendar";
+import { RequestInbox } from "@/components/vendor-ops/RequestInbox";
+import { Storefront } from "@/components/vendor-ops/Storefront";
 import { FOCUS } from "@/app/client/_ui";
 import { WithUser } from "@/components/WithUser";
 import {
@@ -21,6 +23,7 @@ import {
   ApiError,
   formatRupiah,
   type Booking,
+  type BookingStatus,
   type CurrentUser,
   type Payout,
   type Review,
@@ -93,9 +96,9 @@ function VendorDashboardContent({ user }: { user: CurrentUser }) {
   }, [reload, user.id]);
 
   const shell = (children: React.ReactNode) => (
-    <Shell user={user} navItems={VENDOR_NAV} tone="wd" loginPath="/login" eyebrow="Vendor">
+    <VendorShell user={user} navItems={VENDOR_NAV} tone="wd" loginPath="/login" eyebrow="Vendor">
       {children}
-    </Shell>
+    </VendorShell>
   );
 
   if (profile === undefined && profileFailed) {
@@ -147,11 +150,8 @@ function VendorDashboardContent({ user }: { user: CurrentUser }) {
   }
 
   const list = bookings ?? [];
+  const setStatus = (id: string, status: BookingStatus) => setBookings((cur) => (cur ?? []).map((b) => (b.id === id ? { ...b, status } : b)));
   const requested = list.filter((b) => b.status === "requested").sort((a, b) => a.event_date.localeCompare(b.event_date));
-  const upcoming = list
-    .filter((b) => ["confirmed", "dp_paid", "full_paid"].includes(b.status))
-    .sort((a, b) => a.event_date.localeCompare(b.event_date))
-    .slice(0, 3);
   const confirmedCount = list.filter((b) => ["confirmed", "dp_paid", "full_paid"].includes(b.status)).length;
   const held = list.reduce((sum, b) => sum + heldAmount(b), 0);
   const ready = (payouts ?? []).filter((p) => p.status === "pending").reduce((sum, p) => sum + p.net_amount, 0);
@@ -164,118 +164,68 @@ function VendorDashboardContent({ user }: { user: CurrentUser }) {
     { done: profile.status === "approved", label: "Disetujui Admin", detail: profile.status === "approved" ? "Tampil di direktori" : "Menunggu persetujuan", href: "/vendor/profile" },
   ];
   const storefrontDone = checklist.every((c) => c.done);
+  const tiles: { href: string; label: string; note: string; art: ArtKind; tone: string }[] = [
+    { href: "/vendor/portfolio", label: "Foto portofolio", note: `${profile.portfolio?.length ?? 0} foto`, art: "frame", tone: "bg-wd-accent-wash hover:bg-wd-accent-soft" },
+    { href: "/vendor/paket", label: "Paket harga", note: `${packages.length} paket`, art: "card", tone: "bg-wd-paper hover:bg-wd-blush" },
+    { href: "/vendor/messages", label: "Pesan", note: "Balas calon client", art: "bubble", tone: "bg-wd-paper hover:bg-wd-blush" },
+    { href: "/vendor/payouts", label: "Pencairan", note: ready > 0 ? "Ada yang siap cair" : "Riwayat dan rincian", art: "coin", tone: "bg-wd-accent-wash hover:bg-wd-accent-soft" },
+  ];
   const retry = () => {
     setDataError(false);
     setReload((n) => n + 1);
   };
 
-  const art: ArtKind = profile.status === "rejected" ? "clipboard" : requested.length > 0 ? "envelope" : storefrontDone ? "shop" : "frame";
-  const statusChip =
-    profile.status === "approved"
-      ? { label: "Tampil di direktori", cls: "bg-wd-accent-soft text-wd-accent-ink" }
-      : profile.status === "rejected"
-        ? { label: "Perlu diperbaiki", cls: "bg-[#f8e6e1] text-wd-danger" }
-        : { label: "Menunggu persetujuan", cls: "bg-wd-blush text-wd-text" };
+  const greeting = (user.full_name || "").trim().split(/\s+/)[0];
 
   return shell(
-    <div className="wd-container pb-16 pt-8 sm:pt-10">
-      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-        <div>
-          <p className="wd-kicker">{profile.business_name}</p>
-          <h1 className="wd-display mt-2 text-[clamp(2.1rem,4.4vw,3.4rem)] leading-[1.05]">
-            Hari <em>ini</em>
-          </h1>
-          <p className="mt-2 text-wd-text">{todayLabel()}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <span className={`inline-flex items-center rounded-full px-3.5 py-1.5 text-sm font-semibold ${statusChip.cls}`}>{statusChip.label}</span>
-          {profile.status === "approved" && (
-            <Link href={`/vendors/${user.id}`} className={`inline-flex min-h-11 items-center text-sm font-semibold text-wd-accent-ink underline underline-offset-4 hover:text-wd-ink ${FOCUS}`}>
-              Lihat halaman publik
-            </Link>
-          )}
-        </div>
-      </header>
+    <div className="wd-container pb-16 pt-6 sm:pt-8">
+      <Storefront profile={profile} userId={user.id} />
 
-      {/* The one focal point: the single most useful thing to do now. */}
-      <section aria-labelledby="langkah-vendor" className={`mt-8 grid items-center gap-5 rounded-[28px] bg-wd-accent-wash p-6 sm:grid-cols-[84px_minmax(0,1fr)_auto] sm:gap-7 sm:p-8 ${urgent ? "border-2 border-dashed border-wd-accent" : ""}`}>
-        <div className="hidden h-[84px] w-[84px] sm:block">
-          <ClientArt kind={art} />
-        </div>
+      {/* The one next step, as a calm strip. Requests live in the inbox below. */}
+      <section aria-labelledby="langkah-vendor" className={`mt-5 flex flex-col gap-4 rounded-[24px] bg-wd-accent-wash p-5 sm:flex-row sm:items-center sm:justify-between sm:px-7 ${urgent ? "ring-2 ring-wd-accent" : ""}`}>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-wd-accent-ink">{next.eyebrow}</p>
-          <h2 id="langkah-vendor" className="wd-display mt-1 text-[clamp(1.6rem,2.8vw,2.2rem)] leading-tight">
+          <p className="text-sm font-semibold text-wd-accent-ink">{greeting ? `Halo, ${greeting}. ${next.eyebrow}` : next.eyebrow}</p>
+          <h2 id="langkah-vendor" className="wd-display mt-0.5 text-[clamp(1.3rem,2.2vw,1.7rem)] leading-tight">
             {next.title}
           </h2>
-          <p className="mt-1.5 max-w-xl leading-relaxed text-wd-text">{next.body}</p>
+          <p className="mt-1 max-w-2xl text-[0.95rem] leading-relaxed text-wd-text">{next.body}</p>
         </div>
-        <Link href={next.href} className={`${wdButton({ variant: urgent ? "gold" : "ink", size: "lg" })} ${FOCUS} w-full sm:w-auto`}>
+        <Link href={next.href} className={`${wdButton({ variant: urgent ? "gold" : "ink", size: "md" })} ${FOCUS} shrink-0`}>
           {next.cta}
         </Link>
       </section>
 
       {dataError && (
-        <div className="mt-8">
+        <div className="mt-6">
           <ErrorState compact title="Sebagian data belum termuat" body="Booking atau pencairan belum bisa ditampilkan. Periksa koneksimu." onRetry={retry} />
         </div>
       )}
 
-      {/* Four plain figures: what needs an answer, what is coming, and the money. */}
-      <section aria-label="Ringkasan" className="mt-10">
-        <dl className="grid grid-cols-2 gap-y-6 border-t border-wd-line pt-6 lg:grid-cols-4 lg:divide-x lg:divide-wd-line">
+      <section aria-label="Ringkasan" className="mt-8">
+        <dl className="grid grid-cols-2 gap-y-6 lg:grid-cols-4 lg:divide-x lg:divide-wd-line">
           <Figure label="Permintaan baru" value={bookings ? <CountUp value={requested.length} /> : "-"} note="menunggu jawabanmu" />
-          <Figure label="Acara dikonfirmasi" value={bookings ? <CountUp value={confirmedCount} /> : "-"} note="sudah kamu terima" />
+          <Figure label="Acara dikonfirmasi" value={bookings ? <CountUp value={confirmedCount} /> : "-"} note={todayLabel()} />
           <Figure label="Siap dicairkan" value={payouts ? <CountUp value={ready} format={formatRupiah} /> : "-"} note={ready > 0 ? "sudah dipotong komisi" : "muncul setelah acara selesai"} href="/vendor/payouts" />
           <Figure label="Ditahan Dana Aman" value={bookings ? <CountUp value={held} format={formatRupiah} /> : "-"} note="dibayar client, menunggu acara" />
         </dl>
       </section>
 
-      <div className="mt-14 grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-14">
+      <div className="mt-12 grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-14">
         <div className="flex flex-col gap-12 lg:col-span-7">
-          {/* Requests first: they are the only thing that expires if ignored. */}
-          <section aria-labelledby="permintaan-baru">
-            <SectionHead id="permintaan-baru" title="Permintaan" em="baru" count={bookings ? requested.length : undefined} href={requested.length > 2 ? "/vendor/bookings" : undefined} />
-            {bookings === null && !dataError ? (
-              <div className="border-t border-wd-line">
-                <BookingRowSkeleton />
-              </div>
-            ) : requested.length === 0 ? (
-              <Empty art="envelope">Belum ada permintaan baru. Permintaan booking dari client muncul di sini lebih dulu.</Empty>
-            ) : (
-              <StaggerList className="border-t border-wd-line">
-                {requested.slice(0, 2).map((b) => (
-                  <StaggerItem key={b.id}>
-                    <BookingRow booking={b} />
-                  </StaggerItem>
-                ))}
-              </StaggerList>
-            )}
-          </section>
-
-          <section aria-labelledby="acara-terdekat">
-            <SectionHead id="acara-terdekat" title="Acara" em="terdekat" href="/vendor/bookings" linkLabel="Semua booking" />
+          <section aria-labelledby="kotak-masuk">
+            <SectionHead id="kotak-masuk" title="Kotak masuk" em="booking" href="/vendor/bookings" linkLabel="Semua booking" />
             {bookings === null && !dataError ? (
               <div className="border-t border-wd-line">
                 <BookingRowSkeleton />
                 <BookingRowSkeleton />
               </div>
-            ) : upcoming.length === 0 ? (
-              <Empty art="clipboard">Belum ada acara yang dikonfirmasi. Booking yang sudah kamu terima akan muncul di sini, urut dari yang paling dekat.</Empty>
             ) : (
-              <StaggerList className="border-t border-wd-line">
-                {upcoming.map((b) => (
-                  <StaggerItem key={b.id}>
-                    <BookingRow booking={b} />
-                  </StaggerItem>
-                ))}
-              </StaggerList>
+              <RequestInbox bookings={list} onStatus={setStatus} />
             )}
           </section>
-        </div>
 
-        <div className="flex flex-col gap-12 lg:col-span-5">
           <section aria-labelledby="ulasan-vendor">
-            <SectionHead id="ulasan-vendor" title="Ulasan" em="terbaru" />
+            <SectionHead id="ulasan-vendor" title="Ulasan" em="terbaru" href={profile.status === "approved" ? `/vendors/${user.id}` : undefined} linkLabel="Halaman publik" />
             {reviews.length === 0 ? (
               <Empty art="people">Belum ada ulasan. Client bisa memberi ulasan setelah acaranya selesai.</Empty>
             ) : (
@@ -287,6 +237,34 @@ function VendorDashboardContent({ user }: { user: CurrentUser }) {
                 {reviews.length > 2 && <p className="mt-2 text-sm text-wd-muted">Menampilkan 2 dari {reviews.length} ulasan.</p>}
               </>
             )}
+          </section>
+        </div>
+
+        <div className="flex flex-col gap-12 lg:col-span-5">
+          <section aria-labelledby="kalender-mini">
+            <SectionHead id="kalender-mini" title="Kalender" em="tokomu" />
+            <div className="rounded-[24px] bg-wd-paper p-4 sm:p-5">
+              <MiniCalendar />
+            </div>
+          </section>
+
+          <section aria-labelledby="kelola-toko">
+            <SectionHead id="kelola-toko" title="Kelola" em="toko" />
+            <ul className="grid grid-cols-2 gap-3">
+              {tiles.map((t) => (
+                <li key={t.href}>
+                  <Link href={t.href} className={`group flex h-full flex-col gap-3 rounded-[22px] p-4 transition-[background-color,transform] duration-200 motion-safe:hover:-translate-y-0.5 ${t.tone} ${FOCUS}`}>
+                    <span aria-hidden className="h-12 w-12 transition-transform duration-300 motion-safe:group-hover:-rotate-3 motion-safe:group-hover:scale-105">
+                      <ClientArt kind={t.art} />
+                    </span>
+                    <span>
+                      <span className="block font-semibold text-wd-ink">{t.label}</span>
+                      <span className="block text-[0.82rem] text-wd-text">{t.note}</span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </section>
 
           {!storefrontDone && (

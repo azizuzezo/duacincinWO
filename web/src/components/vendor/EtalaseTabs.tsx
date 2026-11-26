@@ -7,15 +7,16 @@ import { usePathname } from "next/navigation";
 import { SPRING_SNAPPY, useReducedMotion } from "@/lib/motion";
 
 const TABS = [
-  { href: "/vendor/profile", label: "Profil", hint: "Siapa kamu" },
-  { href: "/vendor/portfolio", label: "Portofolio", hint: "Hasil kerjamu" },
-  { href: "/vendor/paket", label: "Paket harga", hint: "Pilihan & harga" },
+  { href: "/vendor/profile", label: "Profil" },
+  { href: "/vendor/portfolio", label: "Portofolio" },
+  { href: "/vendor/paket", label: "Paket" },
 ];
 
-/** The three pages that build the vendor's shop window, in the order a couple
- * reads them, plus a jump to what couples actually see. `publicId` is passed
- * only when the profile is approved: a pending profile 404s publicly, so the
- * link would be a dead end. `status` lets the strip explain why it is missing. */
+const FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wd-ink";
+
+/** Underline tabs for the three pages of the vendor's shop. `publicId` is
+ * passed only when the profile is approved: a pending profile 404s publicly,
+ * so the link would be a dead end. `status` explains why it is missing. */
 export function EtalaseTabs({
   publicId,
   status,
@@ -27,45 +28,32 @@ export function EtalaseTabs({
   const reduced = useReducedMotion();
 
   return (
-    <div className="mb-8 flex flex-col gap-4 border-b border-dc-line sm:mb-10 lg:flex-row lg:items-end lg:justify-between">
-      <nav aria-label="Bagian etalase" className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-        <ol className="flex min-w-max gap-1 sm:gap-2">
-          {TABS.map((t, i) => {
+    <div className="mt-6 flex flex-col gap-3 border-b border-wd-line sm:flex-row sm:items-end sm:justify-between">
+      <nav aria-label="Bagian etalase">
+        <ul className="flex gap-1 sm:gap-3">
+          {TABS.map((t) => {
             const active = pathname === t.href;
             return (
               <li key={t.href} className="relative">
                 <Link
                   href={t.href}
                   aria-current={active ? "page" : undefined}
-                  className={`group flex min-h-14 items-center gap-3 rounded-t-md px-3 pb-3 pt-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold sm:px-4 ${
-                    active ? "text-dc-ink" : "text-dc-text-2 hover:text-dc-ink"
-                  }`}
+                  className={`flex min-h-12 items-center rounded-t-lg px-3 text-[0.95rem] font-semibold transition-colors sm:px-4 ${FOCUS} ${active ? "text-wd-ink" : "text-wd-muted hover:text-wd-ink"}`}
                 >
-                  {/* Serif numeral: the three pages read as chapters of one storefront. */}
-                  <span
-                    aria-hidden
-                    className={`font-heading text-[1.65rem] italic leading-none transition-colors ${active ? "text-dc-clay" : "text-dc-text-3 group-hover:text-dc-clay"}`}
-                  >
-                    {i + 1}
-                  </span>
-                  <span className="flex flex-col leading-tight">
-                    <span className="text-[0.95rem] font-semibold">{t.label}</span>
-                    <span className="hidden text-xs text-dc-text-3 sm:block">{t.hint}</span>
-                  </span>
+                  {t.label}
                 </Link>
                 {active && (
-                  // Shared-layout underline glides between chapters so the move reads as one place, not three pages.
                   <motion.span
                     layoutId={reduced ? undefined : "etalase-underline"}
                     transition={SPRING_SNAPPY}
                     aria-hidden
-                    className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-dc-gold"
+                    className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-wd-ink"
                   />
                 )}
               </li>
             );
           })}
-        </ol>
+        </ul>
       </nav>
 
       <div className="pb-3">
@@ -74,19 +62,18 @@ export function EtalaseTabs({
             href={`/vendors/${publicId}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-11 items-center gap-2 rounded-md border border-dc-line-strong bg-dc-white px-4 text-sm font-semibold text-dc-ink transition-colors hover:border-dc-gold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-gold"
+            className={`inline-flex min-h-11 items-center gap-2 rounded-full text-sm font-semibold text-wd-ink underline-offset-4 hover:underline ${FOCUS}`}
           >
-            <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-dc-clay">
-              <path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z" />
-              <circle cx="12" cy="12" r="2.8" />
-            </svg>
             Lihat etalase publik
+            <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M7 17 17 7M8 7h9v9" />
+            </svg>
             <span className="sr-only">(buka di tab baru)</span>
           </Link>
         ) : status === "pending" ? (
-          <p className="max-w-xs text-sm text-dc-text-2">Etalase publik tampil setelah profilmu disetujui tim DuaCincin.</p>
+          <p className="text-sm text-wd-text">Etalase publik tampil setelah profilmu disetujui.</p>
         ) : status === "rejected" ? (
-          <p className="max-w-xs text-sm text-dc-text-2">Etalase publik belum tampil. Catatan dari tim ada di halaman Profil.</p>
+          <p className="text-sm text-wd-text">Catatan dari tim ada di halaman Profil.</p>
         ) : null}
       </div>
     </div>

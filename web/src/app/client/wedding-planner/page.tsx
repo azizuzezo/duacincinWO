@@ -511,7 +511,7 @@ function WeddingPlannerContent({ user }: { user: CurrentUser }) {
                               {complete ? (
                                 <Badge tone="success">Beres</Badge>
                               ) : g === focusGroup ? (
-                                <Badge tone="gold">Sekarang</Badge>
+                                <span className="inline-flex items-center rounded-full bg-wd-accent px-2.5 py-0.5 text-xs font-bold text-wd-ink">Sekarang</span>
                               ) : null}
                               {lateHere > 0 && (
                                 <Badge tone="danger">{lateHere} terlewat</Badge>

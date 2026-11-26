@@ -50,7 +50,7 @@ export function ReviewSummary({ reviews }: { reviews: Review[] }) {
   const avg = reviews.reduce((s, r) => s + r.rating, 0) / reviews.length;
   const max = Math.max(...counts.map((x) => x.c), 1);
   return (
-    <div className="grid gap-6 rounded-xl border border-dc-line bg-dc-white p-5 shadow-soft sm:grid-cols-[auto_1fr] sm:items-center sm:gap-10 sm:p-7">
+    <div className="grid gap-6 rounded-[24px] bg-wd-accent-wash p-5 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-10 sm:p-7">
       <div className="flex items-center gap-4 sm:flex-col sm:items-start sm:gap-1">
         <p className="font-heading text-6xl leading-none text-dc-ink [font-variant-numeric:lining-nums_tabular-nums] sm:text-7xl">
           {avg.toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
@@ -64,7 +64,7 @@ export function ReviewSummary({ reviews }: { reviews: Review[] }) {
         {counts.map(({ n, c }) => (
           <li key={n} className="flex items-center gap-3 text-sm">
             <span className="w-16 shrink-0 whitespace-nowrap tabular-nums text-dc-text-2">{n} bintang</span>
-            <span className="h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-dc-cream" aria-hidden>
+            <span className="h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-white" aria-hidden>
               <GrowX as="span" className="h-full">
                 <span className="block h-full rounded-full bg-dc-gold" style={{ width: `${(c / max) * 100}%` }} />
               </GrowX>
@@ -87,7 +87,7 @@ function ReviewItem({ review }: { review: Review }) {
   const text = review.comment?.trim() ?? "";
   const long = text.length > LONG;
   return (
-    <MotionItem className="rounded-xl border border-dc-line bg-dc-white p-5 sm:p-6">
+    <MotionItem className="border-b border-wd-line py-5">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <Stars rating={review.rating} />
         <Badge tone="success">

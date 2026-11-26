@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { openChat } from "@/components/messages/ChatDock";
-import { CLIENT_NAV } from "@/components/shell/navConfig";
+import { CLIENT_NAV, VENDOR_NAV } from "@/components/shell/navConfig";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { NotificationBell } from "@/components/ui/NotificationBell";
@@ -105,13 +105,16 @@ export function AccountMenu({ user }: { user: CurrentUser }) {
     };
   }, [open]);
 
-  const bookings = CLIENT_NAV.find((i) => i.href === "/client/bookings");
-  const messages = CLIENT_NAV.find((i) => i.href === "/client/messages");
+  // Vendors get the same corner with their own destinations; their messages page is a full page, not the client popup.
+  const vendor = user.role === "vendor";
+  const menuLinks = vendor ? VENDOR_NAV : ACCOUNT_LINKS;
+  const bookings = vendor ? VENDOR_NAV.find((i) => i.href === "/vendor/bookings") : CLIENT_NAV.find((i) => i.href === "/client/bookings");
+  const messages = vendor ? VENDOR_NAV.find((i) => i.href === "/vendor/messages") : CLIENT_NAV.find((i) => i.href === "/client/messages");
 
   return (
     <div className="flex items-center gap-0.5">
       {bookings && (
-        <Link href={bookings.href} aria-label="Booking saya" className={`${ICON_BTN} hidden sm:flex`}>
+        <Link href={bookings.href} aria-label={vendor ? "Booking masuk" : "Booking saya"} className={`${ICON_BTN} hidden sm:flex`}>
           <Icon paths={bookings.icon} size={20} />
         </Link>
       )}
@@ -119,7 +122,7 @@ export function AccountMenu({ user }: { user: CurrentUser }) {
         <NotificationBell />
       </div>
       {messages && (
-        <Link href={messages.href} aria-label="Pesan" onClick={(e) => openChat() && e.preventDefault()} className={`${ICON_BTN} hidden sm:flex`}>
+        <Link href={messages.href} aria-label="Pesan" onClick={(e) => !vendor && openChat() && e.preventDefault()} className={`${ICON_BTN} hidden sm:flex`}>
           <Icon paths={messages.icon} size={20} />
         </Link>
       )}
@@ -150,7 +153,7 @@ export function AccountMenu({ user }: { user: CurrentUser }) {
               </span>
             </div>
             <ul className="py-1">
-              {ACCOUNT_LINKS.map((l) => (
+              {menuLinks.map((l) => (
                 <li key={l.href} role="none">
                   <Link role="menuitem" href={l.href} onClick={() => setOpen(false)} className="flex min-h-9 items-center gap-2.5 rounded-[10px] px-2.5 text-[0.86rem] text-wd-ink transition-colors hover:bg-wd-accent-wash">
                     <span className="text-wd-accent-ink">

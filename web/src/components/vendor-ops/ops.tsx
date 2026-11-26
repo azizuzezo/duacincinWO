@@ -150,9 +150,12 @@ export function BookingRow({ booking: b, showFund = true }: { booking: Booking; 
           )}
         </div>
       </div>
-      <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="mt-1 hidden shrink-0 text-wd-muted transition-transform group-hover:translate-x-0.5 sm:block">
-        <path d="M9 6l6 6-6 6" />
-      </svg>
+      <span
+        aria-hidden
+        className={`hidden shrink-0 self-center rounded-full px-4 py-2 text-sm font-semibold transition-colors sm:inline-flex ${needsAnswer ? "bg-wd-accent text-wd-ink group-hover:bg-wd-accent-deep" : "border border-wd-line-2 text-wd-ink group-hover:border-wd-ink"}`}
+      >
+        {needsAnswer ? "Jawab" : "Lihat"}
+      </span>
     </Link>
   );
 }
