@@ -95,14 +95,14 @@ function PhotoPanel({ panel }: { panel: AuthPanel }) {
   const src = panel.photos[Math.min(shot, n - 1)];
 
   return (
-    <aside aria-hidden className="group relative hidden bg-wd-paper p-4 pl-0 lg:block">
-      <div className="relative h-full min-h-[640px] overflow-hidden rounded-[32px] bg-wd-blush">
+    <aside aria-hidden className="relative hidden lg:block">
+      <div className="absolute inset-0 overflow-hidden bg-wd-blush">
         <AnimatePresence initial={false}>
           <motion.div key={src} className="absolute inset-0" {...fade}>
             <Image src={src} alt="" fill priority={shot === 0} sizes="50vw" className="object-cover" />
           </motion.div>
         </AnimatePresence>
-        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/60 via-black/25 to-transparent px-9 pb-8 pt-24 text-white">
+        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/60 via-black/25 to-transparent px-12 pb-12 pt-32 text-white">
           <p className="wd-display text-[clamp(1.8rem,2.6vw,2.4rem)] leading-[1.1] !text-white [&_em]:!text-[#f1dcaa]">{panel.headline}</p>
           <div className="mt-5 flex gap-1.5">
             {panel.photos.map((p, i) => (
@@ -172,8 +172,8 @@ export function AuthLayout({
           </div>
         </main>
         {aside ? (
-          <aside aria-hidden className="relative hidden bg-wd-paper p-4 pl-0 lg:block">
-            <div className="relative h-full min-h-[640px] overflow-hidden rounded-[32px] bg-[radial-gradient(ellipse_at_70%_25%,#ffffff_0%,#fbf5e6_55%,#f3e8cc_100%)]">{aside}</div>
+          <aside aria-hidden className="relative hidden lg:block">
+            <div className="absolute inset-0 overflow-hidden bg-[radial-gradient(ellipse_at_70%_25%,#ffffff_0%,#fbf5e6_55%,#f3e8cc_100%)]">{aside}</div>
           </aside>
         ) : (
           <PhotoPanel panel={panel} />
