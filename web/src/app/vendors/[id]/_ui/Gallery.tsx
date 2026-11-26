@@ -20,30 +20,50 @@ const GRID_ICON = (
   </svg>
 );
 
-/** Desktop mosaic, Bridestory style: the first photo (the vendor's cover)
- * leads on the left, four smaller ones fill a 2x2 block on the right. The
- * grid adapts to how many photos exist so one or two never leave holes. */
-function mosaic(n: number): { grid: string; tiles: string[] } {
-  if (n === 1) return { grid: "grid-cols-1 h-[min(56vh,480px)]", tiles: [""] };
-  if (n === 2) return { grid: "grid-cols-2 h-[min(56vh,480px)]", tiles: ["", ""] };
-  if (n === 3) return { grid: "grid-cols-3 grid-rows-2 h-[min(58vh,500px)]", tiles: ["col-span-2 row-span-2", "", ""] };
-  if (n === 4) return { grid: "grid-cols-4 grid-rows-2 h-[min(58vh,500px)]", tiles: ["col-span-2 row-span-2", "col-span-2", "", ""] };
-  return { grid: "grid-cols-4 grid-rows-2 h-[min(58vh,500px)]", tiles: ["col-span-2 row-span-2", "", "", "", ""] };
+/** Real shape of each photo, read once it has loaded (the API gives only the
+ * URL). Until then a portrait 4:5 is assumed. Clamped so a panorama or a very
+ * tall shot cannot break the row. */
+const DEFAULT_RATIO = 0.8;
+function useRatios(items: PortfolioItem[]) {
+  const [ratios, setRatios] = useState<Record<string, number>>({});
+  const measure = (id: string) => (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
+    if (!w || !h) return;
+    const r = Math.min(2.2, Math.max(0.5, w / h));
+    setRatios((prev) => (prev[id] === r ? prev : { ...prev, [id]: r }));
+  };
+  return { ratio: (p: PortfolioItem) => ratios[p.id] ?? DEFAULT_RATIO, measure, items };
 }
 
 const tileFocus = "focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-white";
+const ROW_H = 480;
+const GAP = 8;
 
+/** Photos are shown whole, never cropped. Desktop: one row where every photo
+ * keeps its own shape and all share the same height (the row is as tall as
+ * the width allows, up to 480px, and is centred). Phones: a swipeable strip
+ * at a fixed height, each photo as wide as its shape needs. */
 export function Gallery({ items, onOpen }: { items: PortfolioItem[]; onOpen: (i: number) => void }) {
   const shown = items.slice(0, 5);
-  const { grid, tiles } = mosaic(shown.length);
+  const { ratio, measure } = useRatios(items);
   const [slide, setSlide] = useState(0);
   const track = useRef<HTMLDivElement>(null);
 
   function onScroll() {
     const el = track.current;
-    if (!el || !el.firstElementChild) return;
-    const w = (el.firstElementChild as HTMLElement).offsetWidth + 8;
-    setSlide(Math.min(items.length - 1, Math.round(el.scrollLeft / w)));
+    if (!el) return;
+    const tiles = Array.from(el.children) as HTMLElement[];
+    const mid = el.scrollLeft + el.clientWidth / 2;
+    let best = 0;
+    let dist = Infinity;
+    tiles.forEach((t, i) => {
+      const d = Math.abs(t.offsetLeft + t.offsetWidth / 2 - mid);
+      if (d < dist) {
+        dist = d;
+        best = i;
+      }
+    });
+    setSlide(best);
   }
 
   const seeAll = (
@@ -57,9 +77,11 @@ export function Gallery({ items, onOpen }: { items: PortfolioItem[]; onOpen: (i:
     </button>
   );
 
+  const sum = shown.reduce((a, p) => a + ratio(p), 0);
+
   return (
     <div className="relative">
-      {/* Phones: swipeable full-bleed strip, every photo reachable with a thumb. */}
+      {/* Phones: swipeable strip, every photo whole. */}
       <div className="relative -mx-4 md:hidden">
         <div
           ref={track}
@@ -74,9 +96,11 @@ export function Gallery({ items, onOpen }: { items: PortfolioItem[]; onOpen: (i:
               type="button"
               onClick={() => onOpen(i)}
               aria-label={`Perbesar foto ${i + 1} dari ${items.length}: ${alt(p)}`}
-              className={`relative aspect-[4/3] shrink-0 overflow-hidden rounded-[14px] bg-wd-blush ${tileFocus} ${items.length === 1 ? "w-full" : "w-[88%]"}`}
+              className={`relative h-[min(60vh,380px)] shrink-0 overflow-hidden rounded-[14px] bg-wd-blush ${tileFocus}`}
+              style={{ aspectRatio: ratio(p), maxWidth: "calc(100vw - 2rem)" }}
             >
-              <Image src={p.url} alt={alt(p)} fill priority={i === 0} sizes="90vw" className="object-cover" unoptimized />
+              {/* eslint-disable-next-line @next/next/no-img-element -- natural size is read from this element */}
+              <img src={p.url} alt={alt(p)} onLoad={measure(p.id)} loading={i === 0 ? "eager" : "lazy"} draggable={false} className="h-full w-full object-cover" />
             </button>
           ))}
         </div>
@@ -88,32 +112,35 @@ export function Gallery({ items, onOpen }: { items: PortfolioItem[]; onOpen: (i:
         {items.length > 1 && <div className="absolute bottom-3 right-7">{seeAll}</div>}
       </div>
 
-      {/* Tablet and desktop: mosaic, cover photo first. */}
-      <div className={`group/m hidden gap-2 overflow-hidden rounded-[20px] md:grid ${grid}`}>
-        {shown.map((p, i) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => onOpen(i)}
-            aria-label={`Perbesar foto ${i + 1} dari ${items.length}: ${alt(p)}`}
-            className={`group relative min-h-0 overflow-hidden bg-wd-blush ${tileFocus} ${tiles[i]}`}
-          >
-            <Image
-              src={p.url}
-              alt={alt(p)}
-              fill
-              priority={i === 0}
-              sizes={i === 0 && shown.length > 2 ? "(min-width: 1280px) 620px, 50vw" : "(min-width: 1280px) 310px, 25vw"}
-              className="object-cover transition-[transform,filter] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover/m:brightness-[0.88] group-hover:!brightness-100 group-hover:scale-[1.03] group-focus-visible:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
-              unoptimized
-            />
-            {i === shown.length - 1 && items.length > shown.length && (
-              <span aria-hidden className="absolute inset-0 flex items-center justify-center bg-wd-ink/55 text-2xl font-semibold text-white transition-colors group-hover:bg-wd-ink/65">
-                +{items.length - shown.length} foto
-              </span>
-            )}
-          </button>
-        ))}
+      {/* Tablet and desktop: one row, same height, true shapes. */}
+      <div className="hidden min-h-[300px] items-center justify-center rounded-[20px] bg-wd-paper md:flex">
+        <div className="group/m flex w-full overflow-hidden rounded-[20px]" style={{ gap: GAP, maxWidth: ROW_H * sum + GAP * (shown.length - 1) }}>
+          {shown.map((p, i) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => onOpen(i)}
+              aria-label={`Perbesar foto ${i + 1} dari ${items.length}: ${alt(p)}`}
+              className={`group relative min-w-0 overflow-hidden bg-wd-blush ${tileFocus}`}
+              style={{ flex: `${ratio(p)} 1 0%`, aspectRatio: ratio(p) }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- natural size is read from this element */}
+              <img
+                src={p.url}
+                alt={alt(p)}
+                onLoad={measure(p.id)}
+                loading={i === 0 ? "eager" : "lazy"}
+                draggable={false}
+                className="h-full w-full object-cover transition-[transform,filter] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover/m:brightness-[0.88] group-hover:!brightness-100 group-hover:scale-[1.03] group-focus-visible:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+              />
+              {i === shown.length - 1 && items.length > shown.length && (
+                <span aria-hidden className="absolute inset-0 flex items-center justify-center bg-wd-ink/55 text-2xl font-semibold text-white transition-colors group-hover:bg-wd-ink/65">
+                  +{items.length - shown.length} foto
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
       {items.length > 1 && <div className="absolute bottom-4 right-4 hidden md:block">{seeAll}</div>}
     </div>
@@ -123,23 +150,24 @@ export function Gallery({ items, onOpen }: { items: PortfolioItem[]; onOpen: (i:
 /** Full portfolio grid for the Foto section. Natural photo order, every
  * tile opens the lightbox at that photo. */
 export function PortfolioGrid({ items, onOpen }: { items: PortfolioItem[]; onOpen: (i: number) => void }) {
+  // Masonry: columns of whole photos, so nothing is cut and nothing is letterboxed.
   return (
-    <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
+    <ul className="columns-2 gap-2 sm:columns-3 sm:gap-3 [&>li]:mb-2 [&>li]:break-inside-avoid sm:[&>li]:mb-3">
       {items.map((p, i) => (
         <li key={p.id}>
           <button
             type="button"
             onClick={() => onOpen(i)}
             aria-label={`Perbesar foto ${i + 1} dari ${items.length}: ${alt(p)}`}
-            className={`group relative block aspect-square w-full overflow-hidden rounded-[14px] bg-wd-blush ${tileFocus}`}
+            className={`group relative block w-full overflow-hidden rounded-[14px] bg-wd-blush ${tileFocus}`}
           >
-            <Image
+            {/* eslint-disable-next-line @next/next/no-img-element -- remote photos of unknown size, shown whole */}
+            <img
               src={p.url}
               alt={alt(p)}
-              fill
-              sizes="(min-width: 640px) 260px, 50vw"
-              className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
-              unoptimized
+              loading="lazy"
+              draggable={false}
+              className="block h-auto min-h-24 w-full transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
             />
           </button>
         </li>

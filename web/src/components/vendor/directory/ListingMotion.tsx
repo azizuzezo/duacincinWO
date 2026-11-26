@@ -13,7 +13,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { ArrowRight, Shield, Star } from "@/components/home/ui";
 import { categoryLabel, formatRupiah, type DirectoryCard, vendorCities } from "@/lib/api";
 import { EASE, SPRING_SNAPPY, useReducedMotion } from "@/lib/motion";
-import { FitPhoto } from "@/components/ui/FitPhoto";
+import { CardPhoto } from "@/components/ui/CardPhoto";
 
 import { GRID } from "./ListingParts";
 import { useShareLink } from "./useShareLink";
@@ -48,9 +48,9 @@ export function ListingCard({ card, priority = false }: { card: DirectoryCard; p
       href={`/vendors/${card.id}`}
       className="group block h-full rounded-[16px] outline-offset-4 focus-visible:outline-2 focus-visible:outline-wd-accent-ink"
     >
-      <span className="@container relative block aspect-square overflow-hidden rounded-[14px] bg-wd-blush shadow-none transition-[box-shadow,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover/c:-translate-y-1 group-hover/c:shadow-wd-lift group-focus-visible:-translate-y-1 group-focus-visible:shadow-wd-lift motion-reduce:transition-none motion-reduce:group-hover/c:translate-y-0 motion-reduce:group-focus-visible:translate-y-0">
+      <span className="@container relative block aspect-[4/5] overflow-hidden rounded-[14px] bg-wd-blush shadow-none transition-[box-shadow,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover/c:-translate-y-1 group-hover/c:shadow-wd-lift group-focus-visible:-translate-y-1 group-focus-visible:shadow-wd-lift motion-reduce:transition-none motion-reduce:group-hover/c:translate-y-0 motion-reduce:group-focus-visible:translate-y-0">
         {card.sample_image ? (
-          <FitPhoto
+          <CardPhoto
             src={card.sample_image}
             alt={`Portofolio ${card.business_name}`}
             priority={priority}

@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { categoryLabel, formatRupiah, vendorCategoryList, type DirectoryCard } from "@/lib/api";
-import { FitPhoto } from "@/components/ui/FitPhoto";
+import { CardPhoto } from "@/components/ui/CardPhoto";
 
 const RATING = new Intl.NumberFormat("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
@@ -24,9 +24,9 @@ export function VendorCard({ card, horizontal = false }: { card: DirectoryCard; 
         horizontal ? "flex-col sm:flex-row" : "flex-col"
       }`}
     >
-      <div className={`relative overflow-hidden bg-dc-cream ${horizontal ? "aspect-4/3 sm:aspect-auto sm:w-[55%] sm:shrink-0" : "aspect-4/3"}`}>
+      <div className={`relative overflow-hidden bg-dc-cream ${horizontal ? "aspect-4/5 sm:aspect-auto sm:w-[55%] sm:shrink-0" : "aspect-4/5"}`}>
         {card.sample_image ? (
-          <FitPhoto
+          <CardPhoto
             src={card.sample_image}
             alt={`Portofolio ${card.business_name}`}
             sizes={horizontal ? "(min-width: 640px) 420px, 100vw" : "(min-width: 1024px) 380px, (min-width: 640px) 50vw, 100vw"}

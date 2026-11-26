@@ -10,7 +10,7 @@ import { useRef, type ReactNode } from "react";
 
 import { categoryLabel, formatRupiah, type DirectoryCard } from "@/lib/api";
 import { EASE, useReducedMotion } from "@/lib/motion";
-import { FitPhoto } from "@/components/ui/FitPhoto";
+import { CardPhoto } from "@/components/ui/CardPhoto";
 
 import { RailArrows } from "./RailArrows";
 import { SectionHead, SeeAll, Shield, Star } from "./ui";
@@ -27,9 +27,9 @@ export function rankVendors(cards: DirectoryCard[]) {
 export function VendorCard({ card }: { card: DirectoryCard }) {
   return (
     <Link href={`/vendors/${card.id}`} className="group block h-full rounded-[14px]">
-      <span className="relative block aspect-square overflow-hidden rounded-[14px] bg-wd-blush">
+      <span className="relative block aspect-[4/5] overflow-hidden rounded-[14px] bg-wd-blush">
         {card.sample_image ? (
-          <FitPhoto
+          <CardPhoto
             src={card.sample_image}
             alt={`Portofolio ${card.business_name}`}
             sizes="(min-width: 1024px) 240px, 70vw"
@@ -83,7 +83,7 @@ export function VendorCard({ card }: { card: DirectoryCard }) {
 function SkeletonCard() {
   return (
     <div aria-hidden>
-      <div className="aspect-square animate-pulse rounded-[14px] bg-wd-blush" />
+      <div className="aspect-[4/5] animate-pulse rounded-[14px] bg-wd-blush" />
       <div className="mt-3 h-4 w-3/4 animate-pulse rounded bg-wd-blush" />
       <div className="mt-2 h-3 w-1/2 animate-pulse rounded bg-wd-blush" />
     </div>
