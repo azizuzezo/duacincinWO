@@ -323,6 +323,61 @@ r = await client.call("GET", `/conversations/${av.id}`); ok("client cannot read 
 r = await vendor2.call("POST", `/conversations/${av.id}/messages`, { body: "x" }); ok("another vendor cannot post in it", r.status === 404, JSON.stringify(r));
 ok("admin chat opens no dispute", psql(`select count(*) from disputes where message_id in (select id from messages where conversation_id='${av.id}')`) === "0");
 
+// 5d. edit and retract a message, attachment signing and attachment references (admin <-> vendor thread)
+{
+  const base = `/conversations/${av.id}/messages`;
+  r = await admin.call("POST", base, { body: "Draf awal pesan" }); const em = r.data; ok("admin sends a message to edit", r.status === 201 && em?.edited === false && em?.retracted === false, JSON.stringify(r));
+  r = await admin.call("PATCH", `${base}/${em.id}`, { body: "  Pesan sudah diperbaiki  " }); ok("sender edits within the window: body changes, edited=true", r.status === 200 && r.data?.body === "Pesan sudah diperbaiki" && r.data?.edited === true && r.data?.retracted === false, JSON.stringify(r));
+  r = await vendor.call("PATCH", `${base}/${em.id}`, { body: "Dibajak" }); ok("the other participant cannot edit (403)", r.status === 403, JSON.stringify(r));
+  r = await client.call("PATCH", `${base}/${em.id}`, { body: "Dibajak" }); ok("a non-participant cannot edit", r.status === 404 || r.status === 403, JSON.stringify(r));
+  r = await admin.call("PATCH", `${base}/${em.id}`, { body: "   " }); ok("empty edit is 400", r.status === 400, JSON.stringify(r));
+  r = await admin.call("PATCH", `${base}/${em.id}`, { body: "sampai jumpa di wa.me/62812" }); ok("admin chats are not contact-filtered on edit", r.status === 200 && r.data?.flagged === false, JSON.stringify(r));
+  r = await admin.call("PATCH", `${base}/bukan-uuid`, { body: "x" }); ok("editing an unknown message is 404", r.status === 404, JSON.stringify(r));
+  r = await vendor.call("GET", base); ok("the other side reads the edited text", r.data?.find((m) => m.id === em.id)?.edited === true, JSON.stringify(r.data?.find((m) => m.id === em.id)));
+  psql(`update messages set created_at = now() - interval '20 minutes' where id='${em.id}'`);
+  r = await admin.call("PATCH", `${base}/${em.id}`, { body: "Terlambat" }); ok("edit after 15 minutes is refused", r.status === 403 && r.data?.error === "Pesan hanya bisa diedit 15 menit setelah dikirim.", JSON.stringify(r));
+
+  r = await admin.call("POST", base, { body: "Pesan yang akan ditarik" }); const rm = r.data;
+  r = await vendor.call("POST", base, { body: "Membalas pesan itu", reply_to_message_id: rm.id }); const reply = r.data; ok("vendor replies to it (preview shows the text)", r.status === 201 && reply?.reply_to?.body === "Pesan yang akan ditarik" && !reply.reply_to.retracted, JSON.stringify(r));
+  r = await vendor.call("DELETE", `${base}/${rm.id}`); ok("the other participant cannot retract (403)", r.status === 403, JSON.stringify(r));
+  r = await client.call("DELETE", `${base}/${rm.id}`); ok("a non-participant cannot retract", r.status === 404 || r.status === 403, JSON.stringify(r));
+  r = await admin.call("DELETE", `${base}/${rm.id}`); ok("sender retracts: body empty, retracted=true", r.status === 200 && r.data?.body === "" && r.data?.retracted === true && !r.data?.attachment_url && r.data?.flagged === false, JSON.stringify(r));
+  r = await admin.call("DELETE", `${base}/${rm.id}`); ok("retract is idempotent", r.status === 200 && r.data?.retracted === true && r.data?.body === "", JSON.stringify(r));
+  r = await vendor.call("GET", base); const listed = r.data?.find((m) => m.id === rm.id);
+  ok("the list shows the retracted message without its body", listed?.retracted === true && listed?.body === "", JSON.stringify(listed));
+  ok("a reply preview of a retracted message is blanked", r.data?.find((m) => m.id === reply.id)?.reply_to?.body === "" && r.data?.find((m) => m.id === reply.id)?.reply_to?.retracted === true, JSON.stringify(r.data?.find((m) => m.id === reply.id)));
+  ok("the retracted body stays in the database for moderation", psql(`select body from messages where id='${rm.id}'`) === "Pesan yang akan ditarik");
+  r = await admin.call("PATCH", `${base}/${rm.id}`, { body: "Hidupkan lagi" }); ok("edit after retract is refused", r.status === 409 || r.status === 403, JSON.stringify(r));
+  r = await admin.call("POST", base, { body: "Pesan lama" }); const old = r.data;
+  psql(`update messages set created_at = now() - interval '25 hours' where id='${old.id}'`);
+  r = await admin.call("DELETE", `${base}/${old.id}`); ok("retract after 24 hours is refused", r.status === 403 && r.data?.error === "Pesan hanya bisa ditarik 24 jam setelah dikirim.", JSON.stringify(r));
+
+  // Attachment signing: auth -> participant -> validation -> configuration. e2e has no CLOUDINARY_URL.
+  const sign = `/conversations/${av.id}/attachments/sign`;
+  r = await new Client("anon").call("POST", sign, { name: "a.pdf", type: "application/pdf", size: 1000 }); ok("sign needs a session", r.status === 401, JSON.stringify(r));
+  r = await client.call("POST", sign, { name: "a.pdf", type: "application/pdf", size: 1000 }); ok("sign: a non-participant is refused", r.status === 404 || r.status === 403, JSON.stringify(r));
+  r = await admin.call("POST", sign, { name: "a.zip", type: "application/zip", size: 1000 }); ok("sign rejects an unsupported type", r.status === 400 && r.data?.error === "Jenis file ini belum didukung.", JSON.stringify(r));
+  r = await admin.call("POST", sign, { name: "a.svg", type: "image/svg+xml", size: 1000 }); ok("sign rejects svg", r.status === 400, JSON.stringify(r));
+  r = await admin.call("POST", sign, { name: "a.jpg", type: "image/jpeg", size: 16 * 1024 * 1024 }); ok("sign rejects an oversize photo", r.status === 400 && r.data?.error === "Ukuran file maksimal 15 MB untuk foto.", JSON.stringify(r));
+  r = await admin.call("POST", sign, { name: "a.mp4", type: "video/mp4", size: 101 * 1024 * 1024 }); ok("sign rejects an oversize video", r.status === 400 && r.data?.error === "Ukuran file maksimal 100 MB untuk video.", JSON.stringify(r));
+  r = await admin.call("POST", sign, { name: "a.pdf", type: "application/pdf", size: 26 * 1024 * 1024 }); ok("sign rejects an oversize document", r.status === 400 && r.data?.error === "Ukuran file maksimal 25 MB untuk dokumen.", JSON.stringify(r));
+  r = await admin.call("POST", sign, { name: "a.pdf", type: "application/pdf", size: 1000 }); ok("sign without Cloudinary configured is 503", r.status === 503 && r.data?.error === "Penyimpanan lampiran belum dikonfigurasi.", JSON.stringify(r));
+
+  // Attachment references on send
+  r = await admin.call("POST", base, { body: "", attachment_url: "https://example.com/x.png", attachment_type: "image/png" }); ok("send rejects an arbitrary attachment url", r.status === 400, JSON.stringify(r));
+  r = await admin.call("POST", base, { body: "", attachment_url: `https://res.cloudinary.com/demo/raw/upload/v1/duacincin/chat/${av.id}/a.pdf`, attachment_type: "application/pdf" }); ok("send rejects a Cloudinary url while Cloudinary is not configured", r.status === 400, JSON.stringify(r));
+  r = await admin.call("POST", base, { body: "", attachment_url: "https://example.com/x.zip", attachment_type: "application/zip" }); ok("send rejects an unsupported attachment type", r.status === 400 && r.data?.error === "Jenis file ini belum didukung.", JSON.stringify(r));
+  const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64");
+  const form = new FormData(); form.append("file", new Blob([png], { type: "image/png" }), "kecil.png");
+  { const res = await fetch(`${BASE}/conversations/${av.id}/attachments`, { method: "POST", headers: { Cookie: admin.cookie }, body: form }); r = { status: res.status, data: await res.json().catch(() => null) }; }
+  ok("the multipart image upload still works", r.status === 201 && r.data?.url && r.data?.type === "image/png", JSON.stringify(r));
+  const up = r.data;
+  r = await admin.call("POST", base, { body: "", attachment_url: up?.url, attachment_type: up?.type, attachment_name: "../kecil.png", attachment_size: png.length }); const att = r.data; ok("and its url is accepted on send, name sanitized", r.status === 201 && att?.attachment_url === up?.url && att?.attachment_name === "kecil.png" && att?.attachment_size === png.length, JSON.stringify(r));
+  r = await admin.call("DELETE", `${base}/${att.id}`); ok("retracting hides the attachment", r.status === 200 && !r.data?.attachment_url && !r.data?.attachment_name && !r.data?.attachment_size && r.data?.body === "", JSON.stringify(r));
+  r = await admin.call("POST", base, { body: "", attachment_url: up?.url, attachment_type: "image/png" }); const att2 = r.data;
+  r = await admin.call("PATCH", `${base}/${att2.id}`, { body: "teks" }); ok("an attachment-only message cannot be edited", r.status === 400, JSON.stringify(r));
+}
+
 // 6. booking lifecycle with simulated payments (Midtrans not configured)
 r = await client.call("POST", "/bookings", { vendor_id: vendorId, event_date: "2027-03-14", package_description: "Half Day Plus", agreed_price: 22000000 }); ok("client creates booking", r.status < 300 && r.data?.status === "requested", JSON.stringify(r)); const bk = r.data;
 ok("client booking hides the vendor's share", bk?.vendor_amount === undefined, JSON.stringify(bk));

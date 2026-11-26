@@ -50,15 +50,34 @@ type Message struct {
 	ReplyToMessageID *string
 	AttachmentURL    *string
 	AttachmentType   *string
+	AttachmentName   *string
+	AttachmentSize   *int64
 	CreatedAt        time.Time
 	// DeliveredAt: the recipient's app fetched this message. ReadAt: the
 	// recipient opened the thread with it visible. Both stay nil for a
 	// message nobody on the other side has received yet.
 	DeliveredAt *time.Time
 	ReadAt      *time.Time
+	// EditedAt is set once the sender edits the text; RetractedAt once they
+	// retract it. A retracted message is returned blanked (see
+	// scanMessageFrom) so no caller can leak what it said; the original body
+	// stays in the table for moderation.
+	EditedAt    *time.Time
+	RetractedAt *time.Time
 }
 
-const messageColumns = "id, conversation_id, sender_id, body, flagged, reply_to_message_id, attachment_url, attachment_type, created_at, delivered_at, read_at"
+// Retracted reports whether the sender took the message back.
+func (m *Message) Retracted() bool { return m.RetractedAt != nil }
+
+// blankIfRetracted removes everything a retracted message said.
+func (m *Message) blankIfRetracted() {
+	if m.RetractedAt == nil {
+		return
+	}
+	m.Body, m.Flagged, m.AttachmentURL, m.AttachmentType, m.AttachmentName, m.AttachmentSize = "", false, nil, nil, nil, nil
+}
+
+const messageColumns = "id, conversation_id, sender_id, body, flagged, reply_to_message_id, attachment_url, attachment_type, attachment_name, attachment_size, created_at, delivered_at, read_at, edited_at, retracted_at"
 
 type ChatRepo struct {
 	pool *pgxpool.Pool
@@ -192,13 +211,13 @@ func (r *ChatRepo) ListConsultations(ctx context.Context) ([]Conversation, error
 
 // CreateMessage stores a message, or returns ErrConversationClosed when the
 // conversation's session is closed (checked in the same statement).
-func (r *ChatRepo) CreateMessage(ctx context.Context, conversationID, senderID, body string, flagged bool, replyToMessageID, attachmentURL, attachmentType *string) (*Message, error) {
+func (r *ChatRepo) CreateMessage(ctx context.Context, conversationID, senderID, body string, flagged bool, replyToMessageID, attachmentURL, attachmentType, attachmentName *string, attachmentSize *int64) (*Message, error) {
 	row := r.pool.QueryRow(ctx, `
-		insert into messages (conversation_id, sender_id, body, flagged, reply_to_message_id, attachment_url, attachment_type)
-		select $1::uuid, $2::uuid, $3::text, $4::boolean, $5::uuid, $6::text, $7::text
+		insert into messages (conversation_id, sender_id, body, flagged, reply_to_message_id, attachment_url, attachment_type, attachment_name, attachment_size)
+		select $1::uuid, $2::uuid, $3::text, $4::boolean, $5::uuid, $6::text, $7::text, $8::text, $9::bigint
 		where exists (select 1 from conversations where id = $1::uuid and closed_at is null)
 		returning `+messageColumns+`
-	`, conversationID, senderID, body, flagged, replyToMessageID, attachmentURL, attachmentType)
+	`, conversationID, senderID, body, flagged, replyToMessageID, attachmentURL, attachmentType, attachmentName, attachmentSize)
 	m, err := scanMessage(row)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrConversationClosed
@@ -211,6 +230,39 @@ func (r *ChatRepo) GetMessageByID(ctx context.Context, id string) (*Message, err
 		select `+messageColumns+`
 		from messages where id = $1
 	`, id)
+	m, err := scanMessage(row)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	return m, err
+}
+
+// UpdateMessageBody edits a message's text. The sender check, the "not
+// retracted" check and the edit window (createdAfter) all sit in the WHERE
+// clause, so a retract or a second device racing this edit cannot slip past.
+// ErrNotFound when no row matched.
+func (r *ChatRepo) UpdateMessageBody(ctx context.Context, messageID, senderID, body string, flagged bool, createdAfter time.Time) (*Message, error) {
+	row := r.pool.QueryRow(ctx, `
+		update messages set body = $3, flagged = $4, edited_at = now()
+		where id = $1 and sender_id = $2 and retracted_at is null and created_at > $5
+		returning `+messageColumns+`
+	`, messageID, senderID, body, flagged, createdAfter)
+	m, err := scanMessage(row)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	return m, err
+}
+
+// RetractMessage marks a message as retracted, keeping its body in the table.
+// Idempotent: retracting again keeps the first retracted_at. ErrNotFound when
+// the message is not the sender's.
+func (r *ChatRepo) RetractMessage(ctx context.Context, messageID, senderID string) (*Message, error) {
+	row := r.pool.QueryRow(ctx, `
+		update messages set retracted_at = coalesce(retracted_at, now())
+		where id = $1 and sender_id = $2
+		returning `+messageColumns+`
+	`, messageID, senderID)
 	m, err := scanMessage(row)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
@@ -231,9 +283,10 @@ func (r *ChatRepo) ListMessages(ctx context.Context, conversationID string) ([]M
 	var messages []Message
 	for rows.Next() {
 		var m Message
-		if err := rows.Scan(&m.ID, &m.ConversationID, &m.SenderID, &m.Body, &m.Flagged, &m.ReplyToMessageID, &m.AttachmentURL, &m.AttachmentType, &m.CreatedAt, &m.DeliveredAt, &m.ReadAt); err != nil {
+		if err := rows.Scan(&m.ID, &m.ConversationID, &m.SenderID, &m.Body, &m.Flagged, &m.ReplyToMessageID, &m.AttachmentURL, &m.AttachmentType, &m.AttachmentName, &m.AttachmentSize, &m.CreatedAt, &m.DeliveredAt, &m.ReadAt, &m.EditedAt, &m.RetractedAt); err != nil {
 			return nil, err
 		}
+		m.blankIfRetracted()
 		messages = append(messages, m)
 	}
 	return messages, rows.Err()
@@ -241,9 +294,10 @@ func (r *ChatRepo) ListMessages(ctx context.Context, conversationID string) ([]M
 
 func scanMessage(row pgx.Row) (*Message, error) {
 	var m Message
-	if err := row.Scan(&m.ID, &m.ConversationID, &m.SenderID, &m.Body, &m.Flagged, &m.ReplyToMessageID, &m.AttachmentURL, &m.AttachmentType, &m.CreatedAt, &m.DeliveredAt, &m.ReadAt); err != nil {
+	if err := row.Scan(&m.ID, &m.ConversationID, &m.SenderID, &m.Body, &m.Flagged, &m.ReplyToMessageID, &m.AttachmentURL, &m.AttachmentType, &m.AttachmentName, &m.AttachmentSize, &m.CreatedAt, &m.DeliveredAt, &m.ReadAt, &m.EditedAt, &m.RetractedAt); err != nil {
 		return nil, err
 	}
+	m.blankIfRetracted()
 	return &m, nil
 }
 

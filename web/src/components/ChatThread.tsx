@@ -1,19 +1,21 @@
 "use client";
 
-import Image from "next/image";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { chatDayLabel, formatJam, sameDay } from "@/components/booking/format";
 import { describeConversation } from "@/components/ConversationList";
+import { AttachmentView } from "@/components/messages/AttachmentView";
+import { ATTACHMENT_ACCEPT, checkFile, uploadAttachment } from "@/components/messages/attachments";
 import { ChatSessionContext, ClosedMarker, ClosedNotice, MessageTicks } from "@/components/messages/ChatSession";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import {
+  apiDelete,
   apiGet,
+  apiPatch,
   apiPost,
-  apiPostForm,
   apiWsUrl,
   ApiError,
   type ChatMessage,
@@ -21,18 +23,23 @@ import {
   type ConversationReadEvent,
   type ConversationUpdatedEvent,
   type MessageStatus,
+  type MessageUpdatedEvent,
   type NewMessageEvent,
   type ReceiptsEvent,
 } from "@/lib/api";
 import { useReducedMotion } from "@/lib/motion";
 
-type IncomingEvent = NewMessageEvent | ConversationReadEvent | ReceiptsEvent | ConversationUpdatedEvent;
+type IncomingEvent = NewMessageEvent | MessageUpdatedEvent | ConversationReadEvent | ReceiptsEvent | ConversationUpdatedEvent;
 
 /** Without a live connection (e.g. serverless hosting) the thread polls:
  * every 4s while visible, every 16s in a background tab (enough to report
  * "Diterima" without waking the device for nothing). */
 const POLL_MS = 4000;
 const HIDDEN_POLL_EVERY = 4;
+
+/** The API enforces these; the menu only hides what would be refused. */
+const EDIT_WINDOW_MS = 15 * 60 * 1000;
+const RETRACT_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 const STATUS_RANK: Record<MessageStatus, number> = { sent: 0, delivered: 1, read: 2 };
 
@@ -110,6 +117,36 @@ export function ChatThread({
   const [sessionBusy, setSessionBusy] = useState(false);
   const [visible, setVisible] = useState(true);
   const [drafting, setDrafting] = useState(false);
+  // Per-message actions: which bubble's menu is open, the message being edited, the one awaiting a retract confirmation.
+  const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [editing, setEditing] = useState<ChatMessage | null>(null);
+  const [retractFor, setRetractFor] = useState<string | null>(null);
+  const [retracting, setRetracting] = useState(false);
+  // A file on its way to storage.
+  const [upload, setUpload] = useState<{ name: string; progress: number } | null>(null);
+  const uploadAbort = useRef<AbortController | null>(null);
+  // Re-evaluated every 30s so "Edit" disappears once its window has passed.
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const t = window.setInterval(() => setNowMs(Date.now()), 30_000);
+    return () => window.clearInterval(t);
+  }, []);
+  useEffect(() => {
+    if (!menuFor) return;
+    const close = (e: MouseEvent | KeyboardEvent) => {
+      if (e instanceof KeyboardEvent) {
+        if (e.key === "Escape") setMenuFor(null);
+        return;
+      }
+      if (!(e.target as HTMLElement).closest("[data-msg-menu]")) setMenuFor(null);
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, [menuFor]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
@@ -173,6 +210,9 @@ export function ChatThread({
         if (msg.sender_id !== currentUserId && !isVisible()) {
           apiPost(`/api/v1/conversations/${conversationId}/delivered`, {}).catch(() => {});
         }
+      } else if (data.type === "message.updated") {
+        const msg = data.message;
+        setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...msg, status: laterStatus(msg.status, m.status) } : m)));
       } else if (data.type === "receipts.updated") {
         const ids = new Set(data.message_ids);
         const status = data.status;
@@ -288,6 +328,10 @@ export function ChatThread({
   async function handleSend(e?: React.FormEvent) {
     e?.preventDefault();
     if (!body.trim() || sending) return;
+    if (editing) {
+      await saveEdit();
+      return;
+    }
     setSending(true);
     setError(null);
     try {
@@ -309,26 +353,86 @@ export function ChatThread({
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
+    const problem = checkFile(file);
+    if (problem) {
+      setError(problem);
+      return;
+    }
 
     setSending(true);
     setError(null);
+    setUpload({ name: file.name, progress: 0 });
+    const abort = new AbortController();
+    uploadAbort.current = abort;
     try {
-      const form = new FormData();
-      form.append("file", file);
-      const uploaded = await apiPostForm<{ url: string; type: string }>(`/api/v1/conversations/${conversationId}/attachments`, form);
+      const uploaded = await uploadAttachment(conversationId, file, (p) => setUpload({ name: file.name, progress: p }), abort.signal);
       const msg = await apiPost<ChatMessage>(`/api/v1/conversations/${conversationId}/messages`, {
         body,
         attachment_url: uploaded.url,
         attachment_type: uploaded.type,
+        attachment_name: uploaded.name,
+        attachment_size: uploaded.size,
         reply_to_message_id: replyingTo?.id,
       });
       setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
       setBody("");
       setReplyingTo(null);
     } catch (err) {
-      handleSendError(err, "Gagal mengunggah lampiran.");
+      if (!abort.signal.aborted) handleSendError(err, "Gagal mengunggah lampiran.");
+    } finally {
+      uploadAbort.current = null;
+      setUpload(null);
+      setSending(false);
+    }
+  }
+
+  function startEdit(m: ChatMessage) {
+    setMenuFor(null);
+    setReplyingTo(null);
+    setEditing(m);
+    setBody(m.body);
+    setError(null);
+    textRef.current?.focus();
+  }
+
+  function cancelEdit() {
+    setEditing(null);
+    setBody("");
+  }
+
+  async function saveEdit() {
+    if (!editing) return;
+    if (body.trim() === editing.body.trim()) {
+      cancelEdit();
+      return;
+    }
+    setSending(true);
+    setError(null);
+    try {
+      const msg = await apiPatch<ChatMessage>(`/api/v1/conversations/${conversationId}/messages/${editing.id}`, { body });
+      setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...msg, status: laterStatus(msg.status, m.status) } : m)));
+      setEditing(null);
+      setBody("");
+    } catch (err) {
+      handleSendError(err, "Pesan belum bisa diedit.");
     } finally {
       setSending(false);
+    }
+  }
+
+  async function retract(id: string) {
+    setRetracting(true);
+    try {
+      const msg = await apiDelete<ChatMessage>(`/api/v1/conversations/${conversationId}/messages/${id}`);
+      setMessages((prev) => prev.map((m) => (m.id === id ? { ...msg, status: laterStatus(msg.status, m.status) } : m)));
+      if (editing?.id === id) cancelEdit();
+      if (replyingTo?.id === id) setReplyingTo(null);
+      setRetractFor(null);
+    } catch (err) {
+      setRetractFor(null);
+      show(err instanceof ApiError ? err.message : "Pesan belum bisa ditarik. Coba lagi sebentar.", "danger");
+    } finally {
+      setRetracting(false);
     }
   }
 
@@ -349,6 +453,8 @@ export function ChatThread({
   }
 
   function startReply(m: ChatMessage) {
+    setMenuFor(null);
+    if (editing) cancelEdit();
     setReplyingTo(m);
     textRef.current?.focus();
   }
@@ -415,7 +521,10 @@ export function ChatThread({
                 const groupedWithPrev = !newDay && prev?.sender_id === m.sender_id;
                 const groupedWithNext = !!next && next.sender_id === m.sender_id && sameDay(next.created_at, m.created_at);
                 const fresh = initialIds !== null && !initialIds.has(m.id);
-                const isImage = !!m.attachment_url && !!m.attachment_type?.startsWith("image/");
+                const gone = !!m.retracted;
+                const age = nowMs - new Date(m.created_at).getTime();
+                const canEdit = mine && !gone && !!m.body && age < EDIT_WINDOW_MS;
+                const canRetract = mine && !gone && age < RETRACT_WINDOW_MS;
                 const corner = mine
                   ? `${groupedWithPrev ? "rounded-tr-md" : ""} ${groupedWithNext ? "rounded-br-md" : ""}`
                   : `${groupedWithPrev ? "rounded-tl-md" : ""} ${groupedWithNext ? "rounded-bl-md" : ""}`;
@@ -434,53 +543,91 @@ export function ChatThread({
                           }`}
                         >
                           <span className="sr-only">{mine ? "Kamu: " : "Mereka: "}</span>
-                          {m.reply_to && (
-                            <div className={`mb-1.5 rounded-lg px-2.5 py-1.5 text-xs ${mine ? "bg-dc-ink-3 text-dc-on-dark/85" : "bg-dc-cream text-dc-text-2"}`}>
-                              <span className={`block font-semibold ${mine ? "text-dc-gold-antique" : "text-dc-clay"}`}>
-                                {m.reply_to.sender_id === currentUserId ? "Kamu" : "Mereka"}
-                              </span>
-                              <span className="line-clamp-2 wrap-break-word">{m.reply_to.body || "Lampiran"}</span>
-                            </div>
+                          {gone ? (
+                            <span className={`italic ${mine ? "text-dc-on-dark/75" : "text-dc-text-2"}`}>Pesan ini ditarik</span>
+                          ) : (
+                            <>
+                              {m.reply_to && (
+                                <div className={`mb-1.5 rounded-lg px-2.5 py-1.5 text-xs ${mine ? "bg-dc-ink-3 text-dc-on-dark/85" : "bg-dc-cream text-dc-text-2"}`}>
+                                  <span className={`block font-semibold ${mine ? "text-dc-gold-antique" : "text-dc-clay"}`}>
+                                    {m.reply_to.sender_id === currentUserId ? "Kamu" : "Mereka"}
+                                  </span>
+                                  <span className={`line-clamp-2 wrap-break-word ${m.reply_to.retracted ? "italic" : ""}`}>
+                                    {m.reply_to.retracted ? "Pesan ditarik" : m.reply_to.body || "Lampiran"}
+                                  </span>
+                                </div>
+                              )}
+                              <AttachmentView message={m} mine={mine} />
+                              {m.body && <span className="whitespace-pre-wrap wrap-break-word">{m.body}</span>}
+                            </>
                           )}
-                          {m.attachment_url && isImage && (
-                            <a
-                              href={m.attachment_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={`-mx-1.5 mb-1.5 block overflow-hidden rounded-xl ${FOCUS}`}
-                              aria-label="Buka gambar lampiran ukuran penuh"
-                            >
-                              <Image src={m.attachment_url} alt="Lampiran gambar" width={240} height={240} unoptimized className="max-h-60 w-auto max-w-full object-cover" />
-                            </a>
-                          )}
-                          {m.attachment_url && !isImage && (
-                            <a
-                              href={m.attachment_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={`mb-1 inline-flex min-h-11 items-center font-semibold underline underline-offset-4 ${mine ? "text-dc-gold-antique" : "text-dc-clay"} ${FOCUS}`}
-                            >
-                              Buka lampiran
-                            </a>
-                          )}
-                          {m.body && <span className="whitespace-pre-wrap wrap-break-word">{m.body}</span>}
                           <span className={`ml-2 inline-flex translate-y-0.5 items-center gap-1 text-[0.68rem] tabular-nums ${mine ? "text-dc-on-dark/70" : "text-dc-text-3"}`}>
+                            {m.edited && !gone && <span>diedit</span>}
                             {formatJam(m.created_at)}
-                            {mine && <MessageTicks status={m.status} />}
+                            {mine && !gone && <MessageTicks status={m.status} />}
                           </span>
                         </div>
-                        {!closed && (
-                          <button
-                            type="button"
-                            onClick={() => startReply(m)}
-                            aria-label="Balas pesan"
-                            className={`${ICON_BTN} opacity-70 hover:opacity-100 focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100`}
-                          >
-                            <ReplyIcon />
-                          </button>
+                        {!closed && !gone && (
+                          <div className="relative flex items-center" data-msg-menu>
+                            <button
+                              type="button"
+                              onClick={() => startReply(m)}
+                              aria-label="Balas pesan"
+                              className={`${ICON_BTN} !h-9 !w-9 opacity-70 hover:opacity-100 focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100`}
+                            >
+                              <ReplyIcon />
+                            </button>
+                            {(canEdit || canRetract) && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => setMenuFor(menuFor === m.id ? null : m.id)}
+                                  aria-label="Aksi pesan"
+                                  aria-haspopup="menu"
+                                  aria-expanded={menuFor === m.id}
+                                  className={`${ICON_BTN} !h-9 !w-9 opacity-70 hover:opacity-100 focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100 ${menuFor === m.id ? "!opacity-100" : ""}`}
+                                >
+                                  <MoreIcon />
+                                </button>
+                                {menuFor === m.id && (
+                                  <div role="menu" className={`absolute bottom-full z-10 mb-1 w-40 overflow-hidden rounded-xl bg-white py-1 shadow-wd-pop ring-1 ring-wd-line ${mine ? "right-0" : "left-0"}`}>
+                                    {canEdit && (
+                                      <button type="button" role="menuitem" onClick={() => startEdit(m)} className={`flex min-h-11 w-full items-center px-3.5 text-left text-sm font-semibold text-wd-ink hover:bg-wd-blush ${FOCUS}`}>
+                                        Edit pesan
+                                      </button>
+                                    )}
+                                    {canRetract && (
+                                      <button
+                                        type="button"
+                                        role="menuitem"
+                                        onClick={() => {
+                                          setMenuFor(null);
+                                          setRetractFor(m.id);
+                                        }}
+                                        className={`flex min-h-11 w-full items-center px-3.5 text-left text-sm font-semibold text-wd-danger hover:bg-wd-blush ${FOCUS}`}
+                                      >
+                                        Tarik pesan
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
                         )}
                       </div>
-                      {m.flagged && (
+                      {retractFor === m.id && (
+                        <div role="alertdialog" aria-label="Tarik pesan" className="mt-1.5 flex flex-wrap items-center justify-end gap-2 text-xs text-dc-text-2">
+                          <span>Tarik pesan ini untuk semua orang?</span>
+                          <button type="button" onClick={() => setRetractFor(null)} className={`min-h-9 rounded-full px-3 font-semibold text-dc-ink hover:bg-dc-cream ${FOCUS}`}>
+                            Batal
+                          </button>
+                          <button type="button" onClick={() => retract(m.id)} disabled={retracting} aria-busy={retracting} className={`min-h-9 rounded-full bg-dc-ink px-4 font-semibold text-dc-on-dark disabled:opacity-60 ${FOCUS}`}>
+                            {retracting ? "Menarik..." : "Tarik"}
+                          </button>
+                        </div>
+                      )}
+                      {m.flagged && !gone && (
                         <p className={`mt-1.5 flex max-w-[86%] items-start gap-1.5 text-xs text-dc-clay sm:max-w-[72%] ${mine ? "text-right" : ""}`}>
                           <svg
                             width="13"
@@ -530,6 +677,35 @@ export function ChatThread({
             <ClosedNotice conversation={conversation} currentUserId={currentUserId} busy={sessionBusy} onReopen={() => setSession("reopen")} />
           ) : (
             <>
+              {editing && (
+                <div className="mx-3 mt-3 flex items-center gap-3 rounded-lg bg-dc-cream py-1 pl-3 pr-1">
+                  <div className="min-w-0 flex-1 text-xs">
+                    <p className="font-semibold text-dc-clay">Mengedit pesan</p>
+                    <p className="truncate text-dc-text-2">{editing.body}</p>
+                  </div>
+                  <button type="button" onClick={cancelEdit} aria-label="Batal mengedit" className={ICON_BTN}>
+                    <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <path d="M6 6l12 12M18 6 6 18" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+              {upload && (
+                <div role="status" className="mx-3 mt-3 flex items-center gap-3 rounded-lg bg-dc-cream py-1 pl-3 pr-1">
+                  <div className="min-w-0 flex-1 text-xs">
+                    <p className="truncate font-semibold text-dc-ink">Mengunggah {upload.name}</p>
+                    <div aria-hidden className="mt-1 h-1.5 overflow-hidden rounded-full bg-dc-line">
+                      <span className="block h-full rounded-full bg-dc-gold-antique transition-[width] duration-200" style={{ width: `${Math.round(upload.progress * 100)}%` }} />
+                    </div>
+                    <span className="sr-only">{Math.round(upload.progress * 100)} persen</span>
+                  </div>
+                  <button type="button" onClick={() => uploadAbort.current?.abort()} aria-label="Batalkan unggahan" className={ICON_BTN}>
+                    <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <path d="M6 6l12 12M18 6 6 18" />
+                    </svg>
+                  </button>
+                </div>
+              )}
               {replyingTo && (
                 <div className="mx-3 mt-3 flex items-center gap-3 rounded-lg bg-dc-cream py-1 pl-3 pr-1">
                   <div className="min-w-0 flex-1 text-xs">
@@ -561,8 +737,8 @@ export function ChatThread({
                 </div>
               )}
               <form onSubmit={handleSend} className="flex items-end gap-1.5 p-2.5 sm:gap-2 sm:p-3">
-                <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleAttachmentSelected} className="hidden" />
-                <button type="button" onClick={() => fileInputRef.current?.click()} aria-label="Lampirkan gambar" disabled={sending} className={ICON_BTN}>
+                <input ref={fileInputRef} type="file" accept={ATTACHMENT_ACCEPT} onChange={handleAttachmentSelected} className="hidden" />
+                <button type="button" onClick={() => fileInputRef.current?.click()} aria-label="Lampirkan foto, video, atau dokumen" disabled={sending || !!editing} className={ICON_BTN}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                     <path d="M21 12.5V7a3 3 0 0 0-3-3H6a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h9.5" />
                     <path d="M3 15l4.5-4.5a2 2 0 0 1 2.8 0L14 14M13 13l1.5-1.5a2 2 0 0 1 2.8 0L19 13" />
@@ -577,18 +753,22 @@ export function ChatThread({
                   onChange={(e) => setBody(e.target.value)}
                   onKeyDown={(e) => {
                     // Enter sends, Shift+Enter adds a line (skipped while an IME is composing).
+                    if (e.key === "Escape" && editing) {
+                      cancelEdit();
+                      return;
+                    }
                     if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
                       e.preventDefault();
                       handleSend();
                     }
                   }}
-                  placeholder="Tulis pesan"
-                  aria-label="Tulis pesan"
+                  placeholder={editing ? "Ubah pesan" : "Tulis pesan"}
+                  aria-label={editing ? "Ubah pesan" : "Tulis pesan"}
                   className="max-h-33 min-h-11 min-w-0 flex-1 resize-none rounded-[22px] border border-dc-line-strong bg-dc-ivory px-3.5 py-2 text-[0.875rem] leading-snug text-dc-black transition-[border-color,box-shadow] placeholder:text-dc-text-3 focus:border-dc-gold focus:shadow-[0_0_0_4px_rgba(184,146,74,0.18)] focus:outline-none"
                 />
                 <button
                   type="submit"
-                  aria-label="Kirim pesan"
+                  aria-label={editing ? "Simpan perubahan" : "Kirim pesan"}
                   disabled={sending || !body.trim()}
                   aria-busy={sending || undefined}
                   className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-dc-ink text-dc-on-dark transition-[background-color,transform] hover:bg-dc-ink-2 disabled:bg-dc-ink/40 motion-safe:active:scale-95 ${FOCUS}`}
@@ -632,6 +812,16 @@ function ReplyIcon() {
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M9 17l-5-5 5-5" />
       <path d="M4 12h10a6 6 0 0 1 6 6v1" />
+    </svg>
+  );
+}
+
+function MoreIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <circle cx="5" cy="12" r="1.7" />
+      <circle cx="12" cy="12" r="1.7" />
+      <circle cx="19" cy="12" r="1.7" />
     </svg>
   );
 }

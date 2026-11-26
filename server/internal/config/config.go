@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"strings"
 
@@ -22,6 +23,15 @@ type Config struct {
 	ResendFromEmail string
 
 	PublicAssetBaseURL string
+
+	// Cloudinary hosts chat attachments uploaded straight from the browser
+	// (server-signed, see internal/chat/cloudinary.go). Parsed from the single
+	// CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>; any
+	// part missing = not configured and all three stay empty, and the chat
+	// falls back to image-only uploads.
+	CloudinaryCloudName string
+	CloudinaryAPIKey    string
+	CloudinaryAPISecret string
 
 	SupabaseURL            string
 	SupabaseServiceRoleKey string
@@ -83,7 +93,9 @@ func Load() (*Config, error) {
 	_ = godotenv.Load("../.env")
 	_ = godotenv.Load(".env")
 
+	cloudName, cloudKey, cloudSecret := ParseCloudinaryURL(os.Getenv("CLOUDINARY_URL"))
 	cfg := &Config{
+		CloudinaryCloudName: cloudName, CloudinaryAPIKey: cloudKey, CloudinaryAPISecret: cloudSecret,
 		Port:               getEnv("PORT", "8080"),
 		DatabasePooler:     os.Getenv("DATABASE_POOLER"),
 		AppEnv:             getEnv("APP_ENV", "development"),
@@ -187,4 +199,22 @@ func allowedOrigins(raw string) []string {
 // AIEnabled reports whether the landing AI assistant has everything it needs.
 func (c *Config) AIEnabled() bool {
 	return c.AIBaseURL != "" && c.AIAPIKey != "" && c.AIModel != ""
+}
+
+// ParseCloudinaryURL splits cloudinary://<api_key>:<api_secret>@<cloud_name>.
+// It returns three empty strings unless all three parts are present. The
+// value is never logged or echoed in an error.
+func ParseCloudinaryURL(raw string) (cloudName, apiKey, apiSecret string) {
+	if raw == "" {
+		return "", "", ""
+	}
+	u, err := url.Parse(raw)
+	if err != nil || u.Scheme != "cloudinary" || u.User == nil {
+		return "", "", ""
+	}
+	secret, _ := u.User.Password()
+	if u.User.Username() == "" || secret == "" || u.Host == "" {
+		return "", "", ""
+	}
+	return u.Host, u.User.Username(), secret
 }

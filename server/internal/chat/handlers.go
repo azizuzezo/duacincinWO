@@ -81,6 +81,8 @@ type replyPreviewDTO struct {
 	ID       string `json:"id"`
 	SenderID string `json:"sender_id"`
 	Body     string `json:"body"`
+	// Retracted: the original was taken back; Body is then always empty.
+	Retracted bool `json:"retracted,omitempty"`
 }
 
 type messageDTO struct {
@@ -91,7 +93,13 @@ type messageDTO struct {
 	ReplyTo        *replyPreviewDTO `json:"reply_to,omitempty"`
 	AttachmentURL  *string          `json:"attachment_url,omitempty"`
 	AttachmentType *string          `json:"attachment_type,omitempty"`
-	CreatedAt      string           `json:"created_at"`
+	AttachmentName *string          `json:"attachment_name,omitempty"`
+	AttachmentSize *int64           `json:"attachment_size,omitempty"`
+	// Edited: the sender changed the text after sending. Retracted: the
+	// sender took the message back (body and attachment are then blank).
+	Edited    bool   `json:"edited"`
+	Retracted bool   `json:"retracted"`
+	CreatedAt string `json:"created_at"`
 	// Status is what the sender's ticks show: "sent" (stored), "delivered"
 	// (the other side's app fetched it) or "read" (they opened the thread).
 	Status      string  `json:"status"`
@@ -118,12 +126,31 @@ func messageStatus(m *repository.Message) string {
 }
 
 func toMessageDTO(m *repository.Message) messageDTO {
+	if m.Retracted() {
+		// Never trust the caller to have blanked it: nothing the message
+		// said may reach a client.
+		blank := *m
+		blank.Body, blank.Flagged = "", false
+		blank.AttachmentURL, blank.AttachmentType, blank.AttachmentName, blank.AttachmentSize = nil, nil, nil, nil
+		m = &blank
+	}
 	return messageDTO{
 		ID: m.ID, SenderID: m.SenderID, Body: m.Body, Flagged: m.Flagged,
 		AttachmentURL: m.AttachmentURL, AttachmentType: m.AttachmentType,
+		AttachmentName: m.AttachmentName, AttachmentSize: m.AttachmentSize,
+		Edited: m.EditedAt != nil, Retracted: m.Retracted(),
 		CreatedAt: m.CreatedAt.Format(timeLayout),
 		Status:    messageStatus(m), DeliveredAt: formatTime(m.DeliveredAt), ReadAt: formatTime(m.ReadAt),
 	}
+}
+
+// replyPreview is the quoted original; a retracted one is shown as retracted
+// with no text.
+func replyPreview(original *repository.Message) *replyPreviewDTO {
+	if original.Retracted() {
+		return &replyPreviewDTO{ID: original.ID, SenderID: original.SenderID, Retracted: true}
+	}
+	return &replyPreviewDTO{ID: original.ID, SenderID: original.SenderID, Body: original.Body}
 }
 
 // toMessageDTOWithReply is toMessageDTO plus a best-effort reply preview —
@@ -131,9 +158,9 @@ func toMessageDTO(m *repository.Message) messageDTO {
 // failing the whole response.
 func toMessageDTOWithReply(deps *Deps, ctx context.Context, m *repository.Message) messageDTO {
 	dto := toMessageDTO(m)
-	if m.ReplyToMessageID != nil {
+	if m.ReplyToMessageID != nil && !m.Retracted() {
 		if original, err := deps.Chat.GetMessageByID(ctx, *m.ReplyToMessageID); err == nil {
-			dto.ReplyTo = &replyPreviewDTO{ID: original.ID, SenderID: original.SenderID, Body: original.Body}
+			dto.ReplyTo = replyPreview(original)
 		}
 	}
 	return dto
@@ -355,6 +382,8 @@ type sendMessageRequest struct {
 	ReplyToMessageID *string `json:"reply_to_message_id,omitempty"`
 	AttachmentURL    *string `json:"attachment_url,omitempty"`
 	AttachmentType   *string `json:"attachment_type,omitempty"`
+	AttachmentName   *string `json:"attachment_name,omitempty"`
+	AttachmentSize   *int64  `json:"attachment_size,omitempty"`
 }
 
 func SendMessage(deps *Deps) http.HandlerFunc {
@@ -381,6 +410,20 @@ func SendMessage(deps *Deps) http.HandlerFunc {
 			httpx.Error(w, http.StatusBadRequest, "pesan tidak boleh kosong")
 			return
 		}
+		var attName *string
+		var attSize *int64
+		if req.AttachmentURL != nil {
+			if msg := validateAttachmentRef(deps.Cfg, conv.ID, *req.AttachmentURL, req.AttachmentType); msg != "" {
+				httpx.Error(w, http.StatusBadRequest, msg)
+				return
+			}
+			if n := sanitizeAttachmentName(req.AttachmentName); n != "" {
+				attName = &n
+			}
+			if req.AttachmentSize != nil && *req.AttachmentSize > 0 {
+				attSize = req.AttachmentSize
+			}
+		}
 		if req.ReplyToMessageID != nil {
 			original, err := deps.Chat.GetMessageByID(r.Context(), *req.ReplyToMessageID)
 			if err != nil || original.ConversationID != conv.ID {
@@ -392,7 +435,7 @@ func SendMessage(deps *Deps) http.HandlerFunc {
 		// The contact filter guards the couple-vendor and consultation
 		// channels; Admin and a vendor may share contact details freely.
 		flagged := conv.Type != repository.ConversationTypeAdminVendor && ContainsContactInfo(req.Body)
-		message, err := deps.Chat.CreateMessage(r.Context(), conv.ID, claims.UserID, req.Body, flagged, req.ReplyToMessageID, req.AttachmentURL, req.AttachmentType)
+		message, err := deps.Chat.CreateMessage(r.Context(), conv.ID, claims.UserID, req.Body, flagged, req.ReplyToMessageID, req.AttachmentURL, req.AttachmentType, attName, attSize)
 		if errors.Is(err, repository.ErrConversationClosed) {
 			httpx.Error(w, http.StatusConflict, msgSessionClosed)
 			return

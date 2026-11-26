@@ -242,6 +242,8 @@ export type ReplyPreview = {
   id: string;
   sender_id: string;
   body: string;
+  /** The quoted message was withdrawn by its sender. */
+  retracted?: boolean;
 };
 
 export type ChatMessage = {
@@ -252,7 +254,13 @@ export type ChatMessage = {
   reply_to?: ReplyPreview;
   attachment_url?: string;
   attachment_type?: string;
+  attachment_name?: string;
+  attachment_size?: number;
   created_at: string;
+  /** Text was changed after sending. */
+  edited?: boolean;
+  /** Withdrawn by the sender: body and attachment are gone. */
+  retracted?: boolean;
   /** Sender-side ticks: stored, reached the other side's app, opened by them. */
   status?: MessageStatus;
   delivered_at?: string;
@@ -483,6 +491,11 @@ export type ConversationReadEvent = {
 
 export type NewMessageEvent = {
   type: "message.new";
+  message: ChatMessage;
+};
+
+export type MessageUpdatedEvent = {
+  type: "message.updated";
   message: ChatMessage;
 };
 

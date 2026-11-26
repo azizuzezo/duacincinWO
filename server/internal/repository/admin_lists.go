@@ -107,7 +107,9 @@ func (r *ChatRepo) AdminListVendorChats(ctx context.Context, q, clientID, vendor
 		       lm.body, lm.attachment_type, lm.created_at, lm.sender_id::text
 		`+from+`
 		left join lateral (
-			select m.body, m.attachment_type, m.created_at, m.sender_id from messages m
+			select case when m.retracted_at is null then m.body else '' end as body,
+			       case when m.retracted_at is null then m.attachment_type end as attachment_type,
+			       m.created_at, m.sender_id from messages m
 			where m.conversation_id = c.id order by m.created_at desc limit 1
 		) lm on true
 		`+where+`

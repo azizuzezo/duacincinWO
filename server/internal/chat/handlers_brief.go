@@ -119,7 +119,7 @@ func SendBrief(deps *Deps) http.HandlerFunc {
 				skipped = append(skipped, briefSkipped{t.id, "chat tidak bisa dibuka"})
 				continue
 			}
-			message, err := deps.Chat.CreateMessage(ctx, conv.ID, claims.UserID, body, false, nil, nil, nil)
+			message, err := deps.Chat.CreateMessage(ctx, conv.ID, claims.UserID, body, false, nil, nil, nil, nil, nil)
 			if err != nil {
 				reason := "pesan tidak bisa dikirim"
 				if err == repository.ErrConversationClosed {
