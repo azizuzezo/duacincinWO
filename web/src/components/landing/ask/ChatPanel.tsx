@@ -4,7 +4,7 @@
 // follow-up chips, the save-your-plan prompt, and the composer at the foot.
 // Full height on /kirana.
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import Link from "next/link";
 
@@ -145,11 +145,42 @@ export function ChatPanel({
         .replace(/\*\*/g, "")
         .slice(0, 600);
 
-  useEffect(() => {
+  // Opening with a saved conversation: land on the latest message at once,
+  // before paint, instead of gliding down from the top. Later turns (new
+  // questions, streaming answers) still glide.
+  const opened = useRef(false);
+  useLayoutEffect(() => {
     const el = scroller.current;
-    if (!el || !stick.current) return;
+    if (!el || turns.length === 0) return;
+    if (!opened.current) {
+      opened.current = true;
+      el.scrollTop = el.scrollHeight;
+      return;
+    }
+    if (!stick.current) return;
     el.scrollTo({ top: el.scrollHeight, behavior: reduced ? "auto" : "smooth" });
   }, [turns, reduced]);
+
+  // Cards and photos in the history grow after they load: keep the view
+  // pinned to the bottom while the reader has not scrolled up.
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      if (stick.current) el.scrollTop = el.scrollHeight;
+    });
+    const watchAll = () => {
+      for (const child of Array.from(el.children)) ro.observe(child);
+    };
+    watchAll();
+    // New turns are added as new children: watch them too.
+    const mo = new MutationObserver(watchAll);
+    mo.observe(el, { childList: true });
+    return () => {
+      ro.disconnect();
+      mo.disconnect();
+    };
+  }, []);
 
   function onScroll() {
     const el = scroller.current;
