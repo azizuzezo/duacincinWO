@@ -37,7 +37,7 @@ export type Stage = {
 
 const STATIONS = [
   { label: "Masih di kamu", sub: "Belum ada dana berpindah" },
-  { label: "Ditahan escrow", sub: "Vendor belum menerima" },
+  { label: "Ditahan DuaCincin", sub: "Vendor belum menerima" },
   { label: "Diteruskan ke vendor", sub: "Setelah kamu konfirmasi" },
 ];
 

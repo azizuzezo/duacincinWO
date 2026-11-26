@@ -184,7 +184,7 @@ export default async function ArtikelPage({
                   Cari vendornya di DuaCincin
                 </h2>
                 <p className="mt-2 text-[0.95rem] leading-relaxed text-wd-text">
-                  Vendor terverifikasi, harga terbuka, pembayaran ditahan escrow
+                  Vendor terverifikasi, harga terbuka, pembayaran ditahan DuaCincin
                   sampai acaramu selesai.
                 </p>
                 <ul className="mt-4 flex flex-wrap gap-2">

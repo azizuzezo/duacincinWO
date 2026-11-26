@@ -24,7 +24,7 @@ export const CLIENT_PANEL: AuthPanel = {
       Satu akun untuk <em>seluruh persiapan</em>
     </>
   ),
-  bullets: ["Vendor diverifikasi tim DuaCincin", "Chat dan booking di satu tempat", "Dana ditahan escrow sampai acara selesai"],
+  bullets: ["Vendor diverifikasi tim DuaCincin", "Chat dan booking di satu tempat", "Dana ditahan DuaCincin sampai acara selesai"],
   photos: ["/photos/pinterest/pasangan-sofa-bunga.webp", "/photos/pinterest/dekorasi-taman.webp", "/photos/pinterest/rias-hijab.webp"],
 };
 

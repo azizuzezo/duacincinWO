@@ -17,7 +17,7 @@ const STAGE_BY_STATUS: Record<BookingStatus, Stage> = {
 
 const COPY: Record<Stage, { label: string; hint: string; step: number }> = {
   none: { label: "Belum ada pembayaran", hint: "Tidak ada dana yang berpindah.", step: 0 },
-  held: { label: "Dana ditahan escrow", hint: "Diteruskan ke vendor setelah acara selesai.", step: 1 },
+  held: { label: "Dana ditahan DuaCincin", hint: "Diteruskan ke vendor setelah acara selesai.", step: 1 },
   released: { label: "Dana diteruskan ke vendor", hint: "Acara sudah dikonfirmasi selesai.", step: 2 },
   returned: { label: "Booking dibatalkan", hint: "Dana mengikuti ketentuan pembatalan.", step: -1 },
 };

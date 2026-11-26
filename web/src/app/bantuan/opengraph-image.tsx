@@ -10,7 +10,7 @@ export default function Image() {
     {
       kind: "page",
       title: "Bantuan dan pertanyaan umum",
-      line: "Jawaban soal escrow, booking, sengketa, dan akun vendor.",
+      line: "Jawaban soal Dana Aman, booking, sengketa, dan akun vendor.",
     },
     { src: "/photos/pinterest/pendopo-kursi-tamu.webp", focusX: 0.5 },
   );

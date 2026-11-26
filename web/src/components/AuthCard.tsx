@@ -23,7 +23,7 @@ const SIDE_CONTENT: Record<Variant, { headline: string; script: string; bullets:
   client: {
     headline: "Rencanakan pernikahan",
     script: "tanpa drama",
-    bullets: ["Direktori vendor terverifikasi", "Budget planner dan wedding planner", "Pembayaran ditahan escrow sampai acara selesai"],
+    bullets: ["Direktori vendor terverifikasi", "Budget planner dan wedding planner", "Pembayaran ditahan DuaCincin sampai acara selesai"],
   },
   vendor: {
     headline: "Fokus pada karyamu,",
@@ -39,7 +39,7 @@ const SIDE_CONTENT: Record<Variant, { headline: string; script: string; bullets:
   register: {
     headline: "Mulai rencanakan",
     script: "hari bahagia",
-    bullets: ["Satu akun untuk vendor, budget, dan planner", "Vendor diverifikasi sebelum tampil", "Pembayaran ditahan escrow sampai acara selesai"],
+    bullets: ["Satu akun untuk vendor, budget, dan planner", "Vendor diverifikasi sebelum tampil", "Pembayaran ditahan DuaCincin sampai acara selesai"],
   },
   // Role-agnostic copy for the shared login page: the role is known only after submit.
   unified: {

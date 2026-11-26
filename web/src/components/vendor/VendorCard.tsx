@@ -9,7 +9,7 @@ const RATING = new Intl.NumberFormat("id-ID", { minimumFractionDigits: 1, maximu
  * Photo first: the portfolio sells, the text confirms. Only shows what the API
  * returns: price is the vendor's own price_min, and the rating appears only
  * when review_count > 0 (reviews come from completed bookings, so the number
- * is verified). "Bayar lewat escrow" is true for every booking made on
+ * is verified). "Bayar lewat Dana Aman" is true for every booking made on
  * DuaCincin, so it sits on every card as a solid chip on the photo.
  * `horizontal` is the wide list layout (photo left from `sm`). */
 export function VendorCard({ card, horizontal = false }: { card: DirectoryCard; horizontal?: boolean }) {
@@ -50,7 +50,7 @@ export function VendorCard({ card, horizontal = false }: { card: DirectoryCard; 
             <path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6l-7-3Z" />
             <path d="m9 12 2 2 4-4" />
           </svg>
-          Bayar lewat escrow
+          Bayar lewat Dana Aman
         </span>
       </div>
 

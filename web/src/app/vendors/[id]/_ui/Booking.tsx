@@ -167,7 +167,7 @@ export function BookingCard({
       <div className="mt-5 flex gap-3 rounded-[14px] bg-wd-accent-wash p-4">
         <Shield size={20} className="mt-0.5 shrink-0 text-wd-accent-ink" />
         <div>
-          <p className="text-sm font-semibold text-wd-ink">Uangmu dijaga escrow DuaCincin</p>
+          <p className="text-sm font-semibold text-wd-ink">Uangmu dijaga Dana Aman DuaCincin</p>
           <p className="mt-0.5 text-sm leading-relaxed text-wd-text">Dana ditahan dan baru diteruskan ke vendor setelah kamu mengonfirmasi acara selesai.</p>
         </div>
       </div>

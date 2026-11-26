@@ -48,7 +48,7 @@ export function VendorPicks() {
           id="pilihan-judul"
           as="h1"
           title="Vendor pernikahan terverifikasi"
-          sub="Diverifikasi tim DuaCincin, bayar aman lewat escrow."
+          sub="Diverifikasi tim DuaCincin, bayar lewat Dana Aman."
           seeAll={{ href: cat ? `/kategori/${cat}` : "/vendors", label: cat ? `Semua ${categoryLabel(cat)}` : "Semua vendor" }}
           cards={directory.status === "error" ? [] : shown}
           loading={directory.status === "loading"}

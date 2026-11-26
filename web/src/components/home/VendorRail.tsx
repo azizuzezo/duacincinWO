@@ -40,7 +40,7 @@ export function VendorCard({ card }: { card: DirectoryCard }) {
         )}
         <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-[0.72rem] font-semibold text-wd-ink">
           <Shield size={11} className="text-wd-accent-ink" />
-          Escrow
+          Dana Aman
         </span>
         {/* Hover / focus reveal: says what the click does. */}
         <span

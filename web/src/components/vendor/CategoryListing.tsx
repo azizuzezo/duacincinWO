@@ -275,7 +275,7 @@ function buildFaq({
 
   out.push({
     q: `Bagaimana cara booking vendor ${label} dengan aman?`,
-    a: `Pilih vendor, ngobrol lewat chat DuaCincin, lalu ajukan booking dengan tanggal dan paket yang disepakati. Pembayaranmu ditahan lewat escrow DuaCincin dan baru diteruskan ke vendor setelah acaramu selesai, jadi uangmu tetap aman bila ada masalah.`,
+    a: `Pilih vendor, ngobrol lewat chat DuaCincin, lalu ajukan booking dengan tanggal dan paket yang disepakati. Pembayaranmu ditahan lewat Dana Aman DuaCincin dan baru diteruskan ke vendor setelah acaramu selesai, jadi uangmu tetap aman bila ada masalah.`,
   });
   return out;
 }

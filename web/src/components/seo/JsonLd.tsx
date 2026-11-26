@@ -16,7 +16,7 @@ export const ORGANIZATION_LD = {
   legalName: "PT Karsa Loka Semesta",
   url: SITE_URL,
   description:
-    "DuaCincin adalah marketplace vendor pernikahan di Indonesia: direktori vendor terverifikasi, chat dan booking, serta pembayaran escrow yang ditahan sampai acara selesai.",
+    "DuaCincin adalah marketplace vendor pernikahan di Indonesia: direktori vendor terverifikasi, chat dan booking, serta Dana Aman (escrow) yang ditahan sampai acara selesai.",
   // Square raster logo (PNG) for search engines; WebP-only logos are not always read.
   logo: { "@type": "ImageObject", url: `${SITE_URL}/email/logo.png`, width: 192, height: 192 },
   areaServed: { "@type": "Country", name: "Indonesia" },

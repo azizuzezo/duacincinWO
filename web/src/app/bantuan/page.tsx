@@ -11,7 +11,7 @@ import { JsonLd, webPageLd } from "@/components/seo/JsonLd";
 
 export const metadata: Metadata = {
   title: "Bantuan dan pertanyaan umum",
-  description: "Jawaban atas pertanyaan yang sering muncul soal escrow, booking, sengketa, dan akun vendor di DuaCincin.",
+  description: "Jawaban atas pertanyaan yang sering muncul soal Dana Aman (escrow), booking, sengketa, dan akun vendor di DuaCincin.",
   alternates: { canonical: "/bantuan" },
 };
 
@@ -32,7 +32,7 @@ const faq = (q: string, text: string, a?: React.ReactNode): Faq => ({ q, text, a
 const TOPICS: Topic[] = [
   {
     key: "pembayaran",
-    label: "Pembayaran dan escrow",
+    label: "Pembayaran dan Dana Aman",
     items: [
       faq(
         "Kapan uangku sampai ke vendor?",
@@ -44,11 +44,11 @@ const TOPICS: Topic[] = [
       ),
       faq(
         "Berapa DP yang harus dibayar?",
-        "DP 30% dari harga yang kamu sepakati dengan vendor, dibayar lewat DuaCincin setelah vendor mengonfirmasi booking. Sisanya kamu lunasi sebelum technical meeting. Keduanya ditahan escrow sampai acara selesai.",
+        "DP 30% dari harga yang kamu sepakati dengan vendor, dibayar lewat DuaCincin setelah vendor mengonfirmasi booking. Sisanya kamu lunasi sebelum technical meeting. Keduanya ditahan DuaCincin sampai acara selesai.",
       ),
       faq(
         "Boleh bayar langsung ke rekening vendor?",
-        "Tidak disarankan. Pembayaran di luar DuaCincin tidak dilindungi escrow dan tidak tercatat kalau terjadi sengketa. Vendor juga terikat perjanjian yang melarang transaksi di luar platform.",
+        "Tidak disarankan. Pembayaran di luar DuaCincin tidak dilindungi Dana Aman dan tidak tercatat kalau terjadi sengketa. Vendor juga terikat perjanjian yang melarang transaksi di luar platform.",
       ),
     ],
   },
@@ -106,7 +106,7 @@ const TOPICS: Topic[] = [
       ),
       faq(
         "Kapan dana dicairkan ke vendor?",
-        "Setelah client mengonfirmasi acaranya selesai. Dana DP dan pelunasan yang ditahan escrow diteruskan ke vendor sebesar harga yang ditetapkan vendor, dan tercatat di halaman Pencairan.",
+        "Setelah client mengonfirmasi acaranya selesai. Dana DP dan pelunasan yang ditahan DuaCincin diteruskan ke vendor sebesar harga yang ditetapkan vendor, dan tercatat di halaman Pencairan.",
       ),
     ],
   },
@@ -115,7 +115,7 @@ const TOPICS: Topic[] = [
 export default function BantuanPage() {
   return (
     <PublicShell>
-      <JsonLd data={webPageLd("WebPage", "/bantuan", "Bantuan DuaCincin", "Jawaban atas pertanyaan soal escrow, booking, sengketa, dan akun vendor di DuaCincin.")} />
+      <JsonLd data={webPageLd("WebPage", "/bantuan", "Bantuan DuaCincin", "Jawaban atas pertanyaan soal Dana Aman (escrow), booking, sengketa, dan akun vendor di DuaCincin.")} />
       {/* The questions and answers shown on this page, word for word. */}
       <JsonLd
         data={{

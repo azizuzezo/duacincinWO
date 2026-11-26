@@ -24,10 +24,10 @@ const STEP_MS = 7000;
 const FEATURES = [
   {
     id: "escrow",
-    title: "Dana aman sampai acara selesai",
+    title: "Dana Aman sampai acara selesai",
     body: "DP dan pelunasan ditahan DuaCincin, baru diteruskan ke vendor setelah kamu konfirmasi acara selesai.",
     phone: "/showcase/booking-phone.webp",
-    phoneAlt: "Perjalanan booking di ponsel dengan status pembayaran escrow",
+    phoneAlt: "Perjalanan booking di ponsel dengan status Dana Aman",
     photo: "/photos/pinterest/pelaminan-kristal.webp",
   },
   {
@@ -112,7 +112,7 @@ export function Features() {
                 Satu akun, dari cari vendor <em>sampai hari-H</em>
               </>
             }
-            action={<SeeAll href="/cara-kerja">Cara kerja escrow</SeeAll>}
+            action={<SeeAll href="/cara-kerja">Cara kerja Dana Aman</SeeAll>}
           />
         </Reveal>
 

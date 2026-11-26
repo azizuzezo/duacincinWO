@@ -38,8 +38,8 @@ const PRINCIPLES: Principle[] = [
     id: "aman",
     title: "Aman, tanpa takut vendor nakal",
     body: "Vendor ditinjau Admin sebelum tampil, dan DP serta pelunasan ditahan DuaCincin. Dana baru diteruskan setelah kamu mengonfirmasi acara selesai.",
-    link: { href: "/cara-kerja", label: "Lihat cara kerja escrow" },
-    screen: { src: `${SHOT}/k4-dp.webp`, alt: "Detail booking berstatus DP dibayar, dana ditahan escrow" },
+    link: { href: "/cara-kerja", label: "Lihat cara kerja Dana Aman" },
+    screen: { src: `${SHOT}/k4-dp.webp`, alt: "Detail booking berstatus DP dibayar, dana ditahan DuaCincin" },
   },
   {
     id: "vendor",
@@ -152,7 +152,7 @@ export default function TentangKamiPage() {
                     {[
                       {
                         t: "Aman dari vendor nakal",
-                        d: "Vendor ditinjau, dana ditahan escrow",
+                        d: "Vendor ditinjau, dana ditahan DuaCincin",
                         icon: <path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6l-7-3Zm-3 9 2 2 4-4" />,
                       },
                       {
@@ -249,7 +249,7 @@ export default function TentangKamiPage() {
                     <span className="flex flex-col p-7">
                       <span className="inline-flex w-fit rounded-full bg-wd-accent-soft px-3 py-1 text-xs font-semibold text-wd-accent-ink">duacincin.id</span>
                       <span className="wd-title mt-3 block text-[1.4rem] leading-snug">Marketplace vendor dan wedding planner</span>
-                      <span className="mt-2 block leading-relaxed text-wd-text">Cari vendor, chat, booking dengan escrow, lalu atur anggaran, tamu, dan rundown di akun yang sama.</span>
+                      <span className="mt-2 block leading-relaxed text-wd-text">Cari vendor, chat, booking dengan Dana Aman, lalu atur anggaran, tamu, dan rundown di akun yang sama.</span>
                       <span className="mt-auto inline-flex items-center gap-2 pt-5 text-[0.95rem] font-semibold text-wd-ink">
                         Cari vendor
                         <ArrowRight />

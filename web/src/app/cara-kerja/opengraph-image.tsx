@@ -10,7 +10,7 @@ export default function Image() {
     {
       kind: "page",
       title: "Dari pilih vendor sampai hari-H",
-      line: "Pembayaranmu ditahan escrow dan baru diteruskan ke vendor setelah acara selesai.",
+      line: "Pembayaranmu ditahan DuaCincin dan baru diteruskan ke vendor setelah acara selesai.",
     },
     { src: "/photos/pinterest/akad-joglo-lorong.webp", focusX: 0.5 },
   );

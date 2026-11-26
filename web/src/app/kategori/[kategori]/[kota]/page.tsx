@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const n = !failed && cards.length > 0 ? `${cards.length} vendor ` : "";
   return {
     title: `Vendor ${label} Pernikahan di ${city}`,
-    description: `Bandingkan ${n}vendor ${label} pernikahan di ${city}: portofolio, harga mulai dari, ulasan, dan pembayaran aman lewat escrow DuaCincin.`,
+    description: `Bandingkan ${n}vendor ${label} pernikahan di ${city}: portofolio, harga mulai dari, ulasan, dan pembayaran aman lewat Dana Aman (escrow) DuaCincin.`,
     alternates: { canonical: `/kategori/${kategori}/${citySlug(city)}` },
     // Too few vendors to be a useful result: reachable, but not indexed.
     ...(!failed && cards.length < MIN_VENDORS_TO_INDEX && { robots: { index: false, follow: true } }),

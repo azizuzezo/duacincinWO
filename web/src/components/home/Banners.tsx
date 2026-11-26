@@ -42,7 +42,7 @@ const BASE: Banner[] = [
     img: "/banner/foto-escrow",
     pos: "object-[80%_50%]",
     tone: "light",
-    kicker: "Pembayaran escrow",
+    kicker: "Dana Aman",
     title: "Bayar vendor dengan tenang",
     line: "DP dan pelunasan ditahan DuaCincin sampai acaramu selesai.",
     cta: "Lihat cara kerjanya",

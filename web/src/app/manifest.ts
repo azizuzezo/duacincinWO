@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "DuaCincin",
     short_name: "DuaCincin",
-    description: "Direktori vendor pernikahan terverifikasi, budget planner, dan pembayaran escrow.",
+    description: "Direktori vendor pernikahan terverifikasi, budget planner, dan Dana Aman (escrow).",
     lang: "id",
     start_url: "/",
     display: "standalone",

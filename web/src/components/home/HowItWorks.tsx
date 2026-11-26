@@ -68,7 +68,7 @@ function IconPlanner() {
 
 const BENEFITS = [
   { title: "Vendor diverifikasi", body: "Setiap vendor ditinjau tim DuaCincin sebelum tampil di direktori.", icon: <IconShield /> },
-  { title: "Dana aman", body: "DP dan pelunasan ditahan escrow sampai kamu konfirmasi acara selesai.", icon: <IconWallet /> },
+  { title: "Dana Aman", body: "DP dan pelunasan ditahan DuaCincin sampai kamu konfirmasi acara selesai.", icon: <IconWallet /> },
   { title: "Chat langsung", body: "Tanya tanggal, paket, dan harga. Riwayatnya tersimpan di akunmu.", icon: <IconChat /> },
   { title: "Sesuai budget", body: "Budget planner dan wedding consultant bantu pilih yang pas.", icon: <IconPlanner /> },
 ];
@@ -168,7 +168,7 @@ function StepDone() {
 const STEPS = [
   { n: "01", art: <StepSearch />, text: "Cari dan bandingkan vendor, lalu buka profilnya." },
   { n: "02", art: <StepChat />, text: "Chat dengan vendor, sepakati tanggal dan paket, lalu ajukan booking." },
-  { n: "03", art: <StepEscrow />, text: "Bayar DP ke escrow. Dana ditahan DuaCincin, belum sampai ke vendor." },
+  { n: "03", art: <StepEscrow />, text: "Bayar DP lewat Dana Aman. Uang ditahan DuaCincin, belum sampai ke vendor." },
   { n: "04", art: <StepDone />, text: "Acara selesai, kamu konfirmasi, dana diteruskan ke vendor." },
 ];
 
@@ -195,7 +195,7 @@ export function HowItWorks() {
               ))}
             </ul>
             <div className="mx-auto hidden w-[230px] lg:block">
-              <PhoneFrame src="/showcase/booking-phone.webp" alt="Layar booking DuaCincin dengan status pembayaran escrow" sizes="230px" />
+              <PhoneFrame src="/showcase/booking-phone.webp" alt="Layar booking DuaCincin dengan status Dana Aman" sizes="230px" />
             </div>
           </div>
         </Reveal>

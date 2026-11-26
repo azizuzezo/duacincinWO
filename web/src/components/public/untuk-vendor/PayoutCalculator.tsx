@@ -34,13 +34,13 @@ export function PayoutCalculator() {
     {
       when: "Client bayar DP (30%)",
       amount: dp,
-      state: "Ditahan escrow",
+      state: "Ditahan DuaCincin",
       tone: "gold",
     },
     {
       when: "Client melunasi sisanya",
       amount: rest,
-      state: "Ditahan escrow",
+      state: "Ditahan DuaCincin",
       tone: "gold",
     },
     {

@@ -26,7 +26,7 @@ import { ArrowRight, wdButton } from "./ui";
 const LINKS = [
   { href: "/inspirasi", label: "Inspirasi" },
   { href: "/artikel", label: "Artikel" },
-  { href: "/cara-kerja", label: "Cara kerja escrow" },
+  { href: "/cara-kerja", label: "Cara kerja Dana Aman" },
   { href: "/kirana", label: "Tanya Kirana" },
   { href: "/untuk-vendor", label: "Untuk vendor" },
 ];

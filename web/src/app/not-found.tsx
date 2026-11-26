@@ -25,7 +25,7 @@ const KNOWN: KnownPage[] = [
   { path: "/inspirasi", label: "Inspirasi" },
   { path: "/artikel", label: "Artikel" },
   { path: "/bantuan", label: "Bantuan" },
-  { path: "/cara-kerja", label: "Cara kerja escrow" },
+  { path: "/cara-kerja", label: "Cara kerja Dana Aman" },
   { path: "/untuk-vendor", label: "Untuk vendor" },
   { path: "/tentang-kami", label: "Tentang kami" },
   { path: "/kredit", label: "Kredit foto" },

@@ -54,7 +54,7 @@ const SITE_LD = {
 export const metadata: Metadata = {
   title: { absolute: "DuaCincin: Vendor Pernikahan Terverifikasi di Indonesia" },
   description:
-    "Cari vendor pernikahan terverifikasi: venue, katering, MUA, foto, dekorasi. Bandingkan harga, chat langsung, dan bayar aman lewat escrow DuaCincin.",
+    "Cari vendor pernikahan terverifikasi: venue, katering, MUA, foto, dekorasi. Bandingkan harga, chat langsung, dan bayar aman lewat Dana Aman (escrow) DuaCincin.",
   alternates: { canonical: "/" },
 };
 

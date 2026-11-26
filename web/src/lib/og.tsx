@@ -276,7 +276,7 @@ function Card({ content, photo, logoSrc }: CardProps) {
               tanpa was-was.
             </div>
             <div style={{ ...body, fontSize: 22, marginTop: 22, maxWidth: 548, display: "flex" }}>
-              Vendor terverifikasi, booking lewat chat, pembayaran ditahan escrow sampai acara selesai.
+              Vendor terverifikasi, booking lewat chat, pembayaran ditahan DuaCincin sampai acara selesai.
             </div>
           </div>
         ) : (
@@ -341,7 +341,7 @@ function titleSize(text: string): number {
 
 function cardText(content: CardContent): string {
   if (content.kind === "brand")
-    return "Hari bahagia kalian, disiapkan tanpa was-was. Vendor terverifikasi, booking lewat chat, pembayaran ditahan escrow sampai acara selesai.";
+    return "Hari bahagia kalian, disiapkan tanpa was-was. Vendor terverifikasi, booking lewat chat, pembayaran ditahan DuaCincin sampai acara selesai.";
   if (content.kind === "page") return `${content.title} ${content.line ?? ""}`;
   return `${content.name} ${content.where} Portofolio, paket, dan booking di DuaCincin.`;
 }

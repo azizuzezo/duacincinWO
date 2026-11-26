@@ -120,7 +120,7 @@ export function VendorDirectory({ search, initialCards }: { search: DirectoryPar
               id="direktori-judul"
               crumbs={[{ name: "Beranda", href: "/" }, ...(category ? [{ name: "Vendor", href: "/vendors" }, { name: label }] : [{ name: "Vendor" }])]}
               title={title}
-              sub="Lihat portofolio dan harga mulai dari, lalu bayar aman lewat escrow DuaCincin."
+              sub="Lihat portofolio dan harga mulai dari, lalu bayar lewat Dana Aman DuaCincin."
               image={category && CATEGORY_ART[category] ? CATEGORY_ART[category].src : "/banner/foto-venue-taman.webp"}
               focus={category ? CATEGORY_ART[category]?.focus : "55% 70%"}
             />
@@ -215,7 +215,7 @@ export function VendorDirectory({ search, initialCards }: { search: DirectoryPar
 
                 {ready && visible.length > 0 && (
                   <p className="mt-12 text-center text-[0.9rem] text-wd-text">
-                    Ingin tahu cara booking dan escrow bekerja?{" "}
+                    Ingin tahu cara booking dan Dana Aman bekerja?{" "}
                     <Link href="/cara-kerja" className={TEXT_LINK}>
                       Baca cara kerja DuaCincin
                     </Link>

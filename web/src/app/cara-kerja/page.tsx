@@ -16,7 +16,7 @@ import { breadcrumbLd, JsonLd, webPageLd } from "@/components/seo/JsonLd";
 export const metadata: Metadata = {
   title: "Cara kerja dari pilih vendor sampai hari-H",
   description:
-    "Tujuh tahap pemesanan di DuaCincin, dan di mana uangmu berada pada setiap tahap: ditahan escrow sampai acara selesai.",
+    "Tujuh tahap pemesanan di DuaCincin, dan di mana uangmu berada pada setiap tahap: ditahan DuaCincin sampai acara selesai (Dana Aman, atau escrow).",
   alternates: { canonical: "/cara-kerja" },
 };
 
@@ -54,7 +54,7 @@ const STAGES: Stage[] = [
     where: "Booking, dari halaman vendor",
     screen: {
       src: `${SHOT}/k3-vendor.webp`,
-      alt: "Halaman vendor dengan pilihan tanggal, tombol ajukan booking, dan penjelasan escrow",
+      alt: "Halaman vendor dengan pilihan tanggal, tombol ajukan booking, dan penjelasan Dana Aman",
     },
   },
   {
@@ -117,7 +117,7 @@ export default function CaraKerjaPage() {
           "WebPage",
           "/cara-kerja",
           "Cara kerja DuaCincin",
-          "Tahap pemesanan vendor di DuaCincin dan di mana uangmu berada pada setiap tahap (escrow).",
+          "Tahap pemesanan vendor di DuaCincin dan di mana uangmu berada pada setiap tahap (Dana Aman atau escrow).",
         )}
       />
       <JsonLd
@@ -128,8 +128,8 @@ export default function CaraKerjaPage() {
       />
       <div className="wd">
         <PageHero
-          crumbs={[{ name: "Cara kerja escrow" }]}
-          title="Cara kerja escrow"
+          crumbs={[{ name: "Cara kerja Dana Aman" }]}
+          title="Cara kerja Dana Aman"
           sub="Tujuh tahap dari chat pertama sampai hari-H. Dana baru diteruskan ke vendor setelah acaramu selesai."
           image="/banner/foto-escrow.webp"
           focus="75% 50%"
@@ -177,7 +177,7 @@ export default function CaraKerjaPage() {
                       Bayar di luar DuaCincin
                     </p>
                     <p className="mt-1 leading-relaxed text-wd-text">
-                      Transfer langsung ke vendor tidak dilindungi escrow. Chat
+                      Transfer langsung ke vendor tidak dilindungi Dana Aman. Chat
                       mengingatkanmu sejak pesan pertama.
                     </p>
                   </li>

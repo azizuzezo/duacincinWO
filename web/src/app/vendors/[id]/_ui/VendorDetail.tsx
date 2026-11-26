@@ -307,7 +307,7 @@ export function VendorDetail({
                       )}
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-wd-accent-soft px-3 py-1 text-sm font-semibold text-wd-accent-ink">
                         <Shield size={14} />
-                        Pembayaran escrow
+                        Dana Aman
                       </span>
                       {profile.status === "approved" && (
                         <span className="inline-flex items-center gap-1.5 rounded-full border border-wd-line-2 px-3 py-1 text-sm font-medium text-wd-ok">
@@ -426,7 +426,7 @@ export function VendorDetail({
                     <p className="mt-2 max-w-xl text-wd-text">Semua chat, kesepakatan, dan pembayaran tercatat di satu tempat, jadi ada bukti bila terjadi masalah.</p>
                     <div className="mt-6 grid gap-8 md:grid-cols-2">
                       <div>
-                        <p className="mb-4 text-sm font-semibold text-wd-accent-ink">Alur dana escrow</p>
+                        <p className="mb-4 text-sm font-semibold text-wd-accent-ink">Alur Dana Aman</p>
                         <EscrowSteps />
                       </div>
                       <ul className="grid content-start gap-5">

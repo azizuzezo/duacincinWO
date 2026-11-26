@@ -20,7 +20,7 @@ import { LIFT, ZOOM } from "@/components/public/shared/styles";
 import { VENDOR_CATEGORIES } from "@/lib/api";
 
 export const metadata: Metadata = {
-  title: "Untuk vendor: terima booking dan pembayaran lewat escrow",
+  title: "Untuk vendor: terima booking dan pembayaran lewat Dana Aman",
   description:
     "Daftarkan profil dan portofolio usaha pernikahanmu di DuaCincin, terima booking lewat chat, dan terima pembayaran setelah acara selesai dikonfirmasi.",
   alternates: { canonical: "/untuk-vendor" },
@@ -78,7 +78,7 @@ const SHOWCASE: ShowcaseItem[] = [
     title: "Detail booking",
     body: "Paket, tanggal, harga, DP dan pelunasan, plus langkah berikutnya untuk setiap booking.",
     src: `${SHOT}/v-booking.webp`,
-    alt: "Detail booking Paket Rias Paes Ageng: DP sudah masuk escrow, rincian DP dan pelunasan",
+    alt: "Detail booking Paket Rias Paes Ageng: DP sudah masuk Dana Aman, rincian DP dan pelunasan",
     address: "duacincin.id/vendor/bookings",
     phoneSrc: `${SHOT}/v-booking-m.webp`,
   },
@@ -94,9 +94,9 @@ const SHOWCASE: ShowcaseItem[] = [
   {
     id: "pencairan",
     title: "Pencairan",
-    body: "Dana yang ditahan escrow, yang siap ditransfer, dan riwayat lengkap setiap pencairan.",
+    body: "Dana yang ditahan DuaCincin, yang siap ditransfer, dan riwayat lengkap setiap pencairan.",
     src: `${SHOT}/v-pencairan.webp`,
-    alt: "Halaman pencairan: dana ditahan escrow dan riwayat pencairan dengan harga booking dan komisi",
+    alt: "Halaman pencairan: dana ditahan DuaCincin dan riwayat pencairan dengan harga booking dan komisi",
     address: "duacincin.id/vendor/payouts",
     phoneSrc: `${SHOT}/v-pencairan-m.webp`,
   },
@@ -164,7 +164,7 @@ const FACTS: { v: string | number; k: string; d: string }[] = [
     k: "Komisi standar",
     d: "Ditambahkan di atas hargamu. Harga paketmu diterima utuh.",
   },
-  { v: 30, k: "DP dari client", d: "Ditahan escrow bersama pelunasannya." },
+  { v: 30, k: "DP dari client", d: "Ditahan DuaCincin bersama pelunasannya." },
   {
     v: "Setelah acara",
     k: "Dana cair",

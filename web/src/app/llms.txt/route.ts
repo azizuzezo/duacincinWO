@@ -11,11 +11,11 @@ export function GET() {
   const lines = [
     "# DuaCincin",
     "",
-    `> Marketplace vendor pernikahan di Indonesia: direktori vendor terverifikasi per kategori dan kota, chat dan booking langsung dengan vendor, serta pembayaran escrow yang ditahan DuaCincin sampai acara selesai. Dikelola ${COMPANY.name}.`,
+    `> Marketplace vendor pernikahan di Indonesia: direktori vendor terverifikasi per kategori dan kota, chat dan booking langsung dengan vendor, serta Dana Aman (escrow) yang ditahan DuaCincin sampai acara selesai. Dikelola ${COMPANY.name}.`,
     "",
     "## Mulai di sini",
     `- [Direktori vendor](${SITE}/vendors): semua vendor terverifikasi, bisa disaring per kategori, kota, dan budget`,
-    `- [Cara kerja escrow](${SITE}/cara-kerja): tahap pemesanan dan di mana uang calon pengantin berada di setiap tahap`,
+    `- [Cara kerja Dana Aman (escrow)](${SITE}/cara-kerja): tahap pemesanan dan di mana uang calon pengantin berada di setiap tahap`,
     `- [Kirana, asisten AI pernikahan](${SITE}/kirana): tanya budget, vendor terdaftar di kotamu, dan urutan persiapan`,
     `- [Bantuan](${SITE}/bantuan): pertanyaan umum soal pembayaran, booking, sengketa, dan akun vendor`,
     `- [Untuk vendor](${SITE}/untuk-vendor): cara vendor pernikahan bergabung`,

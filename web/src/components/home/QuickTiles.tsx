@@ -47,7 +47,7 @@ export function QuickTiles({ kirana }: { kirana: boolean }) {
     { href: "https://invitation.duacincin.id", title: "Digital Invitation", sub: "Pilih tema, data terisi", icon: I.invite, bg: "bg-[linear-gradient(135deg,#efe6dc,#dccbb8)]", external: true },
     kirana
       ? { href: "/kirana", title: "Tanya Kirana", sub: "Asisten AI DuaCincin", icon: I.chat, bg: "bg-[linear-gradient(135deg,#f5efe3,#e6d5b4)]" }
-      : { href: "/cara-kerja", title: "Bayar aman", sub: "Cara kerja escrow", icon: I.shield, bg: "bg-[linear-gradient(135deg,#f5efe3,#e6d5b4)]" },
+      : { href: "/cara-kerja", title: "Dana Aman", sub: "Cara kerjanya", icon: I.shield, bg: "bg-[linear-gradient(135deg,#f5efe3,#e6d5b4)]" },
   ];
   return (
     <nav aria-label="Pintasan" className="bg-white pt-6">
