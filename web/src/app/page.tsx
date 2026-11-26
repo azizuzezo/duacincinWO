@@ -12,7 +12,10 @@ import { HomeNav } from "@/components/home/HomeNav";
 import { Inspiration } from "@/components/home/Inspiration";
 import { PromoInvitation } from "@/components/home/PromoInvitation";
 import { QuickTiles } from "@/components/home/QuickTiles";
-import { CategoryRows, VendorPicks } from "@/components/home/Vendors";
+import { CategoryRows } from "@/components/home/Vendors";
+import { HowStrip } from "@/components/home/HowStrip";
+import { Marketplace } from "@/components/home/Marketplace";
+import { SearchHub } from "@/components/home/SearchHub";
 import { fetchAskEnabled } from "@/components/landing/ask/AskAISection";
 import { KiranaLauncher } from "@/components/landing/ask/KiranaLauncher";
 import { JsonLd, ORGANIZATION_LD } from "@/components/seo/JsonLd";
@@ -67,16 +70,18 @@ export default async function Page() {
       <HomeNav />
       <main id="konten" className="flex-1">
         <JsonLd data={SITE_LD} />
+        <SearchHub />
         <Banners kirana={askEnabled} />
-        <QuickTiles kirana={askEnabled} />
-        <VendorPicks />
+        <Marketplace />
+        <HowStrip />
         <Categories />
         <CategoryRows max={2} />
-        <HowItWorks />
+        <QuickTiles kirana={askEnabled} />
         <PromoInvitation />
-        <Features />
-        <BudgetTool />
         <CategoryRows max={1} skip={2} />
+        <BudgetTool />
+        <HowItWorks />
+        <Features />
         <Inspiration />
         <Articles />
         <ForVendors />
