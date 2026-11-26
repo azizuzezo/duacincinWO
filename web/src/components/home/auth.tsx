@@ -6,13 +6,12 @@
 // rests (hidden on phones, still under reduced motion). The root carries
 // data-wd-public so the older shared pieces used inside (OtpInput,
 // AgreementCheckbox, Google button divider) pick up the Putih palette.
-import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { forwardRef, useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 import { BrandLogo } from "@/components/ui/BrandLogo";
-import { dissolve, useReducedMotion } from "@/lib/motion";
+import { useReducedMotion } from "@/lib/motion";
 
 import { wdButton } from "./ui";
 
@@ -93,15 +92,16 @@ function useShots(n: number) {
 
 function PhotoBackdrop({ panel }: { panel: AuthPanel }) {
   const { shot, reduced } = useShots(panel.photos.length);
-  const fade = dissolve(reduced, 1.2);
-  const src = panel.photos[Math.min(shot, panel.photos.length - 1)];
+  const active = Math.min(shot, panel.photos.length - 1);
+  // All photos are mounted and loaded up front and stacked; only opacity changes,
+  // so a slide never waits on a download (no blank frame between photos).
   return (
     <div aria-hidden className="absolute inset-0 overflow-hidden bg-wd-blush">
-      <AnimatePresence initial={false}>
-        <motion.div key={src} className="absolute inset-0" {...fade}>
-          <Image src={src} alt="" fill priority={shot === 0} sizes="100vw" className="object-cover" />
-        </motion.div>
-      </AnimatePresence>
+      {panel.photos.map((src, i) => (
+        <div key={src} className={`absolute inset-0 ${reduced ? "" : "transition-opacity duration-[1400ms] ease-in-out"}`} style={{ opacity: i === active ? 1 : 0 }}>
+          <Image src={src} alt="" fill priority={i === 0} loading="eager" sizes="100vw" className="object-cover" />
+        </div>
+      ))}
       <div className="absolute inset-0 bg-black/30" />
       <div className="absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-black/50 to-transparent" />
     </div>
@@ -146,8 +146,8 @@ export function AuthLayout({
             Beranda
           </Link>
         </div>
-        <div className={`mx-auto flex min-h-0 w-full flex-1 flex-col justify-center py-6 lg:py-3 ${wide ? "max-w-[640px]" : "max-w-[460px]"}`}>
-          <div data-compact={wide ? "" : undefined} className={`group/card relative overflow-hidden rounded-[28px] bg-white px-6 shadow-wd-pop sm:px-9 lg:max-h-full lg:overflow-y-auto [scrollbar-width:thin] ${wide ? "pb-4 pt-9" : "pb-7 pt-12"}`}>
+        <div className={`mx-auto flex min-h-0 w-full flex-1 flex-col justify-center py-6 lg:py-3 max-w-[440px]`}>
+          <div data-compact={wide ? "" : undefined} className={`${wide ? "wd-compact-card " : ""}group/card relative overflow-hidden rounded-[28px] bg-white px-6 shadow-wd-pop sm:px-9 lg:max-h-full lg:overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${wide ? "pb-4 pt-9" : "pb-7 pt-12"}`}>
             {/* Shop awning along the card's top edge. */}
             <div
               aria-hidden
@@ -160,7 +160,7 @@ export function AuthLayout({
             />
             <div className={wide ? "flex items-center gap-4" : ""}>
             {aside ?? (
-              <span className={`block shrink-0 ${wide ? "h-12 w-12" : "h-14 w-14"} transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover/card:-rotate-6 group-hover/card:scale-110 motion-reduce:transition-none motion-reduce:group-hover/card:transform-none`}>
+              <span className={`wd-mascot block shrink-0 ${wide ? "h-12 w-12" : "h-14 w-14"} transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover/card:-rotate-6 group-hover/card:scale-110 motion-reduce:transition-none motion-reduce:group-hover/card:transform-none`}>
                 <MascotIcon kind={mascot} />
               </span>
             )}

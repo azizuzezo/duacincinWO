@@ -303,12 +303,12 @@ function RegisterContent() {
             <GoogleSignIn text="signup_with" acceptTerms={role === "vendor" ? acceptTerms : true} role={role} />
           </div>
           <AuthOr />
-          <form onSubmit={handleSubmit} className="grid gap-x-3 gap-y-2.5 sm:grid-cols-2">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
             <AuthField label={ROLE_CONFIG[role].nameLabel} name="name" autoComplete={ROLE_CONFIG[role].nameAutoComplete} value={name} onChange={setName} />
             <AuthField label="Email" name="email" type="email" autoComplete="email" spellCheck={false} value={email} onChange={setEmail} invalid={!!error} describedBy={describedBy} />
             <AuthField label="Nomor WhatsApp" name="whatsapp" type="tel" inputMode="tel" autoComplete="tel" value={whatsapp} onChange={setWhatsapp} hint={ROLE_CONFIG[role].waHint} />
             <AuthPassword label="Password" autoComplete="new-password" value={password} onChange={setPassword} minLength={8} hint="Minimal 8 karakter." />
-            <div className="flex flex-col gap-3 sm:col-span-2">
+            <div className="flex flex-col gap-2.5">
               {role === "vendor" && (
                 <AgreementCheckbox checked={acceptTerms} onChange={setAcceptTerms} href={ROLE_CONFIG.vendor.agreementHref} label={ROLE_CONFIG.vendor.agreementLabel} />
               )}

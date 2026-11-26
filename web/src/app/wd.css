@@ -343,3 +343,28 @@ html:has(.wd) {
 @media (prefers-reduced-motion: reduce) {
   .wd-hop, .wd-blink { animation: none; }
 }
+
+/* Compact auth card (register): same single column, but on short desktop
+   screens the fields and spacing shrink in steps so the whole card fits
+   without scrolling. Eye toggle and floating label follow the field height. */
+@media (min-width: 1024px) and (max-height: 800px) {
+  .wd-compact-card input:not([type="checkbox"]) { height: 2.75rem; padding-top: 1rem; }
+  .wd-compact-card label[for] { top: 11px; }
+  .wd-compact-card [aria-pressed] { top: 22px; }
+  .wd-compact-card form { gap: 0.5rem; }
+  .wd-compact-card .wd-display { font-size: 1.6rem; }
+}
+@media (min-width: 1024px) and (max-height: 700px) {
+  .wd-compact-card input:not([type="checkbox"]) { height: 2.5rem; padding-top: 0.9rem; font-size: 0.9rem; }
+  .wd-compact-card label[for] { top: 9px; font-size: 0.88rem; }
+  .wd-compact-card [aria-pressed] { top: 20px; }
+  .wd-compact-card form p[id$="-hint"] { display: none; }
+  .wd-compact-card form { gap: 0.4rem; }
+}
+@media (min-width: 1024px) and (max-height: 660px) {
+  .wd-compact-card ol[aria-label="Langkah daftar"] { display: none; }
+  .wd-compact-card { padding-top: 2.2rem; padding-bottom: 0.6rem; }
+  .wd-compact-card .wd-mascot { display: none; }
+  .wd-compact-card form label:has(input[type="checkbox"]) { min-height: 0; padding: 0.5rem 0.75rem; font-size: 0.8rem; line-height: 1.35; }
+  .wd-compact-card form button[type="submit"] { min-height: 2.5rem; }
+}
