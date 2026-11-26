@@ -197,7 +197,7 @@ function RegisterContent() {
 
   return (
     <AuthLayout
-      panel={role === "vendor" ? VENDOR_PANEL : CLIENT_PANEL}
+      mascot={role === "vendor" ? "shop" : "rings"} panel={role === "vendor" ? VENDOR_PANEL : CLIENT_PANEL}
       title={
         ticket ? (
           "Cek email kamu"

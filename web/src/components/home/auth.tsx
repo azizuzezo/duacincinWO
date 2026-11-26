@@ -16,7 +16,46 @@ import { dissolve, useReducedMotion } from "@/lib/motion";
 
 import { Check, wdButton } from "./ui";
 
-export type AuthPanel = { headline: ReactNode; bullets: string[]; photos: string[] };
+export type AuthPanel = { headline: ReactNode; bullets: string[]; photos: string[]; stickers: { title: string; sub: string }[] };
+
+const INK = "#231f1d";
+
+/** Little face-icon above the form title; wiggles on hover, never under reduced motion. */
+export type Mascot = "rings" | "lock" | "shop";
+function MascotIcon({ kind }: { kind: Mascot }) {
+  const face = (y: number) => (
+    <>
+      <circle cx="19" cy={y} r="1.7" fill={INK} />
+      <circle cx="29" cy={y} r="1.7" fill={INK} />
+      <path d={`M19 ${y + 6}c1.5 1.9 3.2 2.7 5 2.700s3.5-.8 5-2.7`} fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" />
+    </>
+  );
+  return (
+    <svg viewBox="0 0 48 48" aria-hidden className="h-full w-full">
+      {kind === "rings" && (
+        <>
+          <circle cx="17" cy="26" r="13" fill="none" stroke="#c9a45c" strokeWidth="3" />
+          <circle cx="29" cy="24" r="14" fill="#dcbd80" stroke={INK} strokeWidth="2" />
+          {face(22)}
+        </>
+      )}
+      {kind === "lock" && (
+        <>
+          <path d="M15 21v-5a9 9 0 0 1 18 0v5" fill="none" stroke={INK} strokeWidth="3" strokeLinecap="round" />
+          <rect x="8" y="20" width="32" height="24" rx="7" fill="#dcbd80" stroke={INK} strokeWidth="2" />
+          {face(29)}
+        </>
+      )}
+      {kind === "shop" && (
+        <>
+          <path d="M6 18 10 8h28l4 10v3a6 6 0 0 1-12 0 6 6 0 0 1-12 0 6 6 0 0 1-12 0v-3Z" fill="#dcbd80" stroke={INK} strokeWidth="2" strokeLinejoin="round" />
+          <rect x="9" y="26" width="30" height="16" rx="3" fill="#fff" stroke={INK} strokeWidth="2" />
+          {face(31)}
+        </>
+      )}
+    </svg>
+  );
+}
 
 export const CLIENT_PANEL: AuthPanel = {
   headline: (
@@ -25,6 +64,11 @@ export const CLIENT_PANEL: AuthPanel = {
     </>
   ),
   bullets: ["Vendor diverifikasi tim DuaCincin", "Chat dan booking di satu tempat", "Dana ditahan DuaCincin sampai acara selesai"],
+  stickers: [
+    { title: "Vendor terverifikasi", sub: "Ditinjau tim DuaCincin" },
+    { title: "DP masuk Dana Aman", sub: "Ditahan DuaCincin" },
+    { title: "Balasan baru", sub: "Dari vendor pilihanmu" },
+  ],
   photos: ["/photos/pinterest/pasangan-sofa-bunga.webp", "/photos/pinterest/dekorasi-taman.webp", "/photos/pinterest/rias-hijab.webp"],
 };
 
@@ -35,6 +79,11 @@ export const VENDOR_PANEL: AuthPanel = {
     </>
   ),
   bullets: ["Profil dan portofolio tampil di direktori setelah diverifikasi", "Chat dan booking dengan calon pengantin di satu tempat", "Dana cair setelah acara selesai, harga paketmu diterima utuh"],
+  stickers: [
+    { title: "Permintaan booking baru", sub: "Menunggu jawabanmu" },
+    { title: "DP masuk Dana Aman", sub: "Ditahan DuaCincin" },
+    { title: "Dana cair", sub: "Setelah acara selesai" },
+  ],
   photos: ["/photos/pinterest/pendopo-kursi-tamu.webp", "/photos/pinterest/pelaminan-kristal.webp", "/photos/kategori-vendor/catering-meja.webp"],
 };
 
@@ -54,7 +103,7 @@ function PhotoPanel({ panel }: { panel: AuthPanel }) {
   const src = panel.photos[Math.min(shot, n - 1)];
 
   return (
-    <aside aria-hidden className="relative hidden p-4 lg:block">
+    <aside aria-hidden className="group relative hidden bg-wd-champagne p-4 pl-0 lg:block">
       <div className="relative h-full min-h-[640px] overflow-hidden rounded-[32px] bg-wd-blush">
         <AnimatePresence initial={false}>
           <motion.div key={src} className="absolute inset-0" {...fade}>
@@ -62,6 +111,22 @@ function PhotoPanel({ panel }: { panel: AuthPanel }) {
           </motion.div>
         </AnimatePresence>
         <div className="absolute inset-0 bg-linear-to-t from-black/45 via-transparent to-transparent" />
+        {panel.stickers.map((st, i) => (
+          <div key={st.title} className={["left-8 top-10", "right-8 top-[26%]", "left-12 top-[44%]"][i]} style={{ position: "absolute" }}>
+            <div
+              className="wd-anim wd-float flex items-center gap-2.5 rounded-2xl bg-white py-2 pl-2 pr-4 text-wd-ink shadow-wd-pop ring-1 ring-black/5"
+              style={{ "--r": ["-4deg", "3deg", "-2deg"][i], animationDelay: `${i * 0.35}s` } as React.CSSProperties}
+            >
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-wd-accent text-wd-ink">
+                <Check size={14} />
+              </span>
+              <span className="leading-tight">
+                <span className="block text-[0.82rem] font-semibold">{st.title}</span>
+                <span className="block text-[0.72rem] text-wd-muted">{st.sub}</span>
+              </span>
+            </div>
+          </div>
+        ))}
         <div className="absolute inset-x-8 bottom-8 rounded-[24px] bg-white/92 p-6 shadow-wd-pop backdrop-blur-md">
           <p className="wd-display text-[1.6rem] leading-snug">{panel.headline}</p>
           <ul className="mt-4 grid gap-2 text-sm text-wd-text">
@@ -92,17 +157,19 @@ export function AuthLayout({
   children,
   footer,
   panel = CLIENT_PANEL,
+  mascot = "rings",
 }: {
   title: ReactNode;
   sub?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
   panel?: AuthPanel;
+  mascot?: Mascot;
 }) {
   return (
     <div data-wd-public className="wd flex min-h-svh flex-1">
       <div className="grid w-full lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-        <main id="konten" className="flex flex-col px-5 py-6 sm:px-10 lg:px-16 lg:py-8">
+        <main id="konten" className="flex flex-col bg-wd-champagne px-5 py-6 sm:px-10 lg:px-14 lg:py-8">
           <div className="flex items-center justify-between">
             <Link href="/" aria-label="DuaCincin, ke beranda" className="inline-flex min-h-11 items-center rounded-md">
               <BrandLogo size={24} priority />
@@ -114,11 +181,26 @@ export function AuthLayout({
               Beranda
             </Link>
           </div>
-          <div className="mx-auto flex w-full max-w-[420px] flex-1 flex-col justify-center py-12">
-            <h1 className="wd-display text-[clamp(2.2rem,4vw,2.9rem)] leading-[1.06]">{title}</h1>
-            {sub && <p className="mt-3 leading-relaxed text-wd-text">{sub}</p>}
-            <div className="mt-8">{children}</div>
-            {footer && <div className="mt-8 text-center text-[0.95rem] text-wd-text">{footer}</div>}
+          <div className="mx-auto flex w-full max-w-[460px] flex-1 flex-col justify-center py-8">
+            <div className="group/card relative overflow-hidden rounded-[28px] bg-white px-6 pb-8 pt-12 shadow-wd-card ring-1 ring-[#e8d9b6] sm:px-9">
+              {/* Shop awning along the card's top edge. */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 top-0 h-5"
+                style={{
+                  backgroundImage: "radial-gradient(circle at 18px 0, #dcbd80 17px, transparent 18px), radial-gradient(circle at 54px 0, #f5ecd9 17px, transparent 18px)",
+                  backgroundSize: "72px 20px",
+                  backgroundRepeat: "repeat-x",
+                }}
+              />
+              <span className="block h-14 w-14 transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover/card:-rotate-6 group-hover/card:scale-110 motion-reduce:transition-none motion-reduce:group-hover/card:transform-none">
+                <MascotIcon kind={mascot} />
+              </span>
+              <h1 className="wd-display mt-4 text-[clamp(2rem,3.6vw,2.6rem)] leading-[1.06]">{title}</h1>
+              {sub && <p className="mt-3 leading-relaxed text-wd-text">{sub}</p>}
+              <div className="mt-7">{children}</div>
+            </div>
+            {footer && <div className="mt-6 text-center text-[0.95rem] text-wd-text">{footer}</div>}
           </div>
         </main>
         <PhotoPanel panel={panel} />

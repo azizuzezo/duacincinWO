@@ -67,7 +67,7 @@ export default function ForgotPasswordPage() {
   );
 
   return (
-    <AuthLayout
+    <AuthLayout mascot="lock"
       title={
         step === "request" ? (
           <>
