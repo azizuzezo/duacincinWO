@@ -126,20 +126,20 @@ export function AccountMenu({ user }: { user: CurrentUser }) {
           </svg>
         </button>
         {open && (
-          <div id="menu-akun" role="menu" className="absolute right-0 top-full z-50 mt-2 w-[270px] rounded-2xl bg-white p-2 shadow-wd-pop ring-1 ring-wd-line">
-            <div className="flex items-center gap-3 border-b border-wd-line px-3 pb-3 pt-2">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-wd-accent text-sm font-bold text-wd-ink">{initials(user)}</span>
+          <div id="menu-akun" role="menu" className="absolute right-0 top-full z-50 mt-2 w-[228px] rounded-[18px] bg-white p-1.5 shadow-wd-pop ring-1 ring-wd-line">
+            <div className="flex items-center gap-2.5 border-b border-wd-line px-2.5 pb-2.5 pt-1.5">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-wd-accent text-[0.78rem] font-bold text-wd-ink">{initials(user)}</span>
               <span className="min-w-0 leading-tight">
-                <span className="block truncate font-semibold text-wd-ink">{user.full_name || "Akunmu"}</span>
-                <span className="block truncate text-[0.8rem] text-wd-muted">{user.email}</span>
+                <span className="block truncate text-[0.9rem] font-semibold text-wd-ink">{user.full_name || "Akunmu"}</span>
+                <span className="block truncate text-[0.74rem] text-wd-muted">{user.email}</span>
               </span>
             </div>
             <ul className="py-1">
               {ACCOUNT_LINKS.map((l) => (
                 <li key={l.href} role="none">
-                  <Link role="menuitem" href={l.href} onClick={() => setOpen(false)} className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-[0.93rem] text-wd-ink transition-colors hover:bg-wd-accent-wash">
+                  <Link role="menuitem" href={l.href} onClick={() => setOpen(false)} className="flex min-h-9 items-center gap-2.5 rounded-[10px] px-2.5 text-[0.86rem] text-wd-ink transition-colors hover:bg-wd-accent-wash">
                     <span className="text-wd-accent-ink">
-                      <Icon paths={l.icon} />
+                      <Icon paths={l.icon} size={16} />
                     </span>
                     {l.label}
                   </Link>
@@ -154,10 +154,10 @@ export function AccountMenu({ user }: { user: CurrentUser }) {
                   setOpen(false);
                   logout.ask();
                 }}
-                className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-[0.93rem] text-wd-ink transition-colors hover:bg-wd-accent-wash"
+                className="flex min-h-9 w-full items-center gap-2.5 rounded-[10px] px-2.5 text-left text-[0.86rem] text-wd-ink transition-colors hover:bg-wd-accent-wash"
               >
                 <span className="text-wd-accent-ink">
-                  <Icon paths={["M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3", "M10 17l5-5-5-5", "M15 12H4"]} />
+                  <Icon paths={["M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3", "M10 17l5-5-5-5", "M15 12H4"]} size={16} />
                 </span>
                 Keluar
               </button>
