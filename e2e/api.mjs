@@ -336,6 +336,25 @@ r = await client.call("GET", `/bookings/${bk.id}`); ok("status dp_paid, DP is 30
 r = await client.call("POST", `/bookings/${bk.id}/pay/full`, {}); ok("client starts full payment", r.status < 300, JSON.stringify(r));
 r = await client.call("POST", `/bookings/${bk.id}/dev-simulate-payment`, { type: "full" }); ok("simulate full paid", r.status < 300, JSON.stringify(r));
 r = await client.call("GET", `/bookings/${bk.id}`); ok("status full_paid", r.data?.status === "full_paid", JSON.stringify(r.data));
+// 6b. availability: a locked day is unavailable, the vendor can close days by hand, and the couple's wedding date is stored.
+r = await client.call("GET", `/vendors/${vendorId}/availability?from=2027-03-01&to=2027-03-31`); ok("public availability marks the booked day (no names)", r.status === 200 && r.data?.dates?.some((d) => d.date === "2027-03-14" && d.reason === "booked") && !JSON.stringify(r.data).includes(bk.id), JSON.stringify(r));
+r = await client.call("GET", `/vendors/${vendorId}/availability?from=2027-03-31&to=2027-03-01`); ok("availability with to before from is refused (400)", r.status === 400, JSON.stringify(r));
+r = await client.call("GET", `/vendors/${vendorId}/availability?from=2027-01-01&to=2028-12-31`); ok("availability range over 400 days is refused (400)", r.status === 400, JSON.stringify(r));
+r = await client.call("POST", "/bookings", { vendor_id: vendorId, event_date: "2027-03-14", package_description: "Dobel", agreed_price: 10000000 }); ok("booking on a day locked by another booking is refused (409)", r.status === 409, JSON.stringify(r));
+r = await vendor.call("PUT", "/vendor/availability/blocked", { dates: ["2027-03-20", "2027-03-21"], blocked: true }); ok("vendor closes two days", r.status === 200 && r.data?.dates?.filter((d) => d.reason === "blocked").length === 2, JSON.stringify(r));
+r = await vendor.call("PUT", "/vendor/availability/blocked", { dates: ["2027-03-20"], blocked: true }); ok("closing a closed day again is a no-op (200)", r.status === 200, JSON.stringify(r));
+r = await client.call("POST", "/bookings", { vendor_id: vendorId, event_date: "2027-03-20", package_description: "Hari ditutup", agreed_price: 10000000 }); ok("booking on a day the vendor closed is refused (409)", r.status === 409 && /tidak tersedia/i.test(r.data?.error ?? ""), JSON.stringify(r));
+r = await vendor.call("PUT", "/vendor/availability/blocked", { dates: ["2027-03-14"], blocked: true }); ok("vendor cannot close a day locked by a booking (409)", r.status === 409, JSON.stringify(r));
+r = await vendor.call("PUT", "/vendor/availability/blocked", { dates: ["2020-01-01"], blocked: true }); ok("closing a past day is refused (400)", r.status === 400, JSON.stringify(r));
+r = await client.call("PUT", "/vendor/availability/blocked", { dates: ["2027-03-22"], blocked: true }); ok("a client cannot close vendor days (403)", r.status === 403, JSON.stringify(r));
+r = await vendor.call("PUT", "/vendor/availability/blocked", { dates: ["2027-03-20", "2027-03-21"], blocked: false }); ok("vendor reopens the days", r.status === 200 && !r.data?.dates?.some((d) => d.reason === "blocked"), JSON.stringify(r));
+r = await vendor.call("GET", "/vendor/availability?from=2027-03-01&to=2027-03-31"); ok("vendor sees its own calendar", r.status === 200 && r.data?.dates?.some((d) => d.date === "2027-03-14"), JSON.stringify(r));
+r = await client.call("PUT", "/me/wedding-date", { wedding_date: "2027-03-14" }); ok("client saves the wedding date", r.status === 200 && r.data?.wedding_date === "2027-03-14", JSON.stringify(r));
+r = await client.call("GET", "/auth/me"); ok("current user carries the wedding date", r.data?.wedding_date === "2027-03-14", JSON.stringify(r));
+r = await client.call("PUT", "/me/wedding-date", { wedding_date: "2027-02-30" }); ok("an impossible wedding date is refused (400)", r.status === 400, JSON.stringify(r));
+r = await client.call("PUT", "/me/wedding-date", { wedding_date: "2020-01-01" }); ok("a past wedding date is refused (400)", r.status === 400, JSON.stringify(r));
+r = await vendor.call("PUT", "/me/wedding-date", { wedding_date: "2027-03-14" }); ok("a vendor cannot set a wedding date (403)", r.status === 403, JSON.stringify(r));
+r = await client.call("PUT", "/me/wedding-date", { wedding_date: "" }); ok("the wedding date can be cleared", r.status === 200 && !r.data?.wedding_date, JSON.stringify(r));
 r = await client.call("POST", `/bookings/${bk.id}/meetings`, { scheduled_at: "2027-03-01T10:00:00+07:00", meeting_link: "https://meet.example/test" }); ok("technical meeting scheduled", r.status < 300, JSON.stringify(r));
 r = await vendor2.call("GET", `/bookings/${bk.id}`); ok("unrelated vendor cannot read booking", r.status === 404 || r.status === 403, JSON.stringify(r));
 r = await client.call("POST", `/bookings/${bk.id}/complete`, {}); ok("client confirms completion", r.status < 300, JSON.stringify(r));

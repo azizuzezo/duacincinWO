@@ -35,6 +35,8 @@ type Deps struct {
 	Packages      *repository.PackageRepo
 	// WhatsApp, when set, makes a verified number win over the form value.
 	WhatsApp *repository.WhatsAppLinkRepo
+	// Availability backs the vendor calendar of blocked and booked days.
+	Availability *repository.AvailabilityRepo
 }
 
 func NewDeps(vendors *repository.VendorRepo, nameChange *repository.VendorNameChangeRepo, storageClient *storage.Client, reviews *repository.ReviewRepo, disbursements *repository.DisbursementRepo) *Deps {

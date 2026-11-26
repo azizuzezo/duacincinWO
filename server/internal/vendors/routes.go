@@ -16,6 +16,7 @@ func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 	r.Get("/vendors/{id}", VendorDetail(deps))
 	r.Get("/vendors/{id}/reviews", ListVendorReviews(deps))
 	r.Get("/vendors/{id}/packages", ListVendorPackages(deps))
+	r.Get("/vendors/{id}/availability", PublicAvailability(deps))
 
 	r.Route("/vendor", func(r chi.Router) {
 		r.Use(auth.RequireAuth(cfg))
@@ -31,5 +32,7 @@ func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 		r.Post("/packages", CreatePackage(deps))
 		r.Put("/packages/{id}", UpdatePackage(deps))
 		r.Delete("/packages/{id}", DeletePackage(deps))
+		r.Get("/availability", MyAvailability(deps))
+		r.Put("/availability/blocked", SetBlockedDates(deps))
 	})
 }

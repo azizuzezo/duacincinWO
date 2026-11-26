@@ -12,6 +12,8 @@ type userDTO struct {
 	Email    string `json:"email"`
 	Role     string `json:"role"`
 	FullName string `json:"full_name"`
+	// WeddingDate is "YYYY-MM-DD", omitted until the couple sets it.
+	WeddingDate string `json:"wedding_date,omitempty"`
 }
 
 func userResponse(u *repository.User) userDTO {
@@ -40,6 +42,10 @@ func Me(deps *Deps) http.HandlerFunc {
 			return
 		}
 
-		httpx.JSON(w, http.StatusOK, userResponse(user))
+		dto := userResponse(user)
+		if date, err := deps.Users.GetWeddingDate(r.Context(), user.ID); err == nil {
+			dto.WeddingDate = formatWeddingDate(date)
+		}
+		httpx.JSON(w, http.StatusOK, dto)
 	}
 }

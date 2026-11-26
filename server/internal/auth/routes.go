@@ -40,4 +40,10 @@ func Mount(r chi.Router, deps *Deps) {
 			r.Post("/change-password", ChangePassword(deps))
 		})
 	})
+
+	r.Route("/me", func(r chi.Router) {
+		r.Use(RequireAuth(deps.Cfg))
+		r.Use(RequireRole(RoleClient))
+		r.Put("/wedding-date", SetWeddingDate(deps))
+	})
 }

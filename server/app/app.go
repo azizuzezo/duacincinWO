@@ -147,6 +147,21 @@ func New(ctx context.Context, opts Options) (*App, error) {
 	authDeps.WhatsApp = whatsappLinkRepo
 	vendorsDeps := vendors.NewDeps(vendorRepo, vendorNameChangeRepo, storageClient, reviewRepo, disbursementRepo)
 	vendorsDeps.WhatsApp = whatsappLinkRepo
+	availabilityRepo := repository.NewAvailabilityRepo(pool)
+	vendorsDeps.Availability = availabilityRepo
+	bookingDeps := booking.NewDeps(
+		bookingRepo,
+		repository.NewTransactionRepo(pool),
+		repository.NewMeetingRepo(pool),
+		disbursementRepo,
+		vendorRepo,
+		userRepo,
+		plannerRepo,
+		reviewRepo,
+		notificationRepo,
+		midtransClient,
+	)
+	bookingDeps.Availability = availabilityRepo
 	adminDeps := admin.NewDeps(vendorRepo, vendorNameChangeRepo, disbursementRepo, disputeRepo, userRepo, bookingRepo, auditLogRepo, notificationRepo, storageClient, vendors.PortfolioBucket)
 	adminDeps.Chat = chatRepo
 	aiSettingsRepo := repository.NewAISettingsRepo(pool)
@@ -170,18 +185,7 @@ func New(ctx context.Context, opts Options) (*App, error) {
 		Rundown:        rundown.NewDeps(repository.NewRundownRepo(pool)),
 		InvitationLink: invitationlink.NewDeps(userRepo, guestRepo, repository.NewRSVPLinkRepo(pool), bookingRepo, limiter, cfg),
 		Seating:        seating.NewDeps(repository.NewSeatingTableRepo(pool), repository.NewSeatingAssignmentRepo(pool), guestRepo),
-		Booking: booking.NewDeps(
-			bookingRepo,
-			repository.NewTransactionRepo(pool),
-			repository.NewMeetingRepo(pool),
-			disbursementRepo,
-			vendorRepo,
-			userRepo,
-			plannerRepo,
-			reviewRepo,
-			notificationRepo,
-			midtransClient,
-		),
+		Booking:        bookingDeps,
 	}
 
 	return &App{

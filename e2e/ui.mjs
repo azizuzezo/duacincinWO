@@ -19,7 +19,7 @@ const out = []; let failed = 0; const ok = (n, c, d = "") => { out.push(`${c ? "
     const raw = async (path) => { const r = await fetch(WEB + path); return { status: r.status, html: await r.text() }; };
     const has = (html, re) => re.test(html);
     let p = await raw("/vendors");
-    ok("SEO: directory HTML has its H1 and the vendor cards without JavaScript", p.status === 200 && has(p.html, /<h1[^>]*>[^]*?Temukan vendor/) && p.html.includes("Ballroom Uji"), p.html.slice(0, 200));
+    ok("SEO: directory HTML has its H1 and the vendor cards without JavaScript", p.status === 200 && has(p.html, /<h1[^>]*>[^]*?Semua vendor pernikahan/) && p.html.includes("Ballroom Uji"), p.html.slice(0, 200));
     ok("SEO: directory canonical is /vendors", has(p.html, /<link rel="canonical" href="[^"]*\/vendors"/));
     p = await raw(vid);
     ok("SEO: vendor profile HTML has the vendor name as H1 and its packages", p.status === 200 && has(p.html, /<h1[^>]*>[^<]*Ballroom Uji/) && p.html.includes("Half Day Plus"), p.html.slice(0, 200));
@@ -106,7 +106,7 @@ for (const [w, h, label] of [[1440, 900, "desktop"], [390, 844, "mobile"]]) {
   await s.login(email("client"));
   ok("client login lands on /client/dashboard", (await s.ev("location.pathname")) === "/client/dashboard", await s.ev("location.pathname"));
   const body = await s.ev("document.body.innerText");
-  ok("client dashboard greets by real name", body.includes("Client Uji"), body.slice(0, 150));
+  ok("client dashboard greets by real name", /Halo, Client/.test(body), body.slice(0, 150));
   ok("client next step is shown (no active booking)", /Mulai dari anggaran|Cari vendor/.test(body), body.slice(0, 300));
   await s.shot("real-client-dashboard");
   await s.go(`${WEB}/client/bookings`);

@@ -28,6 +28,8 @@ type Deps struct {
 	Reviews       *repository.ReviewRepo
 	Notifications *repository.NotificationRepo
 	Midtrans      *payment.Client
+	// Availability rejects bookings on days the vendor cannot take.
+	Availability *repository.AvailabilityRepo
 }
 
 func NewDeps(

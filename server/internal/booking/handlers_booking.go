@@ -84,6 +84,16 @@ func Create(deps *Deps) http.HandlerFunc {
 			return
 		}
 
+		unavailable, err := deps.Availability.IsUnavailable(r.Context(), req.VendorID, eventDate)
+		if err != nil {
+			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
+			return
+		}
+		if unavailable {
+			httpx.Error(w, http.StatusConflict, "Vendor tidak tersedia di tanggal itu")
+			return
+		}
+
 		dpAmount := int64(math.Round(float64(req.AgreedPrice) * DPPercent))
 		// The agreed price is what the couple pays (public prices already
 		// include commission); the platform's share is fixed here.
@@ -158,6 +168,16 @@ func Confirm(deps *Deps) http.HandlerFunc {
 		b, err := deps.Bookings.GetByID(r.Context(), chi.URLParam(r, "id"))
 		if err != nil || claims.UserID != b.VendorID {
 			httpx.Error(w, http.StatusNotFound, "booking tidak ditemukan")
+			return
+		}
+
+		taken, err := deps.Availability.HasLockingBooking(r.Context(), b.VendorID, b.EventDate, b.ID)
+		if err != nil {
+			httpx.Error(w, http.StatusInternalServerError, "terjadi kesalahan, coba lagi")
+			return
+		}
+		if taken {
+			httpx.Error(w, http.StatusConflict, "tanggal ini sudah terisi booking lain yang dikonfirmasi, tidak bisa dikonfirmasi lagi")
 			return
 		}
 

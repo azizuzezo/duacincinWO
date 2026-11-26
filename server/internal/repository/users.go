@@ -205,3 +205,19 @@ func (r *UserRepo) PromoteToStaff(ctx context.Context, id, role, passwordHash, f
 	`, id, role, passwordHash, fullName)
 	return err
 }
+
+// GetWeddingDate returns the couple's wedding date, nil when unset.
+func (r *UserRepo) GetWeddingDate(ctx context.Context, id string) (*time.Time, error) {
+	var d *time.Time
+	err := r.pool.QueryRow(ctx, `select wedding_date from users where id = $1`, id).Scan(&d)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	return d, err
+}
+
+// SetWeddingDate stores the wedding date; nil clears it.
+func (r *UserRepo) SetWeddingDate(ctx context.Context, id string, date *time.Time) error {
+	_, err := r.pool.Exec(ctx, `update users set wedding_date = $2, updated_at = now() where id = $1`, id, date)
+	return err
+}
