@@ -44,7 +44,7 @@ export function InvitationPreview({ bride, groom }: { bride: string; groom: stri
 
   return (
     <figure className="mx-auto w-full max-w-[300px] sm:max-w-[330px]">
-      <div className="relative rounded-[28px] border border-dc-line bg-dc-white p-3 shadow-lift">
+      <div className="relative rounded-[24px] bg-white p-3 ring-1 ring-wd-line">
         <div className="relative flex flex-col items-center rounded-[20px] border border-dc-gold/45 bg-dc-ivory px-5 pb-7 pt-5 text-center">
           <span aria-hidden className="pointer-events-none absolute inset-1.5 rounded-[16px] border border-dc-gold/25" />
           <p className="relative text-[0.7rem] font-semibold text-dc-clay">Undangan pernikahan</p>
@@ -89,7 +89,7 @@ export function InvitationPreview({ bride, groom }: { bride: string; groom: stri
               aria-pressed={on}
               onClick={() => setKey(s.key)}
               className={`inline-flex min-h-11 items-center gap-2 rounded-full border py-1 pl-1 pr-3.5 text-sm font-semibold transition-colors duration-200 ${
-                on ? "border-dc-ink bg-dc-ink text-dc-on-dark" : "border-dc-line-strong bg-dc-white text-dc-ink hover:border-dc-ink"
+                on ? "border-wd-ink bg-wd-ink text-white" : "border-wd-line-2 bg-white text-wd-ink hover:border-wd-ink"
               }`}
             >
               <span className="relative h-8 w-8 overflow-hidden rounded-full bg-dc-cream">

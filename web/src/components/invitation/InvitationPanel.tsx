@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { useState } from "react";
 
-import { Button, buttonClasses } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { FOCUS } from "@/app/client/_ui";
+import { ClientArt } from "@/components/home/ClientArt";
+import { wdButton } from "@/components/home/ui";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Input } from "@/components/ui/Field";
 import { CountUp, FadeIn, GrowX, SuccessPop } from "@/components/ui/Motion";
-import { Rings } from "@/components/ui/Rings";
 import { Skeleton, SkeletonGroup } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 
@@ -28,6 +28,9 @@ const AFTER = [
   "Jawaban RSVP tamu kembali tampil di halaman ini.",
 ];
 
+const btn = (variant: Parameters<typeof wdButton>[0] extends infer P ? (P extends { variant?: infer V } ? V : never) : never, size: "sm" | "md" | "lg" = "md", extra = "") =>
+  `${wdButton({ variant, size })} ${FOCUS} ${extra}`;
+
 /** Full /client/undangan content: explains, links, and shows status. */
 export function InvitationPanel() {
   const link = useInvitationLink();
@@ -35,14 +38,14 @@ export function InvitationPanel() {
 
   if (state.kind === "loading") {
     return (
-      <SkeletonGroup label="Memuat status undangan" className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <SkeletonGroup label="Memuat status undangan" className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div className="flex flex-col gap-4">
           <Skeleton className="h-14 w-4/5 rounded-lg" />
           <Skeleton className="h-5 w-full" />
           <Skeleton className="h-5 w-3/4" />
-          <Skeleton className="mt-4 h-64 rounded-xl" />
+          <Skeleton className="mt-4 h-64 rounded-2xl" />
         </div>
-        <Skeleton className="h-[480px] rounded-[28px]" />
+        <Skeleton className="h-[480px] rounded-[24px]" />
       </SkeletonGroup>
     );
   }
@@ -66,7 +69,7 @@ type LinkApi = ReturnType<typeof useInvitationLink>;
 
 function Check() {
   return (
-    <span aria-hidden className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-dc-gold/20 text-dc-clay">
+    <span aria-hidden className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-wd-accent-soft text-wd-accent-ink">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M5 12.5l4.5 4.5L19 7.5" />
       </svg>
@@ -89,80 +92,74 @@ function NotLinked({ link }: { link: LinkApi }) {
   };
 
   return (
-    <div className="grid gap-x-12 gap-y-8 pb-24 md:pb-0 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
-      <div className="min-w-0 animate-fade-up lg:col-start-1 lg:row-start-1">
-        <p className="dc-eyebrow mb-3">DuaCincin Digital Invitation</p>
-        <h2 className="max-w-xl font-heading text-[2.4rem] leading-[1.04] text-dc-ink sm:text-[3.2rem]">
-          Undangan kalian, <em className="dc-em">sudah setengah jadi.</em>
+    <div className="grid gap-x-14 gap-y-10 pb-24 md:pb-0 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+      <div className="min-w-0">
+        <p className="wd-kicker">Digital Invitation</p>
+        <h2 className="wd-display mt-2 text-[clamp(2.1rem,4.4vw,3.4rem)] leading-[1.05]">
+          Undangan kalian, <em>sudah setengah jadi.</em>
         </h2>
-        <p className="mt-4 max-w-xl text-[1.05rem] leading-relaxed text-dc-text-2">
+        <p className="mt-3 max-w-xl text-[1.02rem] leading-relaxed text-wd-text">
           Data pernikahan yang kalian susun di sini langsung mengisi DuaCincin Digital Invitation. Kalian tinggal memilih tema dan foto.
         </p>
-      </div>
 
-      {/* The preview is the focal point: a stage behind it sets it apart from the form. */}
-      <div className="relative overflow-hidden rounded-2xl bg-dc-cream px-4 py-7 sm:px-8 lg:sticky lg:top-8 lg:col-start-2 lg:row-span-2 lg:row-start-1">
-        <Rings className="pointer-events-none absolute -left-24 -top-16 h-72 w-[28rem] opacity-40" strokeWidth={0.5} />
-        <div className="relative">
-          <InvitationPreview bride={bride} groom={groom} />
-        </div>
-      </div>
-
-      <div className="min-w-0 lg:col-start-1 lg:row-start-2">
-
-        <ul className="flex max-w-xl flex-col gap-4">
+        <ul className="mt-6 max-w-xl border-t border-wd-line">
           {FILLED.map((f) => (
-            <li key={f.title} className="flex gap-3">
+            <li key={f.title} className="flex gap-3 border-b border-wd-line py-3.5">
               <Check />
-              <p className="leading-relaxed text-dc-text-2">
-                <span className="font-semibold text-dc-ink">{f.title}.</span> {f.body}
+              <p className="leading-snug text-wd-text">
+                <span className="font-semibold text-wd-ink">{f.title}.</span> {f.body}
               </p>
             </li>
           ))}
         </ul>
 
-        <Card className="mt-8 p-5 sm:p-7">
-          <form id="undangan-form" onSubmit={submit} noValidate>
-            <h3 className="font-heading text-[1.75rem] leading-tight text-dc-ink">Nama di undangan</h3>
-            <p className="mt-1.5 text-sm leading-relaxed text-dc-text-2">
-              Nama mempelai belum tersimpan di DuaCincin WO. Isi sekarang dan lihat langsung di contoh undangan, atau kosongkan dan lengkapi nanti.
-            </p>
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <Input label="Nama mempelai wanita" optional value={bride} maxLength={120} autoComplete="off" onChange={(e) => setBride(e.target.value)} />
-              <Input label="Nama mempelai pria" optional value={groom} maxLength={120} autoComplete="off" onChange={(e) => setGroom(e.target.value)} />
-            </div>
-            <div aria-live="polite" className="mt-4 hidden md:block">
-              {error && <p className="text-sm font-medium text-dc-danger">{error}</p>}
-            </div>
-            <Button type="submit" variant="gold" size="lg" loading={link.opening} className="mt-2 hidden md:inline-flex">
-              Buat Digital Invitation
-            </Button>
-            <p className="mt-3 text-xs leading-relaxed text-dc-text-3">
-              Terbuka di tab baru. Paket undangan dibayar di DuaCincin Digital Invitation, terpisah dari booking vendor.
-            </p>
-          </form>
-        </Card>
+        <form id="undangan-form" onSubmit={submit} noValidate className="mt-10 max-w-xl">
+          <h3 className="wd-title text-[1.5rem] leading-tight">Nama di undangan</h3>
+          <p className="mt-1.5 text-sm leading-relaxed text-wd-text">
+            Nama mempelai belum tersimpan di DuaCincin WO. Isi sekarang dan lihat langsung di contoh undangan, atau kosongkan dan lengkapi nanti.
+          </p>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <Input label="Nama mempelai wanita" optional value={bride} maxLength={120} autoComplete="off" onChange={(e) => setBride(e.target.value)} />
+            <Input label="Nama mempelai pria" optional value={groom} maxLength={120} autoComplete="off" onChange={(e) => setGroom(e.target.value)} />
+          </div>
+          <div aria-live="polite" className="mt-4 hidden md:block">
+            {error && <p className="text-sm font-medium text-wd-danger">{error}</p>}
+          </div>
+          <button type="submit" disabled={link.opening} aria-busy={link.opening} className={btn("gold", "lg", "mt-3 hidden md:inline-flex")}>
+            {link.opening ? "Membuka..." : "Buat Digital Invitation"}
+          </button>
+          <p className="mt-3 text-xs leading-relaxed text-wd-muted">
+            Terbuka di tab baru. Paket undangan dibayar di DuaCincin Digital Invitation, terpisah dari booking vendor.
+          </p>
+        </form>
 
-        <div className="mt-8 max-w-xl">
-          <p className="font-heading text-xl text-dc-ink">Setelah tombol ditekan</p>
-          <ol className="mt-3 flex flex-col border-l border-dc-gold/50 pl-5">
+        <div className="mt-10 max-w-xl">
+          <h3 className="wd-title text-[1.25rem]">Setelah tombol ditekan</h3>
+          <ol className="mt-2 border-t border-wd-line">
             {AFTER.map((a, i) => (
-              <li key={a} className="relative py-1.5 text-sm leading-relaxed text-dc-text-2">
-                <span aria-hidden className="absolute -left-[25px] top-3 h-2 w-2 rounded-full bg-dc-gold" />
+              <li key={a} className="flex items-baseline gap-4 border-b border-wd-line py-3">
+                <span aria-hidden className="wd-display w-5 shrink-0 text-[1.4rem] italic leading-none text-wd-accent-ink">
+                  {i + 1}
+                </span>
                 <span className="sr-only">Langkah {i + 1}: </span>
-                {a}
+                <span className="text-sm leading-relaxed text-wd-text">{a}</span>
               </li>
             ))}
           </ol>
         </div>
       </div>
 
-      {/* Mobile: the one action stays reachable above the bottom tab bar. */}
-      <div className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-30 border-t border-dc-line bg-dc-ivory/95 px-4 py-3 md:hidden">
-        <div aria-live="polite">{error && <p className="mx-auto mb-2 max-w-md text-sm font-medium text-dc-danger">{error}</p>}</div>
-        <Button type="submit" form="undangan-form" variant="gold" block loading={link.opening} className="mx-auto max-w-md">
-          Buat Digital Invitation
-        </Button>
+      {/* The preview is the focal point: a soft gold panel sets it apart from the form. */}
+      <div className="rounded-[28px] bg-wd-accent-wash px-4 py-7 sm:px-8 lg:sticky lg:top-24">
+        <InvitationPreview bride={bride} groom={groom} />
+      </div>
+
+      {/* Mobile: the one action stays reachable at the bottom edge. */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-wd-line bg-white/95 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 md:hidden">
+        <div aria-live="polite">{error && <p className="mx-auto mb-2 max-w-md text-sm font-medium text-wd-danger">{error}</p>}</div>
+        <button type="submit" form="undangan-form" disabled={link.opening} aria-busy={link.opening} className={btn("gold", "md", "mx-auto flex w-full max-w-md")}>
+          {link.opening ? "Membuka..." : "Buat Digital Invitation"}
+        </button>
       </div>
     </div>
   );
@@ -201,124 +198,123 @@ function Linked({ status, link }: { status: InvitationStatus; link: LinkApi }) {
   const shareText = status.url ? `https://wa.me/?text=${encodeURIComponent(`Dengan penuh syukur kami mengundang Anda. Buka undangan kami di sini: ${status.url}`)}` : "";
 
   return (
-    <div className="flex flex-col gap-8">
-      {/* The one ink block of the page: the invitation itself, with its link. */}
-      <Card tone="ink" className="relative overflow-hidden p-6 sm:p-9">
-        <Rings className="pointer-events-none absolute -right-16 -top-10 h-64 w-96 opacity-25" stroke="var(--dc-gold-antique)" strokeWidth={0.6} />
-        <div className="relative flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="dc-eyebrow is-light mb-3">Digital Invitation</p>
-            <h2 className="font-heading text-[2.2rem] leading-[1.05] sm:text-[2.8rem]">
-              Undangan kalian <em className="dc-em-light">sudah terhubung.</em>
-            </h2>
-            <p className="mt-2 max-w-lg leading-relaxed text-dc-on-dark/80">Ubah tema, foto, dan detail acara di editor. RSVP tamu terkumpul di sini.</p>
+    <div className="flex flex-col gap-12">
+      <section aria-labelledby="terhubung" className="grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_200px]">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="wd-kicker">Digital Invitation</p>
+            <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${paid ? "bg-wd-accent text-wd-ink" : "bg-wd-accent-soft text-wd-accent-ink"}`}>
+              {packageLabel(status.package_type)}
+            </span>
           </div>
-          <span className={`inline-flex items-center rounded-full px-3.5 py-1.5 text-sm font-semibold ${paid ? "bg-dc-gold-antique text-dc-ink" : "border border-dc-on-dark/30 text-dc-on-dark"}`}>
-            {packageLabel(status.package_type)}
-          </span>
-        </div>
+          <h2 id="terhubung" className="wd-display mt-2 text-[clamp(2.1rem,4.4vw,3.4rem)] leading-[1.05]">
+            Undangan kalian <em>sudah terhubung.</em>
+          </h2>
+          <p className="mt-3 max-w-lg text-[1.02rem] leading-relaxed text-wd-text">Ubah tema, foto, dan detail acara di editor. RSVP tamu terkumpul di sini.</p>
 
-        <div className="relative mt-7 rounded-xl border border-dc-on-dark/15 bg-dc-ink-2 p-4 sm:p-5">
-          {status.url ? (
-            <>
-              <p className="text-sm font-semibold text-dc-gold-antique">Link untuk tamu</p>
-              <p className="mt-1 break-all font-heading text-[1.35rem] leading-snug text-dc-on-dark">{status.url.replace(/^https?:\/\//, "")}</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Button variant="light" size="sm" onClick={copy}>
-                  Salin link
-                </Button>
-                <a href={shareText} target="_blank" rel="noopener noreferrer" className={buttonClasses({ variant: "ghostLight", size: "sm" })}>
-                  Bagikan lewat WhatsApp
-                </a>
-                <a href={status.url} target="_blank" rel="noopener noreferrer" className={buttonClasses({ variant: "ghostLight", size: "sm" })}>
-                  Lihat undangan
-                </a>
-              </div>
-            </>
-          ) : (
-            <p className="text-sm leading-relaxed text-dc-on-dark/80">
-              Undangan belum punya alamat sendiri. Atur alamatnya di editor, lalu link untuk tamu muncul di sini.
-            </p>
-          )}
-        </div>
+          <div className="mt-6 max-w-2xl rounded-[24px] bg-wd-accent-wash p-5 sm:p-6">
+            {status.url ? (
+              <>
+                <p className="text-sm font-semibold text-wd-accent-ink">Link untuk tamu</p>
+                <p className="wd-display mt-1 break-all text-[1.3rem] leading-snug">{status.url.replace(/^https?:\/\//, "")}</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button type="button" onClick={copy} className={btn("ink", "sm")}>
+                    Salin link
+                  </button>
+                  <a href={shareText} target="_blank" rel="noopener noreferrer" className={btn("outline", "sm")}>
+                    Bagikan lewat WhatsApp
+                  </a>
+                  <a href={status.url} target="_blank" rel="noopener noreferrer" className={btn("outline", "sm")}>
+                    Lihat undangan
+                  </a>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm leading-relaxed text-wd-text">Undangan belum punya alamat sendiri. Atur alamatnya di editor, lalu link untuk tamu muncul di sini.</p>
+            )}
+          </div>
 
-        <div className="relative mt-7 flex flex-wrap gap-2">
-          <Button variant="gold" loading={link.opening} onClick={openEditor}>
-            Buka editor undangan
-          </Button>
-          <Button variant="ghostLight" loading={link.syncing} onClick={sync}>
-            Kirim ulang daftar tamu
-          </Button>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <button type="button" onClick={openEditor} disabled={link.opening} aria-busy={link.opening} className={btn("gold", "md")}>
+              {link.opening ? "Membuka..." : "Buka editor undangan"}
+            </button>
+            <button type="button" onClick={sync} disabled={link.syncing} aria-busy={link.syncing} className={btn("outline", "md")}>
+              {link.syncing ? "Mengirim..." : "Kirim ulang daftar tamu"}
+            </button>
+          </div>
+          <div aria-live="polite" className="mt-3">
+            {message && (
+              <p className={`flex items-center gap-3 text-sm font-medium ${message.tone === "ok" ? "text-wd-ok" : "text-wd-danger"}`}>
+                {message.tone === "ok" && <SuccessPop key={message.text} tone="success" className="shrink-0" />}
+                {message.text}
+              </p>
+            )}
+          </div>
+          <p className="mt-1 text-xs leading-relaxed text-wd-muted">Tamu yang sudah ada di undangan tidak akan dobel.</p>
         </div>
-        <div aria-live="polite" className="relative mt-3">
-          {message && (
-            <p className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium ${message.tone === "ok" ? "bg-dc-on-dark text-dc-success" : "bg-dc-on-dark text-dc-danger"}`}>
-              {message.tone === "ok" && <SuccessPop key={message.text} tone="success" className="shrink-0" />}
-              {message.text}
-            </p>
-          )}
+        <div className="hidden aspect-square w-full max-w-[200px] justify-self-center rounded-[28px] bg-wd-accent-wash p-7 lg:block">
+          <ClientArt kind="envelope" />
         </div>
-        <p className="relative mt-1 text-xs leading-relaxed text-dc-on-dark/75">Tamu yang sudah ada di undangan tidak akan dobel.</p>
-      </Card>
+      </section>
 
       <FadeIn delay={0.08}>
-      <section aria-labelledby="rsvp-heading" className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
-        <Card className="p-6 sm:p-8">
-          <h2 id="rsvp-heading" className="font-heading text-[1.9rem] leading-tight text-dc-ink">
-            Jawaban RSVP
-          </h2>
-          {answered === 0 ? (
-            <p className="mt-2 max-w-md leading-relaxed text-dc-text-2">
-              Belum ada tamu yang menjawab. Bagikan link undangan, jawaban mereka muncul di sini.
-            </p>
-          ) : (
-            <>
-              <p className="mt-4 flex items-baseline gap-3">
-                <span className="font-heading text-[4rem] font-semibold leading-none text-dc-ink [font-variant-numeric:lining-nums_tabular-nums]">
-                  <CountUp value={hadir} />
-                </span>
-                <span className="text-dc-text-2">akan hadir</span>
-              </p>
-              <div aria-hidden className="mt-5 h-3 w-full overflow-hidden rounded-full bg-dc-cream">
-                <GrowX className="flex h-full w-full">
-                  <span className="h-full bg-dc-gold" style={{ width: `${(hadir / answered) * 100}%` }} />
-                  <span className="h-full bg-dc-line-strong" style={{ width: `${(ragu / answered) * 100}%` }} />
-                  <span className="h-full bg-dc-text-3" style={{ width: `${(tidak / answered) * 100}%` }} />
-                </GrowX>
-              </div>
-            </>
-          )}
-          <dl className="mt-5 grid grid-cols-3 gap-3">
-            {[
-              { label: "Hadir", value: hadir, dot: "bg-dc-gold" },
-              { label: "Masih ragu", value: ragu, dot: "bg-dc-line-strong" },
-              { label: "Tidak hadir", value: tidak, dot: "bg-dc-text-3" },
-            ].map((r) => (
-              <div key={r.label} className="rounded-lg bg-dc-cream px-3 py-3">
-                <dt className="flex items-center gap-2 text-sm text-dc-text-2">
-                  <span aria-hidden className={`h-2.5 w-2.5 rounded-full ${r.dot}`} />
-                  {r.label}
-                </dt>
-                <dd className="mt-1 font-heading text-[1.9rem] font-semibold leading-none text-dc-ink [font-variant-numeric:lining-nums_tabular-nums]">
-                  <CountUp value={r.value} />
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </Card>
-
-        <Card tone="paper" className="flex flex-col justify-between gap-4 p-6">
+        <section aria-labelledby="rsvp-heading" className="grid gap-x-14 gap-y-8 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-end">
           <div>
-            <p className="text-sm font-semibold text-dc-text-2">Tamu di undangan</p>
-            <p className="mt-1 font-heading text-[3.2rem] font-semibold leading-none text-dc-ink [font-variant-numeric:lining-nums_tabular-nums]">
+            <h2 id="rsvp-heading" className="wd-title text-[clamp(1.55rem,2.6vw,2.05rem)] leading-tight">
+              Jawaban <em>RSVP</em>
+            </h2>
+            {answered === 0 ? (
+              <p className="mt-2 max-w-md leading-relaxed text-wd-text">Belum ada tamu yang menjawab. Bagikan link undangan, jawaban mereka muncul di sini.</p>
+            ) : (
+              <>
+                <p className="mt-4 flex items-baseline gap-3">
+                  <span className="wd-display text-[clamp(3rem,6vw,4.4rem)] leading-none tabular-nums">
+                    <CountUp value={hadir} />
+                  </span>
+                  <span className="text-wd-text">akan hadir</span>
+                </p>
+                <div aria-hidden className="mt-5 h-2.5 w-full overflow-hidden rounded-full bg-wd-blush">
+                  <GrowX className="flex h-full w-full">
+                    <span className="h-full bg-wd-accent-deep" style={{ width: `${(hadir / answered) * 100}%` }} />
+                    <span className="h-full bg-wd-line-2" style={{ width: `${(ragu / answered) * 100}%` }} />
+                    <span className="h-full bg-wd-muted" style={{ width: `${(tidak / answered) * 100}%` }} />
+                  </GrowX>
+                </div>
+              </>
+            )}
+            <dl className="mt-6 grid grid-cols-3 divide-x divide-wd-line border-t border-wd-line pt-5">
+              {[
+                { label: "Hadir", value: hadir, dot: "bg-wd-accent-deep" },
+                { label: "Masih ragu", value: ragu, dot: "bg-wd-line-2" },
+                { label: "Tidak hadir", value: tidak, dot: "bg-wd-muted" },
+              ].map((r, i) => (
+                <div key={r.label} className={i > 0 ? "pl-4 sm:pl-6" : "pr-4"}>
+                  <dt className="flex items-center gap-2 text-sm text-wd-text">
+                    <span aria-hidden className={`h-2.5 w-2.5 rounded-full ${r.dot}`} />
+                    {r.label}
+                  </dt>
+                  <dd className="wd-display mt-1 text-[1.7rem] tabular-nums">
+                    <CountUp value={r.value} />
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          <div className="border-t border-wd-line pt-5 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+            <p className="text-sm font-semibold text-wd-text">Tamu di undangan</p>
+            <p className="wd-display mt-1 text-[3.2rem] leading-none tabular-nums">
               <CountUp value={status.guests} />
             </p>
+            <p className="mt-3 text-sm leading-relaxed text-wd-text">
+              Tambah tamu di{" "}
+              <Link href="/client/wedding-planner/guests" className={`font-semibold text-wd-accent-ink underline underline-offset-4 hover:text-wd-ink ${FOCUS}`}>
+                Tamu &amp; RSVP
+              </Link>
+              , lalu kirim ulang daftar tamu.
+            </p>
           </div>
-          <p className="text-sm leading-relaxed text-dc-text-2">
-            Tambah tamu di <Link href="/client/wedding-planner/guests" className="font-semibold text-dc-clay underline underline-offset-4">Tamu &amp; RSVP</Link>, lalu kirim ulang daftar tamu.
-          </p>
-        </Card>
-      </section>
+        </section>
       </FadeIn>
     </div>
   );

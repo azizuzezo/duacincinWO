@@ -13,7 +13,7 @@ export default function UndanganPage() {
     <WithUser allowedRoles={["client"]} loginPath="/login">
       {(user) => (
         <ClientShell user={user}>
-          <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+          <div className="wd-container pb-16 pt-8 sm:pt-10">
             <h1 className="sr-only">Undangan digital</h1>
             <InvitationPanel />
           </div>
