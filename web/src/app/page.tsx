@@ -7,6 +7,7 @@ import { Categories } from "@/components/home/Categories";
 import { Features } from "@/components/home/Features";
 import { ForVendors } from "@/components/home/ForVendors";
 import { HomeFooter } from "@/components/home/HomeFooter";
+import { HowItWorks } from "@/components/home/HowItWorks";
 import { HomeNav } from "@/components/home/HomeNav";
 import { Inspiration } from "@/components/home/Inspiration";
 import { PromoInvitation } from "@/components/home/PromoInvitation";
@@ -71,6 +72,7 @@ export default async function Page() {
         <VendorPicks />
         <Categories />
         <CategoryRows max={2} />
+        <HowItWorks />
         <PromoInvitation />
         <Features />
         <BudgetTool />
