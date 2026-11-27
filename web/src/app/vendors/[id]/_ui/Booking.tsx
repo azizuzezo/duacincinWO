@@ -2,10 +2,11 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
+import { useState } from "react";
 
 import { Shield, wdButton } from "@/components/home/ui";
 import { Input } from "@/components/ui/Field";
-import { Sheet } from "@/components/ui/Sheet";
+import { Modal } from "@/components/ui/Modal";
 import { formatRupiah, type VendorPackage, type VendorProfile } from "@/lib/api";
 import { EASE, useReducedMotion } from "@/lib/motion";
 
@@ -236,9 +237,11 @@ export function MobileActionBar({ profile, isClient, checkingUser, starting, onC
   );
 }
 
-/** The booking request form, in a sheet so the profile stays in view. Same
- * fields and endpoint as before: date, package description, agreed price. */
-export function BookingSheet({
+/** The booking request form, as a centered dialog so the profile stays in
+ * view behind it. Same fields and endpoint as always (date, package
+ * description, agreed price), but picking a package fills the price for the
+ * couple, and a live summary shows what DP and pelunasan will be. */
+export function BookingDialog({
   open,
   onClose,
   packages,
@@ -274,70 +277,134 @@ export function BookingSheet({
   onSubmit: (e: React.FormEvent) => void;
 }) {
   const price = Number(agreedPrice) || 0;
+  const picked = packages.find((p) => p.name === packageDescription) ?? null;
+  // "Paket lain" is the way out when nothing fits, and the only mode when the vendor lists no packages.
+  const [otherChosen, setOtherChosen] = useState(false);
+  const other = packages.length === 0 || otherChosen;
+  // A package with no listed price ("Lewat chat") still needs the agreed price typed in.
+  const needsPrice = other || (picked !== null && picked.price <= 0);
+  const dp = Math.round(price * 0.3);
+
+  function chooseOther() {
+    setOtherChosen(true);
+    setPackageDescription("");
+    setAgreedPrice("");
+  }
+
   return (
-    <Sheet
+    <Modal
       open={open}
       onClose={onClose}
+      size="xl"
       title="Ajukan booking"
-      description="Vendor akan mengonfirmasi sebelum kamu membayar DP."
-      footer={
-        <WdButton type="submit" form="booking-form" block loading={saving}>
-          Kirim pengajuan booking
-        </WdButton>
-      }
+      description="Vendor mengonfirmasi dulu. Kamu belum membayar apa pun sekarang."
     >
-      <form id="booking-form" onSubmit={onSubmit} className="grid gap-5">
-        <TanggalPicker label="Tanggal acara" min={todayIso()} value={eventDate} onChange={setEventDate} error={dateError} unavailable={unavailable} marked={weddingDate} hint={dateHint(eventDate, weddingDate, unavailable)} />
+      <form id="booking-form" onSubmit={onSubmit} className="grid gap-6 md:grid-cols-[minmax(0,1fr)_17rem] md:gap-8">
+        <div className="grid content-start gap-6">
+          <TanggalPicker label="Tanggal acara" min={todayIso()} value={eventDate} onChange={setEventDate} error={dateError} unavailable={unavailable} marked={weddingDate} hint={dateHint(eventDate, weddingDate, unavailable)} />
 
-        {packages.length > 0 && (
           <fieldset>
-            <legend className="text-sm font-semibold text-wd-ink">Pilih dari paket vendor</legend>
+            <legend className="text-sm font-semibold text-wd-ink">Paket</legend>
             <div className="mt-2 grid gap-2">
               {packages.map((p) => {
-                const active = packageDescription === p.name;
+                const checked = !other && picked?.id === p.id;
                 return (
-                  <button
+                  <label
                     key={p.id}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => onPickPackage(p)}
-                    className={`flex min-h-12 items-center justify-between gap-3 rounded-[14px] border px-4 py-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wd-accent-ink ${
-                      active ? "border-wd-accent-line bg-wd-accent-soft" : "border-wd-line-2 hover:border-wd-ink"
-                    }`}
+                    className="flex cursor-pointer items-start gap-3 rounded-[14px] border border-wd-line-2 px-4 py-3 transition-colors hover:border-wd-ink has-[:checked]:border-wd-accent-line has-[:checked]:bg-wd-accent-wash has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-wd-accent-ink"
                   >
-                    <span className="min-w-0 break-words text-sm font-semibold text-wd-ink">{p.name}</span>
-                    <span className="shrink-0 text-sm tabular-nums text-wd-text">{p.price > 0 ? formatRupiah(p.price) : "Lewat chat"}</span>
-                  </button>
+                    <input
+                      type="radio"
+                      name="booking-package"
+                      className="peer sr-only"
+                      checked={checked}
+                      onChange={() => {
+                        setOtherChosen(false);
+                        onPickPackage(p);
+                      }}
+                    />
+                    <RadioDot />
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-baseline justify-between gap-3">
+                        <span className="break-words text-sm font-semibold text-wd-ink">{p.name}</span>
+                        <span className="shrink-0 text-sm font-semibold tabular-nums text-wd-ink">{p.price > 0 ? formatRupiah(p.price) : "Lewat chat"}</span>
+                      </span>
+                      {p.description && <span className="mt-0.5 line-clamp-2 block text-sm leading-relaxed text-wd-muted">{p.description}</span>}
+                    </span>
+                  </label>
                 );
               })}
+              {packages.length > 0 && (
+                <label className="flex cursor-pointer items-start gap-3 rounded-[14px] border border-dashed border-wd-line-2 px-4 py-3 transition-colors hover:border-wd-ink has-[:checked]:border-solid has-[:checked]:border-wd-accent-line has-[:checked]:bg-wd-accent-wash has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-wd-accent-ink">
+                  <input type="radio" name="booking-package" className="peer sr-only" checked={other} onChange={chooseOther} />
+                  <RadioDot />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold text-wd-ink">Paket lain</span>
+                    <span className="block text-sm leading-relaxed text-wd-muted">Sesuai yang sudah kamu sepakati di chat.</span>
+                  </span>
+                </label>
+              )}
             </div>
           </fieldset>
-        )}
 
-        <Input label="Deskripsi paket" value={packageDescription} onChange={(e) => setPackageDescription(e.target.value)} hint="Tulis paket yang sudah kamu sepakati di chat." />
-        <Input
-          label="Harga disepakati (Rp)"
-          type="text"
-          inputMode="numeric"
-          autoComplete="off"
-          required
-          placeholder="Contoh: 18.500.000"
-          value={price > 0 ? price.toLocaleString("id-ID") : ""}
-          onChange={(e) => setAgreedPrice(e.target.value.replace(/\D/g, "").replace(/^0+/, ""))}
-          hint="Isi harga yang sudah kamu sepakati di chat. Harga di DuaCincin sudah termasuk biaya layanan."
-        />
-
-        <div className="rounded-[14px] bg-wd-paper p-4">
-          <p className="mb-3 text-sm font-semibold text-wd-ink">Setelah vendor mengonfirmasi</p>
-          <EscrowSteps />
+          {other && <Input label="Nama atau isi paket" value={packageDescription} onChange={(e) => setPackageDescription(e.target.value)} placeholder="Contoh: Paket Akad + Resepsi, 300 tamu" />}
+          {needsPrice && (
+            <Input
+              label="Harga yang disepakati (Rp)"
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              placeholder="Contoh: 18.500.000"
+              value={price > 0 ? price.toLocaleString("id-ID") : ""}
+              onChange={(e) => setAgreedPrice(e.target.value.replace(/\D/g, "").replace(/^0+/, ""))}
+              hint="Sudah termasuk biaya layanan DuaCincin."
+            />
+          )}
         </div>
 
-        {error && (
-          <p role="alert" className="rounded-lg bg-wd-danger/[0.06] px-3 py-2 text-sm text-wd-danger">
-            {error}
-          </p>
-        )}
+        <aside className="grid content-start gap-4 self-start rounded-[16px] bg-wd-paper p-5 md:sticky md:top-0">
+          <p className="text-sm font-semibold text-wd-ink">Ringkasan</p>
+          <dl className="grid gap-2 text-sm">
+            <div className="flex justify-between gap-3">
+              <dt className="text-wd-muted">Total</dt>
+              <dd className="font-semibold tabular-nums text-wd-ink">{price > 0 ? formatRupiah(price) : "Belum dipilih"}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-wd-muted">DP 30%</dt>
+              <dd className="tabular-nums text-wd-text">{price > 0 ? formatRupiah(dp) : "-"}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-wd-muted">Pelunasan</dt>
+              <dd className="tabular-nums text-wd-text">{price > 0 ? formatRupiah(price - dp) : "-"}</dd>
+            </div>
+          </dl>
+          <div className="h-px bg-wd-line" />
+          <EscrowSteps />
+
+          {error && (
+            <p role="alert" className="rounded-lg bg-wd-danger/[0.06] px-3 py-2 text-sm text-wd-danger">
+              {error}
+            </p>
+          )}
+          <div>
+            <WdButton type="submit" block loading={saving} disabled={price <= 0}>
+              Kirim pengajuan
+            </WdButton>
+            {price <= 0 && <p className="mt-2 text-center text-xs text-wd-muted">Pilih paket atau isi harga untuk lanjut.</p>}
+          </div>
+        </aside>
       </form>
-    </Sheet>
+    </Modal>
+  );
+}
+
+/** Radio indicator driven by the sibling input's state (the input is sr-only). */
+function RadioDot() {
+  return (
+    <span aria-hidden className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-wd-line-2 bg-white transition-colors peer-checked:border-wd-accent-ink peer-checked:bg-wd-accent-ink peer-checked:[&>svg]:opacity-100">
+      <svg viewBox="0 0 12 12" className="h-3 w-3 text-white opacity-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M2.5 6.2 5 8.6l4.5-5" />
+      </svg>
+    </span>
   );
 }

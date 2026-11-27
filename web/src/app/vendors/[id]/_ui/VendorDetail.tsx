@@ -30,7 +30,7 @@ import {
 import { fadeUp, motionSafe, SPRING_SNAPPY, useReducedMotion } from "@/lib/motion";
 import { citySlug } from "@/lib/server-api";
 
-import { BookingCard, BookingSheet, EscrowSteps, MobileActionBar } from "./Booking";
+import { BookingCard, BookingDialog, EscrowSteps, MobileActionBar } from "./Booking";
 import { Gallery, Lightbox, PortfolioGrid } from "./Gallery";
 import { PackageCards } from "./Packages";
 import { ReviewsBlock } from "./ReviewsBlock";
@@ -510,7 +510,7 @@ export function VendorDetail({
       {isClient && user && <ChatDock user={user} />}
 
       {isClient && (
-        <BookingSheet
+        <BookingDialog
           open={sheetOpen}
           onClose={() => setSheetOpen(false)}
           packages={packages}

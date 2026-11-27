@@ -23,7 +23,7 @@ export function Modal({
   onClose: () => void;
   title: string;
   description?: React.ReactNode;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
   children: React.ReactNode;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -32,7 +32,7 @@ export function Modal({
   const descId = useId();
   useFocusTrap(open, dialogRef, onClose);
 
-  const width = size === "sm" ? "max-w-sm" : size === "lg" ? "max-w-2xl" : "max-w-md";
+  const width = size === "sm" ? "max-w-sm" : size === "xl" ? "max-w-4xl" : size === "lg" ? "max-w-2xl" : "max-w-md";
 
   return (
     <BodyPortal>
