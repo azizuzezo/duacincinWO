@@ -1,6 +1,6 @@
 // Package booking implements the end-to-end booking journey (PRD §8.5/§8.11):
 // requested -> confirmed -> dp_paid -> full_paid -> completed, DP/pelunasan
-// via Midtrans escrow (held by DuaCincin, disbursed to the Vendor minus
+// via a payment gateway (see internal/payment) escrow (held by DuaCincin, disbursed to the Vendor minus
 // commission as a separate Admin step), and technical/consultant meeting
 // scheduling.
 package booking
@@ -27,7 +27,8 @@ type Deps struct {
 	Planner       *repository.WeddingPlannerRepo
 	Reviews       *repository.ReviewRepo
 	Notifications *repository.NotificationRepo
-	Midtrans      *payment.Client
+	Payments      payment.Provider
+	WebBaseURL    string
 	// Availability rejects bookings on days the vendor cannot take.
 	Availability *repository.AvailabilityRepo
 }
@@ -42,7 +43,8 @@ func NewDeps(
 	planner *repository.WeddingPlannerRepo,
 	reviews *repository.ReviewRepo,
 	notifications *repository.NotificationRepo,
-	midtrans *payment.Client,
+	payments payment.Provider,
+	webBaseURL string,
 ) *Deps {
 	return &Deps{
 		Bookings:      bookings,
@@ -54,7 +56,8 @@ func NewDeps(
 		Planner:       planner,
 		Reviews:       reviews,
 		Notifications: notifications,
-		Midtrans:      midtrans,
+		Payments:      payments,
+		WebBaseURL:    webBaseURL,
 	}
 }
 

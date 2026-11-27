@@ -53,7 +53,7 @@ function ClientBookingDetailContent({ id, user }: { id: string; user: CurrentUse
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [devPending, setDevPending] = useState<"dp" | "full" | null>(null);
+  const [checkingPayment, setCheckingPayment] = useState(false);
   const [meetingDate, setMeetingDate] = useState("");
   const [meetingLink, setMeetingLink] = useState("");
   const [meetingOpen, setMeetingOpen] = useState(false);
@@ -82,33 +82,46 @@ function ClientBookingDetailContent({ id, user }: { id: string; user: CurrentUse
     setBusy(true);
     setError(null);
     try {
-      const res = await apiPost<{ dev_mode: boolean; redirect_url?: string }>(`/api/v1/bookings/${id}/pay/${type}`, {});
-      if (res.dev_mode) {
-        setDevPending(type);
-      } else if (res.redirect_url) {
-        window.location.href = res.redirect_url;
-      }
+      const res = await apiPost<{ redirect_url?: string }>(`/api/v1/bookings/${id}/pay/${type}`, {});
+      if (!res.redirect_url) throw new Error("no checkout");
+      // Hosted gateway page, or our own sandbox page while no gateway is live.
+      window.location.href = res.redirect_url;
+      return; // keep the button busy while the browser navigates
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Gagal memulai pembayaran.");
-    } finally {
-      setBusy(false);
     }
+    setBusy(false);
   }
 
-  async function handleSimulate(type: "dp" | "full") {
-    setBusy(true);
-    setError(null);
-    try {
-      await apiPost(`/api/v1/bookings/${id}/dev-simulate-payment`, { type });
-      setDevPending(null);
-      show(type === "dp" ? "DP tercatat dan ditahan Dana Aman." : "Pelunasan tercatat dan ditahan Dana Aman.", "success");
-      load();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Gagal simulasi pembayaran.");
-    } finally {
-      setBusy(false);
-    }
-  }
+  // Coming back from the gateway (?pembayaran=selesai): the webhook may land a
+  // moment after the redirect, so re-read the booking until its status moves.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("pembayaran") !== "selesai") return;
+    window.history.replaceState(null, "", window.location.pathname);
+    let tries = 0;
+    let timer: ReturnType<typeof setTimeout>;
+    const startStatus = { current: "" };
+    const tick = () => {
+      apiGet<Booking>(`/api/v1/bookings/${id}`)
+        .then((b) => {
+          if (!b?.status) return;
+          if (!startStatus.current) startStatus.current = b.status;
+          setBooking(b);
+          if (b.status !== startStatus.current) {
+            setCheckingPayment(false);
+            show("Pembayaran diterima dan ditahan Dana Aman.", "success");
+            return;
+          }
+          if (++tries < 8) timer = setTimeout(tick, 2500);
+          else setCheckingPayment(false);
+        })
+        .catch(() => setCheckingPayment(false));
+    };
+    queueMicrotask(() => setCheckingPayment(true));
+    tick();
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   async function handleScheduleMeeting(e: React.FormEvent) {
     e.preventDefault();
@@ -276,10 +289,9 @@ function ClientBookingDetailContent({ id, user }: { id: string; user: CurrentUse
                 <PaymentPanel
                   booking={booking}
                   busy={busy}
-                  devPending={devPending}
+                  checking={checkingPayment}
                   hasTechnicalMeeting={hasTechnicalMeeting}
                   onPay={handlePay}
-                  onSimulate={handleSimulate}
                   onSchedule={() => setMeetingOpen(true)}
                   onComplete={() => setConfirmOpen(true)}
                 />
@@ -363,13 +375,12 @@ type PayProps = {
 function PaymentPanel({
   booking: b,
   busy,
-  devPending,
+  checking,
   hasTechnicalMeeting,
   onPay,
-  onSimulate,
   onSchedule,
   onComplete,
-}: PayProps & { devPending: "dp" | "full" | null; onSimulate: (t: "dp" | "full") => void }) {
+}: PayProps & { checking: boolean }) {
   const rest = b.agreed_price - b.dp_amount;
   const dpPaid = b.status === "dp_paid" || b.status === "full_paid" || b.status === "completed";
   const fullPaid = b.status === "full_paid" || b.status === "completed";
@@ -400,13 +411,10 @@ function PaymentPanel({
         <PrimaryAction booking={b} busy={busy} hasTechnicalMeeting={hasTechnicalMeeting} onPay={onPay} onSchedule={onSchedule} onComplete={onComplete} />
       </div>
 
-      {devPending && (
-        <div className="border-t border-dashed border-dc-line-strong p-5 sm:p-6">
-          <p className="mb-2 text-xs text-dc-text-3">Mode uji: pembayaran tidak benar-benar ditagih.</p>
-          <Button variant="ghost" size="sm" block onClick={() => onSimulate(devPending)} loading={busy}>
-            {devPending === "dp" ? "Simulasikan Pembayaran DP Berhasil (Dev Mode)" : "Simulasikan Pelunasan Berhasil (Dev Mode)"}
-          </Button>
-        </div>
+      {checking && (
+        <p role="status" className="border-t border-dashed border-dc-line-strong p-5 text-sm text-dc-text-3 sm:p-6">
+          Memeriksa pembayaranmu…
+        </p>
       )}
     </div>
   );

@@ -36,6 +36,9 @@ type Config struct {
 	SupabaseURL            string
 	SupabaseServiceRoleKey string
 
+	// PaymentProvider is sandbox or midtrans; empty picks midtrans when its
+	// keys are set, else sandbox.
+	PaymentProvider      string
 	MidtransServerKey    string
 	MidtransClientKey    string
 	MidtransIsProduction bool
@@ -109,6 +112,7 @@ func Load() (*Config, error) {
 		SupabaseURL:            os.Getenv("SUPABASE_URL"),
 		SupabaseServiceRoleKey: os.Getenv("SUPABASE_SERVICE_ROLE_KEY"),
 
+		PaymentProvider:      strings.ToLower(strings.TrimSpace(os.Getenv("PAYMENT_PROVIDER"))),
 		MidtransServerKey:    os.Getenv("MIDTRANS_SERVER_KEY"),
 		MidtransClientKey:    os.Getenv("MIDTRANS_CLIENT_KEY"),
 		MidtransIsProduction: os.Getenv("MIDTRANS_IS_PRODUCTION") == "true",
@@ -150,8 +154,8 @@ func Load() (*Config, error) {
 	if cfg.SupabaseURL == "" || cfg.SupabaseServiceRoleKey == "" {
 		log.Println("warning: SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY not set — portfolio image upload will be unavailable")
 	}
-	if cfg.MidtransServerKey == "" {
-		log.Println("warning: MIDTRANS_SERVER_KEY is not set — payments run in dev-simulation mode instead of calling Midtrans")
+	if cfg.PaymentProvider == "" && cfg.MidtransServerKey == "" || cfg.PaymentProvider == "sandbox" {
+		log.Println("warning: payments run on the SANDBOX provider — checkout is fake and anyone can mark an order paid; set PAYMENT_PROVIDER and gateway keys before going live")
 	}
 	if len(cfg.WOLinkSecret) < 32 {
 		log.Println("warning: WO_LINK_SECRET is not set (min 32 chars) — the DuaCincin Invitation link is disabled")

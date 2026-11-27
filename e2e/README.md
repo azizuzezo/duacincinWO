@@ -9,9 +9,9 @@ Satu perintah menjalankan seluruh tumpukan di lingkungan sementara dan memeriksa
 Yang terjadi, dalam urutan:
 
 1. Postgres 16 sementara di Docker (port `55432`), dibuang di akhir.
-2. API Go dibangun dari `server/` dan dijalankan dari folder temporer dengan environment bersih. **`.env` proyek tidak terbaca**, jadi kunci Resend, Supabase, dan Midtrans tidak tersentuh. Migrasi berjalan otomatis, dan pembayaran memakai mode simulasi karena Midtrans tidak dikonfigurasi.
+2. API Go dibangun dari `server/` dan dijalankan dari folder temporer dengan environment bersih. **`.env` proyek tidak terbaca**, jadi kunci Resend, Supabase, dan Midtrans tidak tersentuh. Migrasi berjalan otomatis, dan pembayaran memakai provider `sandbox` (checkout tiruan) karena kunci gateway tidak dikonfigurasi.
 3. Aplikasi web (`web/`) dijalankan di port `3000` (CORS API hanya mengizinkan origin itu).
-4. `e2e/api.mjs`: perjalanan API untuk lima peran: registrasi, login, profil, paket harga (validasi, IDOR, batas 12), persetujuan admin, filter direktori, chat dan penandaan kontak, booking dari diajukan sampai selesai dengan pembayaran simulasi, ulasan, komisi, pencairan, dan kanal konsultasi.
+4. `e2e/api.mjs`: perjalanan API untuk lima peran: registrasi, login, profil, paket harga (validasi, IDOR, batas 12), persetujuan admin, filter direktori, chat dan penandaan kontak, booking dari diajukan sampai selesai dengan pembayaran lewat sandbox, ulasan, komisi, pencairan, dan kanal konsultasi.
 5. `e2e/ui.mjs`: pemeriksaan di browser nyata dengan data dari langkah 4, login lewat form untuk client, vendor, admin, dan konsultan. Memeriksa direktori, detail vendor, halaman SEO, dan setiap dashboard, termasuk error konsol.
 
 6. `e2e/contrast.mjs`: audit kontras teks WCAG 2.x di 84 kombinasi halaman dan viewport (desktop 1440 dan mobile 390) untuk pengunjung, client, vendor, dan admin. Lulus bila semua teks memenuhi 4,5:1 (3:1 untuk teks besar).

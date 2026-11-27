@@ -1,12 +1,3 @@
-// Package payment wraps the Midtrans Snap API for escrow-style DP/pelunasan
-// payments (PRD §8.5/§8.11): Client pays into DuaCincin's own Midtrans
-// account (not split directly to the Vendor) — disbursement to the Vendor,
-// minus commission, is a separate Admin-triggered step (internal/booking).
-//
-// When MIDTRANS_SERVER_KEY is not set, Configured() is false and callers
-// fall back to a dev-simulation endpoint instead of calling Midtrans — the
-// same pattern used for Resend (PRD §8.2) so the whole booking lifecycle
-// can be built and tested before a real merchant account exists.
 package payment
 
 import (
@@ -18,28 +9,28 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 )
 
-type Client struct {
+// Midtrans adapts the Midtrans Snap API to Provider.
+type Midtrans struct {
 	serverKey    string
 	isProduction bool
 	httpClient   *http.Client
 }
 
-func NewClient(serverKey string, isProduction bool) *Client {
-	return &Client{
+func NewMidtrans(serverKey string, isProduction bool) *Midtrans {
+	return &Midtrans{
 		serverKey:    serverKey,
 		isProduction: isProduction,
 		httpClient:   &http.Client{Timeout: 15 * time.Second},
 	}
 }
 
-func (c *Client) Configured() bool {
-	return c.serverKey != ""
-}
+func (c *Midtrans) Name() string { return ProviderMidtrans }
 
-func (c *Client) baseURL() string {
+func (c *Midtrans) baseURL() string {
 	if c.isProduction {
 		return "https://app.midtrans.com"
 	}
@@ -55,6 +46,9 @@ type snapRequest struct {
 		FirstName string `json:"first_name"`
 		Email     string `json:"email"`
 	} `json:"customer_details"`
+	Callbacks struct {
+		Finish string `json:"finish,omitempty"`
+	} `json:"callbacks"`
 }
 
 type snapResponse struct {
@@ -62,27 +56,23 @@ type snapResponse struct {
 	RedirectURL string `json:"redirect_url"`
 }
 
-// CreateTransaction opens a Snap checkout session and returns the hosted
-// payment page URL the frontend should redirect the Client to.
-func (c *Client) CreateTransaction(ctx context.Context, orderID string, amount int64, customerName, customerEmail string) (redirectURL string, err error) {
-	if !c.Configured() {
-		return "", fmt.Errorf("midtrans is not configured")
-	}
-
+// CreateCheckout opens a Snap session and returns the hosted payment page.
+func (c *Midtrans) CreateCheckout(ctx context.Context, r CheckoutRequest) (*Checkout, error) {
 	var body snapRequest
-	body.TransactionDetails.OrderID = orderID
-	body.TransactionDetails.GrossAmount = amount
-	body.CustomerDetails.FirstName = customerName
-	body.CustomerDetails.Email = customerEmail
+	body.TransactionDetails.OrderID = r.OrderID
+	body.TransactionDetails.GrossAmount = r.Amount
+	body.CustomerDetails.FirstName = r.CustomerName
+	body.CustomerDetails.Email = r.CustomerEmail
+	body.Callbacks.Finish = r.ReturnURL
 
 	payload, err := json.Marshal(body)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL()+"/snap/v1/transactions", bytes.NewReader(payload))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
@@ -90,19 +80,43 @@ func (c *Client) CreateTransaction(ctx context.Context, orderID string, amount i
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("call midtrans: %w", err)
+		return nil, fmt.Errorf("call midtrans: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 300 {
-		return "", fmt.Errorf("midtrans responded with status %d", resp.StatusCode)
+		return nil, fmt.Errorf("midtrans responded with status %d", resp.StatusCode)
 	}
 
 	var out snapResponse
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return "", err
+		return nil, err
 	}
-	return out.RedirectURL, nil
+	return &Checkout{RedirectURL: out.RedirectURL}, nil
+}
+
+type midtransNotification struct {
+	OrderID           string `json:"order_id"`
+	StatusCode        string `json:"status_code"`
+	GrossAmount       string `json:"gross_amount"`
+	SignatureKey      string `json:"signature_key"`
+	TransactionStatus string `json:"transaction_status"`
+	FraudStatus       string `json:"fraud_status"`
+}
+
+// ParseWebhook verifies the notification signature and normalises it.
+func (c *Midtrans) ParseWebhook(body []byte, _ http.Header) (*WebhookEvent, error) {
+	var n midtransNotification
+	if err := json.Unmarshal(body, &n); err != nil {
+		return nil, fmt.Errorf("decode midtrans notification: %w", err)
+	}
+	if !VerifySignature(n.OrderID, n.StatusCode, n.GrossAmount, c.serverKey, n.SignatureKey) {
+		return nil, ErrInvalidSignature
+	}
+	// gross_amount arrives as "150000.00".
+	amount, _ := strconv.ParseFloat(n.GrossAmount, 64)
+	paid := n.TransactionStatus == "settlement" || (n.TransactionStatus == "capture" && n.FraudStatus == "accept")
+	return &WebhookEvent{OrderID: n.OrderID, Amount: int64(amount), Paid: paid}, nil
 }
 
 // VerifySignature checks a Midtrans notification's signature_key field:

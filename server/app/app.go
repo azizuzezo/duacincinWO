@@ -127,7 +127,10 @@ func New(ctx context.Context, opts Options) (*App, error) {
 	whatsappLinkRepo := repository.NewWhatsAppLinkRepo(pool)
 	chatHub := chat.NewHub()
 	limiter := ratelimit.New(pool)
-	midtransClient := payment.NewClient(cfg.MidtransServerKey, cfg.MidtransIsProduction)
+	paymentProvider, err := payment.New(cfg.PaymentProvider, cfg.MidtransServerKey, cfg.MidtransIsProduction, cfg.WebBaseURL)
+	if err != nil {
+		return nil, err
+	}
 	mailer := email.NewClient(cfg.ResendAPIKey, cfg.ResendFromEmail)
 
 	chatDeps := chat.NewDeps(chatRepo, vendorRepo, disputeRepo, userRepo, chatHub, notificationRepo, storageClient)
@@ -161,7 +164,8 @@ func New(ctx context.Context, opts Options) (*App, error) {
 		plannerRepo,
 		reviewRepo,
 		notificationRepo,
-		midtransClient,
+		paymentProvider,
+		cfg.WebBaseURL,
 	)
 	bookingDeps.Availability = availabilityRepo
 	adminDeps := admin.NewDeps(vendorRepo, vendorNameChangeRepo, disbursementRepo, disputeRepo, userRepo, bookingRepo, auditLogRepo, notificationRepo, storageClient, vendors.PortfolioBucket)

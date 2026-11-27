@@ -1,16 +1,32 @@
 package booking
 
 import (
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 
 	"duacincin/server/internal/auth"
 	"duacincin/server/internal/config"
+	"duacincin/server/internal/payment"
 )
 
 // Mount registers /bookings/*, /meetings/consultation, and the public
-// Midtrans webhook onto r.
+// payment webhook onto r.
 func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
-	r.Post("/webhooks/midtrans", MidtransWebhook(deps, cfg.MidtransServerKey))
+	r.Post("/webhooks/payments/{provider}", PaymentWebhook(deps))
+	// Kept so the URL already configured in the Midtrans dashboard keeps working.
+	r.Post("/webhooks/midtrans", func(w http.ResponseWriter, r *http.Request) {
+		rctx := chi.RouteContext(r.Context())
+		rctx.URLParams.Add("provider", payment.ProviderMidtrans)
+		PaymentWebhook(deps)(w, r)
+	})
+
+	r.Route("/payments/sandbox/{order}", func(r chi.Router) {
+		r.Use(auth.RequireAuth(cfg))
+		r.Use(auth.RequireRole(auth.RoleClient))
+		r.Get("/", SandboxOrder(deps))
+		r.Post("/complete", SandboxComplete(deps))
+	})
 
 	r.Route("/bookings", func(r chi.Router) {
 		r.Use(auth.RequireAuth(cfg))
@@ -23,7 +39,6 @@ func Mount(r chi.Router, deps *Deps, cfg *config.Config) {
 		r.Post("/{id}/cancel", Cancel(deps))
 		r.With(auth.RequireRole(auth.RoleClient)).Post("/{id}/pay/dp", PayDP(deps))
 		r.With(auth.RequireRole(auth.RoleClient)).Post("/{id}/pay/full", PayFull(deps))
-		r.With(auth.RequireRole(auth.RoleClient)).Post("/{id}/dev-simulate-payment", DevSimulatePayment(deps))
 		r.With(auth.RequireRole(auth.RoleClient)).Post("/{id}/complete", Complete(deps))
 		r.With(auth.RequireRole(auth.RoleClient)).Post("/{id}/review", SubmitReview(deps))
 		r.Get("/{id}/meetings", ListMeetingsForBooking(deps))

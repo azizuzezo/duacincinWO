@@ -388,7 +388,7 @@ ok("admin chat opens no dispute", psql(`select count(*) from disputes where mess
   r = await admin.call("PATCH", `${base}/${att2.id}`, { body: "teks" }); ok("an attachment-only message cannot be edited", r.status === 400, JSON.stringify(r));
 }
 
-// 6. booking lifecycle with simulated payments (Midtrans not configured)
+// 6. booking lifecycle paid through the sandbox gateway (no gateway keys configured)
 r = await client.call("POST", "/bookings", { vendor_id: vendorId, event_date: "2027-03-14", package_description: "Half Day Plus", agreed_price: 22000000 }); ok("client creates booking", r.status < 300 && r.data?.status === "requested", JSON.stringify(r)); const bk = r.data;
 ok("client booking hides the vendor's share", bk?.vendor_amount === undefined, JSON.stringify(bk));
 r = await vendor.call("GET", `/bookings/${bk.id}`); ok("vendor sees it receives its own price (22 jt -> 20 jt)", r.data?.agreed_price === 22000000 && r.data?.vendor_amount === 20000000, JSON.stringify(r.data));
@@ -396,11 +396,16 @@ r = await admin.call("PATCH", `/admin/vendors/${vendorId}/commission`, { rate: 0
 r = await new Client("anon").call("GET", `/vendors/${vendorId}/packages`); ok("new rate moves public prices at once (20 jt -> 24 jt)", r.data?.[0]?.price === 24000000, JSON.stringify(r.data?.[0]));
 r = await client.call("POST", `/bookings/${bk.id}/review`, { rating: 5, comment: "terlalu cepat" }); ok("review before completion refused (409)", r.status === 409, JSON.stringify(r));
 r = await vendor.call("POST", `/bookings/${bk.id}/confirm`, {}); ok("vendor confirms", r.status < 300, JSON.stringify(r));
-r = await client.call("POST", `/bookings/${bk.id}/pay/dp`, {}); ok("client starts DP payment (dev mode)", r.status < 300, JSON.stringify(r));
-r = await client.call("POST", `/bookings/${bk.id}/dev-simulate-payment`, { type: "dp" }); ok("simulate DP paid", r.status < 300, JSON.stringify(r));
+r = await client.call("POST", `/bookings/${bk.id}/pay/dp`, {}); ok("client starts DP payment (sandbox checkout URL)", r.status < 300 && r.data?.provider === "sandbox" && r.data?.redirect_url?.includes("/pembayaran/sandbox?order=" + r.data?.order_id), JSON.stringify(r)); const dpOrder = r.data?.order_id;
+r = await client.call("GET", `/payments/sandbox/${dpOrder}`); ok("sandbox checkout shows the DP order", r.status === 200 && r.data?.amount === 6600000 && r.data?.status === "pending" && r.data?.type === "dp", JSON.stringify(r));
+r = await vendor.call("GET", `/payments/sandbox/${dpOrder}`); ok("only a client can open a sandbox order (403)", r.status === 403, JSON.stringify(r));
+r = await new Client("anon").call("POST", `/webhooks/payments/sandbox`, {}); ok("sandbox accepts no webhook (400/401/404 only)", [400, 401, 404].includes(r.status), JSON.stringify(r));
+r = await new Client("anon").call("POST", `/webhooks/midtrans`, {}); ok("inactive provider's webhook is refused (404)", r.status === 404, JSON.stringify(r));
+r = await client.call("POST", `/payments/sandbox/${dpOrder}/complete`, {}); ok("sandbox pays the DP", r.status < 300 && r.data?.booking_id === bk.id, JSON.stringify(r));
+r = await client.call("POST", `/payments/sandbox/${dpOrder}/complete`, {}); ok("paying the same order twice is harmless", r.status < 300, JSON.stringify(r));
 r = await client.call("GET", `/bookings/${bk.id}`); ok("status dp_paid, DP is 30%", r.data?.status === "dp_paid" && r.data?.dp_amount === 6600000, JSON.stringify(r.data));
-r = await client.call("POST", `/bookings/${bk.id}/pay/full`, {}); ok("client starts full payment", r.status < 300, JSON.stringify(r));
-r = await client.call("POST", `/bookings/${bk.id}/dev-simulate-payment`, { type: "full" }); ok("simulate full paid", r.status < 300, JSON.stringify(r));
+r = await client.call("POST", `/bookings/${bk.id}/pay/full`, {}); ok("client starts full payment", r.status < 300 && !!r.data?.order_id, JSON.stringify(r));
+r = await client.call("POST", `/payments/sandbox/${r.data?.order_id}/complete`, {}); ok("sandbox pays the rest", r.status < 300, JSON.stringify(r));
 r = await client.call("GET", `/bookings/${bk.id}`); ok("status full_paid", r.data?.status === "full_paid", JSON.stringify(r.data));
 // 6b. availability: a locked day is unavailable, the vendor can close days by hand, and the couple's wedding date is stored.
 r = await client.call("GET", `/vendors/${vendorId}/availability?from=2027-03-01&to=2027-03-31`); ok("public availability marks the booked day (no names)", r.status === 200 && r.data?.dates?.some((d) => d.date === "2027-03-14" && d.reason === "booked") && !JSON.stringify(r.data).includes(bk.id), JSON.stringify(r));
