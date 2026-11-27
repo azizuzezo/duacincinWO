@@ -117,6 +117,55 @@ for (const [w, h, label] of [[1440, 900, "desktop"], [390, 844, "mobile"]]) {
   ok("no console errors (client)", s.errors.length === 0, JSON.stringify(s.errors.slice(0, 2)));
   s.close();
 }
+// booking request dialog (client, desktop then phone): a centered dialog, not a side panel; not submitted, so later steps see the same data
+for (const [w, h, label] of [[1440, 900, "desktop"], [390, 844, "mobile"]]) {
+  const s = await session();
+  await s.login(email("client"));
+  await s.go(`${WEB}/vendors`, w, h);
+  const vp = await s.ev("document.querySelector('main ul li a')?.getAttribute('href')");
+  await s.go(`${WEB}${vp}`, w, h);
+  const openJs = "[...document.querySelectorAll('button')].filter(b=>/Ajukan booking|^Booking$/.test(b.innerText.trim())&&b.offsetParent).at(0)?.click(); 1";
+  await s.ev(openJs);
+  await sleep(1200);
+  const dlg = "document.querySelector('[role=dialog]')";
+  ok(`booking dialog (${label}): opens on 'Ajukan booking'`, (await s.ev(`!!${dlg}`)) === true);
+  const r = await s.ev(`(()=>{const b=${dlg}.getBoundingClientRect();return {l:b.left,r:b.right,t:b.top,b:b.bottom,w:innerWidth,h:innerHeight}})()`);
+  const mid = (r.l + r.r) / 2;
+  ok(`booking dialog (${label}): centered, not a side panel`, Math.abs(mid - r.w / 2) < 4 && r.l >= 0 && r.r <= r.w + 1 && (label === "mobile" || r.l > 100), JSON.stringify(r));
+  ok(`booking dialog (${label}): no horizontal page scroll`, !(await s.ev("document.documentElement.scrollWidth > window.innerWidth")));
+  const txt = () => s.ev(`${dlg}.innerText`);
+  let t = await txt();
+  ok(`booking dialog (${label}): lists the vendor's packages and 'Paket lain'`, t.includes("Half Day Plus") && t.includes("Full Day") && t.includes("Paket lain"), t.slice(0, 300));
+  const submitDisabled = () => s.ev("document.querySelector('#booking-form button[type=submit]').disabled");
+  ok(`booking dialog (${label}): submit disabled until a price exists`, (await submitDisabled()) === true && t.includes("Belum dipilih"));
+  await s.shot(`booking-dialog-empty-${label}`);
+  // pick Full Day
+  await s.ev("[...document.querySelectorAll('#booking-form label')].find(l=>l.innerText.includes('Full Day')).click(); 1");
+  await sleep(500);
+  t = await txt();
+  const total = Number((t.match(/Total\s*\n?\s*Rp\s?([\d.]+)/)?.[1] ?? "0").replace(/\./g, ""));
+  const dp = Number((t.match(/DP 30%\s*\n?\s*Rp\s?([\d.]+)/)?.[1] ?? "0").replace(/\./g, ""));
+  const rest = Number((t.match(/Pelunasan\s*\n?\s*Rp\s?([\d.]+)/)?.[1] ?? "0").replace(/\./g, ""));
+  ok(`booking dialog (${label}): picking a package fills total, DP 30% and pelunasan`, total > 0 && dp === Math.round(total * 0.3) && rest === total - dp, JSON.stringify({ total, dp, rest }));
+  ok(`booking dialog (${label}): package selected hides the manual price field`, !(await s.ev("!!document.querySelector('#booking-form input[inputmode=numeric]')")));
+  ok(`booking dialog (${label}): submit enabled after picking a package`, (await submitDisabled()) === false);
+  await s.shot(`booking-dialog-package-${label}`);
+  // Paket lain
+  await s.ev("[...document.querySelectorAll('#booking-form label')].find(l=>l.innerText.includes('Paket lain')).click(); 1");
+  await sleep(500);
+  ok(`booking dialog (${label}): 'Paket lain' shows name and price fields and resets the total`, (await s.ev("!!document.querySelector('#booking-form input[inputmode=numeric]')")) && (await txt()).includes("Belum dipilih") && (await submitDisabled()) === true);
+  await s.ev("document.querySelector('#booking-form input[inputmode=numeric]').focus(); 1");
+  await s.ev(`(()=>{const el=document.querySelector('#booking-form input[inputmode=numeric]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,'18500000');el.dispatchEvent(new Event('input',{bubbles:true}));return 1})()`);
+  await sleep(400);
+  t = await txt();
+  ok(`booking dialog (${label}): typed price formats as 18.500.000 with DP 5.550.000`, t.includes("18.500.000") && t.includes("5.550.000") && (await submitDisabled()) === false, t.slice(0, 400));
+  await s.shot(`booking-dialog-other-${label}`);
+  await s.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+  await sleep(700);
+  ok(`booking dialog (${label}): Escape closes it`, (await s.ev(`!!${dlg}`)) === false);
+  ok(`no console errors (booking dialog ${label})`, s.errors.length === 0, JSON.stringify(s.errors.slice(0, 2)));
+  s.close();
+}
 // vendor
 {
   const s = await session();
